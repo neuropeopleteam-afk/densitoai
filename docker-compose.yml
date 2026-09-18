@@ -1,0 +1,34 @@
+# DensitoAI — docker compose
+#   Пакетная обработка:  INPUT_DIR=/path/to/dicoms OUTPUT_DIR=./outputs docker compose run --rm densito-batch
+#   API-сервис:          docker compose up densito-api      ->  http://localhost:8000/docs
+services:
+  densito-batch:
+    build: { context: ., dockerfile: Dockerfile }
+    image: densitoai:2.0.0
+    container_name: densito-batch
+    command: ["batch"]
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ${INPUT_DIR:-./tests/sample_test_zip}:/data/input:ro
+      - ${OUTPUT_DIR:-./outputs}:/data/output
+    environment:
+      - OMP_NUM_THREADS=${OMP_NUM_THREADS:-4}
+    deploy:
+      resources:
+        limits: { cpus: "${DOCKER_CPUS:-4}", memory: ${DOCKER_MEM:-8g} }
+
+  densito-api:
+    build: { context: ., dockerfile: Dockerfile }
+    image: densitoai:2.0.0
+    container_name: densito-api
+    command: ["api"]
+    user: "${UID:-1000}:${GID:-1000}"
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - ${INPUT_DIR:-./tests/sample_test_zip}:/data/input:ro
+      - ${OUTPUT_DIR:-./outputs}:/data/output
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "${DOCKER_CPUS:-4}", memory: ${DOCKER_MEM:-8g} }

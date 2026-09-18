@@ -1,0 +1,287 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Визуализация результата (бонус ТЗ п.2.6 / п.4: "кейсы, демонстрирующие
+работу решения", а также заявленное портирование Grad-CAM из v1).
+
+ВАЖНО про архитектурное решение. В v1 (CNN-ансамбль EfficientNet-B0) Grad-CAM
+имел смысл буквально: тепловая карта градиентов активации последнего
+свёрточного слоя. В densito_rebuild (см. review_fable5_densitoai_plan.md)
+классификатор — geometry features + логрегрессия на замороженных
+эмбеддингах (Контур A + Контур B), у него НЕТ свёрточных активаций,
+которые можно было бы дифференцировать: buквальный Grad-CAM здесь
+статистически бессмысленнен (это не приближение обученной модели, а
+случайные активации предобученного ImageNet-бэкбона).
+
+Вместо этого воспроизводим ЗАЯВЛЕННУЮ ЦЕННОСТЬ Grad-CAM для эксперта —
+"куда смотрела модель / почему она приняла решение" — но честно, через
+явные измеренные геометрические примитивы Контура A, которые
+непосредственно определяют quality_prob:
+  - контур сегментированной кости;
+  - линия оси позвоночника (центральная линия) vs вертикаль кадра,
+    с численным углом отклонения;
+  - обнаруженные высокоплотные объекты (металл/посторонние предметы),
+    выделенные прямоугольником;
+  - для бедра: трек диафиза, положение малого/большого вертела,
+    измеренные ROI-отступы от краёв кадра.
+Это ближе к клинической интерпретируемости (эксперт видит ИЗМЕРЕННУЮ
+величину, а не размытое пятно), и организаторы явно спрашивали именно
+про локализацию находок на изображении/доп.серии (см. QA_ANALYSIS.md,
+п.A.2) — не про CNN Grad-CAM как таковой.
+
+Функции:
+  render_overlay(img_u8, region, feats, crit_results) -> BGR uint8 image
+  save_overlay_png(path, img_u8, region, feats, crit_results)
+  overlay_to_dicom_sc(overlay_bgr, ref_ds) -> pydicom Dataset (Secondary Capture)
+"""
+from __future__ import annotations
+
+import warnings
+warnings.filterwarnings("ignore")
+
+import datetime
+from typing import Any, Dict, Optional
+
+import numpy as np
+import cv2
+
+from geometry_features import (
+    PIXEL_SPACING_X_MM, PIXEL_SPACING_Y_MM, segment_bone, spine_axis_features,
+)
+
+# Цвета в BGR (OpenCV)
+COL_BONE_CONTOUR = (60, 200, 60)      # зелёный — контур сегментированной кости
+COL_AXIS = (0, 140, 255)              # оранжевый — измеренная ось/диафиз
+COL_VERTICAL_REF = (180, 180, 180)    # серый — вертикаль кадра (референс)
+COL_METAL = (0, 0, 255)               # красный — обнаруженный металл/посторонний предмет
+COL_ROI_OK = (0, 220, 0)              # зелёный — измеренный ROI-отступ в норме
+COL_ROI_BAD = (0, 0, 255)             # красный — измеренный ROI-отступ ниже порога
+COL_TEXT_BG = (0, 0, 0)
+COL_TEXT = (255, 255, 255)
+COL_VIOLATION_TEXT = (0, 0, 255)
+COL_OK_TEXT = (0, 220, 0)
+
+
+def _put_label(img, text, org, color=COL_TEXT, scale=0.42, thickness=1):
+    """Текст с чёрной подложкой для читаемости на светлом/тёмном фоне."""
+    (tw, th), base = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, scale, thickness)
+    x, y = org
+    cv2.rectangle(img, (x - 2, y - th - 3), (x + tw + 2, y + base + 2), COL_TEXT_BG, -1)
+    cv2.putText(img, text, (x, y), cv2.FONT_HERSHEY_SIMPLEX, scale, color, thickness, cv2.LINE_AA)
+
+
+def _metal_boxes(img_u8: np.ndarray, mask: np.ndarray):
+    """Пересчитывает bounding-box'ы металла/посторонних объектов для отрисовки
+    (та же логика порога, что и foreign_object_features, но с координатами)."""
+    kernel_big = np.ones((25, 25), np.uint8)
+    bone_dilated = cv2.dilate(mask, kernel_big, iterations=1)
+    soft_tissue_band = ((bone_dilated > 0) & (mask == 0)).astype(np.uint8)
+    soft_tissue_pixels = img_u8[soft_tissue_band > 0]
+    body_thresh = 8
+    soft_tissue_pixels = soft_tissue_pixels[soft_tissue_pixels > body_thresh]
+    if len(soft_tissue_pixels) < 20:
+        return []
+    bg_mean = float(np.mean(soft_tissue_pixels))
+    bg_std = float(np.std(soft_tissue_pixels)) + 1e-6
+    bright_thresh = bg_mean + 3.0 * bg_std
+    candidate = ((img_u8.astype(np.float32) > bright_thresh) & (mask == 0) &
+                 (img_u8 > body_thresh)).astype(np.uint8) * 255
+    kernel = np.ones((3, 3), np.uint8)
+    candidate = cv2.morphologyEx(candidate, cv2.MORPH_OPEN, kernel)
+    candidate = cv2.morphologyEx(candidate, cv2.MORPH_CLOSE, kernel, iterations=2)
+    n_labels, labels, stats, _ = cv2.connectedComponentsWithStats(candidate)
+    boxes = []
+    for i in range(1, n_labels):
+        area = stats[i, cv2.CC_STAT_AREA]
+        if area < 4:
+            continue
+        x, y, w, h = stats[i, cv2.CC_STAT_LEFT], stats[i, cv2.CC_STAT_TOP], \
+            stats[i, cv2.CC_STAT_WIDTH], stats[i, cv2.CC_STAT_HEIGHT]
+        boxes.append((x, y, w, h))
+    return boxes
+
+
+def _render_spine_overlay(col: np.ndarray, img_u8: np.ndarray, feats: Dict[str, Any],
+                           crit_results: Optional[Dict[str, Any]]) -> np.ndarray:
+    h, w = img_u8.shape
+    mask = segment_bone(img_u8)
+    cnts, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cv2.drawContours(col, cnts, -1, COL_BONE_CONTOUR, 1)
+
+    axis = spine_axis_features(img_u8, mask)
+    if axis["centerline_x"] is not None:
+        xs, ys = axis["centerline_x"], axis["centerline_y"]
+        pts = np.stack([xs, ys], axis=1).astype(np.int32)
+        cv2.polylines(col, [pts], False, COL_AXIS, 2, cv2.LINE_AA)
+        # вертикаль кадра, проходящая через верхнюю точку центральной линии, для сравнения
+        x0 = int(xs[0])
+        cv2.line(col, (x0, int(ys[0])), (x0, int(ys[-1])), COL_VERTICAL_REF, 1, cv2.LINE_AA)
+
+    boxes = _metal_boxes(img_u8, mask)
+    for (x, y, bw, bh) in boxes:
+        cv2.rectangle(col, (x, y), (x + bw, y + bh), COL_METAL, 1)
+
+    angle = feats.get("axis_angle_deg")
+    if angle is not None:
+        ok = angle <= 5.0
+        _put_label(col, f"Ось: {angle:.1f}° (порог 5°)", (6, h - 34),
+                   COL_OK_TEXT if ok else COL_VIOLATION_TEXT)
+    curvature = feats.get("curvature")
+    if curvature is not None and curvature > 0.6:
+        _put_label(col, "Кривизна повышена (возможен сколиоз — не штраф по оси)", (6, h - 18),
+                   (0, 200, 200))
+    if boxes:
+        _put_label(col, f"Посторонние объекты: {len(boxes)}", (6, 16), COL_VIOLATION_TEXT)
+    return col
+
+
+def _render_hip_overlay(col: np.ndarray, img_u8: np.ndarray, feats: Dict[str, Any],
+                         crit_results: Optional[Dict[str, Any]]) -> np.ndarray:
+    from hip_features import segment_bone_hip, detect_hip_side, track_femur, hip_features_canonical
+    h, w = img_u8.shape
+    mask = segment_bone_hip(img_u8)
+    side = detect_hip_side(img_u8, mask)
+    mirrored = side != "right"
+    mask_c = mask if not mirrored else np.ascontiguousarray(mask[:, ::-1])
+
+    # Рисуем геометрию (контур, треки, вертикальные линии — симметричны при
+    # отражении) в канонической (зеркальной) системе координат, затем
+    # отражаем ТОЛЬКО геометрию обратно. Текст добавляем ПОСЛЕ отражения,
+    # в исходной ориентации кадра — иначе буквы получаются зеркальными.
+    canvas = np.zeros((h, w, 3), dtype=np.uint8)
+    cnts, _ = cv2.findContours(mask_c, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cv2.drawContours(canvas, cnts, -1, COL_BONE_CONTOUR, 1)
+
+    tr = track_femur(mask_c)
+    f = hip_features_canonical(mask_c)
+    if tr is not None:
+        pts = np.stack([tr["left"], tr["y"]], axis=1).astype(np.int32)
+        cv2.polylines(canvas, [pts], False, COL_AXIS, 1, cv2.LINE_AA)
+        pts = np.stack([tr["right"], tr["y"]], axis=1).astype(np.int32)
+        cv2.polylines(canvas, [pts], False, COL_AXIS, 1, cv2.LINE_AA)
+
+    # ROI-отступ от латерального края кадра (физический критерий ТЗ >= 2 см)
+    edge_mm = feats.get("edge_distance_mm")
+    lateral_margin_mm = feats.get("lateral_margin_mm")
+    margin_mm = lateral_margin_mm if lateral_margin_mm is not None else edge_mm
+    roi_color = None
+    if margin_mm is not None:
+        margin_px = int(round(margin_mm / PIXEL_SPACING_X_MM))
+        roi_ok = margin_mm >= 20.0
+        roi_color = COL_ROI_OK if roi_ok else COL_ROI_BAD
+        cv2.line(canvas, (margin_px, 0), (margin_px, h - 1), roi_color, 1, cv2.LINE_AA)
+
+    # geometry-only mask of drawn pixels, so compositing doesn't touch untouched areas
+    drawn = (canvas.sum(axis=2) > 0)
+    geometry_layer = canvas if not mirrored else np.ascontiguousarray(canvas[:, ::-1])
+    drawn = drawn if not mirrored else np.ascontiguousarray(drawn[:, ::-1])
+    col[drawn] = geometry_layer[drawn]
+
+    # --- текст: всегда в исходной (не зеркальной) ориентации кадра ---
+    merge_h = feats.get("merge_height_mm")
+    shaft_len = feats.get("shaft_len_below_troch_mm")
+    if margin_mm is not None:
+        _put_label(col, f"Край ROI: {margin_mm:.0f} мм (порог 20 мм)", (6, h - 34), roi_color)
+    if merge_h is not None and shaft_len is not None:
+        shaft_ok = shaft_len >= 30.0  # диафиз ниже вертела должен попасть в кадр (ТЗ: 3 см над вертелом)
+        color = COL_ROI_OK if shaft_ok else COL_ROI_BAD
+        _put_label(col, f"Диафиз ниже вертела: {shaft_len:.0f} мм (порог 30 мм)", (6, h - 18), color)
+
+    angle = feats.get("abs_shaft_angle_deg") or feats.get("shaft_angle_deg")
+    if angle is not None:
+        _put_label(col, f"Угол диафиза: {angle:.1f}°", (6, 16), (200, 200, 0))
+    _put_label(col, f"Сторона (детект.): {'правое' if side == 'right' else 'левое'}",
+               (6, 32), (200, 200, 0))
+    return col
+
+
+def render_overlay(img_u8: np.ndarray, region: str, feats: Dict[str, Any],
+                    crit_results: Optional[Dict[str, Any]] = None,
+                    quality_class: Optional[int] = None,
+                    violation_type: str = "") -> np.ndarray:
+    """Строит цветную (BGR) визуализацию измеренных геометрических примитивов
+    поверх исходного снимка. Заменяет буквальный CNN Grad-CAM (см. докстринг
+    модуля) для архитектуры Контур A + Контур B."""
+    col = cv2.cvtColor(img_u8, cv2.COLOR_GRAY2BGR)
+    if region == "spine":
+        col = _render_spine_overlay(col, img_u8, feats, crit_results)
+    else:
+        col = _render_hip_overlay(col, img_u8, feats, crit_results)
+
+    h, w = img_u8.shape
+    header = "НАРУШЕНИЕ" if quality_class else "БЕЗ НАРУШЕНИЙ"
+    color = COL_VIOLATION_TEXT if quality_class else COL_OK_TEXT
+    _put_label(col, header, (w - 140, 16), color, scale=0.42)
+    if violation_type:
+        _put_label(col, violation_type[:60], (w - 260, 32), COL_VIOLATION_TEXT, scale=0.34)
+    return col
+
+
+def save_overlay_png(path: str, img_u8: np.ndarray, region: str, feats: Dict[str, Any],
+                      crit_results: Optional[Dict[str, Any]] = None,
+                      quality_class: Optional[int] = None, violation_type: str = "") -> str:
+    col = render_overlay(img_u8, region, feats, crit_results, quality_class, violation_type)
+    cv2.imwrite(path, col)
+    return path
+
+
+def overlay_to_dicom_sc(overlay_bgr: np.ndarray, ref_ds, series_description: str = "DensitoAI QC Overlay"):
+    """Оборачивает цветную визуализацию в DICOM Secondary Capture (SC),
+    наследуя идентификаторы пациента/исследования из исходного DICOM —
+    так эксперт может открыть результат в обычном DICOM-вьюере рядом
+    с исходной серией (бонус ТЗ п.2.6: "серия с визуализацией")."""
+    import pydicom
+    from pydicom.dataset import Dataset, FileDataset, FileMetaDataset
+    from pydicom.uid import SecondaryCaptureImageStorage, generate_uid
+
+    h, w = overlay_bgr.shape[:2]
+    rgb = cv2.cvtColor(overlay_bgr, cv2.COLOR_BGR2RGB)
+
+    file_meta = FileMetaDataset()
+    file_meta.MediaStorageSOPClassUID = SecondaryCaptureImageStorage
+    file_meta.MediaStorageSOPInstanceUID = generate_uid()
+    file_meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian
+
+    ds = FileDataset(None, {}, file_meta=file_meta, preamble=b"\x00" * 128)
+    ds.SOPClassUID = SecondaryCaptureImageStorage
+    ds.SOPInstanceUID = file_meta.MediaStorageSOPInstanceUID
+    ds.SeriesInstanceUID = generate_uid()
+    now = datetime.datetime.now()
+    ds.StudyDate = now.strftime("%Y%m%d")
+    ds.StudyTime = now.strftime("%H%M%S")
+    ds.Modality = "OT"
+    ds.ConversionType = "WSD"
+    ds.SeriesDescription = series_description
+    ds.Manufacturer = "DensitoAI"
+
+    for attr in ("PatientName", "PatientID", "PatientBirthDate", "PatientSex",
+                 "StudyInstanceUID", "StudyID", "AccessionNumber"):
+        if hasattr(ref_ds, attr):
+            setattr(ds, attr, getattr(ref_ds, attr))
+    if not hasattr(ds, "StudyInstanceUID"):
+        ds.StudyInstanceUID = generate_uid()
+
+    ds.SamplesPerPixel = 3
+    ds.PhotometricInterpretation = "RGB"
+    ds.PlanarConfiguration = 0
+    ds.Rows, ds.Columns = h, w
+    ds.BitsAllocated = 8
+    ds.BitsStored = 8
+    ds.HighBit = 7
+    ds.PixelRepresentation = 0
+    ds.PixelData = rgb.tobytes()
+    ds.is_little_endian = True
+    ds.is_implicit_VR = False
+    return ds
+
+
+if __name__ == "__main__":
+    import sys
+    from geometry_features import read_dicom_normalized, extract_all_features
+    fp = sys.argv[1] if len(sys.argv) > 1 else None
+    region = sys.argv[2] if len(sys.argv) > 2 else "spine"
+    if fp:
+        img_u8, ds = read_dicom_normalized(fp)
+        feats = extract_all_features(fp, region if region == "spine" else "hip")
+        out = save_overlay_png("/tmp/overlay_test.png", img_u8, region, feats)
+        print("saved:", out)

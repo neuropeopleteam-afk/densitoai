@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DensitoAI — контроль качества DXA</title>
+<style>
+  :root {
+    --bg: #F7F6F2;
+    --surface: #FFFFFF;
+    --border: #D4D1CA;
+    --text: #28251D;
+    --text-muted: #7A7974;
+    --primary: #01696F;
+    --primary-hover: #0C4E54;
+    --error: #A12C7B;
+    --success: #437A22;
+    --warning: #964219;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+  }
+  header h1 { margin: 0; font-size: 20px; font-weight: 700; }
+  header p { margin: 4px 0 0; color: var(--text-muted); font-size: 14px; }
+  main { max-width: 1000px; margin: 0 auto; padding: 32px 24px 80px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .card h2 { margin: 0 0 12px; font-size: 16px; font-weight: 700; }
+  .dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .dropzone.drag { border-color: var(--primary); background: #F0F7F7; }
+  .dropzone input { display: none; }
+  button {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 16px;
+  }
+  button:hover { background: var(--primary-hover); }
+  button:disabled { background: var(--border); cursor: not-allowed; }
+  .filelist { margin-top: 12px; font-size: 13px; color: var(--text-muted); text-align: left; }
+  .row-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 20px;
+  }
+  .row-card img { width: 100%; border-radius: 6px; border: 1px solid var(--border); }
+  .row-meta { font-size: 13px; }
+  .row-meta .fname { font-weight: 700; font-size: 14px; margin-bottom: 6px; word-break: break-all; }
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .badge.ok { background: #E9F1E3; color: var(--success); }
+  .badge.violation { background: #FBE9F2; color: var(--error); }
+  .badge.fail { background: #F3E4D5; color: var(--warning); }
+  .kv { display: grid; grid-template-columns: 140px 1fr; gap: 4px 8px; margin-top: 8px; }
+  .kv div:nth-child(odd) { color: var(--text-muted); }
+  .links { margin-top: 10px; font-size: 13px; }
+  .links a { color: var(--primary); text-decoration: none; }
+  .links a:hover { text-decoration: underline; }
+  .summary-bar { display: flex; gap: 24px; margin-bottom: 16px; font-size: 14px; }
+  .summary-bar b { font-size: 20px; display: block; }
+  .status-line { font-size: 13px; color: var(--text-muted); margin-top: 10px; }
+  footer { text-align: center; color: var(--text-muted); font-size: 12px; padding: 20px; }
+  .note {
+    background: #FFF7E8;
+    border: 1px solid #E8D5A8;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #6B4A16;
+    margin-bottom: 20px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>DensitoAI — автоматический контроль качества DXA-снимков</h1>
+  <p>Двухконтурная система (геометрия + эмбеддинги) · ЛЦТ 2026 · Департамент здравоохранения</p>
+</header>
+
+<main>
+  <div class="note">
+    Это рабочее демо для экспертной/врачебной проверки решения. Загрузите один или несколько
+    DICOM-файлов (или zip-архив исследования) — система определит анатомическую область,
+    оценит качество укладки и покажет визуализацию найденных признаков (аналог Grad-CAM).
+    Обработка полностью локальная, снимки никуда не передаются за пределы сервера.
+  </div>
+
+  <div class="card">
+    <h2>Загрузка снимков</h2>
+    <div class="dropzone" id="dropzone">
+      <div>Перетащите .dcm / .zip файлы сюда или нажмите, чтобы выбрать</div>
+      <input type="file" id="fileInput" multiple accept=".dcm,.zip,application/dicom,application/zip">
+    </div>
+    <div class="filelist" id="fileList"></div>
+    <button id="analyzeBtn" disabled>Проанализировать</button>
+    <div class="status-line" id="statusLine"></div>
+  </div>
+
+  <div id="results"></div>
+</main>
+
+<footer>DensitoAI · система оценки качества DXA-снимков для ЛЦТ 2026</footer>
+
+<script>
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const fileList = document.getElementById('fileList');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const statusLine = document.getElementById('statusLine');
+const resultsEl = document.getElementById('results');
+let selectedFiles = [];
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag');
+  setFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', () => setFiles(fileInput.files));
+
+function setFiles(files) {
+  selectedFiles = Array.from(files);
+  fileList.textContent = selectedFiles.length
+    ? selectedFiles.map(f => f.name).join(', ')
+    : '';
+  analyzeBtn.disabled = selectedFiles.length === 0;
+}
+
+analyzeBtn.addEventListener('click', async () => {
+  if (!selectedFiles.length) return;
+  analyzeBtn.disabled = true;
+  statusLine.textContent = 'Обработка… (первый запуск может занять до минуты — прогрев модели)';
+  resultsEl.innerHTML = '';
+
+  const form = new FormData();
+  selectedFiles.forEach(f => form.append('files', f));
+
+  try {
+    const resp = await fetch('/api/analyze', { method: 'POST', body: form });
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(`HTTP ${resp.status}: ${txt}`);
+    }
+    const data = await resp.json();
+    renderResults(data);
+    statusLine.textContent = `Готово: ${data.summary.n_files} файл(ов), ` +
+      `${data.summary.n_violations} с нарушением, ${data.summary.n_failures} ошибок обработки. ` +
+      `Проверка формата: ${data.format_check === 'OK' ? 'OK' : JSON.stringify(data.format_check)}.`;
+  } catch (err) {
+    statusLine.textContent = 'Ошибка: ' + err.message;
+  } finally {
+    analyzeBtn.disabled = false;
+  }
+});
+
+function renderResults(data) {
+  const rows = data.rows || [];
+  if (!rows.length) {
+    resultsEl.innerHTML = '<div class="card">Нет строк результата.</div>';
+    return;
+  }
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = '<h2>Результаты</h2>';
+
+  rows.forEach(row => {
+    const wrap = document.createElement('div');
+    wrap.className = 'row-card';
+
+    const isFail = row.processing_status !== 'Success';
+    const hasViolation = String(row.quality_class) === '1';
+    const badgeClass = isFail ? 'fail' : (hasViolation ? 'violation' : 'ok');
+    const badgeText = isFail ? 'Ошибка обработки' : (hasViolation ? 'Нарушение найдено' : 'Качество ОК');
+
+    let imgHtml = '<div style="color:#7A7974;font-size:13px;padding:40px 0;text-align:center;">Визуализация недоступна</div>';
+    if (row.bonus_overlay_png_base64) {
+      imgHtml = `<img src="data:image/png;base64,${row.bonus_overlay_png_base64}" alt="overlay">`;
+    } else if (row.bonus_roi_png_base64) {
+      imgHtml = `<img src="data:image/png;base64,${row.bonus_roi_png_base64}" alt="roi">`;
+    }
+
+    let links = '';
+    if (row.bonus_sr_dcm_download) {
+      links += `<a href="${row.bonus_sr_dcm_download}" target="_blank">Скачать DICOM SR</a>`;
+    }
+
+    wrap.innerHTML = `
+      <div>${imgHtml}</div>
+      <div class="row-meta">
+        <div class="fname">${row.path_to_study || ''}</div>
+        <span class="badge ${badgeClass}">${badgeText}</span>
+        <div class="kv">
+          <div>Область</div><div>${row.anatomical_region || '—'}</div>
+          <div>Нарушение</div><div>${row.violation_type || '—'}</div>
+          <div>quality_prob</div><div>${row.quality_prob !== undefined ? Number(row.quality_prob).toFixed(3) : '—'}</div>
+          <div>Статус</div><div>${row.processing_status || '—'}</div>
+          <div>Время, с</div><div>${row.time_of_processing !== undefined ? row.time_of_processing : '—'}</div>
+        </div>
+        <div class="links">${links}</div>
+      </div>
+    `;
+    card.appendChild(wrap);
+  });
+
+  resultsEl.appendChild(card);
+}
+</script>
+</body>
+</html>

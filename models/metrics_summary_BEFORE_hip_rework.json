@@ -1,0 +1,92 @@
+{
+  "spine": {
+    "sp_pos": {
+      "n_valid": 166,
+      "n_pos": 10,
+      "auc_geom": 0.610897435897436,
+      "auc_emb": 0.5955128205128205,
+      "auc_stacked": 0.5955128205128206,
+      "threshold": 0.8132530120481928,
+      "threshold_method": "prevalence",
+      "f1_oof": 0.38095238095238093,
+      "f1_ci_lo": 0.0,
+      "f1_ci_hi": 0.7102941176470586
+    },
+    "sp_axis": {
+      "n_valid": 166,
+      "n_pos": 17,
+      "auc_geom": 0.8393209632846428,
+      "auc_emb": 0.49072246348203713,
+      "auc_stacked": 0.7376628503750493,
+      "threshold": 0.7560240963855421,
+      "threshold_method": "f1_optimal_oof",
+      "f1_oof": 0.38095238095238093,
+      "f1_ci_lo": 0.09644522144522147,
+      "f1_ci_hi": 0.5957446808510638
+    },
+    "sp_art": {
+      "n_valid": 166,
+      "n_pos": 35,
+      "auc_geom": 0.5598691384950927,
+      "auc_emb": 0.8970556161395856,
+      "auc_stacked": 0.8226826608505997,
+      "threshold": 0.5572289156626505,
+      "threshold_method": "f1_optimal_oof",
+      "f1_oof": 0.5979381443298969,
+      "f1_ci_lo": 0.3291139240506329,
+      "f1_ci_hi": 0.7562178387650086
+    }
+  },
+  "right_hip": {
+    "rh_pos": {
+      "n_valid": 167,
+      "n_pos": 45,
+      "auc_geom": 0.650455373406193,
+      "auc_emb": 0.4744990892531875,
+      "auc_stacked": 0.5777777777777777,
+      "threshold": 0.38023952095808383,
+      "threshold_method": "f1_optimal_oof",
+      "f1_oof": 0.45454545454545453,
+      "f1_ci_lo": 0.2632570997738125,
+      "f1_ci_hi": 0.5989673913043477
+    },
+    "rh_roi": {
+      "n_valid": 167,
+      "n_pos": 7,
+      "auc_geom": 0.3464285714285714,
+      "auc_emb": 0.65,
+      "auc_stacked": 0.44107142857142856,
+      "threshold": 0.8086342285488903,
+      "threshold_method": "prevalence",
+      "f1_oof": 0.2857142857142857,
+      "f1_ci_lo": 0.0,
+      "f1_ci_hi": 0.7330357142857135
+    }
+  },
+  "left_hip": {
+    "lh_pos": {
+      "n_valid": 160,
+      "n_pos": 38,
+      "auc_geom": 0.33175150992234687,
+      "auc_emb": 0.6259706643658325,
+      "auc_stacked": 0.4826358930112165,
+      "threshold": 0.034375,
+      "threshold_method": "f1_optimal_oof",
+      "f1_oof": 0.3838383838383838,
+      "f1_ci_lo": 0.20393875192604008,
+      "f1_ci_hi": 0.5229505083557322
+    },
+    "lh_roi": {
+      "n_valid": 160,
+      "n_pos": 4,
+      "auc_geom": 0.5368589743589743,
+      "auc_emb": 0.4679487179487179,
+      "auc_stacked": 0.4983974358974359,
+      "threshold": 0.871875,
+      "threshold_method": "prevalence",
+      "f1_oof": 0.0,
+      "f1_ci_lo": 0.0,
+      "f1_ci_hi": 0.0
+    }
+  }
+}

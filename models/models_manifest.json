@@ -1,0 +1,113 @@
+{
+  "model_spine_sp_pos_geom.pkl": {
+    "criterion": "sp_pos",
+    "feature_cols": [
+      "center_offset_ratio",
+      "bone_width_ratio"
+    ],
+    "n_pos": 10
+  },
+  "model_spine_sp_pos_emb_pca.pkl": {
+    "criterion": "sp_pos",
+    "n_pos": 10
+  },
+  "model_spine_sp_axis_geom.pkl": {
+    "criterion": "sp_axis",
+    "feature_cols": [
+      "axis_angle_deg"
+    ],
+    "n_pos": 17
+  },
+  "model_spine_sp_axis_emb_pca.pkl": {
+    "criterion": "sp_axis",
+    "n_pos": 17
+  },
+  "model_spine_sp_art_geom.pkl": {
+    "criterion": "sp_art",
+    "feature_cols": [
+      "metal_metal_area_mm2",
+      "metal_metal_max_intensity_gap"
+    ],
+    "n_pos": 35
+  },
+  "model_spine_sp_art_emb_pca.pkl": {
+    "criterion": "sp_art",
+    "n_pos": 35
+  },
+  "model_spine_any_geom.pkl": {
+    "criterion": "any",
+    "feature_cols": [
+      "axis_angle_deg",
+      "bone_width_ratio",
+      "center_offset_ratio",
+      "metal_metal_area_mm2",
+      "metal_metal_max_intensity_gap"
+    ],
+    "n_pos": 60
+  },
+  "model_spine_any_emb_pca.pkl": {
+    "criterion": "any",
+    "n_pos": 60
+  },
+  "model_hip_pos_geom.pkl": {
+    "criterion": "hip_pos",
+    "feature_cols": [
+      "femur_solidity",
+      "shaft_width_mm",
+      "abs_shaft_angle_deg",
+      "merge_height_mm",
+      "medial_neck_extent_mm"
+    ],
+    "n_pos": 79
+  },
+  "model_hip_pos_emb_pca.pkl": {
+    "criterion": "hip_pos",
+    "n_pos": 79
+  },
+  "model_hip_roi_geom.pkl": {
+    "criterion": "hip_roi",
+    "feature_cols": [
+      "scan_length_mm",
+      "shaft_len_below_troch_mm"
+    ],
+    "n_pos": 16
+  },
+  "model_hip_roi_emb_pca.pkl": {
+    "criterion": "hip_roi",
+    "n_pos": 16
+  },
+  "model_right_hip_any_geom.pkl": {
+    "criterion": "any",
+    "feature_cols": [
+      "abs_shaft_angle_deg",
+      "femur_solidity",
+      "medial_neck_extent_mm",
+      "merge_height_mm",
+      "scan_length_mm",
+      "shaft_len_below_troch_mm",
+      "shaft_width_mm"
+    ],
+    "n_pos": 92
+  },
+  "model_right_hip_any_emb_pca.pkl": {
+    "criterion": "any",
+    "n_pos": 92
+  },
+  "model_left_hip_any_geom.pkl": {
+    "criterion": "any",
+    "feature_cols": [
+      "abs_shaft_angle_deg",
+      "femur_solidity",
+      "medial_neck_extent_mm",
+      "merge_height_mm",
+      "scan_length_mm",
+      "shaft_len_below_troch_mm",
+      "shaft_width_mm"
+    ],
+    "n_pos": 92
+  },
+  "model_left_hip_any_emb_pca.pkl": {
+    "criterion": "any",
+    "n_pos": 92
+  }
+}

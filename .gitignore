@@ -1,0 +1,19 @@
+# Обученные веса ранней (отклонённой) CNN-мультилейбл эвристики — не используются
+# в текущем инференс-пайплайне (src/inference.py использует src/embeddings.py +
+# models/*.pkl). Оставлены локально как история экспериментов.
+models/cnn_ml_*_fold*.pth
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Временные выходы прогонов
+outputs/
+*.log
+
+# ОС/редакторы
+.DS_Store
+.vscode/
+.idea/
