@@ -197,6 +197,104 @@ def _attach_bonus(row: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
+# --- Детали для карточки решения в UI (не входят в официальный CSV) ---------------------------
+CRITERION_TITLES = {
+    "sp_pos": "Укладка (позвоночник)",
+    "sp_axis": "Ось позвоночника",
+    "sp_art": "Посторонние предметы",
+    "rh_pos": "Укладка (правое бедро)",
+    "rh_roi": "Область интереса (правое бедро)",
+    "lh_pos": "Укладка (левое бедро)",
+    "lh_roi": "Область интереса (левое бедро)",
+}
+# Измерения, которые понятны врачу: (ключ в debug, подпись, единица, множитель, знаков)
+MEASUREMENTS = {
+    "spine": [
+        ("feat_axis_angle_deg", "Наклон оси позвоночника", "°", 1.0, 1),
+        ("feat_curvature", "Изгиб оси", "", 1.0, 3),
+        ("feat_center_offset_ratio", "Смещение от центра кадра", "% ширины", 100.0, 1),
+        ("feat_bone_width_ratio", "Ширина костной области", "% ширины", 100.0, 1),
+        ("feat_top_margin_ratio", "Отступ сверху", "% высоты", 100.0, 1),
+        ("feat_bottom_margin_ratio", "Отступ снизу", "% высоты", 100.0, 1),
+        ("feat_metal_metal_area_mm2", "Площадь плотных включений", "мм²", 1.0, 0),
+        ("feat_metal_metal_max_intensity_gap", "Контраст включений к кости", "сигм", 1.0, 2),
+    ],
+    "hip": [
+        ("feat_shaft_angle_deg", "Наклон диафиза бедра", "°", 1.0, 1),
+        ("feat_edge_distance_mm", "Расстояние от кости до бокового края", "мм", 1.0, 1),
+        ("feat_bone_area_ratio", "Доля кости в кадре", "%", 100.0, 1),
+        ("feat_metal_metal_area_mm2", "Площадь плотных включений", "мм²", 1.0, 0),
+        ("bonus_roi_deficit_mm", "Недостаток поля сканирования", "мм", 1.0, 0),
+    ],
+}
+
+
+def _num(v) -> Optional[float]:
+    try:
+        if v is None or v == "" or (isinstance(v, float) and v != v):
+            return None
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _details(row: Dict[str, Any], dbg: Dict[str, Any], cfg: Dict[str, Any]) -> Dict[str, Any]:
+    """Карточка решения: по каждому критерию — скор, порог, флаг, источник; плюс
+    измерения в понятных единицах и рекомендуемое действие. Только для UI/экспертного просмотра."""
+    region = str(dbg.get("internal_region") or "")
+    fail = cfg["output"]["status_failure"]
+    is_fail = row.get("processing_status") == fail
+    crits = []
+    for c in cfg["criteria_by_region"].get(region, []):
+        score, thr = _num(dbg.get(f"{c}_score")), _num(dbg.get(f"{c}_threshold"))
+        flag = dbg.get(f"{c}_flag")
+        crits.append({
+            "code": c,
+            "title": CRITERION_TITLES.get(c, c),
+            "violation": cfg["violations"].get(c, c),
+            "score": None if score is None else round(score, 3),
+            "threshold": None if thr is None else round(thr, 3),
+            "flag": bool(flag) if flag not in (None, "") else False,
+            "method": dbg.get(f"{c}_method"),
+            "p_geom": (lambda v: None if v is None else round(v, 3))(_num(dbg.get(f"{c}_p_geom"))),
+            "p_emb": (lambda v: None if v is None else round(v, 3))(_num(dbg.get(f"{c}_p_emb"))),
+        })
+    meas = []
+    for key, title, unit, mult, nd in MEASUREMENTS.get("spine" if region == "spine" else "hip", []):
+        v = _num(dbg.get(key))
+        if v is not None:
+            meas.append({"title": title, "value": round(v * mult, nd), "unit": unit})
+    if is_fail:
+        action, action_code = "Проверить вручную: файл не обработан", "manual"
+    elif str(row.get("quality_class")) == "1":
+        action, action_code = "Проверить снимок; при подтверждении — переснять", "review"
+    else:
+        action, action_code = "Принять", "accept"
+    return {
+        "internal_region": region,
+        "region_source": dbg.get("region_source"),
+        "image_size": [dbg.get("rows"), dbg.get("cols")],
+        "warnings": dbg.get("warnings") or "",
+        "error": dbg.get("error"),
+        "quality_prob_raw": _num(dbg.get("quality_prob_raw")),
+        "criteria": crits,
+        "measurements": meas,
+        "roi": {
+            "needs_correction": dbg.get("bonus_roi_needs_correction"),
+            "reason": dbg.get("bonus_roi_reason"),
+            "deficit_mm": _num(dbg.get("bonus_roi_deficit_mm")),
+        },
+        "action": action,
+        "action_code": action_code,
+    }
+
+
+def _config_hash(cfg: Dict[str, Any]) -> str:
+    import hashlib
+    import json
+    return hashlib.sha256(json.dumps(cfg, sort_keys=True, ensure_ascii=False, default=str).encode()).hexdigest()[:12]
+
+
 @app.post("/api/analyze")
 async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
     """Загрузка одного или нескольких DICOM / zip. Ответ — JSON со строками официального
@@ -204,9 +302,10 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
     ссылка на DICOM SR, ROI-диагностика) для каждой строки; файлы результата также сохраняются
     в OUTPUT_DIR."""
     if not files:
-        raise HTTPException(400, "no files uploaded")
+        raise HTTPException(400, "Файлы не переданы. Загрузите один или несколько .dcm или zip-архив исследования.")
     job = time.strftime("%Y%m%d_%H%M%S") + "_" + uuid.uuid4().hex[:6]
     tmp = Path(tempfile.mkdtemp(prefix=f"densito_api_{job}_"))
+    t_wall = time.perf_counter()
     try:
         total = 0
         for uf in files:
@@ -214,27 +313,44 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
             data = await uf.read()
             total += len(data)
             if total > MAX_UPLOAD_MB * 1024 * 1024:
-                raise HTTPException(413, f"upload exceeds {MAX_UPLOAD_MB} MB")
+                raise HTTPException(413, f"Объём загрузки превышает {MAX_UPLOAD_MB:.0f} МБ. Разбейте партию на части.")
+            if not data:
+                raise HTTPException(400, f"Файл «{name}» пустой.")
             (tmp / name).write_bytes(data)
         eng = engine()
         out_csv = OUTPUT_DIR / f"results_{job}.csv"
         rows = eng.run(tmp, out_csv, debug_csv=OUTPUT_DIR / f"results_{job}_debug.csv", xlsx=xlsx)
+        debug_rows = list(getattr(eng, "last_debug_rows", []) or [])
         problems = validate_output_csv(out_csv, eng.cfg)
-        rows_with_bonus = [_attach_bonus(r) for r in rows]
+        rows_out = []
+        for i, r in enumerate(rows):
+            rb = _attach_bonus(r)
+            dbg = debug_rows[i] if i < len(debug_rows) else {}
+            try:
+                rb["details"] = _details(r, dbg, eng.cfg)
+            except Exception as e:  # noqa: BLE001 — детали не должны ломать ответ
+                LOG.warning("details failed for row %d: %s", i, e)
+            rows_out.append(rb)
+        xlsx_name = out_csv.with_suffix(".xlsx").name if (xlsx and out_csv.with_suffix(".xlsx").exists()) else None
         return {
             "job_id": job,
-            "summary": _summary(rows, eng.cfg),
+            "request_id": job,
+            "model_version": PIPELINE_VERSION,
+            "config_hash": _config_hash(eng.cfg),
+            "summary": {**_summary(rows, eng.cfg), "wall_time_s": round(time.perf_counter() - t_wall, 3),
+                        "n_studies": len({r.get("study_uid") for r in rows if r.get("study_uid")})},
             "format_check": "OK" if not problems else problems,
             "result_csv": out_csv.name,
-            "result_xlsx": out_csv.with_suffix(".xlsx").name if xlsx else None,
-            "rows": rows_with_bonus,
+            "result_debug_csv": out_csv.with_name(out_csv.stem + "_debug.csv").name,
+            "result_xlsx": xlsx_name,
+            "rows": rows_out,
             "csv": _rows_to_csv_text(rows, eng.cfg),
         }
     except HTTPException:
         raise
     except Exception as e:  # noqa: BLE001
         LOG.exception("analyze failed")
-        raise HTTPException(500, f"{type(e).__name__}: {e}")
+        raise HTTPException(500, f"Внутренняя ошибка обработки ({type(e).__name__}). Повторите попытку; если ошибка повторяется — сообщите администратору, код запроса {job}.")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

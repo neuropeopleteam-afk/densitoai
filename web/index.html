@@ -6,258 +6,442 @@
 <title>DensitoAI — контроль качества DXA</title>
 <style>
   :root {
-    --bg: #F7F6F2;
-    --surface: #FFFFFF;
-    --border: #D4D1CA;
-    --text: #28251D;
-    --text-muted: #7A7974;
-    --primary: #01696F;
-    --primary-hover: #0C4E54;
-    --error: #A12C7B;
-    --success: #437A22;
-    --warning: #964219;
+    --bg: #F7F6F2; --surface: #FFFFFF; --surface-alt: #FBFBF9; --border: #D4D1CA;
+    --text: #28251D; --text-muted: #7A7974; --text-faint: #BAB9B4;
+    --primary: #01696F; --primary-hover: #0C4E54; --primary-soft: #E6F1F2;
+    --error: #A12C7B; --error-soft: #FBE9F2; --success: #437A22; --success-soft: #E9F1E3;
+    --warning: #964219; --warning-soft: #F3E4D5;
   }
   * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: -apple-system, "Segoe UI", Arial, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.5;
-  }
-  header {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 20px 32px;
-  }
-  header h1 { margin: 0; font-size: 20px; font-weight: 700; }
-  header p { margin: 4px 0 0; color: var(--text-muted); font-size: 14px; }
-  main { max-width: 1000px; margin: 0 auto; padding: 32px 24px 80px; }
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 24px;
-    margin-bottom: 24px;
-  }
-  .card h2 { margin: 0 0 12px; font-size: 16px; font-weight: 700; }
-  .dropzone {
-    border: 2px dashed var(--border);
-    border-radius: 10px;
-    padding: 40px 20px;
-    text-align: center;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: border-color .15s, background .15s;
-  }
-  .dropzone.drag { border-color: var(--primary); background: #F0F7F7; }
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; font-size: 14px; }
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 18px; font-weight: 700; }
+  header p { margin: 2px 0 0; color: var(--text-muted); font-size: 13px; }
+  .chip { display: inline-block; font-size: 12px; color: var(--text-muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; background: var(--surface-alt); }
+  main { max-width: 1180px; margin: 0 auto; padding: 24px 24px 80px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin-bottom: 20px; }
+  .card h2 { margin: 0 0 12px; font-size: 15px; font-weight: 700; }
+  .note { background: #FFF7E8; border: 1px solid #E8D5A8; border-radius: 8px; padding: 10px 16px; font-size: 13px; color: #6B4A16; margin-bottom: 20px; }
+  .dropzone { border: 2px dashed var(--border); border-radius: 10px; padding: 28px 20px; text-align: center; color: var(--text-muted); cursor: pointer; transition: border-color .15s, background .15s; }
+  .dropzone.drag { border-color: var(--primary); background: var(--primary-soft); }
   .dropzone input { display: none; }
-  button {
-    background: var(--primary);
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 16px;
-  }
-  button:hover { background: var(--primary-hover); }
+  .dropzone .hint { font-size: 12px; color: var(--text-faint); margin-top: 4px; }
+  button, .btn { background: var(--primary); color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
+  button:hover, .btn:hover { background: var(--primary-hover); }
   button:disabled { background: var(--border); cursor: not-allowed; }
-  .filelist { margin-top: 12px; font-size: 13px; color: var(--text-muted); text-align: left; }
-  .row-card {
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px;
-    margin-bottom: 16px;
-    display: grid;
-    grid-template-columns: 340px 1fr;
-    gap: 20px;
-  }
-  .row-card img { width: 100%; border-radius: 6px; border: 1px solid var(--border); display:block; image-rendering: auto; }
+  .btn.secondary { background: var(--surface); color: var(--primary); border: 1px solid var(--primary); }
+  .btn.secondary:hover { background: var(--primary-soft); }
+  .btn.small { padding: 5px 12px; font-size: 13px; }
+  .actions { display: flex; gap: 10px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+  .filelist { margin-top: 10px; font-size: 13px; color: var(--text-muted); }
+  .progress { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 12px; display: none; }
+  .progress > div { height: 100%; width: 0; background: var(--primary); transition: width .2s; }
+  .progress.indeterminate > div { width: 30%; animation: slide 1.2s infinite ease-in-out; }
+  @keyframes slide { 0% { margin-left: -30%; } 100% { margin-left: 100%; } }
+  .status-line { font-size: 13px; color: var(--text-muted); margin-top: 8px; min-height: 18px; }
+  .status-line.error { color: var(--error); }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .kpi { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .kpi .v { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .kpi .l { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .kpi.viol .v { color: var(--error); } .kpi.ok .v { color: var(--success); } .kpi.fail .v { color: var(--warning); }
+  .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 14px 0 12px; }
+  .toolbar .sp { flex: 1; }
+  .fchip { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 999px; padding: 4px 12px; font-size: 13px; cursor: pointer; font-weight: 500; margin: 0; }
+  .fchip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .fchip .n { color: inherit; opacity: .75; margin-left: 4px; font-variant-numeric: tabular-nums; }
+  select, input[type=search] { border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 13px; background: var(--surface); color: var(--text); font-family: inherit; }
+  input[type=search] { min-width: 220px; }
+  label.cb { font-size: 13px; color: var(--text-muted); display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  .queue { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .qhead, .qrow { display: grid; grid-template-columns: 28px minmax(200px, 2fr) 170px minmax(180px, 2fr) 150px 190px; gap: 12px; align-items: center; padding: 8px 14px; }
+  .qhead { background: var(--surface-alt); font-size: 12px; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border); }
+  .qrow { border-bottom: 1px solid var(--border); cursor: pointer; background: var(--surface); }
+  .qrow:hover { background: var(--surface-alt); }
+  .qrow.selected { background: var(--primary-soft); }
+  .qrow:last-child { border-bottom: none; }
+  .qrow .fname { font-weight: 600; word-break: break-all; font-size: 13px; }
+  .qrow .sub { font-size: 12px; color: var(--text-muted); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .dot.ok { background: var(--success); } .dot.violation { background: var(--error); } .dot.fail { background: var(--warning); }
+  .risk { display: flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; font-size: 13px; }
+  .risk .bar { flex: 1; height: 6px; background: var(--border); border-radius: 3px; position: relative; overflow: hidden; }
+  .risk .bar > i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--primary); }
+  .risk.hot .bar > i { background: var(--error); }
+  .risk .bar > b { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--text-faint); }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .badge.ok { background: var(--success-soft); color: var(--success); }
+  .badge.violation { background: var(--error-soft); color: var(--error); }
+  .badge.fail { background: var(--warning-soft); color: var(--warning); }
+  .ghead { display: flex; align-items: center; gap: 12px; padding: 8px 14px; background: #F1F0EB; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .ghead .uid { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--text-muted); word-break: break-all; }
+  .ghead .sp { flex: 1; }
+  .detail { grid-column: 1 / -1; display: grid; grid-template-columns: 360px 1fr; gap: 20px; padding: 16px; background: var(--surface-alt); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); cursor: default; }
+  .detail img { width: 100%; border-radius: 6px; border: 1px solid var(--border); display: block; cursor: zoom-in; background: #111; }
   .imgcap { font-size: 12px; color: var(--text-muted); margin: 4px 0 10px; }
-  .links a { margin-right: 14px; }
-  .row-meta { font-size: 13px; }
-  .row-meta .fname { font-weight: 700; font-size: 14px; margin-bottom: 6px; word-break: break-all; }
-  .badge {
-    display: inline-block;
-    padding: 2px 10px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 700;
-    margin-bottom: 8px;
-  }
-  .badge.ok { background: #E9F1E3; color: var(--success); }
-  .badge.violation { background: #FBE9F2; color: var(--error); }
-  .badge.fail { background: #F3E4D5; color: var(--warning); }
-  .kv { display: grid; grid-template-columns: 140px 1fr; gap: 4px 8px; margin-top: 8px; }
+  .detail h3 { margin: 0 0 8px; font-size: 14px; }
+  .detail h4 { margin: 14px 0 6px; font-size: 13px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .02em; }
+  .action { border-radius: 8px; padding: 10px 14px; font-weight: 600; margin-bottom: 12px; }
+  .action.accept { background: var(--success-soft); color: var(--success); }
+  .action.review { background: var(--error-soft); color: var(--error); }
+  .action.manual { background: var(--warning-soft); color: var(--warning); }
+  table.crit { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.crit th, table.crit td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.crit th { color: var(--text-muted); font-weight: 600; font-size: 12px; }
+  table.crit td.num { font-variant-numeric: tabular-nums; text-align: right; }
+  table.crit th.num { text-align: right; }
+  table.crit tr.flag td { background: var(--error-soft); }
+  .meas { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px 16px; font-size: 13px; }
+  .meas div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dotted var(--border); padding: 3px 0; }
+  .meas span:first-child { color: var(--text-muted); }
+  .meas span:last-child { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .kv { display: grid; grid-template-columns: 150px 1fr; gap: 3px 10px; font-size: 13px; }
   .kv div:nth-child(odd) { color: var(--text-muted); }
-  .links { margin-top: 10px; font-size: 13px; }
-  .links a { color: var(--primary); text-decoration: none; }
-  .links a:hover { text-decoration: underline; }
-  .summary-bar { display: flex; gap: 24px; margin-bottom: 16px; font-size: 14px; }
-  .summary-bar b { font-size: 20px; display: block; }
-  .status-line { font-size: 13px; color: var(--text-muted); margin-top: 10px; }
+  .mono { font-family: ui-monospace, Consolas, monospace; font-size: 12px; word-break: break-all; }
+  .links { margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .warn { font-size: 12px; color: var(--warning); margin-top: 8px; }
+  .empty { padding: 30px; text-align: center; color: var(--text-muted); }
+  .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.88); display: none; align-items: center; justify-content: center; z-index: 50; cursor: zoom-out; }
+  .lightbox.open { display: flex; }
+  .lightbox img { max-width: 96vw; max-height: 96vh; image-rendering: auto; }
+  .hotkeys { font-size: 12px; color: var(--text-faint); margin-top: 10px; }
   footer { text-align: center; color: var(--text-muted); font-size: 12px; padding: 20px; }
-  .note {
-    background: #FFF7E8;
-    border: 1px solid #E8D5A8;
-    border-radius: 8px;
-    padding: 12px 16px;
-    font-size: 13px;
-    color: #6B4A16;
-    margin-bottom: 20px;
+  @media (max-width: 900px) {
+    .qhead { display: none; }
+    .qrow { grid-template-columns: 20px 1fr; }
+    .qrow > :nth-child(n+3) { grid-column: 2; }
+    .detail { grid-template-columns: 1fr; }
   }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>DensitoAI — автоматический контроль качества DXA-снимков</h1>
-  <p>Двухконтурная система (геометрия + эмбеддинги) · ЛЦТ 2026 · Департамент здравоохранения</p>
+  <div>
+    <h1>DensitoAI — контроль качества DXA-снимков</h1>
+    <p>Кабинет рентгенолога и лаборанта · двухконтурная система (геометрия + эмбеддинги) · ЛЦТ 2026</p>
+  </div>
+  <div id="versionChip"></div>
 </header>
 
 <main>
   <div class="note">
-    Это рабочее демо для экспертной/врачебной проверки решения. Загрузите один или несколько
-    DICOM-файлов (или zip-архив исследования) — система определит анатомическую область,
-    оценит качество укладки и покажет объяснимую визуализацию найденных признаков (ось позвоночника,
-    контур кости и диафиза, границы области интереса, посторонние предметы), а также предложит
-    исправленную область интереса, когда это требуется. Каждый результат можно скачать как DICOM SR.
-    Обработка полностью локальная, снимки никуда не передаются за пределы сервера.
+    Загрузите DICOM-файлы или zip-архив исследования. Система определит область (поясничный отдел / бедро),
+    оценит укладку, ось, посторонние предметы и область интереса, отсортирует снимки по риску и для каждого
+    покажет карточку решения: какие измерения выполнены, какой скор по каждому критерию и какой порог, что рекомендуется
+    сделать. Обработка полностью на сервере, снимки никуда не передаются.
   </div>
 
   <div class="card">
     <h2>Загрузка снимков</h2>
     <div class="dropzone" id="dropzone">
       <div>Перетащите .dcm / .zip файлы сюда или нажмите, чтобы выбрать</div>
+      <div class="hint">Можно выбрать сразу целую партию — результат будет отсортирован по риску</div>
       <input type="file" id="fileInput" multiple accept=".dcm,.zip,application/dicom,application/zip">
     </div>
     <div class="filelist" id="fileList"></div>
-    <button id="analyzeBtn" disabled>Проанализировать</button>
+    <div class="progress" id="progress"><div></div></div>
+    <div class="actions">
+      <button id="analyzeBtn" disabled>Проанализировать</button>
+      <button id="clearBtn" class="btn secondary" style="display:none">Очистить</button>
+    </div>
     <div class="status-line" id="statusLine"></div>
   </div>
 
   <div id="results"></div>
 </main>
 
+<div class="lightbox" id="lightbox"><img alt=""></div>
+
 <footer>DensitoAI · система оценки качества DXA-снимков для ЛЦТ 2026</footer>
 
 <script>
+'use strict';
+// ---------- утилиты (весь пользовательский текст — только через textContent) ----------
+function el(tag, attrs, children) {
+  const n = document.createElement(tag);
+  if (attrs) for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') n.className = v;
+    else if (k === 'text') n.textContent = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else if (v !== null && v !== undefined) n.setAttribute(k, v);
+  }
+  (children || []).forEach(c => { if (c === null || c === undefined) return; n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+  return n;
+}
+const fmt = (v, d = 3) => (v === null || v === undefined || v === '' || Number.isNaN(Number(v))) ? '—' : Number(v).toFixed(d);
+const REGION_SHORT = { 'Поясничный отдел позвоночника': 'Позвоночник', 'Проксимальный отдел бедра': 'Бедро' };
+const SIDE = { spine: '', right_hip: 'правое', left_hip: 'левое' };
+function regionSource(s) {
+  s = String(s || '');
+  const base = s.split('+')[0], extra = s.split('+').slice(1);
+  const BASE = { filename: 'по имени файла', dicom_tags: 'по DICOM-тегам', dims: 'по размеру кадра', content_fallback: 'классификатором по содержимому', fallback: 'не определена, значение по умолчанию' };
+  const SIDE_SRC = { laterality: 'сторона из тега Laterality', anatomy: 'сторона по анатомии', density: 'сторона по плотности' };
+  let out = BASE[base.split(':')[0]] || base;
+  if (base.includes(':')) out += ` (${base.split(':')[1]})`;
+  extra.forEach(x => { out += ', ' + (SIDE_SRC[x] || x); });
+  return out;
+}
+function rowState(r) { return r.processing_status !== 'Success' ? 'fail' : (String(r.quality_class) === '1' ? 'violation' : 'ok'); }
+const STATE_TEXT = { ok: 'Норма', violation: 'Нарушение', fail: 'Ошибка обработки' };
+function humanError(status, bodyText) {
+  let detail = '';
+  try { const j = JSON.parse(bodyText); detail = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail || j); } catch (e) { detail = (bodyText || '').slice(0, 300); }
+  if (status === 0) return 'Сервер недоступен: проверьте соединение и повторите.';
+  if (status === 401 || status === 403) return 'Нет доступа (авторизация). Обновите страницу и войдите заново.';
+  if (status === 413) return detail || 'Слишком большой объём загрузки. Разбейте партию на части.';
+  if (status === 422) return 'Сервер не принял запрос: ' + (detail || 'проверьте, что выбраны файлы .dcm или .zip.');
+  if (status === 504 || status === 502) return 'Сервер обрабатывает слишком долго или перезапускается. Подождите минуту и повторите.';
+  if (status >= 500) return detail || 'Внутренняя ошибка сервера. Повторите попытку.';
+  return detail || ('Ошибка HTTP ' + status);
+}
+
+// ---------- загрузка ----------
 const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('fileInput');
 const fileList = document.getElementById('fileList');
 const analyzeBtn = document.getElementById('analyzeBtn');
+const clearBtn = document.getElementById('clearBtn');
 const statusLine = document.getElementById('statusLine');
+const progress = document.getElementById('progress');
+const progressBar = progress.firstElementChild;
 const resultsEl = document.getElementById('results');
+const versionChip = document.getElementById('versionChip');
 let selectedFiles = [];
+let timer = null;
 
 dropzone.addEventListener('click', () => fileInput.click());
 dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
 dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
-dropzone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropzone.classList.remove('drag');
-  setFiles(e.dataTransfer.files);
-});
+dropzone.addEventListener('drop', e => { e.preventDefault(); dropzone.classList.remove('drag'); setFiles(e.dataTransfer.files); });
 fileInput.addEventListener('change', () => setFiles(fileInput.files));
+clearBtn.addEventListener('click', () => { selectedFiles = []; fileInput.value = ''; fileList.textContent = ''; analyzeBtn.disabled = true; clearBtn.style.display = 'none'; statusLine.textContent = ''; resultsEl.textContent = ''; });
 
 function setFiles(files) {
-  selectedFiles = Array.from(files);
+  selectedFiles = Array.from(files).filter(f => /\.(dcm|dicom|zip)$/i.test(f.name) || f.type.includes('dicom') || f.type.includes('zip') || !/\./.test(f.name));
+  const skipped = files.length - selectedFiles.length;
+  const size = selectedFiles.reduce((s, f) => s + f.size, 0) / 1048576;
   fileList.textContent = selectedFiles.length
-    ? selectedFiles.map(f => f.name).join(', ')
-    : '';
+    ? `Выбрано ${selectedFiles.length} файл(ов), ${size >= 1 ? size.toFixed(1) + ' МБ' : Math.max(1, Math.round(size * 1024)) + ' КБ'}` + (skipped ? ` · пропущено ${skipped} (не .dcm/.zip)` : '') + ': ' + selectedFiles.slice(0, 8).map(f => f.name).join(', ') + (selectedFiles.length > 8 ? ' …' : '')
+    : (skipped ? 'Подходящих файлов нет: нужны .dcm или .zip' : '');
   analyzeBtn.disabled = selectedFiles.length === 0;
+  clearBtn.style.display = selectedFiles.length ? '' : 'none';
 }
 
-analyzeBtn.addEventListener('click', async () => {
+analyzeBtn.addEventListener('click', () => {
   if (!selectedFiles.length) return;
-  analyzeBtn.disabled = true;
-  statusLine.textContent = 'Обработка… (первый запуск может занять до минуты — прогрев модели)';
-  resultsEl.innerHTML = '';
+  analyzeBtn.disabled = true; clearBtn.disabled = true;
+  statusLine.className = 'status-line';
+  resultsEl.textContent = '';
+  progress.style.display = 'block'; progress.classList.remove('indeterminate'); progressBar.style.width = '0%';
 
   const form = new FormData();
   selectedFiles.forEach(f => form.append('files', f));
-
-  try {
-    const resp = await fetch('/api/analyze', { method: 'POST', body: form });
-    if (!resp.ok) {
-      const txt = await resp.text();
-      throw new Error(`HTTP ${resp.status}: ${txt}`);
-    }
-    const data = await resp.json();
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/analyze?xlsx=true');
+  xhr.timeout = 15 * 60 * 1000;
+  const t0 = performance.now();
+  xhr.upload.onprogress = e => {
+    if (e.lengthComputable) { const p = Math.round(e.loaded / e.total * 100); progressBar.style.width = p + '%'; statusLine.textContent = `Загрузка на сервер: ${p} %`; }
+  };
+  xhr.upload.onload = () => {
+    progress.classList.add('indeterminate');
+    const n = selectedFiles.length;
+    timer = setInterval(() => {
+      const s = Math.round((performance.now() - t0) / 1000);
+      statusLine.textContent = `Обработка ${n} файл(ов)… ${s} с` + (s < 5 ? ' (первый запуск — прогрев модели до минуты)' : '');
+    }, 500);
+  };
+  const finish = () => { clearInterval(timer); timer = null; progress.style.display = 'none'; analyzeBtn.disabled = false; clearBtn.disabled = false; };
+  xhr.onerror = () => { finish(); statusLine.className = 'status-line error'; statusLine.textContent = humanError(0, ''); };
+  xhr.ontimeout = () => { finish(); statusLine.className = 'status-line error'; statusLine.textContent = 'Превышено время ожидания ответа сервера (15 мин). Попробуйте меньшую партию.'; };
+  xhr.onload = () => {
+    finish();
+    if (xhr.status < 200 || xhr.status >= 300) { statusLine.className = 'status-line error'; statusLine.textContent = humanError(xhr.status, xhr.responseText); return; }
+    let data;
+    try { data = JSON.parse(xhr.responseText); } catch (e) { statusLine.className = 'status-line error'; statusLine.textContent = 'Сервер вернул некорректный ответ.'; return; }
     renderResults(data);
-    statusLine.textContent = `Готово: ${data.summary.n_files} файл(ов), ` +
-      `${data.summary.n_violations} с нарушением, ${data.summary.n_failures} ошибок обработки. ` +
-      `Проверка формата: ${data.format_check === 'OK' ? 'OK' : JSON.stringify(data.format_check)}. `;
-    if (data.result_csv) {
-      const a = document.createElement('a'); a.href = `/api/results/${data.result_csv}`; a.textContent = 'Скачать CSV результата'; a.target = '_blank';
-      statusLine.appendChild(a);
-    }
-  } catch (err) {
-    statusLine.textContent = 'Ошибка: ' + err.message;
-  } finally {
-    analyzeBtn.disabled = false;
-  }
+    const s = data.summary || {};
+    statusLine.textContent = `Готово за ${fmt(s.wall_time_s, 1)} с: ${s.n_files} файл(ов), ${s.n_violations} с нарушением, ${s.n_failures} ошибок обработки. Проверка формата: ${data.format_check === 'OK' ? 'OK' : JSON.stringify(data.format_check)}`;
+    versionChip.textContent = '';
+    versionChip.appendChild(el('span', { class: 'chip', text: `модель ${data.model_version || ''} · конфиг ${data.config_hash || ''} · запрос ${data.request_id || ''}` }));
+  };
+  xhr.send(form);
 });
 
+// ---------- результаты ----------
+const state = { rows: [], filter: 'all', region: 'all', q: '', sort: 'risk', group: true, selected: null };
+
 function renderResults(data) {
-  const rows = data.rows || [];
-  if (!rows.length) {
-    resultsEl.innerHTML = '<div class="card">Нет строк результата.</div>';
-    return;
-  }
-  const card = document.createElement('div');
-  card.className = 'card';
-  card.innerHTML = '<h2>Результаты</h2>';
+  state.rows = (data.rows || []).map((r, i) => Object.assign({ _i: i, _state: rowState(r) }, r));
+  state.selected = null;
+  resultsEl.textContent = '';
+  if (!state.rows.length) { resultsEl.appendChild(el('div', { class: 'card', text: 'Нет строк результата.' })); return; }
+  const s = data.summary || {};
+  const n = state.rows.length;
+  const nv = state.rows.filter(r => r._state === 'violation').length;
+  const nf = state.rows.filter(r => r._state === 'fail').length;
+  const nStudies = s.n_studies ?? new Set(state.rows.map(r => r.study_uid)).size;
 
-  rows.forEach(row => {
-    const wrap = document.createElement('div');
-    wrap.className = 'row-card';
+  const card = el('div', { class: 'card' });
+  card.appendChild(el('h2', { text: 'Результаты партии' }));
+  card.appendChild(el('div', { class: 'kpis' }, [
+    kpi(n, 'файлов'), kpi(nStudies, 'исследований'),
+    kpi(nv, `с нарушениями · ${n ? Math.round(nv / n * 100) : 0} %`, 'viol'),
+    kpi(n - nv - nf, 'норма', 'ok'), kpi(nf, 'ошибок обработки', 'fail'),
+    kpi(fmt(s.total_processing_time_s, 1) + ' с', `время модели · ${fmt((s.total_processing_time_s || 0) / Math.max(n, 1), 2)} с/файл`),
+  ]));
+  const dl = el('div', { class: 'actions', style: 'margin-top:0' });
+  if (data.result_csv) dl.appendChild(el('a', { class: 'btn small', href: '/api/results/' + encodeURIComponent(data.result_csv), target: '_blank', text: 'Скачать CSV (официальный формат)' }));
+  if (data.result_xlsx) dl.appendChild(el('a', { class: 'btn small secondary', href: '/api/results/' + encodeURIComponent(data.result_xlsx), target: '_blank', text: 'Скачать XLSX (сводка, по исследованиям)' }));
+  if (data.result_debug_csv) dl.appendChild(el('a', { class: 'btn small secondary', href: '/api/results/' + encodeURIComponent(data.result_debug_csv), target: '_blank', text: 'Технический CSV (признаки и скоры)' }));
+  card.appendChild(dl);
 
-    const isFail = row.processing_status !== 'Success';
-    const hasViolation = String(row.quality_class) === '1';
-    const badgeClass = isFail ? 'fail' : (hasViolation ? 'violation' : 'ok');
-    const badgeText = isFail ? 'Ошибка обработки' : (hasViolation ? 'Нарушение найдено' : 'Качество ОК');
+  // панель фильтров
+  const tb = el('div', { class: 'toolbar' });
+  const chips = [['all', 'Все', n], ['violation', 'Нарушения', nv], ['ok', 'Норма', n - nv - nf], ['fail', 'Ошибки', nf]];
+  chips.forEach(([k, t, c]) => tb.appendChild(el('button', { class: 'fchip' + (state.filter === k ? ' active' : ''), 'data-f': k, onclick: () => { state.filter = k; refresh(); } }, [t, el('span', { class: 'n', text: String(c) })])));
+  const regSel = el('select', { onchange: e => { state.region = e.target.value; refresh(); } }, [
+    el('option', { value: 'all', text: 'Все области' }), el('option', { value: 'Поясничный отдел позвоночника', text: 'Позвоночник' }), el('option', { value: 'Проксимальный отдел бедра', text: 'Бедро' })]);
+  tb.appendChild(regSel);
+  tb.appendChild(el('span', { class: 'sp' }));
+  tb.appendChild(el('input', { type: 'search', placeholder: 'Поиск: файл, study_uid, нарушение', oninput: e => { state.q = e.target.value.trim().toLowerCase(); refresh(); } }));
+  tb.appendChild(el('select', { onchange: e => { state.sort = e.target.value; refresh(); } }, [
+    el('option', { value: 'risk', text: 'Сначала высокий риск' }), el('option', { value: 'name', text: 'По имени файла' }), el('option', { value: 'time', text: 'По времени обработки' })]));
+  const cb = el('input', { type: 'checkbox', onchange: e => { state.group = e.target.checked; refresh(); } }); cb.checked = state.group;
+  tb.appendChild(el('label', { class: 'cb' }, [cb, 'группировать по исследованию']));
+  card.appendChild(tb);
 
-    let imgHtml = '';
-    if (row.bonus_overlay_png_base64) {
-      imgHtml += `<img src="data:image/png;base64,${row.bonus_overlay_png_base64}" alt="overlay">` +
-                 `<div class="imgcap">Визуализация признаков (кликните для увеличения)</div>`;
-    }
-    if (row.bonus_roi_png_base64) {
-      imgHtml += `<img src="data:image/png;base64,${row.bonus_roi_png_base64}" alt="roi">` +
-                 `<div class="imgcap">Рекомендуемая коррекция области интереса</div>`;
-    }
-    if (!imgHtml) imgHtml = '<div style="color:#7A7974;font-size:13px;padding:40px 0;text-align:center;">Визуализация недоступна</div>';
-
-    let links = '';
-    if (row.bonus_sr_dcm_download) {
-      links += `<a href="${row.bonus_sr_dcm_download}" target="_blank">Скачать DICOM SR</a>`;
-    }
-
-    wrap.innerHTML = `
-      <div>${imgHtml}</div>
-      <div class="row-meta">
-        <div class="fname">${row.path_to_study || ''}</div>
-        <span class="badge ${badgeClass}">${badgeText}</span>
-        <div class="kv">
-          <div>Область</div><div>${row.anatomical_region || '—'}</div>
-          <div>Нарушение</div><div>${row.violation_type || '—'}</div>
-          <div>quality_prob</div><div>${row.quality_prob !== undefined ? Number(row.quality_prob).toFixed(3) : '—'}</div>
-          <div>Статус</div><div>${row.processing_status || '—'}</div>
-          <div>Время, с</div><div>${row.time_of_processing !== undefined ? row.time_of_processing : '—'}</div>
-        </div>
-        <div class="links">${links}</div>
-      </div>
-    `;
-    wrap.querySelectorAll('img').forEach(im => { im.style.cursor='zoom-in'; im.addEventListener('click', () => { const w = window.open(''); w.document.write(`<body style="margin:0;background:#111"><img src="${im.src}" style="height:100vh;display:block;margin:auto"></body>`); }); });
-    card.appendChild(wrap);
-  });
-
+  const queue = el('div', { class: 'queue', id: 'queue' });
+  card.appendChild(queue);
+  card.appendChild(el('div', { class: 'hotkeys', text: 'Клавиши: ↓/↑ — переход по снимкам, Enter — открыть/закрыть карточку, Esc — закрыть просмотр' }));
   resultsEl.appendChild(card);
+  refresh();
 }
+
+function kpi(v, l, cls) { return el('div', { class: 'kpi ' + (cls || '') }, [el('div', { class: 'v', text: String(v) }), el('div', { class: 'l', text: l })]); }
+
+function visibleRows() {
+  let rows = state.rows.filter(r => state.filter === 'all' || r._state === state.filter);
+  if (state.region !== 'all') rows = rows.filter(r => r.anatomical_region === state.region);
+  if (state.q) rows = rows.filter(r => [r.path_to_study, r.study_uid, r.image_uid, r.violation_type, r.anatomical_region].join(' ').toLowerCase().includes(state.q));
+  const key = { risk: r => -(Number(r.quality_prob) || 0) - (r._state === 'fail' ? 2 : 0), name: r => String(r.path_to_study || ''), time: r => -(Number(r.time_of_processing) || 0) }[state.sort];
+  rows.sort((a, b) => { const ka = key(a), kb = key(b); return ka < kb ? -1 : ka > kb ? 1 : a._i - b._i; });
+  return rows;
+}
+
+function refresh() {
+  document.querySelectorAll('.fchip').forEach(c => c.classList.toggle('active', c.dataset.f === state.filter));
+  const queue = document.getElementById('queue');
+  if (!queue) return;
+  queue.textContent = '';
+  const rows = visibleRows();
+  if (!rows.length) { queue.appendChild(el('div', { class: 'empty', text: 'Под выбранные фильтры ничего не попало.' })); return; }
+  queue.appendChild(el('div', { class: 'qhead' }, ['', 'Файл', 'Область', 'Нарушения', 'quality_prob', 'Решение'].map(t => el('div', { text: t }))));
+  if (state.group) {
+    const groups = new Map();
+    rows.forEach(r => { const k = r.study_uid || '—'; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r); });
+    for (const [uid, rs] of groups) {
+      const nv = rs.filter(r => r._state === 'violation').length, nf = rs.filter(r => r._state === 'fail').length;
+      const gh = el('div', { class: 'ghead' }, [
+        el('span', { class: 'dot ' + (nf ? 'fail' : nv ? 'violation' : 'ok') }),
+        el('span', { text: `Исследование · ${rs.length} снимк.` }),
+        el('span', { class: 'uid', text: uid }),
+        el('span', { class: 'sp' }),
+        el('span', { class: 'badge ' + (nv ? 'violation' : 'ok'), text: nv ? `${nv} с нарушением` : 'все в норме' }),
+      ]);
+      queue.appendChild(gh);
+      rs.forEach(r => queue.appendChild(queueRow(r)));
+    }
+  } else rows.forEach(r => queue.appendChild(queueRow(r)));
+}
+
+function queueRow(r) {
+  const p = Number(r.quality_prob) || 0;
+  const d = r.details || {};
+  const side = SIDE[d.internal_region] ? ` (${SIDE[d.internal_region]})` : '';
+  const viol = (r.violation_type || '').split(';').map(s => s.trim()).filter(Boolean);
+  const row = el('div', { class: 'qrow' + (state.selected === r._i ? ' selected' : ''), 'data-i': r._i, tabindex: '0',
+    onclick: () => toggle(r._i), onkeydown: e => { if (e.key === 'Enter') { e.preventDefault(); toggle(r._i); } } }, [
+    el('span', { class: 'dot ' + r._state }),
+    el('div', {}, [el('div', { class: 'fname', text: r.path_to_study || '—' }), el('div', { class: 'sub', text: `${fmt(r.time_of_processing, 2)} с · ${d.image_size ? d.image_size.join('×') : ''}` })]),
+    el('div', { text: (REGION_SHORT[r.anatomical_region] || r.anatomical_region || '—') + side }),
+    el('div', {}, viol.length ? viol.map(v => el('div', { text: v })) : [el('span', { class: 'sub', text: r._state === 'fail' ? (d.error || 'файл не обработан') : '—' })]),
+    el('div', { class: 'risk' + (p >= 0.5 ? ' hot' : '') }, [el('span', { class: 'bar' }, [el('i', { style: `width:${Math.round(p * 100)}%` }), el('b')]), el('span', { text: fmt(p) })]),
+    el('div', {}, [el('span', { class: 'badge ' + r._state, text: STATE_TEXT[r._state] })]),
+  ]);
+  if (state.selected === r._i) row.appendChild(detailPanel(r));
+  return row;
+}
+
+function toggle(i) { state.selected = state.selected === i ? null : i; refresh(); const s = document.querySelector('.qrow.selected'); if (s) s.focus({ preventScroll: true }); }
+
+function detailPanel(r) {
+  const d = r.details || {};
+  const left = el('div');
+  if (r.bonus_overlay_png_base64) { left.appendChild(el('img', { src: 'data:image/png;base64,' + r.bonus_overlay_png_base64, alt: 'визуализация признаков', onclick: e => { e.stopPropagation(); openLightbox(e.target.src); } })); left.appendChild(el('div', { class: 'imgcap', text: 'Визуализация признаков: ось, контур кости, границы области интереса, посторонние предметы. Клик — увеличить.' })); }
+  if (r.bonus_roi_png_base64) { left.appendChild(el('img', { src: 'data:image/png;base64,' + r.bonus_roi_png_base64, alt: 'коррекция области интереса', onclick: e => { e.stopPropagation(); openLightbox(e.target.src); } })); left.appendChild(el('div', { class: 'imgcap', text: 'Рекомендуемая коррекция области интереса' })); }
+  if (!left.childNodes.length) left.appendChild(el('div', { class: 'empty', text: 'Визуализация недоступна' }));
+
+  const right = el('div', { onclick: e => e.stopPropagation() });
+  right.appendChild(el('h3', { text: 'Карточка решения' }));
+  if (d.action) right.appendChild(el('div', { class: 'action ' + (d.action_code || ''), text: d.action }));
+  const kv = el('div', { class: 'kv' });
+  const kvAdd = (k, v, mono) => { kv.appendChild(el('div', { text: k })); kv.appendChild(el('div', { class: mono ? 'mono' : '', text: v })); };
+  kvAdd('Область', (r.anatomical_region || '—') + (SIDE[d.internal_region] ? `, ${SIDE[d.internal_region]} бедро` : '') + (d.region_source ? ` · определена: ${regionSource(d.region_source)}` : ''));
+  kvAdd('Нарушения', r.violation_type || 'не выявлены');
+  kvAdd('quality_prob', fmt(r.quality_prob) + (d.quality_prob_raw !== null && d.quality_prob_raw !== undefined && Math.abs(d.quality_prob_raw - r.quality_prob) > 0.0005 ? ` (до согласования с классом: ${fmt(d.quality_prob_raw)})` : ''));
+  kvAdd('Статус', r.processing_status || '—');
+  kvAdd('study_uid', r.study_uid || '—', true);
+  kvAdd('image_uid', r.image_uid || '—', true);
+  right.appendChild(kv);
+
+  if (d.criteria && d.criteria.length) {
+    right.appendChild(el('h4', { text: 'Критерии' }));
+    const t = el('table', { class: 'crit' });
+    t.appendChild(el('thead', {}, [el('tr', {}, [el('th', { text: 'Критерий' }), el('th', { class: 'num', text: 'Скор' }), el('th', { class: 'num', text: 'Порог' }), el('th', { text: 'Решение' }), el('th', { text: 'Источник' })])]));
+    const tb = el('tbody');
+    d.criteria.forEach(c => {
+      const METHOD = { stacked_rank_avg: 'геометрия + эмбеддинг', geom_only: 'геометрия', emb_only: 'эмбеддинг', fallback_rule: 'резервное правило' };
+      const src = METHOD[c.method] || c.method || '—';
+      const parts = []; if (c.p_geom !== null && c.p_geom !== undefined) parts.push(`геом. ${fmt(c.p_geom, 2)}`); if (c.p_emb !== null && c.p_emb !== undefined) parts.push(`эмб. ${fmt(c.p_emb, 2)}`);
+      tb.appendChild(el('tr', { class: c.flag ? 'flag' : '' }, [
+        el('td', {}, [el('div', { text: c.title }), el('div', { class: 'sub', style: 'font-size:12px;color:var(--text-muted)', text: c.violation })]),
+        el('td', { class: 'num', text: fmt(c.score) }), el('td', { class: 'num', text: fmt(c.threshold) }),
+        el('td', { text: c.flag ? 'нарушение' : 'норма' }),
+        el('td', {}, [el('div', { text: src }), parts.length ? el('div', { class: 'sub', style: 'font-size:12px;color:var(--text-muted)', text: parts.join(' · ') }) : null]),
+      ]));
+    });
+    t.appendChild(tb); right.appendChild(t);
+  }
+  if (d.measurements && d.measurements.length) {
+    right.appendChild(el('h4', { text: 'Измерения' }));
+    right.appendChild(el('div', { class: 'meas' }, d.measurements.map(m => el('div', {}, [el('span', { text: m.title }), el('span', { text: `${m.value} ${m.unit}`.trim() })]))));
+  }
+  if (d.roi && d.roi.needs_correction) right.appendChild(el('div', { class: 'warn', text: 'Область интереса: ' + (d.roi.reason || 'требуется коррекция') + (d.roi.deficit_mm ? `, не хватает ~${Math.round(d.roi.deficit_mm)} мм` : '') }));
+  if (d.warnings) right.appendChild(el('div', { class: 'warn', text: 'Предупреждения обработки: ' + d.warnings }));
+  if (d.error) right.appendChild(el('div', { class: 'warn', text: 'Ошибка: ' + d.error }));
+  const links = el('div', { class: 'links' });
+  if (r.bonus_sr_dcm_download) links.appendChild(el('a', { class: 'btn small secondary', href: r.bonus_sr_dcm_download, target: '_blank', text: 'Скачать DICOM SR' }));
+  if (r.bonus_overlay_png_base64) links.appendChild(el('a', { class: 'btn small secondary', href: 'data:image/png;base64,' + r.bonus_overlay_png_base64, download: (r.path_to_study || 'overlay').replace(/[^\w.-]+/g, '_') + '_overlay.png', text: 'Сохранить визуализацию PNG' }));
+  if (links.childNodes.length) right.appendChild(links);
+  return el('div', { class: 'detail' }, [left, right]);
+}
+
+// ---------- просмотр изображения и клавиши ----------
+const lightbox = document.getElementById('lightbox');
+function openLightbox(src) { lightbox.querySelector('img').src = src; lightbox.classList.add('open'); }
+lightbox.addEventListener('click', () => lightbox.classList.remove('open'));
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { lightbox.classList.remove('open'); return; }
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+  const rows = visibleRows(); if (!rows.length) return;
+  const idx = rows.findIndex(r => r._i === state.selected);
+  const next = e.key === 'ArrowDown' ? Math.min(rows.length - 1, idx + 1) : Math.max(0, idx - 1);
+  e.preventDefault(); state.selected = rows[next]._i; refresh();
+  const s = document.querySelector('.qrow.selected'); if (s) { s.focus({ preventScroll: true }); s.scrollIntoView({ block: 'nearest' }); }
+});
 </script>
 </body>
 </html>

@@ -196,15 +196,74 @@ def is_dicom_candidate(path: Path) -> bool:
     return False
 
 
-def discover_files(input_path: Path, tmp_holder: List[Path]) -> Tuple[Path, List[Path]]:
+def _fix_zip_name(zi: "zipfile.ZipInfo") -> str:
+    """Имена в zip без флага UTF-8 Python декодирует как cp437; архивы с Windows с русскими
+    именами обычно в cp866 (иногда cp1251). Восстанавливаем читаемое имя."""
+    if zi.flag_bits & 0x800:
+        return zi.filename
+    raw = zi.filename.encode("cp437", errors="replace")
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError:
+        pass
+
+    def _score(txt: str) -> int:  # больше — правдоподобнее: кириллица/латиница хорошо, псевдографика плохо
+        good = sum(1 for ch in txt if ch.isalnum() or ch in " _-./()")
+        bad = sum(1 for ch in txt if 0x2500 <= ord(ch) <= 0x25FF or ord(ch) < 32)
+        return good - 3 * bad
+
+    best = zi.filename
+    best_score = _score(best) - 1
+    for enc in ("cp866", "cp1251"):
+        try:
+            cand = raw.decode(enc)
+        except UnicodeDecodeError:
+            continue
+        sc = _score(cand)
+        if sc > best_score:
+            best, best_score = cand, sc
+    return best
+
+
+def safe_extract_zip(zip_path: Path, dest: Path) -> List[Tuple[Path, str]]:
+    """Безопасная распаковка: нормализуем кодировку имён, отбрасываем абсолютные пути и
+    `..` (zip-slip), служебные каталоги __MACOSX. Возвращает [(файл на диске, путь внутри архива)]."""
+    out: List[Tuple[Path, str]] = []
+    dest = dest.resolve()
+    with zipfile.ZipFile(zip_path) as zf:
+        for zi in zf.infolist():
+            if zi.is_dir():
+                continue
+            name = _fix_zip_name(zi).replace("\\", "/")
+            parts = [p for p in name.split("/") if p not in ("", ".", "..")]
+            if not parts or parts[0] == "__MACOSX" or parts[-1] == ".DS_Store":
+                continue
+            rel = "/".join(parts)
+            target = (dest / Path(*parts)).resolve()
+            if dest not in target.parents:
+                LOG.warning("Zip entry skipped (path escapes destination): %r", zi.filename)
+                continue
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with zf.open(zi) as src, open(target, "wb") as dst:
+                shutil.copyfileobj(src, dst)
+            out.append((target, rel))
+    return out
+
+
+def discover_files(input_path: Path, tmp_holder: List[Path],
+                   display: Optional[Dict[Path, str]] = None) -> Tuple[Path, List[Path]]:
     """Возвращает (корень, отсортированный список DICOM-кандидатов).
-    Поддерживает папку, одиночный файл и zip-архив (распаковка во временную папку)."""
+    Поддерживает папку, одиночный файл и zip-архив (распаковка во временную папку).
+    В `display` (если передан) складывает отображаемый путь для файлов из архивов:
+    `<путь архива относительно корня>/<путь внутри архива>` (для входного zip — только
+    путь внутри архива), чтобы path_to_study не содержал временных каталогов."""
     input_path = Path(input_path)
+    display = display if display is not None else {}
     if input_path.is_file() and input_path.suffix.lower() == ".zip":
         tmp_dir = Path(tempfile.mkdtemp(prefix="densito_in_"))
         tmp_holder.append(tmp_dir)
-        with zipfile.ZipFile(input_path) as zf:
-            zf.extractall(tmp_dir)
+        for target, rel in safe_extract_zip(input_path, tmp_dir):
+            display[target.resolve()] = rel
         LOG.info("Archive %s extracted to %s", input_path, tmp_dir)
         root = tmp_dir
     elif input_path.is_file():
@@ -219,8 +278,13 @@ def discover_files(input_path: Path, tmp_holder: List[Path]) -> Tuple[Path, List
         try:
             sub = Path(tempfile.mkdtemp(prefix="densito_in_"))
             tmp_holder.append(sub)
-            with zipfile.ZipFile(z) as zf:
-                zf.extractall(sub)
+            try:
+                z_rel = str(z.resolve().relative_to(root.resolve()))
+            except ValueError:
+                z_rel = z.name
+            extracted = safe_extract_zip(z, sub)
+            for target, rel in extracted:
+                display[target.resolve()] = f"{z_rel}/{rel}"
             files += [p for p in sorted(sub.rglob("*")) if p.is_file() and is_dicom_candidate(p)]
         except Exception as e:  # noqa: BLE001
             LOG.warning("Nested archive %s skipped: %s", z, e)
@@ -981,6 +1045,9 @@ class DensitoInference:
                 return path.name
             if mode == "absolute" or root is None:
                 return str(path.resolve())
+            shown = getattr(self, "_display_paths", {}).get(path.resolve())
+            if shown:
+                return shown
             return str(path.resolve().relative_to(Path(root).resolve()))
         except Exception:  # noqa: BLE001
             return str(path)
@@ -1002,7 +1069,8 @@ class DensitoInference:
         rows: List[Dict[str, Any]] = []
         debug_rows: List[Dict[str, Any]] = []
         try:
-            root, files = discover_files(Path(input_path), tmp_dirs)
+            self._display_paths: Dict[Path, str] = {}
+            root, files = discover_files(Path(input_path), tmp_dirs, self._display_paths)
             if limit:
                 files = files[:limit]
             LOG.info("Found %d DICOM candidate files under %s", len(files), input_path)
@@ -1021,6 +1089,7 @@ class DensitoInference:
                 shutil.rmtree(d, ignore_errors=True)
 
         write_results(rows, Path(output_csv), self.cfg, xlsx=xlsx)
+        self.last_debug_rows = debug_rows  # для API: детали по критериям без повторного чтения CSV
         if debug_csv:
             write_debug(debug_rows, Path(debug_csv))
         n_fail = sum(1 for r in rows if r["processing_status"] == self.cfg["output"]["status_failure"])
@@ -1049,12 +1118,122 @@ def write_results(rows: List[Dict[str, Any]], output_csv: Path, cfg: Dict[str, A
     os.replace(tmp, output_csv)  # атомарная запись
     if xlsx:
         try:
-            import pandas as pd
             xlsx_path = output_csv.with_suffix(".xlsx")
-            pd.DataFrame(rows, columns=cols).to_excel(xlsx_path, index=False)
+            write_xlsx(rows, xlsx_path, cfg)
             LOG.info("XLSX written: %s", xlsx_path)
         except Exception as e:  # noqa: BLE001
             LOG.warning("XLSX not written (%s); CSV is the primary artifact", e)
+
+
+def write_xlsx(rows: List[Dict[str, Any]], xlsx_path: Path, cfg: Dict[str, Any]) -> None:
+    """XLSX для человека: лист «Результаты» с теми же колонками, что и CSV (закреплённая
+    шапка, автофильтр, подсветка нарушений и сбоев), лист «Сводка» (счётчики по областям и
+    типам нарушений) и лист «Исследования» (агрегат по study_uid). Официальный артефакт —
+    CSV; XLSX — удобное представление тех же данных."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    cols = cfg["output"]["columns"]
+    fail = cfg["output"]["status_failure"]
+    sep = cfg["output"]["violation_separator"]
+    head_font = Font(bold=True, color="FFFFFF")
+    head_fill = PatternFill("solid", fgColor="01696F")
+    fill_viol = PatternFill("solid", fgColor="FBE9F2")
+    fill_fail = PatternFill("solid", fgColor="F3E4D5")
+    fill_ok = PatternFill("solid", fgColor="E9F1E3")
+
+    def _header(ws, names):
+        ws.append(list(names))
+        for c in ws[1]:
+            c.font, c.fill = head_font, head_fill
+            c.alignment = Alignment(vertical="center", wrap_text=True)
+        ws.freeze_panes = "A2"
+        ws.auto_filter.ref = f"A1:{get_column_letter(len(names))}{max(2, ws.max_row)}"
+
+    def _autowidth(ws, minimum=8, maximum=60):
+        for i, col in enumerate(ws.iter_cols(min_row=1, max_row=min(ws.max_row, 500)), 1):
+            w = max((len(str(c.value)) for c in col if c.value is not None), default=minimum)
+            ws.column_dimensions[get_column_letter(i)].width = max(minimum, min(maximum, w + 2))
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Результаты"
+    extra = ["Действие"]
+    _header(ws, cols + extra)
+    for r in rows:
+        is_fail = r.get("processing_status") == fail
+        is_viol = str(r.get("quality_class")) == "1"
+        action = "Проверить вручную" if is_fail else ("Проверить / переснять" if is_viol else "Принять")
+        ws.append([r.get(c, "") for c in cols] + [action])
+        f = fill_fail if is_fail else (fill_viol if is_viol else fill_ok)
+        for c in ws[ws.max_row]:
+            c.fill = f
+    ws.auto_filter.ref = f"A1:{get_column_letter(len(cols) + len(extra))}{max(2, ws.max_row)}"
+    _autowidth(ws)
+
+    # --- Сводка
+    ws2 = wb.create_sheet("Сводка")
+    n = len(rows)
+    n_fail = sum(1 for r in rows if r.get("processing_status") == fail)
+    n_viol = sum(1 for r in rows if str(r.get("quality_class")) == "1")
+    n_ok = n - n_fail - n_viol
+    t_sum = sum(float(r.get("time_of_processing") or 0) for r in rows)
+    studies = {r.get("study_uid") for r in rows if r.get("study_uid")}
+    _header(ws2, ["Показатель", "Значение"])
+    for k, v in [
+        ("Файлов обработано", n), ("Исследований", len(studies)),
+        ("Без нарушений", n_ok), ("С нарушениями", n_viol),
+        ("Доля с нарушениями", f"{(n_viol / n * 100):.1f} %" if n else "—"),
+        ("Ошибок обработки (Failure)", n_fail),
+        ("Суммарное время обработки, с", round(t_sum, 2)),
+        ("Среднее время на файл, с", round(t_sum / n, 3) if n else "—"),
+        ("Версия модели", cfg.get("version", __version__)),
+    ]:
+        ws2.append([k, v])
+    ws2.append([])
+    ws2.append(["Область", "Файлов", "С нарушениями", "Ошибок"])
+    for c in ws2[ws2.max_row]:
+        c.font = Font(bold=True)
+    for reg in sorted({r.get("anatomical_region", "") for r in rows}):
+        sub = [r for r in rows if r.get("anatomical_region", "") == reg]
+        ws2.append([reg or "—", len(sub), sum(1 for r in sub if str(r.get("quality_class")) == "1"),
+                    sum(1 for r in sub if r.get("processing_status") == fail)])
+    ws2.append([])
+    ws2.append(["Тип нарушения", "Файлов"])
+    for c in ws2[ws2.max_row]:
+        c.font = Font(bold=True)
+    counts: Dict[str, int] = {}
+    for r in rows:
+        for v in str(r.get("violation_type") or "").split(sep):
+            if v.strip():
+                counts[v.strip()] = counts.get(v.strip(), 0) + 1
+    for k, v in sorted(counts.items(), key=lambda kv: -kv[1]):
+        ws2.append([k, v])
+    ws2.auto_filter.ref = None
+    _autowidth(ws2, minimum=14)
+
+    # --- Исследования
+    ws3 = wb.create_sheet("Исследования")
+    _header(ws3, ["study_uid", "Файлов", "С нарушениями", "Ошибок", "Макс. quality_prob", "Нарушения"])
+    by_study: Dict[str, List[Dict[str, Any]]] = {}
+    for r in rows:
+        by_study.setdefault(str(r.get("study_uid") or ""), []).append(r)
+    for uid, sub in sorted(by_study.items(), key=lambda kv: -max(float(x.get("quality_prob") or 0) for x in kv[1])):
+        viols: List[str] = []
+        for r in sub:
+            for v in str(r.get("violation_type") or "").split(sep):
+                if v.strip() and v.strip() not in viols:
+                    viols.append(v.strip())
+        nv = sum(1 for r in sub if str(r.get("quality_class")) == "1")
+        ws3.append([uid, len(sub), nv, sum(1 for r in sub if r.get("processing_status") == fail),
+                    round(max(float(x.get("quality_prob") or 0) for x in sub), 3), "; ".join(viols)])
+        if nv:
+            for c in ws3[ws3.max_row]:
+                c.fill = fill_viol
+    ws3.auto_filter.ref = f"A1:F{max(2, ws3.max_row)}"
+    _autowidth(ws3, minimum=10)
+    wb.save(xlsx_path)
 
 
 def write_debug(debug_rows: List[Dict[str, Any]], path: Path):
