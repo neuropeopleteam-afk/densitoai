@@ -392,6 +392,9 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
     except HTTPException:
         shutil.rmtree(job_dir, ignore_errors=True)
         raise
+    except ValueError as e:  # понятная ошибка входа (битый архив и т.п.) -> 400, а не 500
+        shutil.rmtree(job_dir, ignore_errors=True)
+        raise HTTPException(400, str(e))
     except Exception as e:  # noqa: BLE001
         LOG.exception("analyze failed")
         (job_dir / "error.txt").write_text(f"{type(e).__name__}: {e}", encoding="utf-8")
@@ -432,6 +435,8 @@ def batch(req: BatchRequest):
             "output_csv": str(out_csv),
             "output_xlsx": str(out_csv.with_suffix(".xlsx")) if req.xlsx else None,
         }
+    except ValueError as e:
+        raise HTTPException(400, str(e))
     except Exception as e:  # noqa: BLE001
         LOG.exception("batch failed")
         raise HTTPException(500, f"{type(e).__name__}: {e}")

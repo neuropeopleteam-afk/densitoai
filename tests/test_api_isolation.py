@@ -5,7 +5,7 @@
 лимиты загрузки, история запросов. Запуск: python tests/test_api_isolation.py
 (модели загружаются один раз; ~1–2 мин на CPU).
 """
-import os
+import json, os
 import sys
 import tempfile
 import threading
@@ -89,6 +89,14 @@ r = client.post("/api/analyze", files=[("files", ("junk.dcm", b"not a dicom" * 1
 check(r.status_code == 200, f"мусорный файл обрабатывается без 500 ({r.status_code})")
 if r.status_code == 200:
     check(r.json()["summary"]["n_failures"] == 1, "мусорный файл помечен как ошибка обработки")
+
+# 5b. битый zip → 400 с понятным русским сообщением, не 500
+r = client.post("/api/analyze", files=[("files", ("broken.zip", b"PK\x03\x04" + b"\x00" * 500, "application/zip"))])
+check(r.status_code == 200, f"битый zip → 200 со строкой Failure, не 500 ({r.status_code})")
+if r.status_code == 200:
+    rows_bz = r.json()["rows"]
+    check(len(rows_bz) == 1 and rows_bz[0]["processing_status"] != "Success", "битый zip помечен как Failure")
+    check("повреждён" in json.dumps(r.json(), ensure_ascii=False), "битый zip: понятное сообщение об ошибке")
 
 # 6. история
 h = client.get("/api/jobs").json()

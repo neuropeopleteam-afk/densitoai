@@ -262,7 +262,12 @@ def discover_files(input_path: Path, tmp_holder: List[Path],
     if input_path.is_file() and input_path.suffix.lower() == ".zip":
         tmp_dir = Path(tempfile.mkdtemp(prefix="densito_in_"))
         tmp_holder.append(tmp_dir)
-        for target, rel in safe_extract_zip(input_path, tmp_dir):
+        try:
+            extracted = safe_extract_zip(input_path, tmp_dir)
+        except zipfile.BadZipFile as e:
+            raise ValueError(f"Архив «{input_path.name}» повреждён или не является zip-файлом "
+                             f"({e}). Пересоздайте архив и загрузите снова.") from e
+        for target, rel in extracted:
             display[target.resolve()] = rel
         LOG.info("Archive %s extracted to %s", input_path, tmp_dir)
         root = tmp_dir
@@ -287,7 +292,9 @@ def discover_files(input_path: Path, tmp_holder: List[Path],
                 display[target.resolve()] = f"{z_rel}/{rel}"
             files += [p for p in sorted(sub.rglob("*")) if p.is_file() and is_dicom_candidate(p)]
         except Exception as e:  # noqa: BLE001
-            LOG.warning("Nested archive %s skipped: %s", z, e)
+            # битый архив не пропускаем молча: он попадёт в результаты строкой Failure
+            LOG.warning("Nested archive %s is broken: %s", z, e)
+            files.append(z)
     return root, files
 
 
@@ -354,6 +361,8 @@ def normalize_pixels(ds) -> np.ndarray:
 def read_and_validate(path: Path, cfg: Dict[str, Any]) -> DicomInfo:
     """Валидатор входа. Любая проблема -> исключение (обрабатывается выше как Failure)."""
     v = cfg["validation"]
+    if path.suffix.lower() == ".zip":
+        raise ValueError("Архив повреждён или не является zip-файлом; пересоздайте архив и загрузите снова")
     ds = pydicom.dcmread(str(path), force=True)
     if not hasattr(ds, "PixelData") and "PixelData" not in ds:
         raise ValueError("DICOM has no PixelData")

@@ -1,0 +1,158 @@
+{
+  "n_files": 81,
+  "regions": {
+    "right_hip": 28,
+    "spine": 27,
+    "left_hip": 26
+  },
+  "n_positive": 40,
+  "baseline": {
+    "failure_rate": 0.0,
+    "time_p50": 0.0429,
+    "time_p95": 0.0646,
+    "wall_total_s": 4.013246469003207
+  },
+  "distortions": {
+    "identity (пересохранение)": {
+      "n": 81,
+      "n_ok": 81,
+      "failure_rate": 0.0,
+      "class_flip_rate": 0.0,
+      "region_flip_rate": 0.0,
+      "dprob_p50": 0.0,
+      "dprob_p95": 0.0,
+      "time_p50": 0.0443,
+      "time_p95": 0.0683
+    },
+    "теги удалены (PixelSpacing, описание, сторона, аппарат)": {
+      "n": 81,
+      "n_ok": 81,
+      "failure_rate": 0.0,
+      "class_flip_rate": 0.0,
+      "region_flip_rate": 0.0,
+      "dprob_p50": 0.0,
+      "dprob_p95": 0.0,
+      "time_p50": 0.0425,
+      "time_p95": 0.0686
+    },
+    "нет UID исследования/снимка": {
+      "n": 81,
+      "n_ok": 81,
+      "failure_rate": 0.0,
+      "class_flip_rate": 0.0,
+      "region_flip_rate": 0.0,
+      "dprob_p50": 0.0,
+      "dprob_p95": 0.0,
+      "time_p50": 0.0432,
+      "time_p95": 0.0696
+    },
+    "MONOCHROME1 (инверсия)": {
+      "n": 81,
+      "n_ok": 81,
+      "failure_rate": 0.0,
+      "class_flip_rate": 0.0,
+      "region_flip_rate": 0.0,
+      "dprob_p50": 0.0,
+      "dprob_p95": 0.0,
+      "time_p50": 0.042,
+      "time_p95": 0.0647
+    },
+    "16-битный контейнер (12 бит)": {
+      "n": 81,
+      "n_ok": 81,
+      "failure_rate": 0.0,
+      "class_flip_rate": 0.0,
+      "region_flip_rate": 0.0,
+      "dprob_p50": 0.00017999999999995797,
+      "dprob_p95": 0.003973000000000004,
+      "time_p50": 0.0418,
+      "time_p95": 0.067
+    },
+    "гауссов шум σ=3 %": {
+      "n": 81,
+      "n_ok": 81,
+      "failure_rate": 0.0,
+      "class_flip_rate": 0.2222222222222222,
+      "region_flip_rate": 0.0,
+      "dprob_p50": 0.06210099999999996,
+      "dprob_p95": 0.686889,
+      "time_p50": 0.0443,
+      "time_p95": 0.0701
+    },
+    "ярче (гамма 0.7)": {
+      "n": 81,
+      "n_ok": 81,
+      "failure_rate": 0.0,
+      "class_flip_rate": 0.24691358024691357,
+      "region_flip_rate": 0.0,
+      "dprob_p50": 0.049343,
+      "dprob_p95": 0.646837,
+      "time_p50": 0.0457,
+      "time_p95": 0.0665
+    },
+    "темнее (гамма 1.4)": {
+      "n": 81,
+      "n_ok": 81,
+      "failure_rate": 0.0,
+      "class_flip_rate": 0.2839506172839506,
+      "region_flip_rate": 0.0,
+      "dprob_p50": 0.04702700000000001,
+      "dprob_p95": 0.6246189999999999,
+      "time_p50": 0.0436,
+      "time_p95": 0.067
+    },
+    "resize ×0.8 (PixelSpacing пересчитан)": {
+      "n": 81,
+      "n_ok": 81,
+      "failure_rate": 0.0,
+      "class_flip_rate": 0.13580246913580246,
+      "region_flip_rate": 0.0,
+      "dprob_p50": 0.017861000000000016,
+      "dprob_p95": 0.547284,
+      "time_p50": 0.0699,
+      "time_p95": 0.0954
+    },
+    "resize ×1.25 (PixelSpacing пересчитан)": {
+      "n": 81,
+      "n_ok": 81,
+      "failure_rate": 0.0,
+      "class_flip_rate": 0.14814814814814814,
+      "region_flip_rate": 0.0,
+      "dprob_p50": 0.026482000000000006,
+      "dprob_p95": 0.54165,
+      "time_p50": 0.0774,
+      "time_p95": 0.1063
+    },
+    "обрезка 4 % по краям": {
+      "n": 81,
+      "n_ok": 81,
+      "failure_rate": 0.0,
+      "class_flip_rate": 0.08641975308641975,
+      "region_flip_rate": 0.0,
+      "dprob_p50": 0.033504000000000034,
+      "dprob_p95": 0.556109,
+      "time_p50": 0.0762,
+      "time_p95": 0.1103
+    }
+  },
+  "packaging": {
+    "одинаковые имена в разных папках": {
+      "ok": true,
+      "note": ""
+    },
+    "вложенный zip (zip в zip + файл рядом)": {
+      "ok": true,
+      "note": "3 строк"
+    },
+    "битый zip (обрезан наполовину)": {
+      "ok": true,
+      "note": "понятная ошибка → HTTP 400: Архив «broken.zip» повреждён или не является zip-файлом (Fil…"
+    },
+    "без расширения / .img / .DCM": {
+      "ok": true,
+      "note": "3 строк из 3 файлов"
+    }
+  },
+  "cpu": 2,
+  "date": "2026-09-18"
+}
