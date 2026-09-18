@@ -2,6 +2,14 @@
 Контур B — замороженный EfficientNet-B0 как экстрактор эмбеддингов
 (НЕ fine-tuning), согласно рекомендации ревью Fable 5. Обучение поверх
 эмбеддингов — логрегрессия с L2, устойчивая на малых данных.
+
+Два источника весов (см. models/MODEL_CONTRACT.md, раздел «Бэкбоны»):
+  * ``imagenet`` — torchvision EfficientNet-B0 IMAGENET1K_V1 (по умолчанию);
+  * ``densito``  — тот же B0, предобученный нами на GPU на 15,6 тыс. рентген/DXA-фрагментах
+    кости прокси-задачами (угол поворота, сдвиг, масштаб, синтетический металл),
+    файл models/backbone_densito.pth (state_dict без classifier). На нашей разметке даёт
+    устойчивый выигрыш только для критериев укладки (sp_pos, hip_pos) — для них и используется;
+    для артефактов/оси/ROI остаётся ImageNet (gpu/eval_embeddings.py, 10 повторов GroupKFold).
 """
 import warnings
 warnings.filterwarnings("ignore")
@@ -28,10 +36,32 @@ from geometry_features import read_dicom_normalized
 DEVICE = torch.device('cpu')
 
 
+MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
+BACKBONE_FILES = {"densito": "backbone_densito.pth"}
+EMB_DIM = 1280
+
+
+def backbone_path(source: str) -> Path | None:
+    """Путь к файлу весов для источника (None для imagenet)."""
+    if source == "imagenet":
+        return None
+    return MODELS_DIR / BACKBONE_FILES[source]
+
+
 class FrozenBackbone:
-    def __init__(self):
+    def __init__(self, source: str = "imagenet", weights=None):
+        """source: 'imagenet' | 'densito'. weights — явный путь к state_dict (переопределяет source)."""
+        self.source = source
         self.model = models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.IMAGENET1K_V1)
         self.model.classifier = nn.Identity()  # используем как чистый экстрактор (1280-d)
+        wpath = Path(weights) if weights is not None else backbone_path(source)
+        if wpath is not None:
+            if not wpath.exists():
+                raise FileNotFoundError(f"backbone weights not found: {wpath}")
+            sd = torch.load(wpath, map_location="cpu")
+            missing, unexpected = self.model.load_state_dict(sd, strict=False)
+            if unexpected or any(not k.startswith("classifier") for k in missing):
+                raise RuntimeError(f"backbone state_dict mismatch: missing={missing[:3]} unexpected={unexpected[:3]}")
         self.model.eval()
         for p in self.model.parameters():
             p.requires_grad = False
@@ -53,8 +83,8 @@ class FrozenBackbone:
         return emb.squeeze(0).numpy()
 
 
-def build_embeddings_for_df(df, out_path):
-    backbone = FrozenBackbone()
+def build_embeddings_for_df(df, out_path, source: str = "imagenet"):
+    backbone = FrozenBackbone(source)
     embs = []
     for i, row in df.iterrows():
         try:
@@ -62,7 +92,7 @@ def build_embeddings_for_df(df, out_path):
             emb = backbone.extract(img_u8)
         except Exception as e:
             print(f"ERROR on {row['file_path']}: {e}")
-            emb = np.zeros(1280, dtype=np.float32)
+            emb = np.zeros(EMB_DIM, dtype=np.float32)
         embs.append(emb)
         if (i + 1) % 50 == 0:
             print(f"  {i+1}/{len(df)} embeddings done")
@@ -74,9 +104,18 @@ def build_embeddings_for_df(df, out_path):
 
 
 if __name__ == '__main__':
-    DATA_CSV = Path("/home/user/workspace/densito_rebuild/data/labels_full.csv")
-    OUT_NPY = Path("/home/user/workspace/densito_rebuild/data/embeddings.npy")
-    df = pd.read_csv(DATA_CSV)
+    import argparse
+    ap = argparse.ArgumentParser(description="Построить эмбеддинги для labels_full.csv")
+    ap.add_argument("--source", default="imagenet", choices=["imagenet"] + list(BACKBONE_FILES))
+    a = ap.parse_args()
+    DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+    df = pd.read_csv(DATA_DIR / "labels_full.csv")
     df = df[df['region'].isin(['spine', 'right_hip', 'left_hip'])].reset_index(drop=True)
-    df.to_csv("/home/user/workspace/densito_rebuild/data/labels_for_embeddings.csv", index=False)
-    build_embeddings_for_df(df, OUT_NPY)
+    lab = DATA_DIR / "labels_for_embeddings.csv"
+    if lab.exists():
+        old = pd.read_csv(lab)
+        assert (old['file_path'].values == df['file_path'].values).all(), "порядок строк labels_for_embeddings.csv изменился"
+    else:
+        df.to_csv(lab, index=False)
+    out = DATA_DIR / ("embeddings.npy" if a.source == "imagenet" else f"embeddings_{a.source}.npy")
+    build_embeddings_for_df(df, out, a.source)

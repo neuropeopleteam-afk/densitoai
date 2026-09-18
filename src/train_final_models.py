@@ -45,6 +45,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 from train_stacked import (DATA_DIR, OUT_DIR, REGION_CRITERIA, CRITERION_GEOMETRY_COLS,
+                           load_embeddings_by_source, emb_source_for,
                            CRITERION_LABEL_COL, REGION_ROWS, HIP_SIDE_REPORT, PCA_COMPONENTS)
 
 # Гиперпараметры — ТЕ ЖЕ, что в train_stacked.train_region_stacked
@@ -78,7 +79,7 @@ def fit_geom(X, y, cols, medians, oof=None, extra=None):
     return d
 
 
-def fit_emb(E, y, oof=None, extra=None):
+def fit_emb(E, y, oof=None, extra=None, emb_source='imagenet'):
     scaler = StandardScaler().fit(E)
     n_comp = min(PCA_COMPONENTS, len(y) - 1, E.shape[1])
     pca = PCA(n_components=n_comp, random_state=42).fit(scaler.transform(E))
@@ -88,7 +89,8 @@ def fit_emb(E, y, oof=None, extra=None):
          'oof_scores': None if oof is None else np.asarray(oof, dtype=np.float64),
          'sklearn_version': sklearn.__version__, 'n_train': int(len(y)), 'n_pos': int(y.sum()),
          'hyperparams': {'C': EMB_C, 'class_weight': 'balanced', 'pca_components': n_comp},
-         'embedding': 'embeddings.FrozenBackbone (EfficientNet-B0 ImageNet, resize 320x192), 1280-d'}
+         'emb_source': emb_source,
+         'embedding': f'embeddings.FrozenBackbone(source={emb_source!r}) (EfficientNet-B0, resize 320x192), 1280-d'}
     d.update(extra or {})
     return d
 
@@ -103,14 +105,15 @@ def save(d, name):
 def main():
     geom_all = pd.read_csv(DATA_DIR / 'geometry_features.csv')
     emb_labels = pd.read_csv(DATA_DIR / 'labels_for_embeddings.csv')
-    embeddings = np.load(DATA_DIR / 'embeddings.npy')
+    emb_by_source = load_embeddings_by_source()
     manifest = {}
 
     for region, criteria in REGION_CRITERIA.items():
         rows = REGION_ROWS.get(region, [region])
         gdf = geom_all[geom_all['region'].isin(rows)].reset_index(drop=True)
         eidx = np.nonzero(emb_labels['region'].isin(rows).values)[0]
-        E_all = embeddings[eidx]
+        E_by_source = {k: v[eidx] for k, v in emb_by_source.items()}
+        E_all = E_by_source['imagenet']
         assert (emb_labels.loc[eidx, 'file_path'].values == gdf['file_path'].values).all()
         print(f"\n=== {region}: {len(gdf)} images ===")
 
@@ -128,7 +131,8 @@ def main():
             Xraw = gdf[cols].values.astype(np.float64)
             med = np.nanmedian(Xraw, axis=0)           # медианы по всем строкам региона (как в OOF)
             X = _impute(Xraw, med)[valid]
-            E = E_all[valid]
+            emb_src = emb_source_for(crit, E_by_source)
+            E = E_by_source[emb_src][valid]
 
             oof_path = OUT_DIR / f'oof_stacked_{region}_{crit}.csv'
             oof = pd.read_csv(oof_path) if oof_path.exists() else None
@@ -139,10 +143,10 @@ def main():
 
             base = f'model_{region}_{crit}' if not is_hip else f'model_{crit}'   # model_hip_pos / model_hip_roi
             dg = fit_geom(X, yv, cols, med, oof_g, dict(extra, criterion=crit, region=region))
-            de = fit_emb(E, yv, oof_e, dict(extra, criterion=crit, region=region))
+            de = fit_emb(E, yv, oof_e, dict(extra, criterion=crit, region=region), emb_source=emb_src)
             save(dg, f'{base}_geom.pkl'); save(de, f'{base}_emb_pca.pkl')
             manifest[f'{base}_geom.pkl'] = {'criterion': crit, 'feature_cols': cols, 'n_pos': int(yv.sum())}
-            manifest[f'{base}_emb_pca.pkl'] = {'criterion': crit, 'n_pos': int(yv.sum())}
+            manifest[f'{base}_emb_pca.pkl'] = {'criterion': crit, 'n_pos': int(yv.sum()), 'emb_source': emb_src}
 
             # per-side OOF csv для совместимости с oof_stacked_<region>_<crit>.csv инференса
             if is_hip and oof is not None and 'hip_side_detected' in oof:

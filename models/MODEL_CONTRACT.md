@@ -54,8 +54,21 @@ fallback-правило по геометрии, без падения.
 (`extract_geometry`), недостающие → медиана.
 
 ### Вход контура B
-Вектор 1280-d от `embeddings.FrozenBackbone` (EfficientNet-B0, ImageNet, resize 320×192,
-`float32`). Веса backbone лежат в `models/torch_home/` (offline).
+Вектор 1280-d от `embeddings.FrozenBackbone(source)` (EfficientNet-B0, resize 320×192, `float32`).
+Источник весов задаётся в pickle полем `emb_source` (по умолчанию `imagenet`):
+
+| `emb_source` | веса | кто использует |
+|---|---|---|
+| `imagenet` | torchvision IMAGENET1K_V1, `models/torch_home/` (offline) | sp_axis, sp_art, hip_pos, hip_roi, все `*_any_*`, `model_region_emb` |
+| `densito` | `models/backbone_densito.pth` — тот же B0, предобученный нами на GPU (RunPod, RTX PRO 4500, 60 эпох) на 15 633 фрагментах рентген/DXA кости (FracAtlas, Arak DXA, MTDDH, BUU-LSPINE, AASCE, DEXA-Osteo, свои без меток) прокси-задачами укладки: угол поворота, сдвиг, масштаб, синтетический металл | только `model_spine_sp_pos_emb_pca.pkl` |
+
+Почему так: на нашей разметке (OOF, GroupKFold по исследованиям) `densito` устойчиво лучше ImageNet
+только для укладки позвоночника (контур B 0.60 → 0.80 AUC, стек 0.60 → 0.72; в отдельной проверке
+`gpu/eval_embeddings.py` +0.13 AUC в 10 из 10 повторов) и хуже для посторонних предметов (−0.14):
+синтетический металл не похож на реальные пуговицы и молнии. Для бедра выигрыша на боевом протоколе
+нет. Инференс считает эмбеддинги обоих бэкбонов только для позвоночника (+~0.3 с/файл на CPU).
+Скрипты: `gpu/prepare_cache.py`, `gpu/pretrain_proxy.py`, `gpu/eval_embeddings.py`; эмбеддинги
+для обучения — `python src/embeddings.py --source densito` → `data/embeddings_densito.npy`.
 
 ## Пороги
 `inference.py` берёт порог по критерию: `config.yaml: thresholds[<crit>]` → ключ `"threshold"`

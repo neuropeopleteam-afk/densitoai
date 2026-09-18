@@ -38,6 +38,35 @@ REGION_CRITERIA = {
     'hip': ['hip_pos', 'hip_roi'],
 }
 
+# критерий -> источник эмбеддингов контура B (см. src/embeddings.py). По умолчанию imagenet.
+# 'densito' — наш B0, предобученный на GPU на 15,6 тыс. снимках кости прокси-задачами укладки;
+# на нашей разметке он устойчиво лучше ImageNet ТОЛЬКО для укладки позвоночника (sp_pos: AUC
+# контура B 0.60 -> 0.80, стек 0.60 -> 0.72 на этом протоколе; в gpu/eval_embeddings.py +0.13,
+# 10/10 повторов). Для hip_pos на боевом протоколе (метка по обнаруженной стороне) выигрыша нет
+# (0.635 -> 0.636), для артефактов он хуже (-0.14) — там остаётся ImageNet.
+EMB_SOURCE_BY_CRITERION = {'sp_pos': 'densito'}
+EMB_FILES = {'imagenet': 'embeddings.npy', 'densito': 'embeddings_densito.npy'}
+
+
+def load_embeddings_by_source():
+    """{source: np.ndarray} для всех источников, файлы которых есть в DATA_DIR (imagenet обязателен)."""
+    out = {}
+    for src, fn in EMB_FILES.items():
+        f = DATA_DIR / fn
+        if f.exists():
+            out[src] = np.load(f)
+    assert 'imagenet' in out, 'нет data/embeddings.npy'
+    return out
+
+
+def emb_source_for(crit, available):
+    src = EMB_SOURCE_BY_CRITERION.get(crit, 'imagenet')
+    if src not in available:
+        print(f"  [warn] эмбеддинги '{src}' для {crit} не найдены — используется imagenet")
+        src = 'imagenet'
+    return src
+
+
 # критерий -> колонка метки в geometry_features.csv (по умолчанию совпадают)
 CRITERION_LABEL_COL = {'hip_pos': 'hip_pos_c', 'hip_roi': 'hip_roi_c'}
 # регион -> какие значения колонки region в geometry_features.csv / labels_for_embeddings.csv
@@ -153,10 +182,11 @@ def train_region_stacked(region, criteria):
     # ImageNet-признаки не инвариантны к отражению, а объединённая выборка
     # выигрыш не даёт. Поэтому зеркалим только геометрию.
     emb_labels = pd.read_csv(DATA_DIR / 'labels_for_embeddings.csv')
-    embeddings = np.load(DATA_DIR / 'embeddings.npy')
+    emb_by_source = load_embeddings_by_source()
     emb_labels['emb_idx'] = np.arange(len(emb_labels))
     region_emb_idx = emb_labels[emb_labels['region'].isin(region_rows)]['emb_idx'].values
-    region_embeddings = embeddings[region_emb_idx]
+    region_emb_by_source = {k: v[region_emb_idx] for k, v in emb_by_source.items()}
+    region_embeddings = region_emb_by_source['imagenet']
 
     assert len(geom_df) == len(region_embeddings), f"Mismatch {len(geom_df)} vs {len(region_embeddings)}"
     assert (emb_labels.loc[region_emb_idx, 'file_path'].values == geom_df['file_path'].values).all(), \
@@ -180,7 +210,9 @@ def train_region_stacked(region, criteria):
             X_geom_raw[mask_nan, j] = col_medians[j]
 
         X_geom = X_geom_raw[valid_mask]
-        X_emb = region_embeddings[valid_mask]
+        emb_src = emb_source_for(crit, region_emb_by_source)
+        print(f"  контур B: эмбеддинги '{emb_src}'")
+        X_emb = region_emb_by_source[emb_src][valid_mask]
         groups_valid = groups[valid_mask]
         studies_valid = geom_df['study'].values[valid_mask]
         file_paths_valid = geom_df['file_path'].values[valid_mask]
@@ -266,7 +298,7 @@ def train_region_stacked(region, criteria):
 
         results[crit] = {
             'n_valid': int(valid_mask.sum()), 'n_pos': int(n_pos),
-            'auc_geom': aucs['geom'], 'auc_emb': aucs['emb'], 'auc_stacked': aucs['stacked'],
+            'auc_geom': aucs['geom'], 'auc_emb': aucs['emb'], 'auc_stacked': aucs['stacked'], 'emb_source': emb_src,
             'threshold': float(thresh) if thresh is not None else None,
             'threshold_method': thresh_method,
             'f1_oof': float(f1),

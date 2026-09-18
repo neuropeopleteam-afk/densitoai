@@ -720,35 +720,66 @@ class ModelRegistry:
 # Контур B — эмбеддинги (ленивая инициализация, мягкий отказ)
 # --------------------------------------------------------------------------- #
 class EmbeddingExtractor:
+    """Экстрактор эмбеддингов контура B. Поддерживает несколько источников весов одного
+    EfficientNet-B0: ``imagenet`` (torchvision) и ``densito`` (models/backbone_densito.pth —
+    наше GPU-предобучение на снимках кости; используется только моделями укладки, см.
+    meta['emb_source'] в pkl и src/embeddings.py). Бэкбоны загружаются лениво, один раз."""
+
+    DEFAULT_SOURCE = "imagenet"
+
     def __init__(self, enabled: bool = True):
         self.enabled = enabled
-        self._backbone = None
-        self._failed = False
+        self._backbones: Dict[str, Any] = {}
+        self._failed: set = set()
 
-    def _init(self):
-        if self._backbone is not None or self._failed or not self.enabled:
+    def _init(self, source: str = DEFAULT_SOURCE):
+        if source in self._backbones or source in self._failed or not self.enabled:
             return
         try:
             import torch
             torch.manual_seed(0)
             torch.set_num_threads(max(1, min(8, os.cpu_count() or 1)))
             from embeddings import FrozenBackbone
-            self._backbone = FrozenBackbone()
-            LOG.info("EfficientNet-B0 backbone ready (TORCH_HOME=%s)", os.environ.get("TORCH_HOME", "-"))
+            self._backbones[source] = FrozenBackbone(source)
+            LOG.info("EfficientNet-B0 backbone '%s' ready (TORCH_HOME=%s)", source, os.environ.get("TORCH_HOME", "-"))
         except Exception as e:  # noqa: BLE001
-            self._failed = True
-            LOG.warning("Embedding backbone unavailable (%s) -> contour B disabled", e)
+            self._failed.add(source)
+            if source == self.DEFAULT_SOURCE:
+                LOG.warning("Embedding backbone unavailable (%s) -> contour B disabled", e)
+            else:
+                LOG.warning("Embedding backbone '%s' unavailable (%s) -> models with this source get no contour B", source, e)
 
-    def extract(self, img_u8: np.ndarray, mirror: bool = False) -> Optional[np.ndarray]:
-        self._init()
-        if self._backbone is None:
+    @property
+    def _backbone(self):  # совместимость со старым кодом/тестами
+        return self._backbones.get(self.DEFAULT_SOURCE)
+
+    def extract(self, img_u8: np.ndarray, mirror: bool = False, source: str = DEFAULT_SOURCE) -> Optional[np.ndarray]:
+        self._init(source)
+        bb = self._backbones.get(source)
+        if bb is None:
             return None
         try:
             img = img_u8[:, ::-1].copy() if mirror else img_u8
-            return np.asarray(self._backbone.extract(img), dtype=np.float32)
+            return np.asarray(bb.extract(img), dtype=np.float32)
         except Exception as e:  # noqa: BLE001
-            LOG.warning("Embedding extraction failed: %s", e)
+            LOG.warning("Embedding extraction failed (%s): %s", source, e)
             return None
+
+    def extract_many(self, img_u8: np.ndarray, sources, mirror: bool = False) -> Dict[str, np.ndarray]:
+        """{source: embedding} для всех запрошенных источников (недоступные пропускаются)."""
+        out: Dict[str, np.ndarray] = {}
+        for src in sorted(set(sources)):
+            e = self.extract(img_u8, mirror=mirror, source=src)
+            if e is not None:
+                out[src] = e
+        return out
+
+
+def _emb_for(mb, embs: Optional[Dict[str, np.ndarray]]) -> Optional[np.ndarray]:
+    """Эмбеддинг нужного источника для модели (meta['emb_source'], по умолчанию imagenet)."""
+    if not embs or mb is None:
+        return None
+    return embs.get(str(mb.meta.get("emb_source", EmbeddingExtractor.DEFAULT_SOURCE)))
 
 
 # --------------------------------------------------------------------------- #
@@ -791,7 +822,7 @@ class DensitoInference:
 
     # ---- скоринг одного критерия
     def score_criterion(self, region: str, crit: str, feats: Dict[str, Any],
-                        emb: Optional[np.ndarray]) -> Dict[str, Any]:
+                        embs: Optional[Dict[str, np.ndarray]]) -> Dict[str, Any]:
         reg = self.registry
         key = (region, crit)
         mb_g, mb_e = reg.geom.get(key), reg.emb.get(key)
@@ -804,6 +835,7 @@ class DensitoInference:
                 out["rank_geom"] = reg.percentile_rank(out["p_geom"], reg.ref_geom.get(key))
             except Exception as e:  # noqa: BLE001
                 LOG.warning("%s/%s geom model failed: %s", region, crit, e)
+        emb = _emb_for(mb_e, embs)
         if mb_e is not None and emb is not None:
             try:
                 out["p_emb"] = clip01(mb_e.predict(emb))
@@ -840,9 +872,10 @@ class DensitoInference:
         return sigmoid(float(rule.get("direction", 1)) * (float(x) - float(rule["center"])) / float(rule["scale"]))
 
     def any_violation_prob(self, region: str, crit_results: Dict[str, Dict[str, Any]],
-                           feats: Dict[str, Any], emb: Optional[np.ndarray]) -> float:
+                           feats: Dict[str, Any], embs: Optional[Dict[str, np.ndarray]]) -> float:
         reg = self.registry
         probs: List[float] = []
+        emb = _emb_for(reg.any_emb.get(region), embs)
         # 1) отдельная модель "есть нарушение", если сохранена
         mb_g, mb_e = reg.any_geom.get(region), reg.any_emb.get(region)
         if mb_g is not None:
@@ -924,9 +957,15 @@ class DensitoInference:
                 mb = next((self.registry.emb.get((region, c)) for c in self.cfg["criteria_by_region"][region]
                            if self.registry.emb.get((region, c)) is not None), None)
                 mirror = bool(mb.meta.get("mirror_right", False)) if mb is not None else False
-            emb = self.embedder.extract(info.img_u8, mirror=mirror) if need_emb else None
+            embs: Dict[str, np.ndarray] = {}
+            if need_emb:
+                sources = {str(mb.meta.get("emb_source", EmbeddingExtractor.DEFAULT_SOURCE))
+                           for mb in [self.registry.emb.get((region, c)) for c in self.cfg["criteria_by_region"][region]]
+                           + [self.registry.any_emb.get(region)] if mb is not None}
+                embs = self.embedder.extract_many(info.img_u8, sources, mirror=mirror)
+            emb = embs.get(EmbeddingExtractor.DEFAULT_SOURCE) if embs else None
 
-            crit_results = {c: self.score_criterion(region, c, feats, emb)
+            crit_results = {c: self.score_criterion(region, c, feats, embs)
                             for c in self.cfg["criteria_by_region"][region]}
             violations: List[str] = []
             for c, r in crit_results.items():
@@ -935,7 +974,7 @@ class DensitoInference:
                     if name not in violations:
                         violations.append(name)
             quality_class = 1 if violations else 0
-            quality_prob = self.any_violation_prob(region, crit_results, feats, emb)
+            quality_prob = self.any_violation_prob(region, crit_results, feats, embs)
             debug["quality_prob_raw"] = round(float(quality_prob), 6)
             if self.cfg["stacking"].get("consistent_quality_prob", True):
                 quality_prob = self.consistent_quality_prob(quality_prob, quality_class)
@@ -954,7 +993,8 @@ class DensitoInference:
             }
             debug.update({"internal_region": region, "region_source": region_src,
                           "rows": info.rows, "cols": info.cols, "warnings": "; ".join(info.warnings),
-                          "embedding_used": emb is not None, **{f"feat_{k}": v for k, v in feats.items()
+                          "embedding_used": bool(embs), "embedding_sources": "+".join(sorted(embs)) if embs else "",
+                          **{f"feat_{k}": v for k, v in feats.items()
                                                                   if not isinstance(v, np.ndarray)}})
             for c, r in crit_results.items():
                 for k in ("p_geom", "p_emb", "score", "threshold", "flag", "method"):
@@ -1077,7 +1117,9 @@ class DensitoInference:
             if not files:
                 LOG.warning("No DICOM files found -> writing empty CSV with header")
             if files and (self.registry.emb or self.registry.any_emb):
-                self.embedder._init()  # прогрев backbone вне замера time_of_processing
+                # прогрев всех нужных backbone вне замера time_of_processing
+                for mb in list(self.registry.emb.values()) + list(self.registry.any_emb.values()):
+                    self.embedder._init(str(mb.meta.get("emb_source", EmbeddingExtractor.DEFAULT_SOURCE)))
             for i, f in enumerate(files, 1):
                 row, dbg = self.process_file(f, root)
                 rows.append(row)

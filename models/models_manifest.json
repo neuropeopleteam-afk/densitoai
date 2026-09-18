@@ -9,7 +9,8 @@
   },
   "model_spine_sp_pos_emb_pca.pkl": {
     "criterion": "sp_pos",
-    "n_pos": 10
+    "n_pos": 10,
+    "emb_source": "densito"
   },
   "model_spine_sp_axis_geom.pkl": {
     "criterion": "sp_axis",
@@ -20,7 +21,8 @@
   },
   "model_spine_sp_axis_emb_pca.pkl": {
     "criterion": "sp_axis",
-    "n_pos": 17
+    "n_pos": 17,
+    "emb_source": "imagenet"
   },
   "model_spine_sp_art_geom.pkl": {
     "criterion": "sp_art",
@@ -32,7 +34,8 @@
   },
   "model_spine_sp_art_emb_pca.pkl": {
     "criterion": "sp_art",
-    "n_pos": 35
+    "n_pos": 35,
+    "emb_source": "imagenet"
   },
   "model_spine_any_geom.pkl": {
     "criterion": "any",
@@ -62,7 +65,8 @@
   },
   "model_hip_pos_emb_pca.pkl": {
     "criterion": "hip_pos",
-    "n_pos": 79
+    "n_pos": 79,
+    "emb_source": "imagenet"
   },
   "model_hip_roi_geom.pkl": {
     "criterion": "hip_roi",
@@ -74,7 +78,8 @@
   },
   "model_hip_roi_emb_pca.pkl": {
     "criterion": "hip_roi",
-    "n_pos": 16
+    "n_pos": 16,
+    "emb_source": "imagenet"
   },
   "model_right_hip_any_geom.pkl": {
     "criterion": "any",
@@ -109,12 +114,5 @@
   "model_left_hip_any_emb_pca.pkl": {
     "criterion": "any",
     "n_pos": 92
-  },
-  "model_region_emb.pkl": {
-    "sha256": "66f8a86c2041671339a1633b18a7f6a19d322238de362fca84452382bbce6d01",
-    "size_bytes": 37086,
-    "purpose": "fallback region classifier (spine vs hip) on 1280-d EfficientNet embeddings; used only for non-standard image widths",
-    "oof_accuracy": 1.0,
-    "cv": "StratifiedGroupKFold(5) by study, 499 files"
   }
 }
