@@ -171,9 +171,18 @@ def draw_roi_correction(img_u8: np.ndarray, suggestion: Dict[str, Any]) -> np.nd
         x0, y0, x1, y1 = ext
         y1_visible = min(y1, h - 1)
         if y1 > h - 1:
-            cv2.rectangle(col, (x0, h - 8), (x1, h - 1), (0, 0, 255), -1)
-            cv2.putText(col, f"+{suggestion['deficit_mm']:.0f}мм", (x0 + 2, h - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 255), 1, cv2.LINE_AA)
+            # Полоса-плашка красная (диагностическая зона недостающего скана);
+            # текст поверх неё должен контрастировать с красным, поэтому белый
+            # с чёрной обводкой — красный текст на красном фоне был нечитаем.
+            label = f"+{suggestion['deficit_mm']:.0f}мм"
+            bar_h = 14
+            y_bar0 = max(0, h - bar_h)
+            cv2.rectangle(col, (x0, y_bar0), (x1, h - 1), (0, 0, 255), -1)
+            text_y = h - 4
+            cv2.putText(col, label, (x0 + 2, text_y),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.38, (0, 0, 0), 3, cv2.LINE_AA)
+            cv2.putText(col, label, (x0 + 2, text_y),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.38, (255, 255, 255), 1, cv2.LINE_AA)
     return col
 
 

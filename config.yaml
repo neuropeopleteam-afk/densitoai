@@ -3,7 +3,7 @@
 # порог берётся из models/metrics_summary.json (поле "threshold"), а если и там
 # нет — из fallback_threshold.
 
-version: "2.0.0"
+version: "2.1.0"
 
 output:
   # Официальные названия колонок (порядок важен, не менять).
@@ -71,6 +71,11 @@ stacking:
   # Как агрегировать скоры критериев в quality_prob (бинарное "есть нарушение"):
   # max | noisy_or. Если есть отдельная модель model_<region>_any_*.pkl — она приоритетнее.
   any_violation_aggregation: max
+  # quality_prob = w * any-модель + (1-w) * агрегат по критериям (OOF: смесь лучше каждого по отдельности)
+  any_blend_weight_model: 0.5
+  # Согласовать quality_prob с quality_class: class=1 -> prob в [0.5,1], class=0 -> prob в [0,0.5).
+  # Монотонно внутри класса; OOF ROC-AUC spine 0.735->0.771, hip 0.704->0.777.
+  consistent_quality_prob: true
 
 thresholds:
   # null -> взять из metrics_summary.json

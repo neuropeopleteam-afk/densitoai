@@ -74,6 +74,8 @@ BONUS_DIR = OUTPUT_DIR / "bonus"
 VIZ_DIR = BONUS_DIR / "viz"
 SR_DIR = BONUS_DIR / "sr"
 ROI_DIR = BONUS_DIR / "roi"
+for _d in (VIZ_DIR, SR_DIR, ROI_DIR):
+    _d.mkdir(parents=True, exist_ok=True)
 
 
 def engine() -> DensitoInference:

@@ -55,6 +55,9 @@ COL_AXIS = (0, 140, 255)              # оранжевый — измеренн�
 COL_VERTICAL_REF = (180, 180, 180)    # серый — вертикаль кадра (референс)
 COL_METAL = (0, 0, 255)               # красный — обнаруженный металл/посторонний предмет
 COL_ROI_OK = (0, 220, 0)              # зелёный — измеренный ROI-отступ в норме
+CRIT_SHORT = {"sp_pos": "укладка", "sp_axis": "ось", "sp_art": "предметы",
+              "rh_pos": "укладка", "rh_roi": "ROI", "lh_pos": "укладка", "lh_roi": "ROI",
+              "hip_pos": "укладка", "hip_roi": "ROI"}
 COL_ROI_BAD = (0, 0, 255)             # красный — измеренный ROI-отступ ниже порога
 COL_TEXT_BG = (0, 0, 0)
 COL_TEXT = (255, 255, 255)
@@ -68,6 +71,36 @@ def _put_label(img, text, org, color=COL_TEXT, scale=0.42, thickness=1):
     x, y = org
     cv2.rectangle(img, (x - 2, y - th - 3), (x + tw + 2, y + base + 2), COL_TEXT_BG, -1)
     cv2.putText(img, text, (x, y), cv2.FONT_HERSHEY_SIMPLEX, scale, color, thickness, cv2.LINE_AA)
+
+
+def _put_label_wrapped(img, text, x, y, max_width, color=COL_TEXT, scale=0.42,
+                        thickness=1, line_gap=3, align_right=False):
+    """Как _put_label, но переносит текст на несколько строк, чтобы не выйти
+    за правый/левый край изображения (критично для маленьких DICOM, где
+    сноски легко выезжают за границу кадра)."""
+    words = text.split(" ")
+    lines, cur = [], ""
+    for word in words:
+        trial = (cur + " " + word).strip()
+        (tw, _), _ = cv2.getTextSize(trial, cv2.FONT_HERSHEY_SIMPLEX, scale, thickness)
+        if tw > max_width and cur:
+            lines.append(cur)
+            cur = word
+        else:
+            cur = trial
+    if cur:
+        lines.append(cur)
+    (_, th), base = cv2.getTextSize("A", cv2.FONT_HERSHEY_SIMPLEX, scale, thickness)
+    line_h = th + base + line_gap
+    for i, line in enumerate(lines):
+        ly = y + i * line_h
+        if align_right:
+            (tw, _), _ = cv2.getTextSize(line, cv2.FONT_HERSHEY_SIMPLEX, scale, thickness)
+            lx = x + max_width - tw
+        else:
+            lx = x
+        _put_label(img, line, (lx, ly), color, scale, thickness)
+    return y + len(lines) * line_h
 
 
 def _metal_boxes(img_u8: np.ndarray, mask: np.ndarray):
@@ -102,7 +135,12 @@ def _metal_boxes(img_u8: np.ndarray, mask: np.ndarray):
 
 
 def _render_spine_overlay(col: np.ndarray, img_u8: np.ndarray, feats: Dict[str, Any],
-                           crit_results: Optional[Dict[str, Any]]) -> np.ndarray:
+                           crit_results: Optional[Dict[str, Any]]) -> tuple:
+    """Рисует ТОЛЬКО геометрию (контуры/линии/боксы) на изображении. Текстовые
+    подписи возвращаются отдельно как список (текст, цвет) — они размещаются
+    на отдельной панели в render_overlay, чтобы никогда не обрезаться и не
+    перекрывать сам снимок (критично для маленьких DICOM, где текст на
+    изображении легко выходит за границы кадра)."""
     h, w = img_u8.shape
     mask = segment_bone(img_u8)
     cnts, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -121,22 +159,21 @@ def _render_spine_overlay(col: np.ndarray, img_u8: np.ndarray, feats: Dict[str, 
     for (x, y, bw, bh) in boxes:
         cv2.rectangle(col, (x, y), (x + bw, y + bh), COL_METAL, 1)
 
+    labels = []
     angle = feats.get("axis_angle_deg")
     if angle is not None:
         ok = angle <= 5.0
-        _put_label(col, f"Ось: {angle:.1f}° (порог 5°)", (6, h - 34),
-                   COL_OK_TEXT if ok else COL_VIOLATION_TEXT)
+        labels.append((f"Ось к вертикали кадра: {angle:.1f}°", COL_OK_TEXT if ok else COL_VIOLATION_TEXT))
     curvature = feats.get("curvature")
     if curvature is not None and curvature > 0.6:
-        _put_label(col, "Кривизна повышена (возможен сколиоз — не штраф по оси)", (6, h - 18),
-                   (0, 200, 200))
+        labels.append(("Кривизна повышена (возможен сколиоз — не штраф по оси)", (0, 200, 200)))
     if boxes:
-        _put_label(col, f"Посторонние объекты: {len(boxes)}", (6, 16), COL_VIOLATION_TEXT)
-    return col
+        labels.append((f"Посторонние объекты: {len(boxes)}", COL_VIOLATION_TEXT))
+    return col, labels
 
 
 def _render_hip_overlay(col: np.ndarray, img_u8: np.ndarray, feats: Dict[str, Any],
-                         crit_results: Optional[Dict[str, Any]]) -> np.ndarray:
+                         crit_results: Optional[Dict[str, Any]]) -> tuple:
     from hip_features import segment_bone_hip, detect_hip_side, track_femur, hip_features_canonical
     h, w = img_u8.shape
     mask = segment_bone_hip(img_u8)
@@ -177,22 +214,22 @@ def _render_hip_overlay(col: np.ndarray, img_u8: np.ndarray, feats: Dict[str, An
     drawn = drawn if not mirrored else np.ascontiguousarray(drawn[:, ::-1])
     col[drawn] = geometry_layer[drawn]
 
-    # --- текст: всегда в исходной (не зеркальной) ориентации кадра ---
+    # --- текст рисуется отдельно, на панели снизу (см. render_overlay) ---
     merge_h = feats.get("merge_height_mm")
     shaft_len = feats.get("shaft_len_below_troch_mm")
-    if margin_mm is not None:
-        _put_label(col, f"Край ROI: {margin_mm:.0f} мм (порог 20 мм)", (6, h - 34), roi_color)
-    if merge_h is not None and shaft_len is not None:
-        shaft_ok = shaft_len >= 30.0  # диафиз ниже вертела должен попасть в кадр (ТЗ: 3 см над вертелом)
-        color = COL_ROI_OK if shaft_ok else COL_ROI_BAD
-        _put_label(col, f"Диафиз ниже вертела: {shaft_len:.0f} мм (порог 30 мм)", (6, h - 18), color)
 
+    labels = []
     angle = feats.get("abs_shaft_angle_deg") or feats.get("shaft_angle_deg")
     if angle is not None:
-        _put_label(col, f"Угол диафиза: {angle:.1f}°", (6, 16), (200, 200, 0))
-    _put_label(col, f"Сторона (детект.): {'правое' if side == 'right' else 'левое'}",
-               (6, 32), (200, 200, 0))
-    return col
+        labels.append((f"Угол диафиза: {angle:.1f}°", (200, 200, 0)))
+    labels.append((f"Сторона (детект.): {'правое' if side == 'right' else 'левое'}", (200, 200, 0)))
+    if margin_mm is not None:
+        labels.append((f"Край ROI до кости: {margin_mm:.0f} мм", roi_color))
+    if merge_h is not None and shaft_len is not None:
+        shaft_ok = shaft_len >= 30.0
+        color = COL_ROI_OK if shaft_ok else COL_ROI_BAD
+        labels.append((f"Диафиз ниже вертела: {shaft_len:.0f} мм", color))
+    return col, labels
 
 
 def render_overlay(img_u8: np.ndarray, region: str, feats: Dict[str, Any],
@@ -201,20 +238,83 @@ def render_overlay(img_u8: np.ndarray, region: str, feats: Dict[str, Any],
                     violation_type: str = "") -> np.ndarray:
     """Строит цветную (BGR) визуализацию измеренных геометрических примитивов
     поверх исходного снимка. Заменяет буквальный CNN Grad-CAM (см. докстринг
-    модуля) для архитектуры Контур A + Контур B."""
+    модуля) для архитектуры Контур A + Контур B.
+
+    Все текстовые подписи (заголовок НАРУШЕНИЕ/тип нарушения, измеренные
+    величины) рисуются НЕ поверх самого рентгеновского снимка, а на отдельной
+    чёрной панели снизу, шириной во всю картинку, с переносом строк по фактической
+    ширине текста. Это гарантирует, что текст никогда не обрезается за край
+    и не сливается с цветными линиями геометрии (важно для маленьких DICOM,
+    где исходное изображение может быть всего ~200-300px шириной)."""
     col = cv2.cvtColor(img_u8, cv2.COLOR_GRAY2BGR)
     if region == "spine":
-        col = _render_spine_overlay(col, img_u8, feats, crit_results)
+        col, geo_labels = _render_spine_overlay(col, img_u8, feats, crit_results)
     else:
-        col = _render_hip_overlay(col, img_u8, feats, crit_results)
+        col, geo_labels = _render_hip_overlay(col, img_u8, feats, crit_results)
 
     h, w = img_u8.shape
+
+    # --- собираем все подписи для нижней панели ---
     header = "НАРУШЕНИЕ" if quality_class else "БЕЗ НАРУШЕНИЙ"
-    color = COL_VIOLATION_TEXT if quality_class else COL_OK_TEXT
-    _put_label(col, header, (w - 140, 16), color, scale=0.42)
+    header_color = COL_VIOLATION_TEXT if quality_class else COL_OK_TEXT
+    panel_lines = [(header, header_color, 0.44)]
     if violation_type:
-        _put_label(col, violation_type[:60], (w - 260, 32), COL_VIOLATION_TEXT, scale=0.34)
-    return col
+        # в CSV-выводе разделитель ";" без пробела (спецификация ТЗ) — для
+        # отображения на картинке добавляем пробел после ";", иначе два нарушения
+        # сливаются в одно длинное "слово" и не переносятся корректно.
+        display_violation = violation_type.replace(";", "; ")
+        panel_lines.append((display_violation, COL_VIOLATION_TEXT, 0.36))
+    for text, color in geo_labels:
+        panel_lines.append((text, color, 0.36))
+    # оценки модели по каждому критерию — чтобы решение было прозрачным и не
+    # противоречило измеренным величинам (решение принимает стек геометрия+эмбеддинги,
+    # а не эвристический порог по одной величине)
+    if crit_results:
+        for crit, r in crit_results.items():
+            if r.get("score") is None:
+                continue
+            name = CRIT_SHORT.get(crit, crit)
+            thr = r.get("threshold", 0.5)
+            flagged = bool(r.get("flag"))
+            mark = "НАРУШЕНИЕ" if flagged else "норма"
+            panel_lines.append((f"Модель · {name}: {r['score']:.2f} / порог {thr:.2f} → {mark}",
+                                COL_VIOLATION_TEXT if flagged else COL_OK_TEXT, 0.34))
+
+    # --- вычисляем высоту панели с учётом переноса строк ---
+    pad_x = 6
+    max_text_w = w - 2 * pad_x
+    line_gap = 3
+    total_lines = 0
+    wrapped_lines = []  # (line_text, color, scale)
+    for text, color, scale in panel_lines:
+        words = text.split(" ")
+        cur = ""
+        sub_lines = []
+        for word in words:
+            trial = (cur + " " + word).strip()
+            (tw, _), _ = cv2.getTextSize(trial, cv2.FONT_HERSHEY_SIMPLEX, scale, 1)
+            if tw > max_text_w and cur:
+                sub_lines.append(cur)
+                cur = word
+            else:
+                cur = trial
+        if cur:
+            sub_lines.append(cur)
+        for sl in sub_lines:
+            wrapped_lines.append((sl, color, scale))
+        total_lines += len(sub_lines)
+
+    line_h = 15  # px на строку (с запасом под шрифт scale~0.36-0.44)
+    panel_h = max(1, total_lines) * line_h + 2 * pad_x
+
+    panel = np.zeros((panel_h, w, 3), dtype=np.uint8)
+    y = pad_x + 10
+    for text, color, scale in wrapped_lines:
+        cv2.putText(panel, text, (pad_x, y), cv2.FONT_HERSHEY_SIMPLEX, scale, color, 1, cv2.LINE_AA)
+        y += line_h
+
+    out = np.vstack([col, panel])
+    return out
 
 
 def save_overlay_png(path: str, img_u8: np.ndarray, region: str, feats: Dict[str, Any],

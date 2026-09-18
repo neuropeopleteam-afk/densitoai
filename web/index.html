@@ -72,10 +72,12 @@
     padding: 16px;
     margin-bottom: 16px;
     display: grid;
-    grid-template-columns: 220px 1fr;
+    grid-template-columns: 340px 1fr;
     gap: 20px;
   }
-  .row-card img { width: 100%; border-radius: 6px; border: 1px solid var(--border); }
+  .row-card img { width: 100%; border-radius: 6px; border: 1px solid var(--border); display:block; image-rendering: auto; }
+  .imgcap { font-size: 12px; color: var(--text-muted); margin: 4px 0 10px; }
+  .links a { margin-right: 14px; }
   .row-meta { font-size: 13px; }
   .row-meta .fname { font-weight: 700; font-size: 14px; margin-bottom: 6px; word-break: break-all; }
   .badge {
@@ -120,7 +122,9 @@
   <div class="note">
     Это рабочее демо для экспертной/врачебной проверки решения. Загрузите один или несколько
     DICOM-файлов (или zip-архив исследования) — система определит анатомическую область,
-    оценит качество укладки и покажет визуализацию найденных признаков (аналог Grad-CAM).
+    оценит качество укладки и покажет объяснимую визуализацию найденных признаков (ось позвоночника,
+    контур кости и диафиза, границы области интереса, посторонние предметы), а также предложит
+    исправленную область интереса, когда это требуется. Каждый результат можно скачать как DICOM SR.
     Обработка полностью локальная, снимки никуда не передаются за пределы сервера.
   </div>
 
@@ -186,7 +190,11 @@ analyzeBtn.addEventListener('click', async () => {
     renderResults(data);
     statusLine.textContent = `Готово: ${data.summary.n_files} файл(ов), ` +
       `${data.summary.n_violations} с нарушением, ${data.summary.n_failures} ошибок обработки. ` +
-      `Проверка формата: ${data.format_check === 'OK' ? 'OK' : JSON.stringify(data.format_check)}.`;
+      `Проверка формата: ${data.format_check === 'OK' ? 'OK' : JSON.stringify(data.format_check)}. `;
+    if (data.result_csv) {
+      const a = document.createElement('a'); a.href = `/api/results/${data.result_csv}`; a.textContent = 'Скачать CSV результата'; a.target = '_blank';
+      statusLine.appendChild(a);
+    }
   } catch (err) {
     statusLine.textContent = 'Ошибка: ' + err.message;
   } finally {
@@ -213,12 +221,16 @@ function renderResults(data) {
     const badgeClass = isFail ? 'fail' : (hasViolation ? 'violation' : 'ok');
     const badgeText = isFail ? 'Ошибка обработки' : (hasViolation ? 'Нарушение найдено' : 'Качество ОК');
 
-    let imgHtml = '<div style="color:#7A7974;font-size:13px;padding:40px 0;text-align:center;">Визуализация недоступна</div>';
+    let imgHtml = '';
     if (row.bonus_overlay_png_base64) {
-      imgHtml = `<img src="data:image/png;base64,${row.bonus_overlay_png_base64}" alt="overlay">`;
-    } else if (row.bonus_roi_png_base64) {
-      imgHtml = `<img src="data:image/png;base64,${row.bonus_roi_png_base64}" alt="roi">`;
+      imgHtml += `<img src="data:image/png;base64,${row.bonus_overlay_png_base64}" alt="overlay">` +
+                 `<div class="imgcap">Визуализация признаков (кликните для увеличения)</div>`;
     }
+    if (row.bonus_roi_png_base64) {
+      imgHtml += `<img src="data:image/png;base64,${row.bonus_roi_png_base64}" alt="roi">` +
+                 `<div class="imgcap">Рекомендуемая коррекция области интереса</div>`;
+    }
+    if (!imgHtml) imgHtml = '<div style="color:#7A7974;font-size:13px;padding:40px 0;text-align:center;">Визуализация недоступна</div>';
 
     let links = '';
     if (row.bonus_sr_dcm_download) {
@@ -240,6 +252,7 @@ function renderResults(data) {
         <div class="links">${links}</div>
       </div>
     `;
+    wrap.querySelectorAll('img').forEach(im => { im.style.cursor='zoom-in'; im.addEventListener('click', () => { const w = window.open(''); w.document.write(`<body style="margin:0;background:#111"><img src="${im.src}" style="height:100vh;display:block;margin:auto"></body>`); }); });
     card.appendChild(wrap);
   });
 

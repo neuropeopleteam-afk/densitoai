@@ -74,7 +74,7 @@ from geometry_features import (  # noqa: E402
 )
 from hip_features import hip_all_features  # noqa: E402
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 LOG = logging.getLogger("densito.inference")
 # pydicom шумит предупреждениями о нестандартных UID в анонимизированных файлах — не ошибка
 logging.getLogger("pydicom").setLevel(logging.ERROR)
@@ -83,7 +83,7 @@ logging.getLogger("pydicom").setLevel(logging.ERROR)
 # Конфиг (с жёстко зашитыми значениями по умолчанию на случай отсутствия yaml)
 # --------------------------------------------------------------------------- #
 DEFAULT_CONFIG: Dict[str, Any] = {
-    "version": "2.0.0",
+    "version": "2.1.0",
     "output": {
         "columns": ["path_to_study", "study_uid", "image_uid", "anatomical_region",
                     "quality_class", "violation_type", "quality_prob",
@@ -108,7 +108,8 @@ DEFAULT_CONFIG: Dict[str, Any] = {
                       "sp_art": ["metal_metal_area_mm2", "metal_metal_max_intensity_gap"],
                       "rh_pos": ["shaft_angle_deg"], "rh_roi": ["edge_distance_ratio", "bone_area_ratio"],
                       "lh_pos": ["shaft_angle_deg"], "lh_roi": ["edge_distance_ratio", "bone_area_ratio"]},
-    "stacking": {"weight_geom": 0.5, "weight_emb": 0.5, "any_violation_aggregation": "max"},
+    "stacking": {"weight_geom": 0.5, "weight_emb": 0.5, "any_violation_aggregation": "max",
+                 "any_blend_weight_model": 0.5, "consistent_quality_prob": True},
     "thresholds": {}, "fallback_threshold": 0.5,
     "fallback_rules": {  # значения синхронизированы с config.yaml (калибровка на трейне)
         "sp_axis": {"feature": "axis_angle_deg", "center": 3.6, "scale": 1.0, "direction": 1},
@@ -776,15 +777,36 @@ class DensitoInference:
                 probs.append(clip01(mb_e.predict(emb)))
             except Exception as e:  # noqa: BLE001
                 LOG.warning("any-emb model failed: %s", e)
-        if probs:
-            return float(np.mean(probs))
         # 2) агрегация по критериям
         scores = [r["score"] for r in crit_results.values() if r.get("score") is not None]
-        if not scores:
-            return float(self.cfg["output"]["fallback_quality_prob"])
         if self.cfg["stacking"].get("any_violation_aggregation", "max") == "noisy_or":
-            return clip01(1.0 - float(np.prod([1.0 - s for s in scores])))
-        return clip01(max(scores))
+            crit_agg = clip01(1.0 - float(np.prod([1.0 - s for s in scores]))) if scores else None
+        else:
+            crit_agg = clip01(max(scores)) if scores else None
+        any_model = float(np.mean(probs)) if probs else None
+        if any_model is None and crit_agg is None:
+            return float(self.cfg["output"]["fallback_quality_prob"])
+        if any_model is None:
+            return crit_agg
+        if crit_agg is None:
+            return any_model
+        # 3) смесь двух оценок. Валидация OOF (StratifiedGroupKFold по исследованиям, 3 сида):
+        #    ROC-AUC any-модель 0.735/0.704 (spine/hip), max по критериям 0.689/0.761,
+        #    смесь 0.5/0.5 -> 0.751/0.751; см. docs/METRICS_REPORT.md.
+        w = float(self.cfg["stacking"].get("any_blend_weight_model", 0.5))
+        return clip01(w * any_model + (1.0 - w) * crit_agg)
+
+    @staticmethod
+    def consistent_quality_prob(prob: float, quality_class: int) -> float:
+        """Согласование quality_prob с quality_class: класс определяется флагами
+        критериев (порог подобран по OOF на каждый критерий), а вероятность —
+        смесью моделей. Чтобы строка была непротиворечивой (class=1 <=> prob>=0.5)
+        и ROC-AUC учитывал решение по критериям, вероятность монотонно сжимается
+        в [0.5, 1] при нарушении и в [0, 0.5) при норме (порядок внутри класса
+        сохраняется). OOF ROC-AUC при этом растёт: spine 0.735 -> 0.771,
+        hip 0.704 -> 0.777 (см. docs/METRICS_REPORT.md)."""
+        p = clip01(prob)
+        return 0.5 + 0.5 * p if quality_class else min(0.5 * p, 0.499999)
 
     # ---- обработка одного файла (никогда не бросает исключение наружу)
     def process_file(self, path: Path, root: Optional[Path] = None) -> Tuple[Dict[str, Any], Dict[str, Any]]:
@@ -815,10 +837,12 @@ class DensitoInference:
                     name = self.cfg["violations"][c]
                     if name not in violations:
                         violations.append(name)
-            quality_prob = self.any_violation_prob(region, crit_results, feats, emb)
             quality_class = 1 if violations else 0
-            # согласованность: если класс "нарушение", вероятность не ниже 0.5 быть не обязана
-            # (ROC-AUC по quality_prob считается отдельно), но класс и список согласованы всегда.
+            quality_prob = self.any_violation_prob(region, crit_results, feats, emb)
+            debug["quality_prob_raw"] = round(float(quality_prob), 6)
+            if self.cfg["stacking"].get("consistent_quality_prob", True):
+                quality_prob = self.consistent_quality_prob(quality_prob, quality_class)
+            # инвариант: quality_class == 1  <=>  quality_prob >= 0.5; класс и список нарушений согласованы всегда.
 
             row = {
                 "path_to_study": self._path_str(path, root),
