@@ -152,6 +152,12 @@
   </div>
 
   <div id="results"></div>
+
+  <div class="card" id="historyCard">
+    <h2>История запросов <button id="historyBtn" class="btn small secondary" style="margin-left:8px">Обновить</button></h2>
+    <div class="hint">Последние партии, обработанные на этом сервере. Файлы каждой партии доступны по её коду запроса.</div>
+    <div id="historyList" class="filelist"></div>
+  </div>
 </main>
 
 <div class="lightbox" id="lightbox"><img alt=""></div>
@@ -295,9 +301,14 @@ function renderResults(data) {
     kpi(fmt(s.total_processing_time_s, 1) + ' с', `время модели · ${fmt((s.total_processing_time_s || 0) / Math.max(n, 1), 2)} с/файл`),
   ]));
   const dl = el('div', { class: 'actions', style: 'margin-top:0' });
-  if (data.result_csv) dl.appendChild(el('a', { class: 'btn small', href: '/api/results/' + encodeURIComponent(data.result_csv), target: '_blank', text: 'Скачать CSV (официальный формат)' }));
-  if (data.result_xlsx) dl.appendChild(el('a', { class: 'btn small secondary', href: '/api/results/' + encodeURIComponent(data.result_xlsx), target: '_blank', text: 'Скачать XLSX (сводка, по исследованиям)' }));
-  if (data.result_debug_csv) dl.appendChild(el('a', { class: 'btn small secondary', href: '/api/results/' + encodeURIComponent(data.result_debug_csv), target: '_blank', text: 'Технический CSV (признаки и скоры)' }));
+  const jobBase = '/api/results/' + encodeURIComponent(data.job_id || '') + '/';
+  const csvUrl = data.result_csv_url || (data.result_csv ? jobBase + encodeURIComponent(data.result_csv) : null);
+  const xlsxUrl = data.result_xlsx_url || (data.result_xlsx ? jobBase + encodeURIComponent(data.result_xlsx) : null);
+  const dbgUrl = data.result_debug_csv_url || (data.result_debug_csv ? jobBase + encodeURIComponent(data.result_debug_csv) : null);
+  if (csvUrl) dl.appendChild(el('a', { class: 'btn small', href: csvUrl, target: '_blank', text: 'Скачать CSV (официальный формат)' }));
+  if (xlsxUrl) dl.appendChild(el('a', { class: 'btn small secondary', href: xlsxUrl, target: '_blank', text: 'Скачать XLSX (сводка, по исследованиям)' }));
+  if (dbgUrl) dl.appendChild(el('a', { class: 'btn small secondary', href: dbgUrl, target: '_blank', text: 'Технический CSV (признаки и скоры)' }));
+  if (data.job_id) dl.appendChild(el('span', { class: 'hint', style: 'align-self:center;margin-left:8px', text: 'Код запроса: ' + data.job_id }));
   card.appendChild(dl);
 
   // панель фильтров
@@ -445,6 +456,31 @@ document.addEventListener('keydown', e => {
   e.preventDefault(); state.selected = rows[next]._i; refresh();
   const s = document.querySelector('.qrow.selected'); if (s) { s.focus({ preventScroll: true }); s.scrollIntoView({ block: 'nearest' }); }
 });
+
+// ---------- история запросов ----------
+async function loadHistory() {
+  const box = document.getElementById('historyList');
+  box.textContent = '';
+  try {
+    const r = await fetch('/api/jobs?limit=20');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    if (!j.jobs || !j.jobs.length) { box.appendChild(el('div', { class: 'hint', text: 'Запросов пока нет.' })); return; }
+    for (const it of j.jobs) {
+      const s = it.summary || {};
+      const row = el('div', { class: 'file' });
+      row.appendChild(el('span', { class: 'mono', text: (it.created_at || it.job_id).replace('T', ' ') }));
+      if (it.error) row.appendChild(el('span', { class: 'hint', text: 'ошибка: ' + it.error }));
+      else row.appendChild(el('span', { class: 'hint', text: `${it.n_rows} файлов · нарушений ${s.n_violations ?? '—'} · ${fmt(s.wall_time_s, 1)} с` }));
+      const base = '/api/results/' + encodeURIComponent(it.job_id) + '/';
+      row.appendChild(el('a', { class: 'btn small secondary', href: base + 'results.csv', target: '_blank', text: 'CSV' }));
+      row.appendChild(el('a', { class: 'btn small secondary', href: '/api/jobs/' + encodeURIComponent(it.job_id), target: '_blank', text: 'JSON' }));
+      box.appendChild(row);
+    }
+  } catch (e) { box.appendChild(el('div', { class: 'hint', text: 'История недоступна: ' + e.message })); }
+}
+document.getElementById('historyBtn').addEventListener('click', loadHistory);
+loadHistory();
 </script>
 </body>
 </html>
