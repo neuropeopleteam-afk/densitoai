@@ -109,5 +109,12 @@
   "model_left_hip_any_emb_pca.pkl": {
     "criterion": "any",
     "n_pos": 92
+  },
+  "model_region_emb.pkl": {
+    "sha256": "66f8a86c2041671339a1633b18a7f6a19d322238de362fca84452382bbce6d01",
+    "size_bytes": 37086,
+    "purpose": "fallback region classifier (spine vs hip) on 1280-d EfficientNet embeddings; used only for non-standard image widths",
+    "oof_accuracy": 1.0,
+    "cv": "StratifiedGroupKFold(5) by study, 499 files"
   }
 }

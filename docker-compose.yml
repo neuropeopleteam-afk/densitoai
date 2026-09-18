@@ -4,7 +4,7 @@
 services:
   densito-batch:
     build: { context: ., dockerfile: Dockerfile }
-    image: densitoai:2.0.0
+    image: densitoai:2.1.0
     container_name: densito-batch
     command: ["batch"]
     user: "${UID:-1000}:${GID:-1000}"
@@ -19,7 +19,7 @@ services:
 
   densito-api:
     build: { context: ., dockerfile: Dockerfile }
-    image: densitoai:2.0.0
+    image: densitoai:2.1.0
     container_name: densito-api
     command: ["api"]
     user: "${UID:-1000}:${GID:-1000}"

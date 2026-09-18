@@ -690,6 +690,17 @@ class DensitoInference:
         self.cfg = cfg or load_config()
         self.registry = ModelRegistry(Path(models_dir) if models_dir else MODELS_DIR, self.cfg)
         self.embedder = EmbeddingExtractor(enabled=use_embeddings)
+        # Резервный классификатор области (позвоночник/бедро) по эмбеддингам.
+        # Используется ТОЛЬКО когда ширина снимка нестандартна (не 300/280/248 px),
+        # т.е. правило организаторов по ширине неприменимо. OOF-точность 100 % (499 файлов).
+        self.region_fallback = None
+        rf = (Path(models_dir) if models_dir else MODELS_DIR) / "model_region_emb.pkl"
+        if use_embeddings and rf.exists():
+            try:
+                with open(rf, "rb") as fh:
+                    self.region_fallback = pickle.load(fh)
+            except Exception as e:  # noqa: BLE001
+                LOG.warning("Region fallback model not loaded: %s", e)
         if not self.registry.has_any_model():
             LOG.warning("No trained .pkl models found in %s -> using physical fallback rules "
                         "(config.yaml: fallback_rules). Retrain/save models to enable stacking.",
@@ -817,6 +828,20 @@ class DensitoInference:
         try:
             info = read_and_validate(path, self.cfg)
             region, region_src = classify_region(info, path, self.cfg)
+            std_cols = set(int(c) for c in self.cfg["regions"].get("standard_cols", [300, 280, 248]))
+            if (region_src.startswith("dims") and info.cols not in std_cols
+                    and self.region_fallback is not None):
+                # нестандартная ширина -> правило по ширине ненадёжно, решаем по содержимому
+                emb0 = self.embedder.extract(info.img_u8)
+                if emb0 is not None:
+                    is_spine = int(self.region_fallback["model"].predict(emb0[None, :])[0]) == 1
+                    if is_spine:
+                        region, region_src = "spine", "content_fallback"
+                    else:
+                        region, side_src = detect_hip_side_region(info.img_u8)
+                        region_src = f"content_fallback+{side_src}"
+                    LOG.info("%s: non-standard width %d px -> region by content: %s", path.name, info.cols, region)
+            debug["region_src"] = region_src
             feats = extract_geometry(info, region, self.cfg)
 
             need_emb = any((region, c) in self.registry.emb for c in self.cfg["criteria_by_region"][region]) \
