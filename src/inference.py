@@ -361,11 +361,14 @@ def detect_hip_side_region(img_u8: np.ndarray) -> Tuple[str, str]:
 
 def classify_region(info: DicomInfo, path: Path, cfg: Dict[str, Any]) -> Tuple[str, str]:
     """Возвращает (internal_region in {spine,right_hip,left_hip}, source).
-    Приоритет: имя файла -> DICOM-теги -> размеры (правило организаторов) -> плотность."""
+    Приоритет: DICOM-теги -> ширина кадра (правило организаторов, стандартные 300/280/248 px)
+    -> подсказка в имени файла (только для нестандартной ширины; организаторы подтвердили,
+    что суффиксов в именах тестовых файлов не будет) -> ширина + анатомия стороны.
+    Для нестандартной ширины без подсказки решение уточняет контентная модель (process_file)."""
     name_up = path.stem.upper()
-    for hint, region in FILENAME_HINTS:
-        if hint.upper() in name_up:
-            return region, f"filename:{hint}"
+    hint_region = next((region for hint, region in FILENAME_HINTS if hint.upper() in name_up), None)
+    hint_src = next((f"filename:{hint}" for hint, region in FILENAME_HINTS if hint.upper() in name_up), "")
+    std_cols = set(int(c) for c in cfg["regions"].get("standard_cols", [300, 280, 248]))
 
     text = " ".join([info.tags.get("BodyPartExamined", ""), info.tags.get("SeriesDescription", ""),
                      info.tags.get("ProtocolName", ""), info.tags.get("StudyDescription", "")]).upper()
@@ -379,6 +382,10 @@ def classify_region(info: DicomInfo, path: Path, cfg: Dict[str, Any]) -> Tuple[s
             return "left_hip", "dicom_tags+laterality"
         region, src = detect_hip_side_region(info.img_u8)
         return region, f"dicom_tags+{src}"
+
+    # Имя файла — только если ширина нестандартная (иначе решает содержимое)
+    if hint_region is not None and info.cols not in std_cols:
+        return hint_region, hint_src
 
     # Правило по ширине (подтверждено организаторами): 300 px спина, 280/248 бедро
     if info.cols >= int(cfg["regions"]["spine_min_cols"]):
@@ -802,8 +809,9 @@ class DensitoInference:
         if crit_agg is None:
             return any_model
         # 3) смесь двух оценок. Валидация OOF (StratifiedGroupKFold по исследованиям, 3 сида):
-        #    ROC-AUC any-модель 0.735/0.704 (spine/hip), max по критериям 0.689/0.761,
-        #    смесь 0.5/0.5 -> 0.751/0.751; см. docs/METRICS_REPORT.md.
+        #    ROC-AUC any-модель 0.766/0.702 (spine/hip), max по критериям 0.689/0.761,
+        #    смесь 0.5/0.5 -> 0.758/0.747, после согласования с классом 0.775/0.773;
+        #    см. docs/METRICS_REPORT.md (src/eval_oof_metrics.py).
         w = float(self.cfg["stacking"].get("any_blend_weight_model", 0.5))
         return clip01(w * any_model + (1.0 - w) * crit_agg)
 
@@ -814,8 +822,8 @@ class DensitoInference:
         смесью моделей. Чтобы строка была непротиворечивой (class=1 <=> prob>=0.5)
         и ROC-AUC учитывал решение по критериям, вероятность монотонно сжимается
         в [0.5, 1] при нарушении и в [0, 0.5) при норме (порядок внутри класса
-        сохраняется). OOF ROC-AUC при этом растёт: spine 0.735 -> 0.771,
-        hip 0.704 -> 0.777 (см. docs/METRICS_REPORT.md)."""
+        сохраняется). OOF ROC-AUC при этом растёт: spine 0.735 -> 0.775,
+        hip 0.704 -> 0.773 (см. docs/METRICS_REPORT.md)."""
         p = clip01(prob)
         return 0.5 + 0.5 * p if quality_class else min(0.5 * p, 0.499999)
 
