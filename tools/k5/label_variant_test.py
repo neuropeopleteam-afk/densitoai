@@ -1,18 +1,18 @@
 import os; os.environ['OMP_NUM_THREADS']='1'
 import sys, numpy as np, pandas as pd, warnings; warnings.filterwarnings('ignore')
 sys.path.insert(0,'tools'); sys.path.insert(0,'src')
-os.environ['NESTED_GATE_WORK']='/home/user/workspace/work/B'
+os.environ.setdefault('NESTED_GATE_WORK', 'outputs/nested_gate')
 from nested_gate import fit_geom, fit_emb, connected_groups, impute, safe_auc
 from sklearn.model_selection import GroupKFold
 from train_stacked import CRITERION_GEOMETRY_COLS
-import build_dataset; from pathlib import Path; build_dataset.LABELS_XLSX = Path("/home/user/workspace/external_datasets/own_dataset/разметка.xlsx"); load_labels = build_dataset.load_labels
+import build_dataset; from pathlib import Path; build_dataset.LABELS_XLSX = Path(os.environ.get('LABELS_XLSX', 'data/разметка.xlsx')); load_labels = build_dataset.load_labels
 xl = load_labels(); xl.index = xl.index.astype(str)
 g = pd.read_csv('data/geometry_features.csv')
 lab = pd.read_csv('data/labels_for_embeddings.csv')
 E = np.load('data/embeddings.npy')
 hipm = g.region.isin(['right_hip','left_hip']).values
 hip = g[hipm].reset_index(drop=True); Eh = E[np.nonzero(lab.region.isin(['right_hip','left_hip']).values)[0]]
-h = pd.read_csv('/home/user/workspace/work/B/results/pixel_hashes.csv'); hip['pixel_hash']=hip.file_path.map(dict(zip(h.file_path,h.pixel_hash)))
+h = pd.read_csv(os.environ.get('PIXEL_HASHES_CSV', 'outputs/pixel_hashes.csv')); hip['pixel_hash']=hip.file_path.map(dict(zip(h.file_path,h.pixel_hash)))
 groups = connected_groups(hip.study.values, hip.pixel_hash.values)
 det = hip.hip_side_detected.values
 def lbl(sides, crit):

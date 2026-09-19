@@ -3,7 +3,7 @@ import os; os.environ.setdefault('OMP_NUM_THREADS','1')
 import sys, time, warnings; warnings.filterwarnings('ignore')
 import numpy as np, pandas as pd
 sys.path.insert(0,'tools'); sys.path.insert(0,'src')
-os.environ['NESTED_GATE_WORK']='/home/user/workspace/work/B'
+os.environ.setdefault('NESTED_GATE_WORK', 'outputs/nested_gate')
 from nested_gate import (fit_geom, fit_emb, impute, safe_auc, pct_rank, ref_rank, stack, choose_threshold, macro_f1, boot_ci, degenerate, W_BASE, N_OUTER, N_INNER, GAIN_MIN, GAIN_REPEATS)
 from sklearn.model_selection import GroupKFold
 from sklearn.metrics import f1_score

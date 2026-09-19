@@ -3,7 +3,7 @@ import os; os.environ.setdefault('OMP_NUM_THREADS','1')
 import sys, warnings; warnings.filterwarnings('ignore')
 import numpy as np, pandas as pd
 sys.path.insert(0,'tools'); sys.path.insert(0,'src')
-os.environ['NESTED_GATE_WORK']='/home/user/workspace/work/B'
+os.environ.setdefault('NESTED_GATE_WORK', 'outputs/nested_gate')
 from nested_gate import (fit_geom, fit_emb, connected_groups, impute, safe_auc, pct_rank, ref_rank, stack, choose_threshold, macro_f1, boot_ci, degenerate, W_BASE, N_OUTER, N_INNER, GAIN_MIN, GAIN_REPEATS)
 from sklearn.model_selection import GroupKFold
 from sklearn.metrics import f1_score, roc_auc_score
@@ -11,7 +11,7 @@ OUT='outputs/k5/out'
 d = pd.read_csv(f'{OUT}/axis_features_spine.csv')
 lab = pd.read_csv('data/labels_for_embeddings.csv'); E = np.load('data/embeddings.npy')
 sm = lab.region.eq('spine').values; assert (lab.file_path.values[sm]==d.file_path.values).all(); Es = E[sm]
-h = pd.read_csv('/home/user/workspace/work/B/results/pixel_hashes.csv'); d['pixel_hash']=d.file_path.map(dict(zip(h.file_path,h.pixel_hash)))
+h = pd.read_csv(os.environ.get('PIXEL_HASHES_CSV', 'outputs/pixel_hashes.csv')); d['pixel_hash']=d.file_path.map(dict(zip(h.file_path,h.pixel_hash)))
 groups = connected_groups(d.study.values, d.pixel_hash.values); y = d.sp_axis.values.astype(int); studies=d.study.values
 NEW = ['axis_bodies_deg','axis_col_deg','tilt_local_max_deg','tilt_local_mean_deg','tilt_step_max_deg']
 sets = {'old: axis_angle_deg': ['axis_angle_deg'], 'axis_bodies_deg': ['axis_bodies_deg'], 'axis_col_deg': ['axis_col_deg'],
