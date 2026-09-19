@@ -6,6 +6,12 @@
 для ДИ. Пороги: для критериев с >=15 позитивами — максимизация F1 на OOF
 (с плато-усреднением), для критериев с <15 позитивами — prevalence-порог
 (top-k% по рангу, k = доля позитивов в трейне), без подгонки на шуме.
+
+Стэкинг: score = w_geom*rank(geom) + (1-w_geom)*rank(emb); w_geom по критерию берётся из
+config.yaml (stacking.weights_by_criterion, дефолт weight_geom=0.5) и здесь НЕ подбирается —
+выбор веса делается только в nested CV (tools/nested_gate.py), см. models/nested_gate_decisions.json.
+Пути переопределяются переменными окружения DENSITO_ROOT / DENSITO_DATA_DIR / DENSITO_MODELS_DIR /
+DENSITO_CONFIG (по умолчанию — корень репозитория).
 """
 import warnings
 warnings.filterwarnings("ignore")
@@ -21,8 +27,11 @@ from sklearn.metrics import f1_score, roc_auc_score
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
-DATA_DIR = Path("/home/user/workspace/densito_rebuild/data")
-OUT_DIR = Path("/home/user/workspace/densito_rebuild/models")
+import os
+PROJECT_ROOT = Path(os.environ.get("DENSITO_ROOT", Path(__file__).resolve().parent.parent))
+DATA_DIR = Path(os.environ.get("DENSITO_DATA_DIR", PROJECT_ROOT / "data"))
+OUT_DIR = Path(os.environ.get("DENSITO_MODELS_DIR", PROJECT_ROOT / "models"))
+CONFIG_PATH = Path(os.environ.get("DENSITO_CONFIG", PROJECT_ROOT / "config.yaml"))
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 REGION_CRITERIA = {
@@ -110,6 +119,51 @@ CRITERION_GEOMETRY_COLS = {
 N_FOLDS = 5
 N_REPEATS = 5
 PCA_COMPONENTS = 32  # снижаем размерность эмбеддингов 1280 -> 32 для устойчивости на малых данных
+
+# --- Вентильный стэкинг (К2). Вес контура A по критерию: скор = w*rank(geom) + (1-w)*rank(emb).
+# Источник истины — config.yaml: stacking.weights_by_criterion (ключи sp_pos, sp_axis, sp_art,
+# hip_pos, hip_roi); по умолчанию stacking.weight_geom (0.5). Значения выбраны ТОЛЬКО в nested
+# repeated GroupKFold (tools/nested_gate.py -> models/nested_gate_decisions.json): вентиль принят
+# для критерия, если прирост AUC >= 0.03 в >= 7 из 10 повторов и macro-F1 не хуже.
+# ВНИМАНИЕ: сам этот скрипт вес НЕ подбирает — иначе OOF-метрики были бы оптимистичны.
+DEFAULT_WEIGHT_GEOM = 0.5
+NESTED_DECISIONS_FILE = 'nested_gate_decisions.json'
+
+
+def load_stacking_weights():
+    """{crit: w_geom} из config.yaml (weights_by_criterion поверх weight_geom)."""
+    default, by_crit = DEFAULT_WEIGHT_GEOM, {}
+    if CONFIG_PATH.exists():
+        try:
+            import yaml
+            with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
+                st = (yaml.safe_load(f) or {}).get('stacking', {}) or {}
+            default = float(st.get('weight_geom', default))
+            by_crit = {k: float(v) for k, v in (st.get('weights_by_criterion') or {}).items() if v is not None}
+        except Exception as e:  # noqa: BLE001
+            print(f"  [warn] config.yaml не прочитан ({e}) — веса стэкинга 0.5/0.5")
+    return default, by_crit
+
+
+def weight_geom_for(crit):
+    default, by_crit = load_stacking_weights()
+    return float(np.clip(by_crit.get(crit, default), 0.0, 1.0))
+
+
+def nested_decision_for(crit):
+    """Запись nested-валидации вентиля для критерия (models/nested_gate_decisions.json), если есть."""
+    p = OUT_DIR / NESTED_DECISIONS_FILE
+    if not p.exists():
+        return None
+    try:
+        with open(p, 'r', encoding='utf-8') as f:
+            d = json.load(f)
+        for rec in d.get('criteria', []):
+            if rec.get('criterion') == crit:
+                return rec
+    except Exception as e:  # noqa: BLE001
+        print(f"  [warn] {p.name} не прочитан: {e}")
+    return None
 
 
 def prevalence_threshold(y_train, scores_train):
@@ -263,10 +317,14 @@ def train_region_stacked(region, criteria):
         oof_geom = np.nanmean(all_repeat_oof_geom, axis=0)
         oof_emb = np.nanmean(all_repeat_oof_emb, axis=0)
 
-        # rank-average stacking
+        # rank-average stacking с весом по критерию (вентиль К2; вес из config.yaml, НЕ подбирается здесь)
+        w_geom = weight_geom_for(crit)
+        nested = nested_decision_for(crit)
+        gate_selected_by = 'nested' if (nested is not None and nested.get('accepted')) else 'default'
         rank_geom = pd.Series(oof_geom).rank(pct=True).values
         rank_emb = pd.Series(oof_emb).rank(pct=True).values
-        oof_stacked = 0.5 * rank_geom + 0.5 * rank_emb
+        oof_stacked = w_geom * rank_geom + (1.0 - w_geom) * rank_emb
+        print(f"  стэкинг: w_geom={w_geom} ({gate_selected_by})")
 
         # AUC comparison (only if variation)
         aucs = {}
@@ -303,6 +361,12 @@ def train_region_stacked(region, criteria):
             'threshold_method': thresh_method,
             'f1_oof': float(f1),
             'f1_ci_lo': ci_lo, 'f1_ci_hi': ci_hi,
+            # вентиль К2: вес контура A и откуда он взят
+            'weight_geom': w_geom, 'weight_emb': 1.0 - w_geom, 'gate_selected_by': gate_selected_by,
+            'nested_auc_mean': (None if nested is None else nested.get('auc_gate_mean_over_repeats')),
+            'nested_auc_ci': (None if nested is None else nested.get('auc_gate_ci')),
+            'nested_auc_base_mean': (None if nested is None else nested.get('auc_base_mean_over_repeats')),
+            'nested_repeats_gain_ge_0.03': (None if nested is None else nested.get('n_repeats_gain_ge_0.03')),
         }
 
         # save OOF details
@@ -336,6 +400,7 @@ def train_region_stacked(region, criteria):
                     'n_valid': int(m.sum()), 'n_pos': n_pos_s,
                     'auc_geom': side_aucs['geom'], 'auc_emb': side_aucs['emb'], 'auc_stacked': side_aucs['stacked'],
                     'threshold': float(thresh), 'threshold_method': thresh_method + '_shared_hip_model',
+                    'weight_geom': w_geom, 'weight_emb': 1.0 - w_geom, 'gate_selected_by': gate_selected_by,
                     'f1_oof': float(f1_s), 'f1_ci_lo': lo_s, 'f1_ci_hi': hi_s,
                     'note': ('ненадёжно: <10 позитивов' if n_pos_s < 10 else 'ok'),
                 }
@@ -361,8 +426,8 @@ def main():
     print("\n\n=== SUMMARY ===")
     for region, results in all_results.items():
         for crit, m in results.items():
-            print(f"{region}.{crit}: n_pos={m['n_pos']}, AUC_geom={m['auc_geom']}, AUC_emb={m['auc_emb']}, "
-                  f"AUC_stacked={m['auc_stacked']}, "
+            print(f"{region}.{crit}: n_pos={m['n_pos']}, w_geom={m.get('weight_geom')}, AUC_geom={m['auc_geom']}, "
+                  f"AUC_emb={m['auc_emb']}, AUC_stacked={m['auc_stacked']}, "
                   f"F1={m['f1_oof']:.3f} CI=[{m['f1_ci_lo']:.3f},{m['f1_ci_hi']:.3f}]")
 
 

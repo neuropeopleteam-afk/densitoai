@@ -72,6 +72,16 @@ stacking:
   # затем взвешенная сумма. Веса должны совпадать с обучением.
   weight_geom: 0.5
   weight_emb: 0.5
+  # Вентиль К2: вес контура A (геометрия) ПО КРИТЕРИЮ, score = w*rank_geom + (1-w)*rank_emb.
+  # Ключи: sp_pos, sp_axis, sp_art, hip_pos, hip_roi (rh_*/lh_* берут вес hip_pos/hip_roi).
+  # Критерий без записи (или null) использует weight_geom/weight_emb выше. Значение здесь
+  # ОБЯЗАНО совпадать с тем, что применялось в train_stacked.py (порог подобран на том же стэке).
+  # Выбор веса — только nested repeated GroupKFold (tools/nested_gate.py, отчёт docs/NESTED_GATE_REPORT.md).
+  # Итог nested 19.09.2026: ни один критерий не прошёл приёмку полностью
+  # (sp_axis: +0.069 AUC, 8/10 повторов >= 0.03, но macro-F1 -0.005 -> формально не принят);
+  # поэтому таблица пуста, поведение = 0.5/0.5. Включение sp_axis: 1.0 — решение оркестратора,
+  # после него обязателен перезапуск train_stacked.py и train_final_models.py.
+  weights_by_criterion: {}
   # Как агрегировать скоры критериев в quality_prob (бинарное "есть нарушение"):
   # max | noisy_or. Если есть отдельная модель model_<region>_any_*.pkl — она приоритетнее.
   any_violation_aggregation: max

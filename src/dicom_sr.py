@@ -22,9 +22,21 @@ codebook кодов SNOMED/DCM. Вместо кодов из внешних сл
 SR Storage) и открывается стандартными вьюерами (Weasis, OHIF, RadiAnt),
 показывая дерево находок.
 
-Функция:
+Функции (режим «SR на снимок», исторический, флаг --sr-dir):
   build_sr(ref_ds, region, quality_class, violation_type, quality_prob, feats) -> pydicom Dataset
   save_sr(path, ref_ds, ...) -> path
+
+Режим «ОДИН SR на исследование» (флаг --sr-study, К10 плана; методология НПКЦ ДиТ:
+отсутствие SR или два и более SR на исследование — технологический дефект, SR нужен и при норме):
+  build_study_sr(study_uid, items, model_version, config_hash, study_header) -> pydicom Dataset
+  save_study_sr(path, ...) -> path
+  study_sr_filename(study_uid) -> "<study_uid>_SR.dcm"
+Один документ на study_uid, в нём по каждому снимку: ссылка на изображение (IMAGE content item с
+ReferencedSOPSequence), область, класс, список нарушений, quality_prob, sha256 файла и пикселей
+оригинала (хэш неизменности), статус обработки; в контексте документа — имя сервиса, версия модели,
+config_hash и предупреждение об использовании ИИ. Series Instance UID детерминирован от
+(study_uid, версия модели); SOP Instance UID детерминирован от тех же величин плюс содержимое
+(повторный прогон с тем же результатом даёт тот же UID, другой результат — другой UID).
 """
 from __future__ import annotations
 
@@ -190,6 +202,236 @@ def save_sr(path: str, ref_ds, region: str, quality_class: int, violation_type: 
     ds = build_sr(ref_ds, region, quality_class, violation_type, quality_prob, feats)
     ds.save_as(path, write_like_original=False)
     return path
+
+
+# =========================================================================== #
+# Режим «один SR на исследование» (--sr-study)
+# =========================================================================== #
+import hashlib
+import json
+import re
+
+SERVICE_NAME = "DensitoAI"
+AI_WARNING = ("Результат получен автоматически программным обеспечением с применением технологий "
+              "искусственного интеллекта и не является медицинским заключением. Требует проверки "
+              "врачом.")
+_UID_RE = re.compile(r"^[0-9]+(\.[0-9]+)*$")
+
+
+def is_valid_uid(uid: Optional[str]) -> bool:
+    """Синтаксическая проверка DICOM UID (цифры и точки, не более 64 символов)."""
+    return bool(uid) and len(uid) <= 64 and bool(_UID_RE.match(uid))
+
+
+def deterministic_uid(*parts: str) -> str:
+    """UID, воспроизводимый от набора строк (pydicom generate_uid с entropy_srcs: sha512 →
+    префикс pydicom 1.2.826.0.1.3680043.8.498. + 39 цифр)."""
+    return generate_uid(entropy_srcs=[str(p) for p in parts])
+
+
+def study_sr_filename(study_uid: str) -> str:
+    safe = re.sub(r"[^0-9A-Za-z._-]", "_", str(study_uid))[:180]
+    return f"{safe}_SR.dcm"
+
+
+def _image_item(image_uid: str, sop_class_uid: Optional[str]) -> Optional[Dataset]:
+    """IMAGE content item со ссылкой на исходное изображение (ReferencedSOPSequence)."""
+    if not is_valid_uid(image_uid):
+        return None
+    item = _content_item("CONTAINS", "IMAGE", "SRC-IMAGE", "Исходное изображение")
+    ref = Dataset()
+    ref.ReferencedSOPClassUID = sop_class_uid if is_valid_uid(sop_class_uid) else "1.2.840.10008.5.1.4.1.1.7"
+    ref.ReferencedSOPInstanceUID = image_uid
+    item.ReferencedSOPSequence = Sequence([ref])
+    return item
+
+
+def _items_digest(items: list) -> str:
+    keys = ("image_uid", "anatomical_region", "quality_class", "violations", "quality_prob",
+            "processing_status", "sha256_file", "sha256_pixels")
+    payload = [{k: it.get(k) for k in keys} for it in sorted(items, key=lambda x: str(x.get("image_uid")))]
+    return hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str).encode()).hexdigest()
+
+
+def build_study_sr(study_uid: str, items: list, model_version: str, config_hash: str,
+                   study_header: Optional[Dict[str, Any]] = None,
+                   manufacturer: str = SERVICE_NAME, now: Optional[datetime.datetime] = None) -> Dataset:
+    """Один DICOM Comprehensive SR на исследование.
+
+    items — список словарей по каждому снимку исследования (включая норму и Failure):
+      image_uid, sop_class_uid, series_uid, anatomical_region (официальная строка), quality_class (0/1),
+      violations (list[str]), quality_prob (float), processing_status, sha256_file, sha256_pixels,
+      path_to_study (строка для человека).
+    study_header — атрибуты пациента/исследования, снятые с любого прочитанного DICOM исследования
+      (PatientName, PatientID, PatientBirthDate, PatientSex, StudyDate, StudyTime, StudyID,
+      AccessionNumber, ReferringPhysicianName). Может быть пустым.
+    """
+    now = now or datetime.datetime.now()
+    study_header = study_header or {}
+    items = list(items)
+
+    sr_study_uid = study_uid if is_valid_uid(study_uid) else deterministic_uid("densito-study", study_uid)
+    series_uid = deterministic_uid("densito-sr-series", study_uid, model_version)
+    sop_uid = deterministic_uid("densito-sr-instance", study_uid, model_version, config_hash, _items_digest(items))
+
+    file_meta = FileMetaDataset()
+    file_meta.MediaStorageSOPClassUID = ComprehensiveSRStorage
+    file_meta.MediaStorageSOPInstanceUID = sop_uid
+    file_meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian
+
+    ds = FileDataset(None, {}, file_meta=file_meta, preamble=b"\x00" * 128)
+    ds.SpecificCharacterSet = "ISO_IR 192"
+    # --- SOP Common
+    ds.SOPClassUID = ComprehensiveSRStorage
+    ds.SOPInstanceUID = sop_uid
+    ds.InstanceCreationDate = now.strftime("%Y%m%d")
+    ds.InstanceCreationTime = now.strftime("%H%M%S")
+    # --- Patient / General Study (Type 2 — присутствуют, могут быть пустыми)
+    for attr in ("PatientName", "PatientID", "PatientBirthDate", "PatientSex",
+                 "StudyDate", "StudyTime", "StudyID", "AccessionNumber", "ReferringPhysicianName"):
+        setattr(ds, attr, study_header.get(attr, ""))
+    ds.StudyInstanceUID = sr_study_uid
+    # --- SR Document Series
+    ds.Modality = "SR"
+    ds.SeriesInstanceUID = series_uid
+    ds.SeriesNumber = 9001
+    ds.SeriesDescription = "DensitoAI QC report (one SR per study)"
+    ds.ReferencedPerformedProcedureStepSequence = Sequence()
+    # --- General Equipment
+    ds.Manufacturer = manufacturer
+    ds.ManufacturerModelName = "DensitoAI DXA QC"
+    ds.SoftwareVersions = str(model_version)
+    # --- SR Document General
+    ds.InstanceNumber = 1
+    ds.ContentDate = now.strftime("%Y%m%d")
+    ds.ContentTime = now.strftime("%H%M%S")
+    ds.CompletionFlag = "COMPLETE"
+    ds.VerificationFlag = "UNVERIFIED"  # автоматический анализ, врачом не подписан
+    ds.PerformedProcedureCodeSequence = Sequence()
+
+    # Evidence: все реально существующие изображения исследования, сгруппированные по серии
+    by_series: Dict[str, list] = {}
+    for it in items:
+        if not is_valid_uid(it.get("image_uid")):
+            continue
+        s_uid = it.get("series_uid") if is_valid_uid(it.get("series_uid")) else deterministic_uid("densito-unknown-series", study_uid)
+        by_series.setdefault(s_uid, []).append(it)
+    if by_series:
+        ev = Dataset()
+        ev.StudyInstanceUID = sr_study_uid
+        ref_series = []
+        for s_uid, its in by_series.items():
+            rs = Dataset()
+            rs.SeriesInstanceUID = s_uid
+            refs = []
+            for it in its:
+                r = Dataset()
+                r.ReferencedSOPClassUID = it.get("sop_class_uid") if is_valid_uid(it.get("sop_class_uid")) else "1.2.840.10008.5.1.4.1.1.7"
+                r.ReferencedSOPInstanceUID = it["image_uid"]
+                refs.append(r)
+            rs.ReferencedSOPSequence = Sequence(refs)
+            ref_series.append(rs)
+        ev.ReferencedSeriesSequence = Sequence(ref_series)
+        ds.CurrentRequestedProcedureEvidenceSequence = Sequence([ev])
+
+    # --- Дерево содержимого
+    n_total = len(items)
+    n_fail = sum(1 for it in items if str(it.get("processing_status", "")).lower() == "failure")
+    n_viol = sum(1 for it in items if int(it.get("quality_class") or 0) == 1)
+    if n_viol:
+        verdict = ("VIOLATION", f"Выявлены нарушения качества на {n_viol} из {n_total} снимков")
+    elif n_fail == n_total and n_total:
+        verdict = ("NOT-EVALUATED", "Ни один снимок исследования не удалось обработать")
+    else:
+        verdict = ("OK", "Нарушений качества укладки и снимков не выявлено")
+
+    root_children = [
+        _text_item("HAS OBS CONTEXT", "SERVICE-NAME", "Наименование ИИ-сервиса", SERVICE_NAME),
+        _text_item("HAS OBS CONTEXT", "MODEL-VERSION", "Версия модели", str(model_version)),
+        _text_item("HAS OBS CONTEXT", "CONFIG-HASH", "Хэш конфигурации (config_hash)", str(config_hash)),
+        _text_item("HAS OBS CONTEXT", "STUDY-UID-SRC", "StudyInstanceUID исходного исследования", str(study_uid)),
+        _text_item("HAS OBS CONTEXT", "AI-WARNING", "Предупреждение об использовании ИИ", AI_WARNING),
+        _code_content_item("CONTAINS", "STUDY-VERDICT", "Итог по исследованию", *verdict),
+        _num_item("CONTAINS", "N-IMAGES", "Число снимков в исследовании", n_total, "1"),
+        _num_item("CONTAINS", "N-VIOLATION", "Число снимков с нарушениями", n_viol, "1"),
+        _num_item("CONTAINS", "N-FAILURE", "Число снимков, не обработанных (Failure)", n_fail, "1"),
+    ]
+
+    for idx, it in enumerate(sorted(items, key=lambda x: (str(x.get("anatomical_region", "")), str(x.get("image_uid", "")))), 1):
+        status = str(it.get("processing_status", ""))
+        is_fail = status.lower() == "failure"
+        viols = [v for v in (it.get("violations") or []) if str(v).strip()]
+        if is_fail:
+            v_code, v_text = "NOT-EVALUATED", "Снимок не обработан (Failure)"
+        elif viols:
+            v_code, v_text = "VIOLATION", "Выявлены нарушения качества"
+        else:
+            v_code, v_text = "OK", "Нарушений не выявлено"
+        children = []
+        img_item = _image_item(str(it.get("image_uid", "")), it.get("sop_class_uid"))
+        if img_item is not None:
+            children.append(img_item)
+        children += [
+            _text_item("CONTAINS", "IMAGE-UID", "image_uid (SOPInstanceUID снимка)", str(it.get("image_uid", ""))),
+            _text_item("CONTAINS", "FILE", "Файл (path_to_study)", str(it.get("path_to_study", ""))),
+            _text_item("CONTAINS", "REGION", "Анатомическая область", str(it.get("anatomical_region", ""))),
+            _code_content_item("CONTAINS", "IMAGE-VERDICT", "Заключение по снимку", v_code, v_text),
+            _num_item("CONTAINS", "QCLASS", "quality_class", int(it.get("quality_class") or 0), "1"),
+            _text_item("CONTAINS", "VIOL-LIST", "Типы нарушений (violation_type)", "; ".join(viols) if viols else "нет"),
+            _text_item("CONTAINS", "STATUS", "Статус обработки (processing_status)", status),
+        ]
+        qp = it.get("quality_prob")
+        if qp is not None:
+            try:
+                children.append(_num_item("CONTAINS", "QPROB", "Вероятность нарушения (quality_prob)", float(qp), "1"))
+            except (TypeError, ValueError):
+                pass
+        for key, code, meaning in (("sha256_file", "SHA256-FILE", "SHA-256 исходного файла DICOM (неизменность оригинала)"),
+                                   ("sha256_pixels", "SHA256-PIXELS", "SHA-256 массива пикселей оригинала")):
+            if it.get(key):
+                children.append(_text_item("CONTAINS", code, meaning, str(it[key])))
+        root_children.append(_container_item("CONTAINS", "IMAGE-REPORT", f"Снимок {idx}", children))
+
+    root = _content_item("", "CONTAINER", "STUDY-REPORT", "Отчёт контроля качества DXA по исследованию (DensitoAI)")
+    root.ContinuityOfContent = "SEPARATE"
+    root.ContentSequence = Sequence(root_children)
+    for attr in ("ValueType", "ConceptNameCodeSequence", "ContinuityOfContent", "ContentSequence"):
+        setattr(ds, attr, getattr(root, attr))
+    # у корневого элемента RelationshipType отсутствует — копируем только нужные атрибуты
+
+    ds.is_little_endian = True
+    ds.is_implicit_VR = False
+    return ds
+
+
+def save_study_sr(path: str, study_uid: str, items: list, model_version: str, config_hash: str,
+                  study_header: Optional[Dict[str, Any]] = None) -> str:
+    ds = build_study_sr(study_uid, items, model_version, config_hash, study_header)
+    ds.save_as(path, write_like_original=False)
+    return path
+
+
+def study_header_from_ds(ds) -> Dict[str, Any]:
+    """Атрибуты пациента/исследования для SR из любого DICOM исследования."""
+    out: Dict[str, Any] = {}
+    # значения, не соответствующие VR (например, «Anonymized» в DA/TM/CS обезличенных данных),
+    # не копируем — иначе SR формально невалиден; Type 2 атрибут остаётся пустым
+    checks = {
+        "PatientBirthDate": r"^\d{8}$", "StudyDate": r"^\d{8}$",
+        "StudyTime": r"^\d{2}(\d{2}(\d{2}(\.\d{1,6})?)?)?$", "PatientSex": r"^[MFO]$",
+        "AccessionNumber": r"^.{1,16}$", "StudyID": r"^.{1,16}$", "PatientID": r"^.{1,64}$",
+    }
+    for attr in ("PatientName", "PatientID", "PatientBirthDate", "PatientSex",
+                 "StudyDate", "StudyTime", "StudyID", "AccessionNumber", "ReferringPhysicianName"):
+        v = getattr(ds, attr, None)
+        sv = str(v).strip() if v is not None else ""
+        if not sv:
+            continue
+        pat = checks.get(attr)
+        if pat and not re.match(pat, sv):
+            continue
+        out[attr] = sv
+    return out
 
 
 if __name__ == "__main__":

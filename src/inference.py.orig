@@ -108,8 +108,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
                       "sp_art": ["metal_metal_area_mm2", "metal_metal_max_intensity_gap"],
                       "rh_pos": ["shaft_angle_deg"], "rh_roi": ["edge_distance_ratio", "bone_area_ratio"],
                       "lh_pos": ["shaft_angle_deg"], "lh_roi": ["edge_distance_ratio", "bone_area_ratio"]},
-    "stacking": {"weight_geom": 0.5, "weight_emb": 0.5, "weights_by_criterion": {},
-                 "any_violation_aggregation": "max",
+    "stacking": {"weight_geom": 0.5, "weight_emb": 0.5, "any_violation_aggregation": "max",
                  "any_blend_weight_model": 0.5, "consistent_quality_prob": True},
     "thresholds": {}, "fallback_threshold": 0.5,
     "fallback_rules": {  # значения синхронизированы с config.yaml (калибровка на трейне)
@@ -135,25 +134,6 @@ FILENAME_HINTS = (
     ("RIGHT", "right_hip"), ("LEFT", "left_hip"), ("SPINE", "spine"),
     ("_R_", "right_hip"), ("_L_", "left_hip"), ("LUMBAR", "spine"),
 )
-
-
-# Критерии ТЗ по сторонам бедра -> критерий единой модели бедра (ключ в stacking.weights_by_criterion,
-# metrics_summary.json["hip"], models/model_hip_*.pkl). Веса стэкинга по стороне НЕ различаются.
-HIP_CRIT_TO_MODEL = {"rh_pos": "hip_pos", "lh_pos": "hip_pos", "rh_roi": "hip_roi", "lh_roi": "hip_roi"}
-
-
-def stacking_weights(cfg: Dict[str, Any], crit: str) -> Tuple[float, float]:
-    """(w_geom, w_emb) для критерия. Приоритет: stacking.weights_by_criterion[<crit>] ->
-    weights_by_criterion[<критерий единой модели бедра>] -> weight_geom / weight_emb (дефолт 0.5/0.5).
-    Вес по критерию задаёт w_geom, w_emb = 1 - w_geom (вентиль К2, выбран nested CV,
-    см. models/nested_gate_decisions.json и work/B/REPORT.md)."""
-    st = cfg.get("stacking", {}) or {}
-    by_crit = st.get("weights_by_criterion") or {}
-    for key in (crit, HIP_CRIT_TO_MODEL.get(crit)):
-        if key is not None and by_crit.get(key) is not None:
-            wg = float(np.clip(float(by_crit[key]), 0.0, 1.0))
-            return wg, 1.0 - wg
-    return float(st.get("weight_geom", 0.5)), float(st.get("weight_emb", 0.5))
 
 
 def _deep_update(base: Dict[str, Any], upd: Dict[str, Any]) -> Dict[str, Any]:
@@ -886,12 +866,10 @@ class DensitoInference:
             except Exception as e:  # noqa: BLE001
                 LOG.warning("%s/%s emb model failed: %s", region, crit, e)
 
-        wg, we = stacking_weights(self.cfg, crit)
-        out["w_geom"] = wg
+        wg, we = float(self.cfg["stacking"]["weight_geom"]), float(self.cfg["stacking"]["weight_emb"])
         rg = out["rank_geom"] if out["rank_geom"] is not None else out["p_geom"]
         re_ = out["rank_emb"] if out["rank_emb"] is not None else out["p_emb"]
         if rg is not None and re_ is not None:
-            # вес по критерию (вентиль): при wg=1 скор = rank_geom, при wg=0 — rank_emb
             out["score"], out["method"] = wg * rg + we * re_, "stacked_rank_avg"
         elif rg is not None:
             out["score"], out["method"] = rg, "geom_only"
@@ -1051,7 +1029,7 @@ class DensitoInference:
                           **{f"feat_{k}": v for k, v in feats.items()
                                                                   if not isinstance(v, np.ndarray)}})
             for c, r in crit_results.items():
-                for k in ("p_geom", "p_emb", "w_geom", "score", "threshold", "flag", "method"):
+                for k in ("p_geom", "p_emb", "score", "threshold", "flag", "method"):
                     debug[f"{c}_{k}"] = r.get(k)
             if info.warnings:
                 LOG.info("%s: %s", path.name, "; ".join(info.warnings))

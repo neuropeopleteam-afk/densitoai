@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://densitoai.local/schema/api_analyze_response.schema.json",
+  "title": "DensitoAI POST /api/analyze response",
+  "description": "Фактический ответ src/api_server.py::analyze (HTTP 200). Официальная часть — rows[*] с 9 полями results_row.schema.json; остальные поля — служебные для UI/интеграции и могут расширяться (additionalProperties: true на верхнем уровне и в rows).",
+  "type": "object",
+  "required": ["job_id", "request_id", "model_version", "config_hash", "summary", "format_check",
+               "result_csv", "result_debug_csv", "result_csv_url", "result_debug_csv_url", "rows", "csv"],
+  "additionalProperties": true,
+  "properties": {
+    "job_id": { "type": "string", "pattern": "^[0-9]{8}_[0-9]{6}_[0-9a-f]{6}$" },
+    "request_id": { "type": "string", "pattern": "^[0-9]{8}_[0-9]{6}_[0-9a-f]{6}$" },
+    "model_version": { "type": "string", "minLength": 1 },
+    "config_hash": { "type": "string", "pattern": "^[0-9a-f]{12}$" },
+    "summary": {
+      "type": "object",
+      "required": ["n_files", "n_failures", "n_violations", "total_processing_time_s", "wall_time_s",
+                   "n_studies", "n_files_uploaded", "bytes_uploaded"],
+      "properties": {
+        "n_files": { "type": "integer", "minimum": 0 },
+        "n_failures": { "type": "integer", "minimum": 0 },
+        "n_violations": { "type": "integer", "minimum": 0 },
+        "total_processing_time_s": { "type": "number", "minimum": 0 },
+        "wall_time_s": { "type": "number", "minimum": 0 },
+        "n_studies": { "type": "integer", "minimum": 0 },
+        "n_files_uploaded": { "type": "integer", "minimum": 1 },
+        "bytes_uploaded": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "format_check": {
+      "description": "\"OK\" либо список проблем формата из inference.validate_output_csv.",
+      "anyOf": [
+        { "type": "string", "const": "OK" },
+        { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+      ]
+    },
+    "result_csv": { "type": "string", "const": "results.csv" },
+    "result_debug_csv": { "type": "string", "const": "results_debug.csv" },
+    "result_xlsx": { "type": ["string", "null"] },
+    "result_csv_url": { "type": "string", "pattern": "^/api/results/[0-9]{8}_[0-9]{6}_[0-9a-f]{6}/results\\.csv$" },
+    "result_debug_csv_url": { "type": "string", "pattern": "^/api/results/[0-9]{8}_[0-9]{6}_[0-9a-f]{6}/results_debug\\.csv$" },
+    "result_xlsx_url": { "type": ["string", "null"] },
+    "study_sr": {
+      "description": "Один DICOM SR на исследование (режим sr_study): {study_uid: url}. Пусто, если бонус-выходы отключены.",
+      "type": "object",
+      "additionalProperties": { "type": "string", "pattern": "^/api/results/[0-9]{8}_[0-9]{6}_[0-9a-f]{6}/.+_SR\\.dcm$" }
+    },
+    "rows": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/row_with_extras" }
+    },
+    "csv": { "type": "string", "description": "Тот же results.csv текстом (шапка + строки)." }
+  },
+  "$defs": {
+    "row_with_extras": {
+      "description": "Официальная строка (9 полей results_row.schema.json) + необязательные поля UI.",
+      "type": "object",
+      "required": ["path_to_study", "study_uid", "image_uid", "anatomical_region", "quality_class",
+                   "violation_type", "quality_prob", "processing_status", "time_of_processing"],
+      "additionalProperties": true,
+      "properties": {
+        "path_to_study": { "type": "string", "minLength": 1 },
+        "study_uid": { "type": "string", "minLength": 1 },
+        "image_uid": { "type": "string", "minLength": 1 },
+        "anatomical_region": { "type": "string", "enum": ["Поясничный отдел позвоночника", "Проксимальный отдел бедра"] },
+        "quality_class": { "type": "integer", "enum": [0, 1] },
+        "violation_type": { "type": "string" },
+        "quality_prob": { "type": "number", "minimum": 0, "maximum": 1 },
+        "processing_status": { "type": "string", "enum": ["Success", "Failure"] },
+        "time_of_processing": { "type": "number", "minimum": 0 },
+        "bonus_overlay_png_base64": { "type": "string" },
+        "bonus_sr_dcm_download": { "type": "string" },
+        "bonus_roi_png_base64": { "type": "string" },
+        "study_sr_download": { "type": "string", "pattern": "^/api/results/.+_SR\\.dcm$" },
+        "details": {
+          "type": "object",
+          "required": ["internal_region", "criteria", "measurements", "action", "action_code"],
+          "properties": {
+            "internal_region": { "type": "string", "enum": ["spine", "right_hip", "left_hip", ""] },
+            "region_source": { "type": ["string", "null"] },
+            "image_size": { "type": "array" },
+            "warnings": { "type": "string" },
+            "error": { "type": ["string", "null"] },
+            "quality_prob_raw": { "type": ["number", "null"] },
+            "criteria": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["code", "title", "violation", "score", "threshold", "flag", "method"],
+                "properties": {
+                  "code": { "type": "string", "enum": ["sp_pos", "sp_axis", "sp_art", "rh_pos", "rh_roi", "lh_pos", "lh_roi"] },
+                  "title": { "type": "string" },
+                  "violation": { "type": "string" },
+                  "score": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+                  "threshold": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+                  "flag": { "type": "boolean" },
+                  "method": { "type": ["string", "null"] },
+                  "p_geom": { "type": ["number", "null"] },
+                  "p_emb": { "type": ["number", "null"] }
+                }
+              }
+            },
+            "measurements": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["title", "value", "unit"],
+                "properties": { "title": { "type": "string" }, "value": { "type": "number" }, "unit": { "type": "string" } }
+              }
+            },
+            "roi": { "type": "object" },
+            "action": { "type": "string" },
+            "action_code": { "type": "string", "enum": ["accept", "review", "manual"] }
+          }
+        }
+      }
+    }
+  }
+}

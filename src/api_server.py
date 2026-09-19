@@ -50,7 +50,7 @@ sys.path.insert(0, str(SRC_DIR))
 
 from inference import (  # noqa: E402
     DensitoInference, MODELS_DIR, PROJECT_ROOT, load_config, setup_logging,
-    write_results, validate_output_csv, __version__ as PIPELINE_VERSION,
+    write_results, validate_output_csv, config_hash as _cfg_hash, __version__ as PIPELINE_VERSION,
 )
 
 try:
@@ -106,6 +106,8 @@ def engine() -> DensitoInference:
             visualize_dir=VIZ_DIR if enable_bonus else None,
             sr_dir=SR_DIR if enable_bonus else None,
             roi_autocorrect_dir=ROI_DIR if enable_bonus else None,
+            # один DICOM SR на исследование (включая норму) -> <папка запроса>/sr/<study_uid>_SR.dcm
+            sr_study=enable_bonus and os.environ.get("DENSITO_SR_STUDY", "1") != "0",
         )
         LOG.info("Inference engine initialised (models: %d, bonus_outputs=%s)",
                  _ENGINE.registry.n_loaded, enable_bonus)
@@ -304,9 +306,17 @@ def _details(row: Dict[str, Any], dbg: Dict[str, Any], cfg: Dict[str, Any]) -> D
 
 
 def _config_hash(cfg: Dict[str, Any]) -> str:
-    import hashlib
-    import json
-    return hashlib.sha256(json.dumps(cfg, sort_keys=True, ensure_ascii=False, default=str).encode()).hexdigest()[:12]
+    return _cfg_hash(cfg)  # та же формула, что записывается в DICOM SR (inference.config_hash)
+
+
+def _study_sr_urls(eng: DensitoInference, job: str) -> Dict[str, str]:
+    """{study_uid: ссылка на SR исследования} — только файлы, реально записанные этим прогоном."""
+    out: Dict[str, str] = {}
+    for study_uid, p in (getattr(eng, "last_study_sr", {}) or {}).items():
+        p = Path(p)
+        if p.exists():
+            out[study_uid] = f"/api/results/{job}/{p.name}"
+    return out
 
 
 def _run_job(job: str, tmp: Path, job_dir: Path, xlsx: bool):
@@ -350,9 +360,12 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
             (tmp / name).write_bytes(data)
         eng, out_csv, rows, debug_rows = await run_in_threadpool(_run_job, job, tmp, job_dir, xlsx)
         problems = validate_output_csv(out_csv, eng.cfg)
+        study_sr = _study_sr_urls(eng, job)
         rows_out = []
         for i, r in enumerate(rows):
             rb = _attach_bonus(r, job)
+            if str(r.get("study_uid") or "") in study_sr:
+                rb["study_sr_download"] = study_sr[str(r.get("study_uid"))]
             dbg = debug_rows[i] if i < len(debug_rows) else {}
             try:
                 rb["details"] = _details(r, dbg, eng.cfg)
@@ -377,6 +390,8 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
             "result_csv_url": f"/api/results/{job}/{out_csv.name}",
             "result_debug_csv_url": f"/api/results/{job}/results_debug.csv",
             "result_xlsx_url": f"/api/results/{job}/{xlsx_path.name}" if has_xlsx else None,
+            # один DICOM SR на исследование (включая норму): {study_uid: url}
+            "study_sr": study_sr,
             "rows": rows_out,
             "csv": _rows_to_csv_text(rows, eng.cfg),
         }
@@ -434,6 +449,7 @@ def batch(req: BatchRequest):
             "format_check": "OK" if not problems else problems,
             "output_csv": str(out_csv),
             "output_xlsx": str(out_csv.with_suffix(".xlsx")) if req.xlsx else None,
+            "study_sr": dict(getattr(eng, "last_study_sr", {}) or {}),
         }
     except ValueError as e:
         raise HTTPException(400, str(e))
@@ -449,7 +465,7 @@ def _safe_job_file(job: str, name: str) -> Path:
     if not safe or safe.startswith("."):
         raise HTTPException(404, "file not found")
     job_dir = (JOBS_DIR / job).resolve()
-    for cand in (job_dir / safe, job_dir / "bonus" / safe):
+    for cand in (job_dir / safe, job_dir / "bonus" / safe, job_dir / "sr" / safe):
         cand = cand.resolve()
         if job_dir in cand.parents and cand.is_file():
             return cand
@@ -459,7 +475,7 @@ def _safe_job_file(job: str, name: str) -> Path:
 @app.get("/api/results/{job}/{name}")
 def download_job_file(job: str, name: str):
     """Файл результата конкретного запроса: results.csv, results_debug.csv, results.xlsx,
-    summary.json или бонус-файлы (overlay PNG, DICOM SR, ROI PNG)."""
+    summary.json, SR исследования (sr/<study_uid>_SR.dcm) или бонус-файлы (overlay PNG, SR снимка, ROI PNG)."""
     p = _safe_job_file(job, name)
     return FileResponse(str(p), filename=p.name)
 

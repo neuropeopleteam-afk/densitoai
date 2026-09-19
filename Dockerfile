@@ -36,9 +36,13 @@ RUN python -m pip install --upgrade "pip==25.0.1" \
 COPY config.yaml /app/config.yaml
 COPY src/ /app/src/
 COPY models/ /app/models/
+# JSON Schema результата (проверка в inference.validate_output_csv) и утилиты (validate_sr, make_model_card)
+COPY schema/ /app/schema/
+COPY tools/ /app/tools/
 # data/geometry_features.csv нужен только для медиан импутации (маленький файл)
 COPY data/geometry_features.csv /app/data/geometry_features.csv
 COPY tests/test_inference_format.py /app/tests/test_inference_format.py
+COPY tests/test_schema.py /app/tests/test_schema.py
 COPY tests/sample_test_zip/ /app/tests/sample_test_zip/
 
 # --- непривилегированный пользователь, точки монтирования -------------------

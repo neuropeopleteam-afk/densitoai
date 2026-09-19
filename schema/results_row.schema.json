@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://densitoai.local/schema/results_row.schema.json",
+  "title": "DensitoAI results.csv row",
+  "description": "Одна строка официального результата (ТЗ ЛЦТ 2026, задача 4, п. 2.5): один DICOM-файл = одна строка. Порядок колонок фиксирован (см. x-column-order). Строки регионов и нарушений — закрытые списки из config.yaml (regions, violations). Источник истины для inference.validate_output_csv.",
+  "type": "object",
+  "x-column-order": [
+    "path_to_study",
+    "study_uid",
+    "image_uid",
+    "anatomical_region",
+    "quality_class",
+    "violation_type",
+    "quality_prob",
+    "processing_status",
+    "time_of_processing"
+  ],
+  "required": [
+    "path_to_study",
+    "study_uid",
+    "image_uid",
+    "anatomical_region",
+    "quality_class",
+    "violation_type",
+    "quality_prob",
+    "processing_status",
+    "time_of_processing"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "path_to_study": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Путь к файлу относительно входной папки/архива (config output.path_mode)."
+    },
+    "study_uid": {
+      "type": "string",
+      "minLength": 1,
+      "description": "StudyInstanceUID; при отсутствии тега — 'hash-<sha1 папки>'."
+    },
+    "image_uid": {
+      "type": "string",
+      "minLength": 1,
+      "description": "SOPInstanceUID; при отсутствии тега — 'hash-<sha1 пути>'."
+    },
+    "anatomical_region": {
+      "type": "string",
+      "enum": [
+        "Поясничный отдел позвоночника",
+        "Проксимальный отдел бедра"
+      ]
+    },
+    "quality_class": {
+      "type": "integer",
+      "enum": [
+        0,
+        1
+      ],
+      "description": "1 — есть хотя бы одно нарушение (violation_type непустой), 0 — норма или Failure."
+    },
+    "violation_type": {
+      "type": "string",
+      "description": "Пустая строка или официальные названия нарушений через ';' без повторов. Разрешённые значения: config.yaml violations.",
+      "pattern": "^$|^(Некорректная укладка|Не выравнена ось позвоночника|Присутствуют посторонние предметы|Некорректная область интереса)(;(Некорректная укладка|Не выравнена ось позвоночника|Присутствуют посторонние предметы|Некорректная область интереса))*$",
+      "x-allowed-values": [
+        "Некорректная укладка",
+        "Не выравнена ось позвоночника",
+        "Присутствуют посторонние предметы",
+        "Некорректная область интереса"
+      ],
+      "x-separator": ";"
+    },
+    "quality_prob": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Вероятность наличия нарушения; согласована с классом: class=1 <=> prob >= 0.5 (config stacking.consistent_quality_prob). При Failure — output.fallback_quality_prob."
+    },
+    "processing_status": {
+      "type": "string",
+      "enum": [
+        "Success",
+        "Failure"
+      ]
+    },
+    "time_of_processing": {
+      "type": "number",
+      "minimum": 0.0,
+      "description": "Секунды на файл (без прогрева бэкбона)."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "quality_class": {
+            "const": 1
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "violation_type": {
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "quality_class": {
+            "const": 0
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "violation_type": {
+            "const": ""
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "processing_status": {
+            "const": "Failure"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "quality_class": {
+            "const": 0
+          },
+          "violation_type": {
+            "const": ""
+          }
+        }
+      }
+    }
+  ]
+}

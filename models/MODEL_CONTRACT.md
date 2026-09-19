@@ -76,10 +76,20 @@ fallback-правило по геометрии, без падения.
 для единой модели бедра также `hip.hip_pos` / `hip.hip_roi` / `hip.pos`) → 0.5 с предупреждением.
 OOF-референс для единой модели бедра: `oof_stacked_hip_pos.csv` / `oof_stacked_hip_roi.csv`
 (или `oof_scores` внутри pickle). Порог применяется к
-**стэкнутому** скору `0.5*rank_geom + 0.5*rank_emb`, где `rank_*` — доля референсных OOF-скоров
-≤ текущего (эквивалент `rank(pct=True)` при обучении). Если референс недоступен —
-используется сырая вероятность. Если обучаете иначе — обновите `metrics_summary.json`
-или пропишите пороги в `config.yaml`.
+**стэкнутому** скору `w_geom*rank_geom + (1-w_geom)*rank_emb`, где `rank_*` — доля референсных
+OOF-скоров ≤ текущего (эквивалент `rank(pct=True)` при обучении), а `w_geom` — вес контура A
+**по критерию** (вентиль К2): `config.yaml: stacking.weights_by_criterion[<crit>]` (ключи
+`sp_pos, sp_axis, sp_art, hip_pos, hip_roi`; для `rh_*/lh_*` берётся вес `hip_pos`/`hip_roi`),
+если записи нет — `stacking.weight_geom` / `weight_emb` (по умолчанию 0.5/0.5). При `w_geom=1`
+скор равен `rank_geom`, при `w_geom=0` — `rank_emb`. Тот же вес используется в `train_stacked.py`
+при подборе порога и записывается в `metrics_summary.json` (`weight_geom`, `weight_emb`,
+`gate_selected_by`: `nested` — вес прошёл приёмку nested CV из `models/nested_gate_decisions.json`,
+`default` — вес из конфига без подтверждения; `nested_auc_mean`, `nested_auc_ci` — outer-OOF AUC
+вентиля в nested-протоколе, если файл решений есть). Вес выбирается ТОЛЬКО в nested repeated
+GroupKFold (`tools/nested_gate.py`), не в `train_stacked.py`. После любого изменения веса
+обязательно перезапустить `train_stacked.py` (порог) и `train_final_models.py` (OOF-референсы в pkl).
+Если референс недоступен — используется сырая вероятность. Если обучаете иначе — обновите
+`metrics_summary.json` или пропишите пороги в `config.yaml`.
 
 ## Как проверить, что модели подхватились
 ```bash

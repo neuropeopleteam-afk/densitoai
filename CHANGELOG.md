@@ -1,3 +1,10 @@
+## 2.1.1-dev (19.09.2026)
+- `--sr-study` / `--sr-study-dir`: один DICOM Comprehensive SR на исследование (включая норму), хэши оригинала (sha256 файла и пикселей) в SR и debug-CSV; API: `study_sr`, `study_sr_download`. `tools/validate_sr.py`.
+- JSON Schema результата (`schema/`), проверка в `validate_output_csv`, `tests/test_schema.py`; `src/schema_check.py`.
+- `tools/make_model_card.py` → `models/MODEL_CARD.md`; `docs/EVIDENCE.md`, `docs/DZM_CONFORMANCE.md`.
+- Вентильный стэкинг: `stacking.weights_by_criterion` в config (пусто — поведение 0.5/0.5 без изменений), `tools/nested_gate.py`, `models/nested_gate_decisions.json`, `docs/NESTED_GATE_REPORT.md`. Предсказания на 499 файлах не изменились.
+- `tools/review/`: инструмент слепой ревизии для рентгенолога.
+
 # История изменений
 
 ## 2.1.0 — 2026-09-18
