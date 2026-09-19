@@ -97,6 +97,7 @@ densito_rebuild/
 │   ├── visualize_report.py      ← [бонус] прозрачный оверлей: измерения + оценки моделей по критериям
 │   ├── dicom_sr.py              ← [бонус] DICOM Structured Report: на снимок (--sr-dir) и один на исследование (--sr-study)
 │   ├── schema_check.py          ← проверка строк CSV / ответа API по JSON Schema (schema/)
+│   ├── extras.py                ← предупреждения вне 9 колонок: белые линии, OOD-gate (models/ood_gate.pkl), эндопротез, когерентность
 │   ├── auto_roi.py              ← [бонус] предложение исправленного ROI бедра (диагностический PNG)
 │   └── hip_features.py, hip_eval.py, train_multilabel.py ← исследовательские скрипты (бедро, старая CNN)
 ├── models/
@@ -119,6 +120,7 @@ densito_rebuild/
 │   ├── validate_sr.py           ← валидатор DICOM SR исследования
 │   ├── make_model_card.py       ← генерирует models/MODEL_CARD.md из metrics_summary.json
 │   ├── nested_gate.py, pixel_hash.py ← nested repeated GroupKFold для выбора весов стэкинга (К2)
+│   ├── extras/                  ← аудиты К8/К9 (белые линии, OOD-gate, эндопротез, когерентность) → docs/EXTRAS_STATUS.md
 │   └── review/                  ← инструмент слепой ревизии для рентгенолога (галерея, ориентиры, kappa/PCK)
 ├── web/
 │   └── index.html               ← [бонус] веб-интерфейс (загрузка DICOM, таблица, оверлеи, SR, CSV)
@@ -137,6 +139,7 @@ densito_rebuild/
 │   ├── DZM_CONFORMANCE.md       ← соответствие ТЗ и желательным пунктам: сделано / частично / не делаем
 │   ├── VERIFICATION.md          ← инструкция технической группе: офлайн-проверка образа за 5 команд
 │   ├── NESTED_GATE_REPORT.md    ← nested CV вентильного стэкинга (К2): полный отчёт по повторам
+│   ├── EXTRAS_STATUS.md, OOD_GATE_REPORT.md, WHITE_LINES_AUDIT.md ← аудит белых линий, OOD-gate, эндопротез, когерентность (К8/К9)
 │   ├── TRANSFER_SYNTAX_MATRIX.md, LICENSES_AND_DATA_AUDIT.md ← измеренная матрица форматов; лицензии и аудит ПДн
 │   ├── qa/                      ← транскрипт и разбор Q&A с организаторами, учёт в решении
 │   ├── LETTER_TO_ORGANIZERS.md  ← сопроводительное письмо к сдаче
@@ -291,6 +294,7 @@ python tests/test_inference_format.py
 | `--validate-only` | только проверить формат CSV и выйти |
 | `--visualize-dir DIR` | [бонус] каталог для PNG-оверлеев с геометрическими признаками качества (см. `src/visualize_report.py`) |
 | `--sr-dir DIR` | [бонус] каталог для DICOM Structured Report `.dcm` на каждый снимок (см. `src/dicom_sr.py`) |
+| `--extras` | дополнительный файл `<output>_extras.csv` (уровень предупреждений, 9 колонок не меняются): `white_lines_flag`, `ood_flag` + расстояние Махаланобиса и fingerprint тегов GE Lunar, `endoprosthesis_suspected`, `study_warnings` (дубликаты кадров, повтор областей, нет области). Статусы и числа — `docs/EXTRAS_STATUS.md`; в API — `details.extras`, `result_extras_csv_url` |
 | `--sr-study [--sr-study-dir DIR]` | [бонус] один DICOM Comprehensive SR на исследование, включая норму и Failure, с sha256 файла и пикселей каждого снимка; по умолчанию `<каталог CSV>/sr/<study_uid>_SR.dcm`; проверка — `python tools/validate_sr.py <dir> --csv results.csv` |
 | `--roi-autocorrect-dir DIR` | [бонус] каталог для диагностических PNG с предложением коррекции ROI для бедра (см. `src/auto_roi.py`), создаётся только при найденном нарушении |
 

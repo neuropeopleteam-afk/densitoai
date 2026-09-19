@@ -838,8 +838,13 @@ class DensitoInference:
     def __init__(self, cfg: Optional[Dict[str, Any]] = None, models_dir: Optional[Path] = None,
                  use_embeddings: bool = True, visualize_dir: Optional[Path] = None,
                  sr_dir: Optional[Path] = None, roi_autocorrect_dir: Optional[Path] = None,
-                 sr_study: bool = False, sr_study_dir: Optional[Path] = None):
+                 sr_study: bool = False, sr_study_dir: Optional[Path] = None, extras: bool = False):
         self.cfg = cfg or load_config()
+        # [EXTRAS] экспериментальные флаги (work/D): белые линии, OOD-gate, эндопротез, когерентность исследования.
+        # Не влияют на 9 колонок; пишутся в <output>_extras.csv и в self.last_extras_rows (API: details.extras).
+        self.extras = bool(extras)
+        self._extras_input: Optional[Dict[str, Any]] = None
+        self.last_extras_rows: List[Dict[str, Any]] = []
         self.registry = ModelRegistry(Path(models_dir) if models_dir else MODELS_DIR, self.cfg)
         self.embedder = EmbeddingExtractor(enabled=use_embeddings)
         # Резервный классификатор области (позвоночник/бедро) по эмбеддингам.
@@ -1033,6 +1038,16 @@ class DensitoInference:
                            + [self.registry.any_emb.get(region)] if mb is not None}
                 embs = self.embedder.extract_many(info.img_u8, sources, mirror=mirror)
             emb = embs.get(EmbeddingExtractor.DEFAULT_SOURCE) if embs else None
+            if self.extras:  # [EXTRAS] входы для extras (незеркалированный imagenet-эмбеддинг, как в data/embeddings.npy)
+                try:
+                    import extras as _extras
+                    emb_x = emb if (emb is not None and not mirror) else self.embedder.extract(info.img_u8)
+                    self._extras_input = {"img_u8": info.img_u8, "emb": emb_x,
+                                          "tags": _extras.tags_from_dataset(info.ds),
+                                          "pixel_hash": _extras.pixel_hash(info.ds)}
+                except Exception as ex:  # noqa: BLE001  — extras не должны ломать основной путь
+                    LOG.warning("extras input failed for %s: %s", path, ex)
+                    self._extras_input = None
 
             crit_results = {c: self.score_criterion(region, c, feats, embs)
                             for c in self.cfg["criteria_by_region"][region]}
@@ -1254,10 +1269,13 @@ class DensitoInference:
                 # прогрев всех нужных backbone вне замера time_of_processing
                 for mb in list(self.registry.emb.values()) + list(self.registry.any_emb.values()):
                     self.embedder._init(str(mb.meta.get("emb_source", EmbeddingExtractor.DEFAULT_SOURCE)))
+            extras_inputs: List[Optional[Dict[str, Any]]] = []  # [EXTRAS]
             for i, f in enumerate(files, 1):
+                self._extras_input = None
                 row, dbg = self.process_file(f, root)
                 rows.append(row)
                 debug_rows.append(dbg)
+                extras_inputs.append(self._extras_input)
                 if i % 25 == 0 or i == len(files):
                     LOG.info("  %d/%d processed (%.1fs)", i, len(files), time.perf_counter() - t_start)
         finally:
@@ -1275,6 +1293,18 @@ class DensitoInference:
                 LOG.warning("study SR not written: %s", e)
         if debug_csv:
             write_debug(debug_rows, Path(debug_csv))
+        self.last_extras_rows = []
+        if self.extras:  # [EXTRAS] отдельный файл <output>_extras.csv; основной CSV уже записан
+            try:
+                import extras as _extras
+                self.last_extras_rows = _extras.compute_extras_for_rows(rows, debug_rows, extras_inputs,
+                                                                        models_dir=self.registry.models_dir)
+                extras_csv = Path(output_csv).with_suffix(".csv")
+                extras_csv = extras_csv.with_name(extras_csv.stem + "_extras.csv")
+                _extras.write_extras_csv(self.last_extras_rows, extras_csv)
+                LOG.info("extras written -> %s", extras_csv)
+            except Exception as e:  # noqa: BLE001  — extras не должны ломать основной выход
+                LOG.warning("extras not written: %s", e)
         n_fail = sum(1 for r in rows if r["processing_status"] == self.cfg["output"]["status_failure"])
         LOG.info("DONE: %d rows, %d failures, %.1fs total -> %s", len(rows), n_fail,
                  time.perf_counter() - t_start, output_csv)
@@ -1517,6 +1547,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--sr-study", action="store_true",
                     help="[BONUS] Один DICOM SR на исследование (включая норму) в <каталог CSV>/sr/<study_uid>_SR.dcm")
     ap.add_argument("--sr-study-dir", default=None, help="[BONUS] Каталог для SR на исследование (включает --sr-study)")
+    ap.add_argument("--extras", action="store_true",
+                    help="[EXTRAS] Дополнительно записать <output>_extras.csv (белые линии, OOD-gate, эндопротез, когерентность)")
     args = ap.parse_args(argv)
 
     output_csv = Path(args.output)
@@ -1539,7 +1571,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         engine = DensitoInference(cfg=cfg, models_dir=args.models_dir, use_embeddings=not args.no_embeddings,
                                    visualize_dir=args.visualize_dir, sr_dir=args.sr_dir,
                                    roi_autocorrect_dir=args.roi_autocorrect_dir,
-                                   sr_study=args.sr_study, sr_study_dir=args.sr_study_dir)
+                                   sr_study=args.sr_study, sr_study_dir=args.sr_study_dir, extras=args.extras)
         debug_csv = None
         if args.debug_csv:
             debug_csv = (output_csv.with_name(output_csv.stem + "_debug.csv") if args.debug_csv == "auto"

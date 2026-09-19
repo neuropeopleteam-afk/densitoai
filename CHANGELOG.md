@@ -3,6 +3,8 @@
 - JSON Schema результата (`schema/`), проверка в `validate_output_csv`, `tests/test_schema.py`; `src/schema_check.py`.
 - `tools/make_model_card.py` → `models/MODEL_CARD.md`; `docs/EVIDENCE.md`, `docs/DZM_CONFORMANCE.md`.
 - Вентильный стэкинг: `stacking.weights_by_criterion` в config (пусто — поведение 0.5/0.5 без изменений), `tools/nested_gate.py`, `models/nested_gate_decisions.json`, `docs/NESTED_GATE_REPORT.md`. Предсказания на 499 файлах не изменились.
+- `--extras` / `src/extras.py` / `models/ood_gate.pkl`: белые линии (флаг), OOD-gate (fingerprint + Mahalanobis, FPR 1 % OOF, 130/130 внешних), «эндопротез», когерентность исследования → `results_extras.csv`, API `details.extras`.
+- `tools/verify.sh`, фантомы, digest-pinned образ, verify при сборке; исправлены DICOM без file meta и UID-заглушки, зависящие от пути.
 - `tools/review/`: инструмент слепой ревизии для рентгенолога.
 
 # История изменений

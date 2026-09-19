@@ -108,7 +108,8 @@ DEFAULT_CONFIG: Dict[str, Any] = {
                       "sp_art": ["metal_metal_area_mm2", "metal_metal_max_intensity_gap"],
                       "rh_pos": ["shaft_angle_deg"], "rh_roi": ["edge_distance_ratio", "bone_area_ratio"],
                       "lh_pos": ["shaft_angle_deg"], "lh_roi": ["edge_distance_ratio", "bone_area_ratio"]},
-    "stacking": {"weight_geom": 0.5, "weight_emb": 0.5, "any_violation_aggregation": "max",
+    "stacking": {"weight_geom": 0.5, "weight_emb": 0.5, "weights_by_criterion": {},
+                 "any_violation_aggregation": "max",
                  "any_blend_weight_model": 0.5, "consistent_quality_prob": True},
     "thresholds": {}, "fallback_threshold": 0.5,
     "fallback_rules": {  # значения синхронизированы с config.yaml (калибровка на трейне)
@@ -134,6 +135,25 @@ FILENAME_HINTS = (
     ("RIGHT", "right_hip"), ("LEFT", "left_hip"), ("SPINE", "spine"),
     ("_R_", "right_hip"), ("_L_", "left_hip"), ("LUMBAR", "spine"),
 )
+
+
+# Критерии ТЗ по сторонам бедра -> критерий единой модели бедра (ключ в stacking.weights_by_criterion,
+# metrics_summary.json["hip"], models/model_hip_*.pkl). Веса стэкинга по стороне НЕ различаются.
+HIP_CRIT_TO_MODEL = {"rh_pos": "hip_pos", "lh_pos": "hip_pos", "rh_roi": "hip_roi", "lh_roi": "hip_roi"}
+
+
+def stacking_weights(cfg: Dict[str, Any], crit: str) -> Tuple[float, float]:
+    """(w_geom, w_emb) для критерия. Приоритет: stacking.weights_by_criterion[<crit>] ->
+    weights_by_criterion[<критерий единой модели бедра>] -> weight_geom / weight_emb (дефолт 0.5/0.5).
+    Вес по критерию задаёт w_geom, w_emb = 1 - w_geom (вентиль К2, выбран nested CV,
+    см. models/nested_gate_decisions.json и work/B/REPORT.md)."""
+    st = cfg.get("stacking", {}) or {}
+    by_crit = st.get("weights_by_criterion") or {}
+    for key in (crit, HIP_CRIT_TO_MODEL.get(crit)):
+        if key is not None and by_crit.get(key) is not None:
+            wg = float(np.clip(float(by_crit[key]), 0.0, 1.0))
+            return wg, 1.0 - wg
+    return float(st.get("weight_geom", 0.5)), float(st.get("weight_emb", 0.5))
 
 
 def _deep_update(base: Dict[str, Any], upd: Dict[str, Any]) -> Dict[str, Any]:
@@ -371,6 +391,21 @@ def read_and_validate(path: Path, cfg: Dict[str, Any]) -> DicomInfo:
     ds = pydicom.dcmread(str(path), force=True)
     if not hasattr(ds, "PixelData") and "PixelData" not in ds:
         raise ValueError("DICOM has no PixelData")
+    # Сырой поток без преамбулы/file meta (некоторые архивы и PACS-экспорты): pydicom читает теги,
+    # но для декодирования пикселей нужен TransferSyntaxUID -> восстанавливаем из фактической кодировки.
+    if "TransferSyntaxUID" not in getattr(ds, "file_meta", {}):
+        enc = getattr(ds, "original_encoding", (None, None))
+        implicit_vr = enc[0] if enc[0] is not None else True
+        little_endian = enc[1] if enc[1] is not None else True
+        if not hasattr(ds, "file_meta") or ds.file_meta is None:
+            ds.file_meta = pydicom.dataset.FileMetaDataset()
+        if implicit_vr:
+            ts = pydicom.uid.ImplicitVRLittleEndian
+        elif little_endian:
+            ts = pydicom.uid.ExplicitVRLittleEndian
+        else:
+            ts = pydicom.uid.ExplicitVRBigEndian
+        ds.file_meta.TransferSyntaxUID = ts
     img = normalize_pixels(ds)
     rows, cols = img.shape
     if not (v["min_rows"] <= rows <= v["max_rows"] and v["min_cols"] <= cols <= v["max_cols"]):
@@ -866,10 +901,12 @@ class DensitoInference:
             except Exception as e:  # noqa: BLE001
                 LOG.warning("%s/%s emb model failed: %s", region, crit, e)
 
-        wg, we = float(self.cfg["stacking"]["weight_geom"]), float(self.cfg["stacking"]["weight_emb"])
+        wg, we = stacking_weights(self.cfg, crit)
+        out["w_geom"] = wg
         rg = out["rank_geom"] if out["rank_geom"] is not None else out["p_geom"]
         re_ = out["rank_emb"] if out["rank_emb"] is not None else out["p_emb"]
         if rg is not None and re_ is not None:
+            # вес по критерию (вентиль): при wg=1 скор = rank_geom, при wg=0 — rank_emb
             out["score"], out["method"] = wg * rg + we * re_, "stacked_rank_avg"
         elif rg is not None:
             out["score"], out["method"] = rg, "geom_only"
@@ -929,8 +966,8 @@ class DensitoInference:
         if crit_agg is None:
             return any_model
         # 3) смесь двух оценок. Валидация OOF (StratifiedGroupKFold по исследованиям, 3 сида):
-        #    ROC-AUC any-модель 0.766/0.702 (spine/hip), max по критериям 0.689/0.761,
-        #    смесь 0.5/0.5 -> 0.758/0.747, после согласования с классом 0.775/0.773;
+        #    ROC-AUC any-модель 0.766/0.702 (spine/hip), max по критериям 0.681/0.761,
+        #    смесь 0.5/0.5 -> 0.781/0.747, после согласования с классом 0.783/0.773 (пересчёт 19.09);
         #    см. docs/METRICS_REPORT.md (src/eval_oof_metrics.py).
         w = float(self.cfg["stacking"].get("any_blend_weight_model", 0.5))
         return clip01(w * any_model + (1.0 - w) * crit_agg)
@@ -942,7 +979,7 @@ class DensitoInference:
         смесью моделей. Чтобы строка была непротиворечивой (class=1 <=> prob>=0.5)
         и ROC-AUC учитывал решение по критериям, вероятность монотонно сжимается
         в [0.5, 1] при нарушении и в [0, 0.5) при норме (порядок внутри класса
-        сохраняется). OOF ROC-AUC при этом растёт: spine 0.735 -> 0.775,
+        сохраняется). OOF ROC-AUC при этом растёт: spine 0.735 -> 0.783,
         hip 0.704 -> 0.773 (см. docs/METRICS_REPORT.md)."""
         p = clip01(prob)
         return 0.5 + 0.5 * p if quality_class else min(0.5 * p, 0.499999)
@@ -1029,7 +1066,7 @@ class DensitoInference:
                           **{f"feat_{k}": v for k, v in feats.items()
                                                                   if not isinstance(v, np.ndarray)}})
             for c, r in crit_results.items():
-                for k in ("p_geom", "p_emb", "score", "threshold", "flag", "method"):
+                for k in ("p_geom", "p_emb", "w_geom", "score", "threshold", "flag", "method"):
                     debug[f"{c}_{k}"] = r.get(k)
             if info.warnings:
                 LOG.info("%s: %s", path.name, "; ".join(info.warnings))
@@ -1041,9 +1078,10 @@ class DensitoInference:
             LOG.error("FAILURE %s -> %s", path, err)
             LOG.debug(traceback.format_exc())
             region = guess_region_without_pixels(path, self.cfg)
-            study_uid, image_uid = self._uids_without_pixels(path)
+            rel = self._path_str(path, root)
+            study_uid, image_uid = self._uids_without_pixels(path, rel)
             row = {
-                "path_to_study": self._path_str(path, root),
+                "path_to_study": rel,
                 "study_uid": study_uid,
                 "image_uid": image_uid,
                 "anatomical_region": official_region_name(region, self.cfg),
@@ -1126,13 +1164,16 @@ class DensitoInference:
             return str(path)
 
     @staticmethod
-    def _uids_without_pixels(path: Path) -> Tuple[str, str]:
+    def _uids_without_pixels(path: Path, rel: Optional[str] = None) -> Tuple[str, str]:
+        """UID для строки Failure: из тегов, если читаются; иначе детерминированный хэш ОТНОСИТЕЛЬНОГО
+        пути (path_to_study), одинаковый на любой машине и в контейнере (нужно для verify.sh / эталона)."""
         try:
             ds = pydicom.dcmread(str(path), force=True, stop_before_pixels=True)
             s, i = _tag(ds, "StudyInstanceUID"), _tag(ds, "SOPInstanceUID")
         except Exception:  # noqa: BLE001
             s, i = "", ""
-        return (s or "hash-" + path_hash(path.parent)), (i or "hash-" + path_hash(path))
+        rel_p = Path(rel) if rel else path
+        return (s or "hash-" + path_hash(rel_p.parent)), (i or "hash-" + path_hash(rel_p))
 
     @staticmethod
     def _origin_hashes(path: Path, ds) -> Dict[str, str]:

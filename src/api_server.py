@@ -108,6 +108,9 @@ def engine() -> DensitoInference:
             roi_autocorrect_dir=ROI_DIR if enable_bonus else None,
             # один DICOM SR на исследование (включая норму) -> <папка запроса>/sr/<study_uid>_SR.dcm
             sr_study=enable_bonus and os.environ.get("DENSITO_SR_STUDY", "1") != "0",
+            # extras (предупреждения): белые линии, OOD-gate, эндопротез, когерентность исследования
+            # -> <job>/results_extras.csv и details.extras; 9 колонок не затрагивает
+            extras=os.environ.get("DENSITO_EXTRAS", "1") != "0",
         )
         LOG.info("Inference engine initialised (models: %d, bonus_outputs=%s)",
                  _ENGINE.registry.n_loaded, enable_bonus)
@@ -305,6 +308,18 @@ def _details(row: Dict[str, Any], dbg: Dict[str, Any], cfg: Dict[str, Any]) -> D
     }
 
 
+def _json_safe(d: Dict[str, Any]) -> Dict[str, Any]:
+    """numpy/NaN -> обычные типы JSON."""
+    out: Dict[str, Any] = {}
+    for k, v in d.items():
+        if hasattr(v, "item"):
+            v = v.item()
+        if isinstance(v, float) and v != v:
+            v = None
+        out[str(k)] = v
+    return out
+
+
 def _config_hash(cfg: Dict[str, Any]) -> str:
     return _cfg_hash(cfg)  # та же формула, что записывается в DICOM SR (inference.config_hash)
 
@@ -361,6 +376,7 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
         eng, out_csv, rows, debug_rows = await run_in_threadpool(_run_job, job, tmp, job_dir, xlsx)
         problems = validate_output_csv(out_csv, eng.cfg)
         study_sr = _study_sr_urls(eng, job)
+        extras_rows = list(getattr(eng, "last_extras_rows", []) or [])
         rows_out = []
         for i, r in enumerate(rows):
             rb = _attach_bonus(r, job)
@@ -369,6 +385,8 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
             dbg = debug_rows[i] if i < len(debug_rows) else {}
             try:
                 rb["details"] = _details(r, dbg, eng.cfg)
+                if i < len(extras_rows) and isinstance(extras_rows[i], dict):
+                    rb["details"]["extras"] = _json_safe(extras_rows[i])
             except Exception as e:  # noqa: BLE001 — детали не должны ломать ответ
                 LOG.warning("details failed for row %d: %s", i, e)
             rows_out.append(rb)
@@ -392,6 +410,8 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
             "result_xlsx_url": f"/api/results/{job}/{xlsx_path.name}" if has_xlsx else None,
             # один DICOM SR на исследование (включая норму): {study_uid: url}
             "study_sr": study_sr,
+            "result_extras_csv_url": (f"/api/results/{job}/results_extras.csv"
+                                      if (out_csv.parent / "results_extras.csv").exists() else None),
             "rows": rows_out,
             "csv": _rows_to_csv_text(rows, eng.cfg),
         }
