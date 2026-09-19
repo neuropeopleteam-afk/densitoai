@@ -391,6 +391,21 @@ def read_and_validate(path: Path, cfg: Dict[str, Any]) -> DicomInfo:
     ds = pydicom.dcmread(str(path), force=True)
     if not hasattr(ds, "PixelData") and "PixelData" not in ds:
         raise ValueError("DICOM has no PixelData")
+    # Сырой поток без преамбулы/file meta (некоторые архивы и PACS-экспорты): pydicom читает теги,
+    # но для декодирования пикселей нужен TransferSyntaxUID -> восстанавливаем из фактической кодировки.
+    if "TransferSyntaxUID" not in getattr(ds, "file_meta", {}):
+        enc = getattr(ds, "original_encoding", (None, None))
+        implicit_vr = enc[0] if enc[0] is not None else True
+        little_endian = enc[1] if enc[1] is not None else True
+        if not hasattr(ds, "file_meta") or ds.file_meta is None:
+            ds.file_meta = pydicom.dataset.FileMetaDataset()
+        if implicit_vr:
+            ts = pydicom.uid.ImplicitVRLittleEndian
+        elif little_endian:
+            ts = pydicom.uid.ExplicitVRLittleEndian
+        else:
+            ts = pydicom.uid.ExplicitVRBigEndian
+        ds.file_meta.TransferSyntaxUID = ts
     img = normalize_pixels(ds)
     rows, cols = img.shape
     if not (v["min_rows"] <= rows <= v["max_rows"] and v["min_cols"] <= cols <= v["max_cols"]):
@@ -951,8 +966,8 @@ class DensitoInference:
         if crit_agg is None:
             return any_model
         # 3) смесь двух оценок. Валидация OOF (StratifiedGroupKFold по исследованиям, 3 сида):
-        #    ROC-AUC any-модель 0.766/0.702 (spine/hip), max по критериям 0.689/0.761,
-        #    смесь 0.5/0.5 -> 0.758/0.747, после согласования с классом 0.775/0.773;
+        #    ROC-AUC any-модель 0.766/0.702 (spine/hip), max по критериям 0.681/0.761,
+        #    смесь 0.5/0.5 -> 0.781/0.747, после согласования с классом 0.783/0.773 (пересчёт 19.09);
         #    см. docs/METRICS_REPORT.md (src/eval_oof_metrics.py).
         w = float(self.cfg["stacking"].get("any_blend_weight_model", 0.5))
         return clip01(w * any_model + (1.0 - w) * crit_agg)
@@ -964,7 +979,7 @@ class DensitoInference:
         смесью моделей. Чтобы строка была непротиворечивой (class=1 <=> prob>=0.5)
         и ROC-AUC учитывал решение по критериям, вероятность монотонно сжимается
         в [0.5, 1] при нарушении и в [0, 0.5) при норме (порядок внутри класса
-        сохраняется). OOF ROC-AUC при этом растёт: spine 0.735 -> 0.775,
+        сохраняется). OOF ROC-AUC при этом растёт: spine 0.735 -> 0.783,
         hip 0.704 -> 0.773 (см. docs/METRICS_REPORT.md)."""
         p = clip01(prob)
         return 0.5 + 0.5 * p if quality_class else min(0.5 * p, 0.499999)
@@ -1063,9 +1078,10 @@ class DensitoInference:
             LOG.error("FAILURE %s -> %s", path, err)
             LOG.debug(traceback.format_exc())
             region = guess_region_without_pixels(path, self.cfg)
-            study_uid, image_uid = self._uids_without_pixels(path)
+            rel = self._path_str(path, root)
+            study_uid, image_uid = self._uids_without_pixels(path, rel)
             row = {
-                "path_to_study": self._path_str(path, root),
+                "path_to_study": rel,
                 "study_uid": study_uid,
                 "image_uid": image_uid,
                 "anatomical_region": official_region_name(region, self.cfg),
@@ -1148,13 +1164,16 @@ class DensitoInference:
             return str(path)
 
     @staticmethod
-    def _uids_without_pixels(path: Path) -> Tuple[str, str]:
+    def _uids_without_pixels(path: Path, rel: Optional[str] = None) -> Tuple[str, str]:
+        """UID для строки Failure: из тегов, если читаются; иначе детерминированный хэш ОТНОСИТЕЛЬНОГО
+        пути (path_to_study), одинаковый на любой машине и в контейнере (нужно для verify.sh / эталона)."""
         try:
             ds = pydicom.dcmread(str(path), force=True, stop_before_pixels=True)
             s, i = _tag(ds, "StudyInstanceUID"), _tag(ds, "SOPInstanceUID")
         except Exception:  # noqa: BLE001
             s, i = "", ""
-        return (s or "hash-" + path_hash(path.parent)), (i or "hash-" + path_hash(path))
+        rel_p = Path(rel) if rel else path
+        return (s or "hash-" + path_hash(rel_p.parent)), (i or "hash-" + path_hash(rel_p))
 
     @staticmethod
     def _origin_hashes(path: Path, ds) -> Dict[str, str]:

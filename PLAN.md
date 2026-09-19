@@ -57,7 +57,7 @@
 
 | № | Действие (кратко; детали и условия приёмки — `docs/council/SYNTHESIS_ROUND2.md`) | Часы | Шаги | Статус |
 |---|---|---|---|---|
-| К1 | Стенд и верификация: CPU-only образ по digest, `linux/amd64`, лимиты потоков/памяти, контрольная сборка без сети; `verify.sh` (схема, строки, UID, колонки предсказаний без timestamps; детерминизм; sha256 весов); синтетические фантомы в репо + sha256 ожидаемого CSV; `verification_report.html` из кода; матрица transfer syntax; аудит лицензий/ПДн; чистка лендинга (Grad-CAM, «автокоррекция ROI»); демо без пароля с обезличенным примером; панель истории; релиз-архив | 12 | 2b | ☐ |
+| К1 | Стенд и верификация: CPU-only образ по digest, `linux/amd64`, лимиты потоков/памяти, контрольная сборка без сети; `verify.sh` (схема, строки, UID, колонки предсказаний без timestamps; детерминизм; sha256 весов); синтетические фантомы в репо + sha256 ожидаемого CSV; `verification_report.html` из кода; матрица transfer syntax; аудит лицензий/ПДн; чистка лендинга (Grad-CAM, «автокоррекция ROI»); демо без пароля с обезличенным примером; панель истории; релиз-архив | 12 | 2b | ◐ 19.09: стенд/verify/фантомы/digest/аудит сделаны и задеплоены; осталось веб (лендинг+кабинет, демо) — следующий шаг |
 | К2 | Вентильный стэкинг по критерию (вес ∈ {0, .25, .5, .75, 1}) + иерархия any → типы с reject; выбор только внутри nested repeated GroupKFold (study + pixel_hash); приёмка: прирост ≥ 0.03 в ≥ 7/10 повторов без потери macro-F1; пересборка контракта моделей | 8 + ночь CPU | 3b | ☑ 19.09: nested проведён, вентиль приёмку не прошёл ни по одному критерию — веса 0.5/0.5 сохранены; механизм весов по критерию в коде (`stacking.weights_by_criterion`, пусто) |
 | К3 | Калибровка cross-fit (Platt редкие / isotonic any), `quality_prob` монотонна по any; Brier/ECE, risk–coverage; зона «не уверен» (крыша отказа ≤ 3–5 %, только UI/debug); три правила порога (F1-опт / prevalence ×1.0 / ×1.4) сравниваются внутри nested; бэггинг порогов hip_pos; 9 колонок не меняются | 10 | 3 | ☐ |
 | К4 | Честные цифры: nested CV ночью, две колонки в README («ожидание на закрытом тесте»), model card из метрик, `docs/EVIDENCE.md` (данные, лицензии, отвергнутые гипотезы, ограничения), JSON Schema в валидаторе; слайд метрик: OOF с ДИ + полоса ориентиров заказчика (0.81/0.9; инструмент ЦДиТ 0.782/0.852 — контекст) + строка nested мелко | 6 + фон | 8 | ◐ 19.09: EVIDENCE.md, JSON Schema + тест, model card (генератор), nested-AUC базы посчитан (`docs/NESTED_GATE_REPORT.md`); осталось: две колонки в README, слайд |
@@ -170,3 +170,28 @@ Kafka / заявления о ЕРИС; ghost overlay, отчёт по опер�
   499 строк предсказаний бит в бит с базой, 0 Failure. JSON Schema (`schema/`) встроена в `validate_output_csv`, `tests/test_schema.py`
   37/37; `tools/make_model_card.py` → `models/MODEL_CARD.md`; `docs/DZM_CONFORMANCE.md` (статусы сделано/частично/не делаем + рамка
   «имитация классификатора НПКЦ ДиТ»), `docs/EVIDENCE.md`. Тесты: формат OK, API 36/36.
+- 2026-09-19: **К1 (стенд и верификация) — техническая часть закрыта, образ пересобран и задеплоен.** `tools/verify.sh`
+  (хост и контейнер: `docker run --network none densitoai:2.1.0 verify`): 15 синтетических DICOM-фантомов (`tests/phantoms/`,
+  генератор `tools/make_phantoms.py`, seed, sha256 в MANIFEST.json; 12 валидных + 3 битых), 9 проверок — схема 9 колонок,
+  строки = файлы, UID = теги, Failure ровно у битых, значения полей, детерминизм двух прогонов (бит в бит без времени),
+  sha256 весов (`models/WEIGHTS_SHA256.txt`, `tools/hash_weights.py --check`), эталон `expected_results.csv` (классы точно,
+  prob ±0.001; sha256 предсказаний). `verification_report.html` генерируется из JSON. Режим `--data DIR --expected-sha` для
+  закрытых данных организаторов. Docker: базовый образ по digest (`python:3.12.8-slim-bookworm@sha256:2199a628…`),
+  `--platform linux/amd64`, OMP/MKL = 2 (переопределяемо), PYTHONHASHSEED=0, сборка сама запускает hash_weights + verify
+  (сборка падает, если проверка не прошла); `docker-compose.yml` с лимитами 2 CPU / 3 ГБ (пик RSS инференса ≈ 0.6 ГБ);
+  `tools/offline_check.sh` — на сервере прошёл: 9/9 OK за 106 с без сети. Матрица transfer syntax
+  (`tests/test_transfer_syntax.py` → `docs/TRANSFER_SYNTAX_MATRIX.md`): 12/12 вариантов (Implicit/Explicit LE, Big Endian,
+  RLE, JPEG 2000 Lossless, 16 бит, MONOCHROME1, без PixelSpacing, без file meta, …) дают тот же регион/класс; JPEG Lossless
+  и JPEG-LS — не проверены (нет кодировщика). Найден и исправлен дефект: DICOM без преамбулы/file meta давал Failure —
+  теперь TransferSyntax восстанавливается из кодировки. Второй дефект: UID-заглушка для не-DICOM зависела от абсолютного
+  пути — теперь от относительного (`path_to_study`), эталон воспроизводим на любой машине. `tools/pii_scan.py`: 21 DICOM в
+  tests/ — ПДн 0. `docs/LICENSES_AND_DATA_AUDIT.md`: 41 пакет, все пермиссивные; внешних изображений и конкурсных DICOM в
+  репозитории нет; открытый вопрос — бэкбон densito предобучен в т.ч. на Arak (CC BY-NC): для коммерческой поставки
+  потребуется замена/переобучение без Arak (пока — исследовательское использование, отмечено в EVIDENCE). `tools/make_release.sh`
+  → `dist/densitoai-<v>-src.tar.gz` + SHA256SUMS (+ образ при WITH_IMAGE=1). `docs/VERIFICATION.md` — 5 команд для
+  технической группы. Регрессия 499: бит в бит с базой.
+- 2026-09-19: **Пересчёт бинарных метрик** (`src/eval_oof_metrics.py`, п. 3.3.1 handover): найден устаревший
+  `models/oof_stacked_spine_sp_pos.csv` (OOF ImageNet-бэкбона, до шага 4; в pickle моделей референс был верный — инференс не
+  затронут), заменён на актуальный. Итог OOF: позвоночник ROC-AUC 0.783 [0.65; 0.89] (было в документах 0.775), F1 0.648
+  [0.48; 0.78] (0.662), macro-F1 0.460 [0.29; 0.61] (0.453); бедро без изменений 0.773 / 0.667 / 0.574. Обновлены
+  METRICS_REPORT, README §10, EVIDENCE, DZM_CONFORMANCE, QA_ANALYSIS, комментарии в inference.py, блок метрик веба.

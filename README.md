@@ -79,8 +79,8 @@ densito_rebuild/
 ├── config.yaml                  ← единый конфиг: строки формата, пороги, веса, fallback-правила
 ├── requirements.txt             ← зафиксированные версии (pip freeze)
 ├── Dockerfile                   ← python:3.12.8-slim-bookworm, CPU
-├── docker-entrypoint.sh         ← режимы контейнера: batch | api | test
-├── docker-compose.yml           ← сервисы densito-batch и densito-api
+├── docker-entrypoint.sh         ← режимы контейнера: batch | api | verify | test
+├── docker-compose.yml           ← сервисы densito-verify, densito-batch, densito-api (лимиты 2 CPU / 3 ГБ)
 ├── build_and_run.sh             ← сборка + запуск (Linux)
 ├── .dockerignore
 ├── src/
@@ -95,8 +95,9 @@ densito_rebuild/
 │   ├── train_final_models.py    ← финальные модели по критериям + any-модели (geom/emb)
 │   ├── eval_oof_metrics.py      ← отчёт по метрикам ТЗ §8.4 с 95 % ДИ → docs/metrics_oof_full.md
 │   ├── visualize_report.py      ← [бонус] прозрачный оверлей: измерения + оценки моделей по критериям
-│   ├── dicom_sr.py              ← [бонус] генератор DICOM Structured Report
-│   ├── auto_roi.py              ← [бонус] автокоррекция ROI для бедра
+│   ├── dicom_sr.py              ← [бонус] DICOM Structured Report: на снимок (--sr-dir) и один на исследование (--sr-study)
+│   ├── schema_check.py          ← проверка строк CSV / ответа API по JSON Schema (schema/)
+│   ├── auto_roi.py              ← [бонус] предложение исправленного ROI бедра (диагностический PNG)
 │   └── hip_features.py, hip_eval.py, train_multilabel.py ← исследовательские скрипты (бедро, старая CNN)
 ├── models/
 │   ├── MODEL_CONTRACT.md        ← формат .pkl, который ожидает инференс
@@ -111,15 +112,32 @@ densito_rebuild/
 │   ├── labels_full.csv          ← 499 строк: файл, регион, метки 7 критериев
 │   ├── geometry_features.csv    ← признаки контура A на трейне (медианы для импутации)
 │   └── embeddings.npy           ← эмбеддинги трейна (не входит в образ)
+├── schema/                      ← JSON Schema строки результата и ответа /api/analyze
+├── tools/
+│   ├── verify.sh, verify_checks.py, verification_report.py ← самопроверка без сети (фантомы, детерминизм, sha256, эталон)
+│   ├── make_phantoms.py, hash_weights.py, pii_scan.py, make_release.sh, offline_check.sh
+│   ├── validate_sr.py           ← валидатор DICOM SR исследования
+│   ├── make_model_card.py       ← генерирует models/MODEL_CARD.md из metrics_summary.json
+│   ├── nested_gate.py, pixel_hash.py ← nested repeated GroupKFold для выбора весов стэкинга (К2)
+│   └── review/                  ← инструмент слепой ревизии для рентгенолога (галерея, ориентиры, kappa/PCK)
 ├── web/
 │   └── index.html               ← [бонус] веб-интерфейс (загрузка DICOM, таблица, оверлеи, SR, CSV)
 ├── tests/
 │   ├── test_inference_format.py ← smoke-тест: реальные + битые входы, формат, детерминизм
+│   ├── test_api_isolation.py    ← 36 проверок API (изоляция jobs, traversal, лимиты, битый zip)
+│   ├── test_schema.py           ← JSON Schema результата и ответа API (37 проверок)
+│   ├── test_transfer_syntax.py  ← матрица transfer syntax / битности / MONOCHROME1 → docs/TRANSFER_SYNTAX_MATRIX.md
+│   ├── phantoms/                ← 15 синтетических DICOM-фантомов + MANIFEST.json + expected_results.csv (эталон verify)
 │   └── sample_test_zip/         ← распакованный образец организаторов «Для теста.zip»
 ├── docs/
 │   ├── EXPERT_TESTING_GUIDE.md  ← инструкция эксперту-тестировщику (1 страница)
 │   ├── ENGINEERING_REPORT.md    ← инженерный отчёт о сдаче (файлы, статус Docker, расхождения с ТЗ)
 │   ├── METRICS_REPORT.md        ← метрики ТЗ §8.4 с 95 % ДИ, скорость, надёжность
+│   ├── EVIDENCE.md              ← данные, лицензии, протокол валидации, отвергнутые гипотезы, ограничения
+│   ├── DZM_CONFORMANCE.md       ← соответствие ТЗ и желательным пунктам: сделано / частично / не делаем
+│   ├── VERIFICATION.md          ← инструкция технической группе: офлайн-проверка образа за 5 команд
+│   ├── NESTED_GATE_REPORT.md    ← nested CV вентильного стэкинга (К2): полный отчёт по повторам
+│   ├── TRANSFER_SYNTAX_MATRIX.md, LICENSES_AND_DATA_AUDIT.md ← измеренная матрица форматов; лицензии и аудит ПДн
 │   ├── qa/                      ← транскрипт и разбор Q&A с организаторами, учёт в решении
 │   ├── LETTER_TO_ORGANIZERS.md  ← сопроводительное письмо к сдаче
 │   ├── FINAL_PLAN.md, review_fable5.md ← проектные решения
@@ -212,6 +230,32 @@ docker compose up densito-api
 
 ---
 
+### Проверка и воспроизводимость
+
+Образ содержит средства самопроверки без сети. Полная инструкция для технической группы — `docs/VERIFICATION.md`.
+
+```bash
+docker build --platform linux/amd64 -t densitoai:2.1.0 .        # базовый образ закреплён по digest
+bash tools/offline_check.sh densitoai:2.1.0 ./outputs            # = docker run --rm --network none ... verify
+# отчёт: outputs/verify/verification_report.html, код возврата 0/1
+```
+
+Что проверяет `verify` (`tools/verify.sh`, работает и на хосте: `bash tools/verify.sh`):
+15 синтетических DICOM-фантомов (`tests/phantoms/`, генератор `tools/make_phantoms.py`, sha256 в `MANIFEST.json`) —
+схема CSV (9 столбцов), строки = файлы, study_uid/image_uid = теги, Failure ровно для 3 битых файлов,
+детерминизм двух прогонов (все столбцы кроме time_of_processing), совпадение с эталоном
+`tests/phantoms/expected_results.csv`, sha256 весов по `models/WEIGHTS_SHA256.txt` (`tools/hash_weights.py --check`).
+Проверка на собственных данных: `verify --data /data/input [--expected-sha <sha>]`.
+
+Ресурсы: стенд 2 CPU / 3 ГБ (`docker-compose.yml`: `mem_limit: 3g`, `cpus: 2`; пик памяти инференса около 0,6 ГБ).
+Потоки BLAS задаются переменными `OMP_NUM_THREADS`/`MKL_NUM_THREADS` (по умолчанию 2, переопределяются `-e`).
+
+Релиз: `bash tools/make_release.sh 2.1.0` создаёт `dist/densitoai-2.1.0-src.tar.gz` (без outputs/, data-выгрузок и конкурсных
+DICOM), `WITH_IMAGE=1` добавляет `dist/densitoai-2.1.0-image.tar.gz` (`docker save | gzip`); контрольные суммы — `dist/SHA256SUMS`.
+Матрица форматов DICOM (измерено): `docs/TRANSFER_SYNTAX_MATRIX.md`; лицензии и аудит данных: `docs/LICENSES_AND_DATA_AUDIT.md`.
+
+---
+
 ## 5. Запуск без контейнера
 
 ```bash
@@ -246,7 +290,8 @@ python tests/test_inference_format.py
 | `--log-file`, `-v` | лог (по умолчанию `<output>.log`), подробный вывод |
 | `--validate-only` | только проверить формат CSV и выйти |
 | `--visualize-dir DIR` | [бонус] каталог для PNG-оверлеев с геометрическими признаками качества (см. `src/visualize_report.py`) |
-| `--sr-dir DIR` | [бонус] каталог для DICOM Structured Report `.dcm` (см. `src/dicom_sr.py`) |
+| `--sr-dir DIR` | [бонус] каталог для DICOM Structured Report `.dcm` на каждый снимок (см. `src/dicom_sr.py`) |
+| `--sr-study [--sr-study-dir DIR]` | [бонус] один DICOM Comprehensive SR на исследование, включая норму и Failure, с sha256 файла и пикселей каждого снимка; по умолчанию `<каталог CSV>/sr/<study_uid>_SR.dcm`; проверка — `python tools/validate_sr.py <dir> --csv results.csv` |
 | `--roi-autocorrect-dir DIR` | [бонус] каталог для диагностических PNG с предложением коррекции ROI для бедра (см. `src/auto_roi.py`), создаётся только при найденном нарушении |
 
 все три бонус-флага по умолчанию отключены и не влияют на основной CSV.
@@ -372,7 +417,7 @@ OOF-распределения на трейне (`models/oof_stacked_*.csv`), �
   критериям региона (`max` | `noisy_or`), затем **согласование с классом**
   (`consistent_quality_prob`): `quality_class = 1 ⇔ quality_prob ≥ 0.5`, порядок внутри
   класса сохраняется (монотонное преобразование). Это устранило 79/499 противоречивых строк
-  версии 2.0.x и подняло OOF ROC-AUC бинарной задачи до 0.775 / 0.773 (позвоночник / бедро).
+  версии 2.0.x и подняло OOF ROC-AUC бинарной задачи до 0.783 / 0.773 (позвоночник / бедро; пересчёт 19.09 после гибридного бэкбона sp_pos).
 - **Fallback без моделей.** Если для критерия нет `.pkl` (или он не читается) — работает
   физическое правило-сигмоида по одному признаку (`config.yaml: fallback_rules`), центры
   откалиброваны как prevalence-квантили на трейне, для ROI бедра — порог ТЗ «≥ 2 см от

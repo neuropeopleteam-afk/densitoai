@@ -1,23 +1,50 @@
 # DensitoAI — docker compose
-#   Пакетная обработка:  INPUT_DIR=/path/to/dicoms OUTPUT_DIR=./outputs docker compose run --rm densito-batch
-#   API-сервис:          docker compose up densito-api      ->  http://localhost:8000/docs
+#   Самопроверка без сети: docker compose run --rm densito-verify
+#   Пакетная обработка:    INPUT_DIR=/path/to/dicoms OUTPUT_DIR=./outputs docker compose run --rm densito-batch
+#   API-сервис:            docker compose up densito-api      ->  http://localhost:8000/docs
+#
+# Лимиты стенда по умолчанию: 2 CPU, 3 ГБ памяти (пик RSS инференса ~0.6 ГБ, замер 19.09.2026,
+# tools/verify.sh на фантомах и 60 снимках). Переопределение: DOCKER_CPUS=4 DOCKER_MEM=6g.
+# mem_limit/cpus действуют для `docker compose run/up` без Swarm; deploy.resources — для Swarm.
+x-limits: &limits
+  mem_limit: "${DOCKER_MEM:-3g}"
+  cpus: "${DOCKER_CPUS:-2}"
+  environment:
+    - OMP_NUM_THREADS=${OMP_NUM_THREADS:-2}
+    - MKL_NUM_THREADS=${MKL_NUM_THREADS:-2}
+    - OPENBLAS_NUM_THREADS=${OMP_NUM_THREADS:-2}
+  deploy:
+    resources:
+      limits:
+        cpus: "${DOCKER_CPUS:-2}"
+        memory: "${DOCKER_MEM:-3g}"
+
 services:
+  densito-verify:
+    <<: *limits
+    build: { context: ., dockerfile: Dockerfile }
+    image: densitoai:2.1.0
+    container_name: densito-verify
+    command: ["verify"]
+    network_mode: none
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ${OUTPUT_DIR:-./outputs}:/data/output
+
   densito-batch:
+    <<: *limits
     build: { context: ., dockerfile: Dockerfile }
     image: densitoai:2.1.0
     container_name: densito-batch
     command: ["batch"]
+    network_mode: none
     user: "${UID:-1000}:${GID:-1000}"
     volumes:
       - ${INPUT_DIR:-./tests/sample_test_zip}:/data/input:ro
       - ${OUTPUT_DIR:-./outputs}:/data/output
-    environment:
-      - OMP_NUM_THREADS=${OMP_NUM_THREADS:-4}
-    deploy:
-      resources:
-        limits: { cpus: "${DOCKER_CPUS:-4}", memory: ${DOCKER_MEM:-8g} }
 
   densito-api:
+    <<: *limits
     build: { context: ., dockerfile: Dockerfile }
     image: densitoai:2.1.0
     container_name: densito-api
@@ -29,6 +56,3 @@ services:
       - ${INPUT_DIR:-./tests/sample_test_zip}:/data/input:ro
       - ${OUTPUT_DIR:-./outputs}:/data/output
     restart: unless-stopped
-    deploy:
-      resources:
-        limits: { cpus: "${DOCKER_CPUS:-4}", memory: ${DOCKER_MEM:-8g} }

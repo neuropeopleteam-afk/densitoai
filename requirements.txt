@@ -44,3 +44,12 @@ sympy==1.14.0
 mpmath==1.3.0
 Jinja2==3.1.6
 MarkupSafe==3.0.3
+
+# --- Опционально: кодеки для чтения СЖАТЫХ DICOM (RLE читается самим pydicom;
+# JPEG 2000 / JPEG Lossless / JPEG-LS требуют плагинов). Экспорт GE Lunar Prodigy —
+# несжатый Implicit VR LE, поэтому в базовый образ не входят по умолчанию.
+# Установлены и проверены 19.09.2026 (docs/TRANSFER_SYNTAX_MATRIX.md): JPEG 2000 Lossless OK.
+# Для включения в образ: раскомментировать три строки ниже и пересобрать.
+# pylibjpeg==2.1.0
+# pylibjpeg-libjpeg==2.4.0
+# pylibjpeg-openjpeg==2.5.0

@@ -2,6 +2,9 @@
 # Точка входа контейнера DensitoAI.
 #   batch [args...]  — пакетная обработка: /data/input -> /data/output/results.csv (по умолчанию)
 #   api   [args...]  — HTTP API на порту 8000
+#   verify [args...] — самопроверка без сети: фантомы, детерминизм, sha256 весов, отчёт
+#                      (/data/output/verify/verification_report.html); код 0/1.
+#                      verify --data /data/input --expected-sha <sha>  — сверка на данных пользователя
 #   test             — самопроверка формата/устойчивости
 #   любая другая команда выполняется как есть (например: bash)
 set -euo pipefail
@@ -14,6 +17,8 @@ case "$cmd" in
       --xlsx --debug-csv "$@" ;;
   api)
     cd /app/src && exec python /app/src/api_server.py --host 0.0.0.0 --port "${DENSITO_PORT:-8000}" "$@" ;;
+  verify)
+    exec bash /app/tools/verify.sh "$@" ;;
   test)
     exec python /app/tests/test_inference_format.py ;;
   *)
