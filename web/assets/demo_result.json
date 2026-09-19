@@ -1,0 +1,286 @@
+{
+ "demo": true,
+ "demo_note": "Три тестовых файла организаторов (tests/sample_test_zip), обработаны сервисом DensitoAI 2.1.0 без изменений. Личных данных нет.",
+ "job_id": "demo",
+ "request_id": "demo",
+ "model_version": "2.1.0",
+ "config_hash": "cdc06b154c79",
+ "summary": {
+  "n_files": 3,
+  "n_failures": 0,
+  "n_violations": 1,
+  "total_processing_time_s": 2.931,
+  "wall_time_s": 5.226,
+  "n_studies": 2,
+  "n_files_uploaded": 3,
+  "bytes_uploaded": 262772
+ },
+ "format_check": "OK",
+ "result_csv": null,
+ "result_xlsx": null,
+ "result_debug_csv": null,
+ "result_csv_url": null,
+ "result_xlsx_url": null,
+ "result_debug_csv_url": null,
+ "rows": [
+  {
+   "path_to_study": "CR000000_ПОП.dcm",
+   "study_uid": "1.2.643.5.1.13.13.12.2.77.8252.07090503010902110208051203150011",
+   "image_uid": "1.2.643.5.1.13.13.12.2.77.8252.08131215131407030115020811060505",
+   "anatomical_region": "Поясничный отдел позвоночника",
+   "quality_class": 1,
+   "violation_type": "Присутствуют посторонние предметы",
+   "quality_prob": 0.824753,
+   "processing_status": "Success",
+   "time_of_processing": 1.4874,
+   "details": {
+    "internal_region": "spine",
+    "region_source": "dims",
+    "image_size": [
+     317,
+     300
+    ],
+    "warnings": "no PixelSpacing tag -> device default 1.05x0.6 mm",
+    "error": null,
+    "quality_prob_raw": 0.649505,
+    "criteria": [
+     {
+      "code": "sp_pos",
+      "title": "Укладка (позвоночник)",
+      "violation": "Некорректная укладка",
+      "score": 0.301,
+      "threshold": 0.791,
+      "flag": false,
+      "method": "stacked_rank_avg",
+      "p_geom": 0.349,
+      "p_emb": 0.0
+     },
+     {
+      "code": "sp_axis",
+      "title": "Ось позвоночника",
+      "violation": "Не выравнена ось позвоночника",
+      "score": 0.578,
+      "threshold": 0.756,
+      "flag": false,
+      "method": "stacked_rank_avg",
+      "p_geom": 0.293,
+      "p_emb": 0.034
+     },
+     {
+      "code": "sp_art",
+      "title": "Посторонние предметы",
+      "violation": "Присутствуют посторонние предметы",
+      "score": 0.596,
+      "threshold": 0.557,
+      "flag": true,
+      "method": "stacked_rank_avg",
+      "p_geom": 0.425,
+      "p_emb": 0.991
+     }
+    ],
+    "measurements": [
+     {
+      "title": "Наклон оси позвоночника",
+      "value": 1.2,
+      "unit": "°"
+     },
+     {
+      "title": "Изгиб оси",
+      "value": 0.026,
+      "unit": ""
+     },
+     {
+      "title": "Смещение от центра кадра",
+      "value": 0.4,
+      "unit": "% ширины"
+     },
+     {
+      "title": "Ширина костной области",
+      "value": 37.3,
+      "unit": "% ширины"
+     },
+     {
+      "title": "Отступ сверху",
+      "value": 0.0,
+      "unit": "% высоты"
+     },
+     {
+      "title": "Отступ снизу",
+      "value": 0.3,
+      "unit": "% высоты"
+     },
+     {
+      "title": "Площадь плотных включений",
+      "value": 1010.0,
+      "unit": "мм²"
+     },
+     {
+      "title": "Контраст включений к кости",
+      "value": 4.37,
+      "unit": "сигм"
+     }
+    ],
+    "roi": {
+     "needs_correction": null,
+     "reason": null,
+     "deficit_mm": null
+    },
+    "action": "Проверить снимок; при подтверждении — переснять",
+    "action_code": "review"
+   },
+   "bonus_overlay_png_url": "assets/demo/demo_spine_overlay.png"
+  },
+  {
+   "path_to_study": "CR000000_ППОБ.dcm",
+   "study_uid": "1.2.643.5.1.13.13.12.2.77.8252.11150201120815140403070915121004",
+   "image_uid": "1.2.643.5.1.13.13.12.2.77.8252.07151011100515030003060813080805",
+   "anatomical_region": "Проксимальный отдел бедра",
+   "quality_class": 0,
+   "violation_type": "",
+   "quality_prob": 0.199554,
+   "processing_status": "Success",
+   "time_of_processing": 0.616,
+   "details": {
+    "internal_region": "right_hip",
+    "region_source": "dims+anatomy",
+    "image_size": [
+     291,
+     280
+    ],
+    "warnings": "no PixelSpacing tag -> device default 1.05x0.6 mm",
+    "error": null,
+    "quality_prob_raw": 0.399107,
+    "criteria": [
+     {
+      "code": "rh_pos",
+      "title": "Укладка (правое бедро)",
+      "violation": "Некорректная укладка",
+      "score": 0.526,
+      "threshold": 0.709,
+      "flag": false,
+      "method": "stacked_rank_avg",
+      "p_geom": 0.538,
+      "p_emb": 0.02
+     },
+     {
+      "code": "rh_roi",
+      "title": "Область интереса (правое бедро)",
+      "violation": "Некорректная область интереса",
+      "score": 0.147,
+      "threshold": 0.891,
+      "flag": false,
+      "method": "stacked_rank_avg",
+      "p_geom": 0.029,
+      "p_emb": 0.0
+     }
+    ],
+    "measurements": [
+     {
+      "title": "Наклон диафиза бедра",
+      "value": 10.0,
+      "unit": "°"
+     },
+     {
+      "title": "Расстояние от кости до бокового края",
+      "value": 29.4,
+      "unit": "мм"
+     },
+     {
+      "title": "Доля кости в кадре",
+      "value": 22.1,
+      "unit": "%"
+     },
+     {
+      "title": "Площадь плотных включений",
+      "value": 0.0,
+      "unit": "мм²"
+     }
+    ],
+    "roi": {
+     "needs_correction": false,
+     "reason": null,
+     "deficit_mm": null
+    },
+    "action": "Принять",
+    "action_code": "accept"
+   },
+   "bonus_overlay_png_url": "assets/demo/demo_right_hip_overlay.png"
+  },
+  {
+   "path_to_study": "CR000001_ЛПОБ.dcm",
+   "study_uid": "1.2.643.5.1.13.13.12.2.77.8252.11150201120815140403070915121004",
+   "image_uid": "1.2.643.5.1.13.13.12.2.77.8252.09101502041102040815090110100600",
+   "anatomical_region": "Проксимальный отдел бедра",
+   "quality_class": 0,
+   "violation_type": "",
+   "quality_prob": 0.32025,
+   "processing_status": "Success",
+   "time_of_processing": 0.8277,
+   "details": {
+    "internal_region": "left_hip",
+    "region_source": "dims+anatomy",
+    "image_size": [
+     291,
+     280
+    ],
+    "warnings": "no PixelSpacing tag -> device default 1.05x0.6 mm",
+    "error": null,
+    "quality_prob_raw": 0.640501,
+    "criteria": [
+     {
+      "code": "lh_pos",
+      "title": "Укладка (левое бедро)",
+      "violation": "Некорректная укладка",
+      "score": 0.66,
+      "threshold": 0.709,
+      "flag": false,
+      "method": "stacked_rank_avg",
+      "p_geom": 0.361,
+      "p_emb": 0.896
+     },
+     {
+      "code": "lh_roi",
+      "title": "Область интереса (левое бедро)",
+      "violation": "Некорректная область интереса",
+      "score": 0.36,
+      "threshold": 0.891,
+      "flag": false,
+      "method": "stacked_rank_avg",
+      "p_geom": 0.036,
+      "p_emb": 0.0
+     }
+    ],
+    "measurements": [
+     {
+      "title": "Наклон диафиза бедра",
+      "value": 8.2,
+      "unit": "°"
+     },
+     {
+      "title": "Расстояние от кости до бокового края",
+      "value": 32.4,
+      "unit": "мм"
+     },
+     {
+      "title": "Доля кости в кадре",
+      "value": 22.3,
+      "unit": "%"
+     },
+     {
+      "title": "Площадь плотных включений",
+      "value": 0.0,
+      "unit": "мм²"
+     }
+    ],
+    "roi": {
+     "needs_correction": false,
+     "reason": null,
+     "deficit_mm": null
+    },
+    "action": "Принять",
+    "action_code": "accept"
+   },
+   "bonus_overlay_png_url": "assets/demo/demo_left_hip_overlay.png"
+  }
+ ]
+}
