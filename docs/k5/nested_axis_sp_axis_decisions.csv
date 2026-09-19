@@ -1,0 +1,5 @@
+variant,n,n_pos,n_repeats_gain_ge_0_03,mean_delta_auc,min_delta_auc,auc_base_mean,auc_variant_mean,mf1_base_mean,mf1_variant_mean,delta_auc_pooled_ci,accepted
+plus_bodies,166,17,0,-0.0485,-0.0815,0.7549,0.7065,0.5318,0.5015,"[-0.0948, -0.0422, -0.0021]",False
+plus_col,166,17,0,-0.0353,-0.1042,0.7549,0.7196,0.5318,0.5358,"[-0.1265, -0.0433, 0.0205]",False
+plus_bodies_tiltmax,166,17,0,-0.0847,-0.1526,0.7549,0.6702,0.5318,0.4687,"[-0.162, -0.0825, -0.0086]",False
+plus_all,166,17,0,-0.0691,-0.1723,0.7549,0.6858,0.5318,0.5009,"[-0.1347, -0.0667, -0.0047]",False

@@ -1,0 +1,12 @@
+features,auc_oof_mean,auc_oof_sd,auc_raw_single
+old: axis_angle_deg,0.835,0.013,0.85
+axis_bodies_deg,0.628,0.031,0.69
+axis_col_deg,0.735,0.033,0.79
+tilt_local_max_deg,0.6,0.08,0.682
+tilt_local_mean_deg,0.579,0.065,0.636
+tilt_step_max_deg,0.549,0.065,0.645
+old + axis_bodies,0.758,0.056,
+old + axis_col,0.781,0.027,
+old + bodies + tilt_local_max,0.716,0.077,
+old + all new,0.737,0.07,
+bodies + tilts (без old),0.711,0.073,

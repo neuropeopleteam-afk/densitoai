@@ -1,0 +1,4 @@
+criterion,variant,n,n_pos,n_repeats_gain_ge_0_03,mean_delta_auc,min_delta_auc,auc_base_mean,auc_variant_mean,mf1_base_mean,mf1_variant_mean,delta_auc_pooled_ci,accepted
+hip_pos,b2_third,329,79,7,0.029,-0.0511,0.7091,0.7381,0.5794,0.614,"[-0.0492, 0.021, 0.09]",True
+hip_pos,b2_quarter,329,79,6,0.0283,-0.0494,0.7091,0.7374,0.5794,0.6427,"[-0.0265, 0.0203, 0.0673]",False
+hip_pos,b2_only_vs_emb,329,79,7,0.0217,-0.1214,0.7091,0.7308,0.5794,0.6221,"[-0.0478, 0.0213, 0.0977]",True

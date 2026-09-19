@@ -5,7 +5,7 @@
 
 Выход: data/labels_full.csv с колонками:
   study, file_path, sop_instance_uid, instance_number, rows, cols,
-  region (spine/right_hip/left_hip/unknown),
+  region (spine/right_hip/left_hip/unknown; сторона бедра — hip_features.detect_hip_side, К5 п.1),
   sp_pos, sp_axis, sp_art, rh_pos, rh_roi, lh_pos, lh_roi (0/1/NaN — по применимости),
   quality_class (0/1, агрегат по критериям применимого региона, НЕ по "Итог"),
   violation_list (текст через ';' по русским названиям, как ожидает выходной формат)
@@ -67,6 +67,28 @@ def hip_side_by_density(pixel_array):
     return 'right_hip' if right_density > left_density else 'left_hip'
 
 
+def hip_side_anatomical(pixel_array, ds=None):
+    """Сторона бедра по анатомии (hip_features.detect_hip_side: таз всегда медиальнее
+    диафиза), как в inference.detect_hip_side_region. Плотностная эвристика
+    hip_side_by_density ошибается на ~24% снимков (80/333, work/I/REPORT.md, К5 п.1);
+    она остаётся только резервом при исключении. Возвращает (region, source)."""
+    try:
+        from geometry_features import read_dicom_normalized  # noqa: WPS433
+        from hip_features import detect_hip_side
+        if ds is not None:
+            arr = pixel_array.astype(np.float32)
+            if getattr(ds, 'PhotometricInterpretation', 'MONOCHROME2') == 'MONOCHROME1':
+                arr = arr.max() - arr
+            lo, hi = np.percentile(arr, [1, 99])
+            img_u8 = (np.clip((arr - lo) / (hi - lo) * 255.0, 0, 255) if hi > lo else np.zeros_like(arr)).astype(np.uint8)
+        else:
+            img_u8 = pixel_array.astype(np.uint8)
+        return detect_hip_side(img_u8) + '_hip', 'anatomical'
+    except Exception as e:  # noqa: BLE001
+        print(f"WARNING: detect_hip_side failed ({e}) -> density heuristic")
+        return hip_side_by_density(pixel_array), 'density'
+
+
 def main():
     labels = load_labels()
     rows_out = []
@@ -103,7 +125,8 @@ def main():
         for item in parsed:
             region = classify_region_from_dims(item['rows'], item['cols'])
             if region == 'hip_unresolved':
-                region = hip_side_by_density(item['pixel_array'])
+                # К5 п.1: сторона по анатомии (детектор), плотность — только резерв
+                region, item['side_source'] = hip_side_anatomical(item['pixel_array'], item['ds'])
             item['region'] = region
 
         for item in parsed:
