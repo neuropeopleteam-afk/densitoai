@@ -136,3 +136,82 @@ pixel_spacing_mm:
   # тег PixelSpacing / ImagerPixelSpacing отсутствует.
   y: 1.05
   x: 0.6
+
+# Тексты для карточки решения и режима лаборанта (только UI; на 9 колонок CSV и на модель не влияют).
+# Экспорт в web/assets/actions.json: python tools/web/build_actions_json.py
+# Ключи hip_pos / hip_roi используются для rh_*/lh_*. Официальные строки violations выше не дублируются и не меняются.
+actions:
+  sp_pos:
+    reason: "Нарушение укладки: позвоночник смещён или поясничный отдел не полностью в кадре"
+    hint: "Уложить пациента по центру стола, позвоночник по средней линии; проверить, что поясничный отдел целиком в поле сканирования, и повторить сканирование."
+  sp_axis:
+    reason: "Ось позвоночника наклонена относительно оси стола"
+    hint: "Выровнять пациента вдоль продольной оси стола по лазерной метке, без поворота таза и плеч; повторить сканирование."
+  sp_art:
+    reason: "В кадре плотные посторонние предметы"
+    hint: "Убрать из области сканирования металл и плотные предметы: пуговицы, молнии, ремень, содержимое карманов; если предмет убрать нельзя, отметить это в протоколе."
+  hip_pos:
+    reason: "Бедро повёрнуто или диафиз наклонён"
+    hint: "Развернуть стопу внутрь с фиксатором, диафиз бедра параллельно оси стола; малый вертел должен быть почти не виден; повторить сканирование."
+  hip_roi:
+    reason: "Кость слишком близко к краю кадра или поле сканирования короткое"
+    hint: "Сместить поле сканирования: от кости до бокового края не менее 20 мм, в кадр должен войти проксимальный отдел бедра с участком диафиза ниже вертелов; повторить сканирование."
+  ok:
+    reason: "Отклонений от требований не выявлено"
+    hint: "Повторное сканирование не требуется."
+  fail:
+    reason: "Файл не обработан"
+    hint: "Проверить, что файл является DICOM-снимком с денситометра, и передать врачу или инженеру."
+  review:
+    reason: "Оценка на границе допуска"
+    hint: "Показать снимок врачу до решения о повторном сканировании."
+# Допуски ТЗ и справочные диапазоны для блока «Измерено против нормы».
+# tz — требование ТЗ (норма); ref_q95 считается скриптом build_actions_json.py по размеченным
+# нормальным кадрам data/geometry_features.csv (95 % квантиль модуля признака) — только справочно.
+measurement_norms:
+  axis_angle_deg:         {label: "Угол оси позвоночника", unit: "°", tz_max: 5.0, source: "ТЗ: отклонение оси не более 5°"}
+  center_offset_ratio:    {label: "Смещение центра позвоночника", unit: "% ширины кадра", mult: 100, ref: true}
+  metal_metal_area_mm2:   {label: "Площадь плотных объектов", unit: "мм²", ref: true}
+  abs_shaft_angle_deg:    {label: "Угол диафиза бедра", unit: "°", ref: true}
+  edge_distance_mm:       {label: "Расстояние от кости до края кадра", unit: "мм", tz_min: 20.0, source: "ТЗ: не менее 2 см от края"}
+  scan_length_mm:         {label: "Длина скана", unit: "мм", ref: true, ref_low: true}
+  shaft_len_below_troch_mm: {label: "Диафиз ниже вертелов", unit: "мм", ref: true, ref_low: true}
+  lesser_troch_prominence_mm: {label: "Выступ малого вертела", unit: "мм", ref: true}
+
+# Правило порога по критерию (К3). Значения: f1_optimal (F1-оптимум на OOF при >= 15 позитивах, иначе
+# prevalence), prevalence (квантиль 1 - доля позитивов), prevalence_x<k> (квантиль 1 - k*доля позитивов).
+# Выбрано ТОЛЬКО nested repeated GroupKFold 5x10 (tools/calibration_eval.py --stage nested,
+# outputs: outputs/calibration/nested_thr, отчёт docs/METRICS_REPORT.md «Калибровка и зона не уверен») по минимальному
+# среднему regret F1(+) по внешним фолдам. Применяется в train_stacked.py; после изменения обязателен
+# перезапуск train_stacked.py (пороги в metrics_summary.json).
+thresholds_rule:
+  default: f1_optimal
+  by_criterion:
+    sp_pos: prevalence          # 10 позитивов: f1_optimal и так даёт prevalence
+    sp_axis: prevalence_x1.4    # regret 0.038 против 0.090 у f1_optimal
+    sp_art: prevalence_x1.4     # regret 0.035 против 0.114
+    hip_pos: prevalence         # regret 0.050 против 0.082
+    hip_roi: prevalence         # regret 0.026 против 0.049
+
+# Зона «не уверен» (К3): строка/критерий помечается needs_review, если |score - threshold| <= margin.
+# Запасы считает train_stacked.py (models/calibration.pkl, metrics_summary.json -> uncertainty) так, чтобы доля
+# «не уверен» на OOF была <= max_reject_rate и по критерию, и по строкам региона. Значения ниже — копия
+# рассчитанных (источник истины: models/calibration.pkl; при null берутся оттуда). Только debug-CSV и API,
+# 9 колонок CSV не меняются.
+uncertainty:
+  enabled: true
+  max_reject_rate: 0.05
+  quota_step: 0.0025
+  margin_by_criterion:
+    sp_pos: null
+    sp_axis: null
+    sp_art: null
+    hip_pos: null
+    hip_roi: null
+
+# Калибровка (К3). Platt по критерию (p_cal = sigmoid(a*score + b)) — только debug-CSV и API details.
+# Калибровка any-модели в quality_prob НЕ принята: cross-fit Brier не улучшается значимо
+# (docs/METRICS_REPORT.md), поэтому apply_to_quality_prob: false и в коде не реализовано.
+calibration:
+  criteria_platt: true
+  apply_to_quality_prob: false

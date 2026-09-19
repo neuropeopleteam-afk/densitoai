@@ -239,13 +239,24 @@ MEASUREMENTS = {
         ("feat_metal_metal_max_intensity_gap", "Контраст включений к кости", "сигм", 1.0, 2),
     ],
     "hip": [
-        ("feat_shaft_angle_deg", "Наклон диафиза бедра", "°", 1.0, 1),
+        ("feat_abs_shaft_angle_deg", "Наклон диафиза бедра", "°", 1.0, 1),
         ("feat_edge_distance_mm", "Расстояние от кости до бокового края", "мм", 1.0, 1),
         ("feat_bone_area_ratio", "Доля кости в кадре", "%", 100.0, 1),
+        ("feat_scan_length_mm", "Длина скана", "мм", 1.0, 0),
+        ("feat_shaft_len_below_troch_mm", "Диафиз ниже вертелов", "мм", 1.0, 0),
+        ("feat_lesser_troch_prominence_mm", "Выступ малого вертела", "мм", 1.0, 1),
         ("feat_metal_metal_area_mm2", "Площадь плотных включений", "мм²", 1.0, 0),
         ("bonus_roi_deficit_mm", "Недостаток поля сканирования", "мм", 1.0, 0),
     ],
 }
+
+
+def _meas_key(debug_key: str) -> str:
+    """feat_axis_angle_deg -> axis_angle_deg; bonus_roi_deficit_mm -> roi_deficit_mm (ключ для UI-норм)."""
+    for pref in ("feat_", "bonus_"):
+        if debug_key.startswith(pref):
+            return debug_key[len(pref):]
+    return debug_key
 
 
 def _num(v) -> Optional[float]:
@@ -277,14 +288,24 @@ def _details(row: Dict[str, Any], dbg: Dict[str, Any], cfg: Dict[str, Any]) -> D
             "method": dbg.get(f"{c}_method"),
             "p_geom": (lambda v: None if v is None else round(v, 3))(_num(dbg.get(f"{c}_p_geom"))),
             "p_emb": (lambda v: None if v is None else round(v, 3))(_num(dbg.get(f"{c}_p_emb"))),
+            # К3: запас до порога, зона «не уверен», Platt-вероятность нарушения по критерию (только UI)
+            "margin": (lambda v: None if v is None else round(v, 4))(_num(dbg.get(f"{c}_margin"))),
+            "uncertain": bool(_num(dbg.get(f"{c}_uncertain")) or 0),
+            "p_cal": (lambda v: None if v is None else round(v, 3))(_num(dbg.get(f"{c}_p_cal"))),
         })
+    # К3: уровень риска и «нужна проверка» — правило calibration_utils.risk_level:
+    # средний — не уверен хотя бы один критерий (или отказ); высокий — class=1 и уверен; низкий — class=0 и уверен.
+    needs_review = bool(_num(dbg.get("needs_review")) or 0) or is_fail
+    risk = dbg.get("risk_level") or ("средний" if needs_review else ("высокий" if str(row.get("quality_class")) == "1" else "низкий"))
     meas = []
     for key, title, unit, mult, nd in MEASUREMENTS.get("spine" if region == "spine" else "hip", []):
         v = _num(dbg.get(key))
         if v is not None:
-            meas.append({"title": title, "value": round(v * mult, nd), "unit": unit})
+            meas.append({"key": _meas_key(key), "title": title, "value": round(v * mult, nd), "unit": unit})
     if is_fail:
         action, action_code = "Проверить вручную: файл не обработан", "manual"
+    elif needs_review:
+        action, action_code = "Пограничный случай: проверить вручную", "review_uncertain"
     elif str(row.get("quality_class")) == "1":
         action, action_code = "Проверить снимок; при подтверждении — переснять", "review"
     else:
@@ -298,6 +319,8 @@ def _details(row: Dict[str, Any], dbg: Dict[str, Any], cfg: Dict[str, Any]) -> D
         "quality_prob_raw": _num(dbg.get("quality_prob_raw")),
         "criteria": crits,
         "measurements": meas,
+        # паспортный шаг пикселя (мм): UI пересчитывает относительные смещения в мм, если тег PixelSpacing отсутствовал
+        "pixel_spacing_mm_default": [cfg.get("pixel_spacing_mm", {}).get("y"), cfg.get("pixel_spacing_mm", {}).get("x")],
         "roi": {
             "needs_correction": dbg.get("bonus_roi_needs_correction"),
             "reason": dbg.get("bonus_roi_reason"),
@@ -305,6 +328,9 @@ def _details(row: Dict[str, Any], dbg: Dict[str, Any], cfg: Dict[str, Any]) -> D
         },
         "action": action,
         "action_code": action_code,
+        "risk_level": risk,
+        "needs_review": needs_review,
+        "uncertain_criteria": [c for c in str(dbg.get("uncertain_criteria") or "").split(";") if c],
     }
 
 

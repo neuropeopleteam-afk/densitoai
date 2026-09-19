@@ -91,6 +91,37 @@ GroupKFold (`tools/nested_gate.py`), не в `train_stacked.py`. После лю
 Если референс недоступен — используется сырая вероятность. Если обучаете иначе — обновите
 `metrics_summary.json` или пропишите пороги в `config.yaml`.
 
+Правило подбора порога в `train_stacked.py` задаётся в `config.yaml: thresholds_rule.by_criterion[<crit>]`
+(значения `f1_optimal` — F1-оптимум на OOF при >= 15 позитивах, иначе prevalence; `prevalence`;
+`prevalence_x<k>`), записывается в `metrics_summary.json` как `threshold_rule` и `threshold_method`.
+Правило выбрано по nested repeated GroupKFold (`tools/calibration_eval.py --stage nested`), в
+`train_stacked.py` оно не подбирается. Пороги хранятся ТОЛЬКО в `metrics_summary.json` (pkl их не содержат),
+поэтому после смены правила достаточно перезапустить `train_stacked.py`.
+
+## `calibration.pkl` (К3: калибровка и зона «не уверен»)
+Файл `models/calibration.pkl` пишет `train_stacked.py` (или `train_stacked.py --calibration-only` по уже
+сохранённым OOF/порогам). Формат — dict:
+```
+{"format_version": 1, "kind": "densito_calibration",
+ "criteria": {<crit>: {"region": "spine"|"hip", "threshold": float,
+                       "platt": {"a": float, "b": float},        # p_cal = sigmoid(a*score + b), score — стэкнутый ранговый
+                       "margin": float,                          # запас зоны «не уверен»
+                       "uncertain_rate_oof": float, "brier_oof_platt": float, "brier_oof_constant": float,
+                       "p_cal_at_threshold": float}},
+ "margin_by_criterion": {<crit>: float}, "max_reject_rate": 0.05, "quota_per_criterion": {region: q},
+ "row_uncertain_rate_by_region": {region: float}, "any_model_calibration": None, "note": str}
+```
+Ключи критериев — `sp_pos, sp_axis, sp_art, hip_pos, hip_roi`; для `rh_*/lh_*` инференс берёт `hip_*`.
+`inference.py` (`ModelRegistry._load_calibration`) читает файл терпимо: нет файла / битый / другой `kind`
+— предупреждение, `p_cal = None`, запас отсутствует (тогда «не уверен» только при fallback-правиле или отказе).
+`config.yaml: uncertainty.margin_by_criterion[<crit>]`, если не null, перекрывает запас из pkl.
+Правило: критерий «не уверен» <=> `|score - threshold| <= margin`; строка `needs_review = 1`, если не уверен
+хотя бы один критерий региона (или processing_status = Failure); `risk_level`: «средний», если
+`needs_review`; «высокий», если `quality_class = 1` и уверен; «низкий», если `quality_class = 0` и уверен
+(`src/calibration_utils.risk_level`). Всё это — только debug-CSV (`<crit>_margin`, `<crit>_uncertain`,
+`<crit>_p_cal`, `needs_review`, `risk_level`, `uncertain_criteria`) и API `details`; 9 колонок CSV не меняются.
+Калибровка any-модели (`quality_prob`) в файле зарезервирована (`any_model_calibration: None`) и не применяется.
+
 ## Как проверить, что модели подхватились
 ```bash
 python src/inference.py -i tests/sample_test_zip -o outputs/check.csv --debug-csv -v

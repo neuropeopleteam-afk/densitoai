@@ -28,6 +28,8 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 import os
+import pickle
+from calibration_utils import fit_platt, apply_platt, threshold_by_rule, select_margins, row_reject_rates, is_uncertain
 PROJECT_ROOT = Path(os.environ.get("DENSITO_ROOT", Path(__file__).resolve().parent.parent))
 DATA_DIR = Path(os.environ.get("DENSITO_DATA_DIR", PROJECT_ROOT / "data"))
 OUT_DIR = Path(os.environ.get("DENSITO_MODELS_DIR", PROJECT_ROOT / "models"))
@@ -143,6 +145,36 @@ def load_stacking_weights():
         except Exception as e:  # noqa: BLE001
             print(f"  [warn] config.yaml не прочитан ({e}) — веса стэкинга 0.5/0.5")
     return default, by_crit
+
+
+# Правило порога по критерию — config.yaml: thresholds_rule.by_criterion (ключи sp_pos, sp_axis, sp_art,
+# hip_pos, hip_roi), значения: f1_optimal (F1-опт при >= 15 позитивах, иначе prevalence), prevalence,
+# prevalence_x<k>. Выбор правила — ТОЛЬКО по nested-протоколу (tools/calibration_eval.py --stage nested,
+# отчёт docs/METRICS_REPORT.md «Калибровка и зона не уверен»), здесь оно не подбирается.
+DEFAULT_THRESHOLD_RULE = 'f1_optimal'
+
+
+def load_config_section(name):
+    if CONFIG_PATH.exists():
+        try:
+            import yaml
+            with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
+                return (yaml.safe_load(f) or {}).get(name, {}) or {}
+        except Exception as e:  # noqa: BLE001
+            print(f"  [warn] config.yaml не прочитан ({e}) — секция {name} по умолчанию")
+    return {}
+
+
+def threshold_rule_for(crit):
+    sec = load_config_section('thresholds_rule')
+    by = sec.get('by_criterion') or {}
+    return str(by.get(crit) or sec.get('default') or DEFAULT_THRESHOLD_RULE)
+
+
+def uncertainty_config():
+    sec = load_config_section('uncertainty')
+    return {'max_reject_rate': float(sec.get('max_reject_rate', 0.05)),
+            'quota_step': float(sec.get('quota_step', 0.0025))}
 
 
 def weight_geom_for(crit):
@@ -336,14 +368,11 @@ def train_region_stacked(region, criteria):
                 aucs[name] = None
         print(f"  OOF AUC: geom={aucs['geom']}, emb={aucs['emb']}, stacked={aucs['stacked']}")
 
-        # thresholding
-        if n_pos >= 15:
-            thresh = f1_optimal_threshold(y_valid, oof_stacked)
-            thresh_method = 'f1_optimal_oof'
-        else:
-            thresh = prevalence_threshold(y_valid, oof_stacked)
-            thresh_method = 'prevalence'
-        print(f"  threshold={thresh} ({thresh_method})")
+        # thresholding: правило из config.yaml (thresholds_rule), см. threshold_rule_for
+        thr_rule = threshold_rule_for(crit)
+        thresh, thresh_method = threshold_by_rule(thr_rule, y_valid, oof_stacked,
+                                                  f1_optimal_threshold, prevalence_threshold, min_pos_f1=15)
+        print(f"  threshold={thresh} ({thresh_method}; правило {thr_rule})")
 
         preds = (oof_stacked >= thresh).astype(int)
         f1 = f1_score(y_valid, preds, zero_division=0)
@@ -359,6 +388,8 @@ def train_region_stacked(region, criteria):
             'auc_geom': aucs['geom'], 'auc_emb': aucs['emb'], 'auc_stacked': aucs['stacked'], 'emb_source': emb_src,
             'threshold': float(thresh) if thresh is not None else None,
             'threshold_method': thresh_method,
+            'threshold_rule': thr_rule,
+            'n_flag_oof': int(preds.sum()),
             'f1_oof': float(f1),
             'f1_ci_lo': ci_lo, 'f1_ci_hi': ci_hi,
             # вентиль К2: вес контура A и откуда он взят
@@ -408,8 +439,63 @@ def train_region_stacked(region, criteria):
     return results
 
 
+def build_calibration(all_results):
+    """Platt (a, b) на OOF-стэке критерия и запас margin: доля OOF-строк с |score - thr| < margin <= max_reject_rate
+    по критерию и по строкам региона (общая квота q подбирается вниз от max_reject_rate)."""
+    ucfg = uncertainty_config()
+    crit_info, margins_data = {}, {}
+    for region, criteria in REGION_CRITERIA.items():
+        for crit in criteria:
+            df = pd.read_csv(OUT_DIR / f'oof_stacked_{region}_{crit}.csv')
+            y = df['y_true'].values.astype(int); s = df['oof_stacked'].values.astype(float)
+            thr = float(all_results[region][crit]['threshold'])
+            a, b = fit_platt(s, y)
+            p = apply_platt(s, a, b)
+            crit_info[crit] = {'region': region, 'threshold': thr, 'platt': {'a': a, 'b': b},
+                               'brier_oof_platt': float(np.mean((p - y) ** 2)),
+                               'brier_oof_constant': float(np.mean((y.mean() - y) ** 2)),
+                               'p_cal_at_threshold': float(apply_platt(thr, a, b))}
+            margins_data[crit] = np.abs(s - thr)
+    margins, q = select_margins(margins_data, REGION_CRITERIA, max_reject=ucfg['max_reject_rate'], step=ucfg['quota_step'])
+    rows = row_reject_rates(margins_data, REGION_CRITERIA, margins)
+    import math
+    margins = {c: (0.0 if abs(v) < 1e-9 else math.ceil(float(v) * 1e9) / 1e9) for c, v in margins.items()}  # вверх до 1e-9
+    for crit in crit_info:
+        crit_info[crit]['margin'] = float(margins[crit])
+        crit_info[crit]['uncertain_rate_oof'] = float(is_uncertain(margins_data[crit], margins[crit]).mean())
+    calib = {'format_version': 1, 'kind': 'densito_calibration',
+             'criteria': crit_info, 'margin_by_criterion': {c: float(v) for c, v in margins.items()},
+             'max_reject_rate': ucfg['max_reject_rate'], 'quota_per_criterion': q,
+             'row_uncertain_rate_by_region': rows,
+             'any_model_calibration': None,  # не принято по cross-fit (см. docs/METRICS_REPORT.md)
+             'note': 'Platt: p = sigmoid(a*score + b) на стэкнутом ранговом скоре; «не уверен» <=> |score - threshold| <= margin.'}
+    print(f"\n=== К3: калибровка и запасы === квота по регионам q={q}; доля строк «не уверен» по регионам: {rows}")
+    for crit, ci in crit_info.items():
+        print(f"  {crit}: Platt a={ci['platt']['a']:.3f} b={ci['platt']['b']:.3f}, Brier OOF {ci['brier_oof_platt']:.4f} "
+              f"(константа {ci['brier_oof_constant']:.4f}), margin={ci['margin']:.4f}, не уверен {ci['uncertain_rate_oof']:.3%}")
+    return calib
+
+
 def main():
     all_results = {}
+    if '--calibration-only' in sys.argv:
+        # пересчитать только calibration.pkl и блок uncertainty по уже сохранённым OOF/порогам
+        with open(OUT_DIR / 'metrics_summary.json', 'r', encoding='utf-8') as f:
+            all_results = json.load(f)
+        all_results.pop('uncertainty', None)
+        calib = build_calibration(all_results)
+        with open(OUT_DIR / 'calibration.pkl', 'wb') as f:
+            pickle.dump(calib, f)
+        for region, criteria in REGION_CRITERIA.items():
+            for crit in criteria:
+                all_results[region][crit]['platt'] = calib['criteria'][crit]['platt']
+                all_results[region][crit]['margin'] = calib['criteria'][crit]['margin']
+                all_results[region][crit]['uncertain_rate_oof'] = calib['criteria'][crit]['uncertain_rate_oof']
+        all_results['uncertainty'] = {k: calib[k] for k in ('max_reject_rate', 'quota_per_criterion',
+                                                              'margin_by_criterion', 'row_uncertain_rate_by_region')}
+        with open(OUT_DIR / 'metrics_summary.json', 'w') as f:
+            json.dump(all_results, f, indent=2, ensure_ascii=False)
+        return
     for region, criteria in REGION_CRITERIA.items():
         results = train_region_stacked(region, criteria)
         all_results[region] = results
@@ -420,11 +506,26 @@ def main():
         for (side, crit), (reg_name, crit_name) in HIP_SIDE_REPORT.items():
             all_results.setdefault(reg_name, {})[crit_name] = all_results['hip'][crit]['by_side'][side]
 
+    # --- К3: калибровка Platt по критерию и запас «не уверен» (на полном OOF; оценка качества — cross-fit
+    # в tools/calibration_eval.py). Файл models/calibration.pkl по контракту MODEL_CONTRACT.md.
+    calib = build_calibration(all_results)
+    with open(OUT_DIR / 'calibration.pkl', 'wb') as f:
+        pickle.dump(calib, f)
+    for region, criteria in REGION_CRITERIA.items():
+        for crit in criteria:
+            all_results[region][crit]['platt'] = calib['criteria'][crit]['platt']
+            all_results[region][crit]['margin'] = calib['criteria'][crit]['margin']
+            all_results[region][crit]['uncertain_rate_oof'] = calib['criteria'][crit]['uncertain_rate_oof']
+    all_results['uncertainty'] = {k: calib[k] for k in ('max_reject_rate', 'quota_per_criterion',
+                                                          'margin_by_criterion', 'row_uncertain_rate_by_region')}
+
     with open(OUT_DIR / 'metrics_summary.json', 'w') as f:
         json.dump(all_results, f, indent=2, ensure_ascii=False)
 
     print("\n\n=== SUMMARY ===")
     for region, results in all_results.items():
+        if region == 'uncertainty':
+            continue
         for crit, m in results.items():
             print(f"{region}.{crit}: n_pos={m['n_pos']}, w_geom={m.get('weight_geom')}, AUC_geom={m['auc_geom']}, "
                   f"AUC_emb={m['auc_emb']}, AUC_stacked={m['auc_stacked']}, "

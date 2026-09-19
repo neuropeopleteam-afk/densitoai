@@ -1,4 +1,7 @@
 ## 2.1.1-dev (19.09.2026)
+- К3: правило порога по критерию выбрано nested (`config.yaml: thresholds_rule`): sp_art 0.557→0.602, hip_pos 0.709→0.643, hip_roi 0.891→0.918 (sp_pos, sp_axis без изменений); на 499 файлах изменился класс 39 строк (28: 0→1, 11: 1→0). Зона «не уверен» (`needs_review`, `risk_level`, `<crit>_margin`) и Platt-калибровка критериев (`<crit>_p_cal`, `models/calibration.pkl`) — только debug-CSV и API. Калибровка quality_prob не принята (Brier без значимого прироста).
+- К7: карточка решения «измерено против нормы», одна причина, подсказка рекомендуемого положения ROI (пунктир, не автокоррекция), режим лаборанта, блок устойчивости, генератор офлайн-casebook (`tools/web/build_casebook.py`).
+- К5: `build_dataset.py` определяет сторону бедра анатомическим детектором (плотностная эвристика ошибалась на 80/333); модели не менялись.
 - `--sr-study` / `--sr-study-dir`: один DICOM Comprehensive SR на исследование (включая норму), хэши оригинала (sha256 файла и пикселей) в SR и debug-CSV; API: `study_sr`, `study_sr_download`. `tools/validate_sr.py`.
 - JSON Schema результата (`schema/`), проверка в `validate_output_csv`, `tests/test_schema.py`; `src/schema_check.py`.
 - `tools/make_model_card.py` → `models/MODEL_CARD.md`; `docs/EVIDENCE.md`, `docs/DZM_CONFORMANCE.md`.

@@ -12,7 +12,7 @@
 | п. 2.5 | Таблица результата: 9 колонок `path_to_study, study_uid, image_uid, anatomical_region, quality_class, violation_type, quality_prob, processing_status, time_of_processing`, порядок фиксирован | сделано | `config.yaml → output.columns`; `src/inference.py: write_results`, `validate_output_csv`; `tests/test_inference_format.py` (ALL CHECKS PASSED); JSON Schema `schema/results_row.schema.json` + `tests/test_schema.py` |
 | п. 2.5 | Строка на каждое изображение, дубликаты не схлопывать | сделано | `src/inference.py: run` — одна строка на файл; QA_COMPLIANCE_MATRIX №2 |
 | п. 2.5 | `anatomical_region` — русские строки без стороны; `violation_type` — закрытый словарь через `;`; пусто при `quality_class = 0` | сделано | `config.yaml → regions, violations, violation_separator`; проверка согласованности класс/нарушение — `validate_output_csv` и правила `allOf` в `schema/results_row.schema.json` |
-| п. 2.5 | `quality_prob` в [0; 1], согласована с классом | сделано | `config.yaml → stacking.consistent_quality_prob`; `src/inference.py` (class 1 → prob ≥ 0.5); OOF ROC-AUC итоговой prob: позвоночник 0.783, бедро 0.773 (`docs/METRICS_REPORT.md`) |
+| п. 2.5 | `quality_prob` в [0; 1], согласована с классом | сделано | `config.yaml → stacking.consistent_quality_prob`; `src/inference.py` (class 1 → prob ≥ 0.5); OOF ROC-AUC итоговой prob: позвоночник 0.764, бедро 0.732 (после К3) (`docs/METRICS_REPORT.md`) |
 | п. 2.7 | ≤ 3 мин на исследование, битый вход не роняет пакет | сделано | строка `Failure` с `quality_prob 0.5` (`src/inference.py: process_file`, ветка исключения); `tests/test_inference_format.py` (bad_inputs: 7 сценариев); время на файл p50 0.04 с, p95 0.07 с (`docs/ROBUSTNESS_REPORT.md`, identity) |
 | п. 2.7 | Пакетный режим → CSV и XLSX | сделано | `src/inference.py --xlsx`; `api_server.py: /api/batch`, `/api/analyze?xlsx=true` |
 | п. 3 | Контейнер, полностью локально, пиновка версий, скрипты сборки/запуска Linux | сделано | `Dockerfile` (CPU-only, без сети при инференсе), `build_and_run.sh`, `docker-compose.yml`, `requirements.txt` (все версии `==`); в патче E в образ добавлены `schema/`, `tools/`, `tests/test_schema.py` |
@@ -48,7 +48,7 @@ https://mosmed.ai/media/Матрица_зрелости_ИИ-сервисов_3_
 https://mosmed.ai/documents/349/БФТ_полный_20.05.2026.pdf ). Это не официальная проверка и не заявление о прохождении
 классификатора; коды дефектов и формулировки — из конспекта консилиума (`docs/council/`), они могут отличаться от
 действующей редакции методологии. Ориентиры заказчика по конспекту: AUC > 0.81; техническая ось — 100 − доля дефектов,
-приемлемо ≤ 10 % дефектных исследований. Наши OOF ROC-AUC бинарной задачи 0.783 (позвоночник) и 0.773 (бедро) ниже
+приемлемо ≤ 10 % дефектных исследований. Наши OOF ROC-AUC бинарной задачи 0.764 (позвоночник) и 0.773 (бедро) ниже
 ориентира 0.81 — это указано честно, без сравнения «мы не хуже».
 
 | Код | Дефект (наша интерпретация) | Как избегаем | Статус | Где |

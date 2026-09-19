@@ -175,12 +175,18 @@ def main(argv=None) -> int:
     w("")
     w("Nested-оценка (порог и стекинг подобраны внутри внешних фолдов):")
     w("")
-    top_nested = metrics.get("nested") if isinstance(metrics.get("nested"), dict) else metrics
-    w(f"- общая: {nested_line(top_nested)}")
+    w("Протокол: repeated GroupKFold 5 внешних фолдов × 10 повторов, 3 внутренних; группы — исследование + хэш пикселей; "
+      "вес стэкинга и порог выбираются только на внутренних фолдах (`tools/nested_gate.py`, `docs/NESTED_GATE_REPORT.md`). "
+      "AUC — среднее по 10 повторам для базового стэкинга 0.5/0.5 (он и используется); полные таблицы с ДИ — в отчёте.")
+    w("")
+    any_nested = False
     for region, crit in order:
         m = metrics.get(region, {}).get(crit)
-        if m and m.get("nested_auc_mean") is not None:
-            w(f"- {crit}: {nested_line(m)}")
+        if m and m.get("nested_auc_base_mean") is not None:
+            any_nested = True
+            w(f"- {crit}: nested AUC = {f3(m['nested_auc_base_mean'])}; OOF AUC = {f3(m.get('auc_stacked'))}")
+    if not any_nested:
+        w("- nested: не рассчитано")
     w("")
     w("## 6. Пороги и правило решения")
     w("")

@@ -346,6 +346,96 @@ table.crit tr.flag td { background: var(--error-soft); }
 .hist-state { font-size: 13.5px; color: var(--muted); padding: 8px 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .hist-state.error { color: var(--error); }
 
+/* CARD:BEGIN — карточка решения (общая для кабинета и casebook.html) */
+.dcard { min-width: 0; }
+.dc-head { display: flex; gap: 18px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 14px; }
+.verdict { display: inline-flex; align-items: center; font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: -.01em; padding: 10px 18px; border-radius: 10px; white-space: nowrap; }
+.verdict.retake { background: var(--error); color: #fff; }
+.verdict.review { background: var(--warning); color: #fff; }
+.verdict.ok { background: var(--success); color: #fff; }
+.verdict.fail { background: var(--surface-2); color: var(--text); }
+.dc-reason { flex: 1; min-width: 220px; }
+.dc-reason .k { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; }
+.dc-reason .v { font-size: 18px; font-weight: 600; line-height: 1.3; margin-top: 2px; }
+.dc-reason .sub { margin-top: 4px; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
+.wbadge { display: inline-flex; align-items: center; gap: 6px; background: var(--warning-soft); color: var(--warning); border: 1px solid color-mix(in srgb, var(--warning) 35%, transparent); border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 600; }
+.wbadge.doctor { background: var(--error-soft); color: var(--error); border-color: color-mix(in srgb, var(--error) 35%, transparent); }
+.mtable { width: 100%; border-collapse: collapse; font-size: 14px; }
+.mtable td { padding: 8px 10px 8px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+.mtable td:first-child { color: var(--muted); width: 36%; }
+.mtable td.st { text-align: right; white-space: nowrap; }
+.mtable .val { font-variant-numeric: tabular-nums; font-weight: 600; }
+.mtable .norm { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; margin-top: 2px; }
+.pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+.pill.ok { background: var(--success-soft); color: var(--success); }
+.pill.bad { background: var(--error-soft); color: var(--error); }
+.pill.ref { background: var(--surface-2); color: var(--muted); }
+.pill.hi { background: var(--warning-soft); color: var(--warning); }
+.dc-hint { background: var(--primary-soft); border-radius: 10px; padding: 12px 16px; font-size: 14.5px; line-height: 1.5; margin-top: 12px; }
+.dc-hint b { color: var(--primary); }
+.dc-note { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+.tech { margin-top: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.tech summary { cursor: pointer; padding: 10px 14px; font-size: 13.5px; font-weight: 600; color: var(--muted); list-style: none; display: flex; align-items: center; gap: 8px; }
+.tech summary::before { content: ""; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform .15s; }
+.tech[open] summary::before { transform: rotate(45deg); }
+.tech > div { padding: 4px 14px 14px; }
+.viz-tabs { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.viz-tabs button { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 999px; padding: 5px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.viz-tabs button.active { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
+.roi-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); margin: 6px 0 4px; }
+.roi-legend i { display: inline-block; width: 22px; height: 0; border-top: 3px solid #d8b400; vertical-align: middle; margin-right: 6px; }
+.roi-legend i.dash { border-top-style: dashed; }
+.roi-legend i.cur { border-top: 2px solid #5ac8dc; }
+.roi-legend i.bar { border-top: 6px solid #d33; }
+/* CARD:END */
+
+/* ---------- режим лаборанта ---------- */
+.mode-switch { display: inline-flex; border: 1px solid var(--ink-border); border-radius: 999px; padding: 3px; background: var(--ink-2); }
+.mode-switch button { border: none; background: transparent; color: var(--ink-muted); border-radius: 999px; padding: 6px 16px; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.mode-switch button.active { background: var(--accent); color: #0F1A1C; }
+.lab { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); padding: 28px 32px; margin-bottom: 24px; }
+.lab-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; color: var(--muted); font-size: 15px; margin-bottom: 18px; }
+.lab-top .fname { font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+.lab-body { display: grid; grid-template-columns: minmax(280px, 420px) minmax(0, 1fr); gap: 32px; align-items: start; }
+.lab-body img { width: 100%; border-radius: 10px; border: 1px solid var(--border); background: #000; display: block; }
+.lab-verdict { font-family: var(--font-display); font-weight: 700; font-size: clamp(34px, 4.5vw, 56px); line-height: 1.05; letter-spacing: -.02em; padding: 18px 26px; border-radius: 14px; display: inline-block; }
+.lab-verdict.retake { background: var(--error); color: #fff; }
+.lab-verdict.review { background: var(--warning); color: #fff; }
+.lab-verdict.ok { background: var(--success); color: #fff; }
+.lab-verdict.fail { background: var(--surface-2); color: var(--text); }
+.lab-reason { font-size: clamp(22px, 2.4vw, 30px); font-weight: 600; line-height: 1.25; margin-top: 22px; }
+.lab-hint { font-size: 19px; line-height: 1.5; margin-top: 14px; color: var(--text); }
+.lab-meas { margin-top: 18px; font-size: 17px; }
+.lab-meas div { padding: 6px 0; border-bottom: 1px solid var(--border); display: flex; gap: 12px; justify-content: space-between; }
+.lab-meas b { font-variant-numeric: tabular-nums; }
+.lab-btns { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 28px; }
+.lab-btns .btn { padding: 18px 30px; font-size: 19px; border-radius: 12px; }
+.lab-btns .btn.done { background: var(--success); }
+.lab-done { display: inline-block; margin-left: 10px; font-size: 14px; color: var(--success); font-weight: 600; }
+.lab-list { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 22px; }
+.lab-list button { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-weight: 600; font-size: 13px; color: var(--text); font-variant-numeric: tabular-nums; }
+.lab-list button.retake { border-color: var(--error); color: var(--error); }
+.lab-list button.review { border-color: var(--warning); color: var(--warning); }
+.lab-list button.ok { border-color: var(--success); color: var(--success); }
+.lab-list button.cur { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
+.lab-list button.done { text-decoration: line-through; opacity: .6; }
+
+/* ---------- устойчивость к искажениям (статический SVG) ---------- */
+.rob-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 28px 30px; box-shadow: var(--shadow); }
+.rob-svg { width: 100%; height: auto; display: block; font-family: var(--font); }
+.rob-label { font-size: 13px; fill: var(--text); }
+.rob-val { font-size: 12.5px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.rob-tick { font-size: 11px; fill: var(--faint); }
+.rob-axis { stroke: var(--border-strong); stroke-width: 1; }
+.rob-bar { fill: var(--error); }
+.rob-bar.fmt { fill: var(--primary); }
+.rob-legend { display: flex; gap: 22px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin-top: 6px; }
+.rob-legend .sw { display: inline-block; width: 14px; height: 10px; border-radius: 2px; background: var(--error); margin-right: 7px; vertical-align: middle; }
+.rob-legend .sw.fmt { background: var(--primary); }
+.rob-note { font-size: 14px; color: var(--muted); margin-top: 14px; max-width: 900px; }
+.rob-src { font-size: 12.5px; color: var(--faint); margin-top: 10px; }
+
 /* ---------- адаптивность ---------- */
 @media (max-width: 1100px) {
   .steps { grid-template-columns: repeat(3, 1fr); }
@@ -363,6 +453,8 @@ table.crit tr.flag td { background: var(--error-soft); }
   .ghead .uid { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .detail { grid-template-columns: 1fr; }
   .detail img, .detail .viz { max-width: 420px; }
+  .lab-body { grid-template-columns: 1fr; }
+  .lab-body img { max-width: 420px; }
 }
 @media (max-width: 820px) {
   .wrap { padding: 0 20px; }
@@ -389,6 +481,7 @@ table.crit tr.flag td { background: var(--error-soft); }
       <a href="#criteria">Критерии</a>
       <a href="#metrics">Метрики</a>
       <a href="#limits">Ограничения</a>
+      <a href="#robustness">Устойчивость</a>
       <a href="#cases">Кейсы</a>
       <a href="#verify">Как проверить</a>
     </nav>
@@ -497,7 +590,7 @@ table.crit tr.flag td { background: var(--error-soft); }
       <p class="lead">Формулировки нарушений — из закрытого перечня технического задания. Ниже — что они значат для лаборанта и какие измерения стоят за решением.</p>
     </div>
     <div class="crit-grid">
-      <div class="crit"><div class="reg">Позвоночник</div><h3>Укладка пациента</h3><div class="off">«Некорректная укладка»</div><p>Позвоночник смещён от центра кадра или костная область занимает неправильную долю ширины: пациент лежит не по центру стола.</p><div class="sig"><b>Измеряем:</b> смещение от центра кадра, ширина костной области</div></div>
+      <div class="crit"><div class="reg">Позвоночник</div><h3>Укладка пациента</h3><div class="off">«Некорректная укладка»</div><p>Нарушение укладки: позвоночник смещён или поясничный отдел не полностью в кадре или костная область занимает неправильную долю ширины: пациент лежит не по центру стола.</p><div class="sig"><b>Измеряем:</b> смещение от центра кадра, ширина костной области</div></div>
       <div class="crit"><div class="reg">Позвоночник</div><h3>Ось позвоночника</h3><div class="off">«Не выравнена ось позвоночника»</div><p>Ось позвоночника наклонена относительно вертикали кадра. Мы прослеживаем центр кости по строкам и измеряем глобальный угол наклона.</p><div class="sig"><b>Измеряем:</b> угол оси к вертикали, градусы</div></div>
       <div class="crit"><div class="reg">Позвоночник</div><h3>Посторонние предметы</h3><div class="off">«Присутствуют посторонние предметы»</div><p>В поле сканирования попали пуговицы, молнии, элементы одежды или другие объекты. Плотные предметы находит геометрия, менее плотные — эмбеддинги.</p><div class="sig"><b>Измеряем:</b> площадь плотных включений, контраст к кости</div></div>
       <div class="crit"><div class="reg">Бедро</div><h3>Укладка пациента</h3><div class="off">«Некорректная укладка»</div><p>Бедро недостаточно ротировано или отведено: диафиз наклонён, малый вертел выступает. Правое и левое бедро оцениваются единой моделью с зеркалированием.</p><div class="sig"><b>Измеряем:</b> угол диафиза, признаки ротации</div></div>
@@ -519,16 +612,16 @@ table.crit tr.flag td { background: var(--error-soft); }
 <colgroup><col style="width:18%"><col style="width:10%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:7%"><col style="width:15%"><col style="width:11%"><col style="width:15%"></colgroup>
 <thead><tr><th>Критерий</th><th>Область</th><th class="num">n / позит.</th><th class="num">AUC геом.</th><th class="num">AUC эмб.</th><th class="num">AUC стек</th><th>Где мы относительно ориентира</th><th class="num">F1 OOF [95 % ДИ]</th><th>Надёжность</th></tr></thead><tbody>
 <tr><td><div class="crit-title">Укладка пациента</div><div class="crit-sub">sp_pos · порог по доле позитивов, порог 0.791</div></td><td>позвоночник</td><td class="num">166 / 10</td><td class="num">0.611</td><td class="num">0.797</td><td class="num strong">0.715</td><td><div class="aucbar" role="img" aria-label="AUC 0.715, ниже ориентира"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark below" style="left:42.9%"></span></div><div class="zone-txt below">ниже ориентира</div></td><td class="num">0.40 [0.00; 0.72]</td><td>мало позитивов (10): результат ненадёжен, читать по AUC</td></tr>
-<tr><td><div class="crit-title">Ось позвоночника</div><div class="crit-sub">sp_axis · порог по F1 на OOF, порог 0.756</div></td><td>позвоночник</td><td class="num">166 / 17</td><td class="num">0.839</td><td class="num">0.491</td><td class="num strong">0.738</td><td><div class="aucbar" role="img" aria-label="AUC 0.738, ниже ориентира"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark below" style="left:47.5%"></span></div><div class="zone-txt below">ниже ориентира</div></td><td class="num">0.38 [0.10; 0.60]</td><td>умеренная: сильнее геометрия</td></tr>
-<tr><td><div class="crit-title">Посторонние предметы</div><div class="crit-sub">sp_art · порог по F1 на OOF, порог 0.557</div></td><td>позвоночник</td><td class="num">166 / 35</td><td class="num">0.560</td><td class="num">0.897</td><td class="num strong">0.823</td><td><div class="aucbar" role="img" aria-label="AUC 0.823, приемлемо"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark ok" style="left:64.5%"></span></div><div class="zone-txt ok">приемлемо</div></td><td class="num">0.60 [0.33; 0.76]</td><td>приемлемая, работает контур B (эмбеддинги)</td></tr>
-<tr><td><div class="crit-title">Укладка пациента</div><div class="crit-sub">hip_pos · порог по F1 на OOF, порог 0.709</div></td><td>бедро, обе стороны</td><td class="num">329 / 79</td><td class="num">0.694</td><td class="num">0.635</td><td class="num strong">0.704</td><td><div class="aucbar" role="img" aria-label="AUC 0.704, ниже ориентира"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark below" style="left:40.9%"></span></div><div class="zone-txt below">ниже ориентира</div></td><td class="num">0.51 [0.31; 0.67]</td><td>умеренная: сильнее геометрия</td></tr>
-<tr><td><div class="crit-title">Область интереса</div><div class="crit-sub">hip_roi · порог по F1 на OOF, порог 0.891</div></td><td>бедро, обе стороны</td><td class="num">329 / 16</td><td class="num">0.902</td><td class="num">0.877</td><td class="num strong">0.917</td><td><div class="aucbar" role="img" aria-label="AUC 0.917, высоко"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark high" style="left:83.5%"></span></div><div class="zone-txt high">высоко</div></td><td class="num">0.64 [0.20; 0.93]</td><td>приемлемая, работает геометрия</td></tr>
+<tr><td><div class="crit-title">Ось позвоночника</div><div class="crit-sub">sp_axis · prevalence_x1.4, порог 0.756</div></td><td>позвоночник</td><td class="num">166 / 17</td><td class="num">0.839</td><td class="num">0.491</td><td class="num strong">0.738</td><td><div class="aucbar" role="img" aria-label="AUC 0.738, ниже ориентира"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark below" style="left:47.5%"></span></div><div class="zone-txt below">ниже ориентира</div></td><td class="num">0.38 [0.10; 0.60]</td><td>умеренная: сильнее геометрия</td></tr>
+<tr><td><div class="crit-title">Посторонние предметы</div><div class="crit-sub">sp_art · prevalence_x1.4, порог 0.602</div></td><td>позвоночник</td><td class="num">166 / 35</td><td class="num">0.560</td><td class="num">0.897</td><td class="num strong">0.823</td><td><div class="aucbar" role="img" aria-label="AUC 0.823, приемлемо"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark ok" style="left:64.5%"></span></div><div class="zone-txt ok">приемлемо</div></td><td class="num">0.53 [0.23; 0.73]</td><td>приемлемая, работает контур B (эмбеддинги)</td></tr>
+<tr><td><div class="crit-title">Укладка пациента</div><div class="crit-sub">hip_pos · порог по доле позитивов, порог 0.643</div></td><td>бедро, обе стороны</td><td class="num">329 / 79</td><td class="num">0.694</td><td class="num">0.635</td><td class="num strong">0.704</td><td><div class="aucbar" role="img" aria-label="AUC 0.704, ниже ориентира"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark below" style="left:40.9%"></span></div><div class="zone-txt below">ниже ориентира</div></td><td class="num">0.42 [0.23; 0.59]</td><td>умеренная: сильнее геометрия</td></tr>
+<tr><td><div class="crit-title">Область интереса</div><div class="crit-sub">hip_roi · порог по доле позитивов, порог 0.918</div></td><td>бедро, обе стороны</td><td class="num">329 / 16</td><td class="num">0.902</td><td class="num">0.877</td><td class="num strong">0.917</td><td><div class="aucbar" role="img" aria-label="AUC 0.917, высоко"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark high" style="left:83.5%"></span></div><div class="zone-txt high">высоко</div></td><td class="num">0.51 [0.00; 0.89]</td><td>приемлемая, работает геометрия</td></tr>
 </tbody></table></div>
 <p class="metrics-summary">Из пяти критериев 2 достигают ориентира «приемлемо» (AUC &gt; 0.81) и 1 — ориентира «высоко» (AUC &gt; 0.9). Остальные ниже ориентира, и мы это показываем, а не скрываем. Источник: <code>models/metrics_summary.json</code> (OOF, группировка по исследованию), ДИ по F1 — бутстрап по исследованиям.</p>
 <h3 class="metrics-h3">Бинарная задача «есть нарушение» по областям, OOF</h3>
 <div class="table-wrap"><table class="metrics compact"><thead><tr><th>Область</th><th class="num">ROC-AUC [95 % ДИ]</th><th class="num">F1 [95 % ДИ]</th><th class="num">Macro-F1 по типам нарушений [95 % ДИ]</th></tr></thead><tbody>
-<tr><td>Поясничный отдел позвоночника</td><td class="num strong">0.783 [0.65; 0.89]</td><td class="num">0.648 [0.48; 0.78]</td><td class="num">0.460 [0.29; 0.61]</td></tr>
-<tr><td>Проксимальный отдел бедра</td><td class="num strong">0.773 [0.62; 0.90]</td><td class="num">0.667 [0.48; 0.80]</td><td class="num">0.574 [0.35; 0.75]</td></tr>
+<tr><td>Поясничный отдел позвоночника</td><td class="num strong">0.764 [0.63; 0.88]</td><td class="num">0.618 [0.44; 0.76]</td><td class="num">0.439 [0.25; 0.60]</td></tr>
+<tr><td>Проксимальный отдел бедра</td><td class="num strong">0.732 [0.58; 0.86]</td><td class="num">0.489 [0.32; 0.63]</td><td class="num">0.500 [0.21; 0.67]</td></tr>
 </tbody></table></div>
 <p class="metrics-src">Источник: <code>docs/METRICS_REPORT.md</code>, таблица «Итого» (<code>python src/eval_oof_metrics.py</code>, 95 % ДИ — бутстрап по исследованиям, 2000 повторов).</p>
 <!-- METRICS:END -->
@@ -549,7 +642,65 @@ table.crit tr.flag td { background: var(--error-soft); }
   </div>
 </section>
 
-<section class="section alt" id="cases">
+<section class="section alt" id="robustness">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Устойчивость к искажениям</div>
+      <h2>Что происходит с решением, если снимок испортить</h2>
+      <p class="lead">Измеренные заранее кривые, а не живые ползунки: каждый вид искажения прогнан на выборке размеченных снимков, показана доля снимков, у которых изменился класс качества.</p>
+    </div>
+<!-- ROBUSTNESS:BEGIN -->
+<div class="rob-wrap">
+<svg class="rob-svg" viewBox="0 0 720 416" role="img" aria-label="Доля снимков, у которых изменился класс качества, по видам искажений">
+<line x1="300" y1="8" x2="300" y2="394" class="rob-axis"/>
+<text x="288" y="32" class="rob-label" text-anchor="end">пересохранение файла</text>
+<rect x="300" y="18" width="2" height="20" rx="3" class="rob-bar fmt"/>
+<text x="312" y="33" class="rob-val">0.0 % (0/81)</text>
+<text x="288" y="66" class="rob-label" text-anchor="end">удалены теги (шаг пикселя, описание)</text>
+<rect x="300" y="52" width="2" height="20" rx="3" class="rob-bar fmt"/>
+<text x="312" y="67" class="rob-val">0.0 % (0/81)</text>
+<text x="288" y="100" class="rob-label" text-anchor="end">нет UID исследования и снимка</text>
+<rect x="300" y="86" width="2" height="20" rx="3" class="rob-bar fmt"/>
+<text x="312" y="101" class="rob-val">0.0 % (0/81)</text>
+<text x="288" y="134" class="rob-label" text-anchor="end">инвертированная шкала (MONOCHROME1)</text>
+<rect x="300" y="120" width="2" height="20" rx="3" class="rob-bar fmt"/>
+<text x="312" y="135" class="rob-val">0.0 % (0/81)</text>
+<text x="288" y="168" class="rob-label" text-anchor="end">16-битный контейнер</text>
+<rect x="300" y="154" width="2" height="20" rx="3" class="rob-bar fmt"/>
+<text x="312" y="169" class="rob-val">0.0 % (0/81)</text>
+<text x="288" y="202" class="rob-label" text-anchor="end">обрезка 4 % по краям</text>
+<rect x="300" y="188" width="86" height="20" rx="3" class="rob-bar"/>
+<text x="396" y="203" class="rob-val">8.6 % (7/81)</text>
+<text x="288" y="236" class="rob-label" text-anchor="end">уменьшение ×0,8 с пересчётом шага</text>
+<rect x="300" y="222" width="136" height="20" rx="3" class="rob-bar"/>
+<text x="446" y="237" class="rob-val">13.6 % (11/81)</text>
+<text x="288" y="270" class="rob-label" text-anchor="end">увеличение ×1,25 с пересчётом шага</text>
+<rect x="300" y="256" width="148" height="20" rx="3" class="rob-bar"/>
+<text x="458" y="271" class="rob-val">14.8 % (12/81)</text>
+<text x="288" y="304" class="rob-label" text-anchor="end">шум 3 %</text>
+<rect x="300" y="290" width="222" height="20" rx="3" class="rob-bar"/>
+<text x="532" y="305" class="rob-val">22.2 % (18/81)</text>
+<text x="288" y="338" class="rob-label" text-anchor="end">ярче (гамма 0,7)</text>
+<rect x="300" y="324" width="247" height="20" rx="3" class="rob-bar"/>
+<text x="557" y="339" class="rob-val">24.7 % (20/81)</text>
+<text x="288" y="372" class="rob-label" text-anchor="end">темнее (гамма 1,4)</text>
+<rect x="300" y="358" width="284" height="20" rx="3" class="rob-bar"/>
+<text x="594" y="373" class="rob-val">28.4 % (23/81)</text>
+<text x="300.0" y="410" class="rob-tick" text-anchor="middle">0 %</text>
+<text x="400.0" y="410" class="rob-tick" text-anchor="middle">10 %</text>
+<text x="500.0" y="410" class="rob-tick" text-anchor="middle">20 %</text>
+<text x="600.0" y="410" class="rob-tick" text-anchor="middle">30 %</text>
+</svg>
+<div class="rob-legend"><span><i class="sw fmt"></i>формат файла и теги</span><span><i class="sw"></i>пиксели: яркость, шум, масштаб, обрезка</span></div>
+<p class="rob-note">Выборка: 81 снимков разметки (27 позвоночник, 54 бедро), из них с нарушениями 40. Каждый снимок пересохранён с одним искажением и прогнан повторно; показана доля снимков, у которых изменился класс качества. Ошибок обработки (Failure) ни в одном варианте не было (максимум 0.0 %), область снимка не менялась ни разу (максимум 0.0 %). Время на снимок в исходном прогоне: медиана 0.04 с, 95-й перцентиль 0.06 с.</p>
+<p class="rob-note">На реальном потоке одного аппарата GE Lunar с фиксированным экспортом искажений яркости, шума и масштаба нет: все снимки приходят в одном формате. Изменения формата и тегов на потоке возможны, и к ним система устойчива полностью. Перевороты при изменении экспозиции сосредоточены у порога решения (медианный запас 0,09–0,11), то есть касаются спорных снимков.</p>
+<p class="rob-src">Источник: docs/qa/robustness_results.json (2026-09-18), docs/ROBUSTNESS_REPORT.md; скрипт tests/robustness_suite.py.</p>
+</div>
+<!-- ROBUSTNESS:END -->
+  </div>
+</section>
+
+<section class="section" id="cases">
   <div class="wrap">
     <div class="sec-head">
       <div class="eyebrow">Кейсы</div>
@@ -692,7 +843,10 @@ python src/eval_oof_metrics.py             <span class="c"># метрики с �
         <h1>Контроль качества партии снимков</h1>
         <p class="sub">Загрузите DICOM-файлы или zip-архив исследования. Сервис определит область, оценит критерии, отсортирует снимки по риску и для каждого покажет карточку решения. Обработка полностью на сервере, наружу снимки не передаются.</p>
       </div>
-      <div class="chips" id="chips"><span class="chip" id="healthChip"><span class="dot"></span>проверяем сервер…</span></div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:12px">
+        <div class="mode-switch" role="group" aria-label="Режим кабинета"><button type="button" id="modeDoctor" class="active">Врач</button><button type="button" id="modeLab">Лаборант</button></div>
+        <div class="chips" id="chips"><span class="chip" id="healthChip"><span class="dot"></span>проверяем сервер…</span></div>
+      </div>
     </div>
   </section>
 
@@ -735,6 +889,7 @@ python src/eval_oof_metrics.py             <span class="c"># метрики с �
 <script>
 'use strict';
 // ---------- утилиты (весь пользовательский и серверный текст — только через textContent) ----------
+// CARD-UTILS:BEGIN — вспомогательные функции, используемые карточкой решения (копируются в casebook.html)
 function el(tag, attrs, children) {
   const n = document.createElement(tag);
   if (attrs) for (const [k, v] of Object.entries(attrs)) {
@@ -787,6 +942,298 @@ function roiSrc(r) {
   if (r.bonus_roi_png_base64 && /^[A-Za-z0-9+/=]+$/.test(r.bonus_roi_png_base64)) return 'data:image/png;base64,' + r.bonus_roi_png_base64;
   return safeApiUrl(r.bonus_roi_png_url);
 }
+// CARD-UTILS:END
+
+// CARD:BEGIN — карточка решения на клиническом языке (общая для кабинета и casebook.html)
+// Тексты действий и нормы берутся из assets/actions.json (генерируется из config.yaml: actions, measurement_norms).
+// Ниже — резервные значения на случай, если файл не загрузился (совпадают с config.yaml).
+const CARD_FALLBACK = {
+  actions: {
+    sp_pos: { reason: 'Нарушение укладки: позвоночник смещён или поясничный отдел не полностью в кадре', hint: 'Уложить пациента по центру стола, позвоночник по средней линии; проверить, что поясничный отдел целиком в поле сканирования, и повторить сканирование.' },
+    sp_axis: { reason: 'Ось позвоночника наклонена относительно оси стола', hint: 'Выровнять пациента вдоль продольной оси стола по лазерной метке, без поворота таза и плеч; повторить сканирование.' },
+    sp_art: { reason: 'В кадре плотные посторонние предметы', hint: 'Убрать из области сканирования металл и плотные предметы: пуговицы, молнии, ремень, содержимое карманов; если предмет убрать нельзя, отметить это в протоколе.' },
+    hip_pos: { reason: 'Бедро повёрнуто или диафиз наклонён', hint: 'Развернуть стопу внутрь с фиксатором, диафиз бедра параллельно оси стола; малый вертел должен быть почти не виден; повторить сканирование.' },
+    hip_roi: { reason: 'Кость слишком близко к краю кадра или поле сканирования короткое', hint: 'Сместить поле сканирования: от кости до бокового края не менее 20 мм, в кадр должен войти проксимальный отдел бедра с участком диафиза ниже вертелов; повторить сканирование.' },
+    ok: { reason: 'Отклонений от требований не выявлено', hint: 'Повторное сканирование не требуется.' },
+    fail: { reason: 'Файл не обработан', hint: 'Проверить, что файл является DICOM-снимком с денситометра, и передать врачу или инженеру.' },
+    review: { reason: 'Оценка на границе допуска', hint: 'Показать снимок врачу до решения о повторном сканировании.' },
+  },
+  measurement_norms: {
+    axis_angle_deg: { label: 'Угол оси позвоночника', unit: '°', tz_max: 5.0 },
+    center_offset_ratio: { label: 'Смещение центра позвоночника', unit: '% ширины кадра', mult: 100 },
+    metal_metal_area_mm2: { label: 'Площадь плотных объектов', unit: 'мм²' },
+    abs_shaft_angle_deg: { label: 'Угол диафиза бедра', unit: '°' },
+    edge_distance_mm: { label: 'Расстояние от кости до края кадра', unit: 'мм', tz_min: 20.0 },
+    scan_length_mm: { label: 'Длина скана', unit: 'мм' },
+    shaft_len_below_troch_mm: { label: 'Диафиз ниже вертелов', unit: 'мм' },
+    lesser_troch_prominence_mm: { label: 'Выступ малого вертела', unit: 'мм' },
+  },
+};
+let CARD_TEXT = CARD_FALLBACK;
+async function loadCardText() {
+  try {
+    const r = await fetch('assets/actions.json', { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    if (j && j.actions && j.measurement_norms) CARD_TEXT = j;
+  } catch (e) { /* резервные тексты */ }
+}
+// Зона «не уверен». Источник — поля details.risk_level / needs_review (если сервер их отдаёт).
+// Собственное правило по запасу над порогом отключено (REVIEW_MARGIN = null): проверка на OOF показала, что
+// малый запас не означает меньшую точность (у hip_roi порог 0.89 и запас никогда не превышает 0.11, у hip_pos
+// точность при запасе < 0.10 выше, чем при большем). Запас показывается только в технических деталях.
+const REVIEW_MARGIN = null;
+const CRIT_GROUP = { sp_pos: 'sp_pos', sp_axis: 'sp_axis', sp_art: 'sp_art', rh_pos: 'hip_pos', lh_pos: 'hip_pos', rh_roi: 'hip_roi', lh_roi: 'hip_roi' };
+const VIOL_GROUP = { 'Некорректная укладка': null, 'Не выравнена ось позвоночника': 'sp_axis', 'Присутствуют посторонние предметы': 'sp_art', 'Некорректная область интереса': 'hip_roi' };
+// Соответствие подписей измерений старого API ключам норм (если сервер ещё не отдаёт поле key)
+const MEAS_TITLE_KEY = { 'Наклон оси позвоночника': 'axis_angle_deg', 'Смещение от центра кадра': 'center_offset_ratio', 'Площадь плотных включений': 'metal_metal_area_mm2', 'Расстояние от кости до бокового края': 'edge_distance_mm', 'Длина скана': 'scan_length_mm', 'Диафиз ниже вертелов': 'shaft_len_below_troch_mm', 'Выступ малого вертела': 'lesser_troch_prominence_mm' };
+const VERDICT = { retake: 'Переснять', review: 'Проверить', ok: 'Норма', fail: 'Не обработан' };
+const VERDICT_LAB = { retake: 'ПЕРЕСНЯТЬ СЕЙЧАС', review: 'ПОКАЗАТЬ ВРАЧУ', ok: 'ОК', fail: 'ФАЙЛ НЕ ОБРАБОТАН' };
+const fmtNum = (v, d) => { const n = Number(v); if (!Number.isFinite(n)) return '—'; return n.toLocaleString('ru-RU', { minimumFractionDigits: d, maximumFractionDigits: d }); };
+
+function isHip(d) { return String(d.internal_region || '').includes('hip'); }
+// Нарушение области интереса по любому критерию *_roi (не только когда оно главная причина)
+function roiFlagged(r) { const d = r.details || {}; return (Array.isArray(d.criteria) ? d.criteria : []).some(c => c.flag && /_roi$/.test(String(c.code))) || /Некорректная область интереса/.test(String(r.violation_type || '')); }
+function needsDoctor(d) {
+  if (d.needs_review === true || d.needs_review === 1 || d.needs_review === 'true') return true;
+  const rl = String(d.risk_level || '').toLowerCase();
+  return ['uncertain', 'review', 'unsure', 'medium', 'high', 'не уверен', 'спорно'].includes(rl);
+}
+// Одно решение и одна главная причина: критерий с максимальным запасом над порогом
+function decision(r) {
+  const d = r.details || {};
+  const acts = CARD_TEXT.actions || {};
+  if (r.processing_status !== 'Success') return { code: 'fail', label: VERDICT.fail, group: 'fail', reason: acts.fail?.reason || 'Файл не обработан', hint: acts.fail?.hint || '', crit: null, margin: null, doctor: false };
+  const crits = Array.isArray(d.criteria) ? d.criteria : [];
+  const withMargin = crits.filter(c => Number.isFinite(Number(c.score)) && Number.isFinite(Number(c.threshold))).map(c => Object.assign({ margin: Number(c.score) - Number(c.threshold) }, c));
+  const flagged = withMargin.filter(c => c.flag).sort((a, b) => b.margin - a.margin);
+  const isViol = String(r.quality_class) === '1';
+  const doctor = needsDoctor(d);
+  if (!isViol) {
+    const near = withMargin.length ? Math.min(...withMargin.map(c => -c.margin)) : null; // расстояние до порога снизу
+    const code = (doctor || (d && d.needs_review === true)) ? 'review' : 'ok'; // К3: зона «не уверен» из API details
+    return { code, label: VERDICT[code], group: 'ok', reason: acts.ok?.reason || 'Отклонений не выявлено', hint: acts.ok?.hint || '', crit: null, margin: near, doctor };
+  }
+  let main = flagged[0] || null, group = null;
+  if (main) group = CRIT_GROUP[main.code] || null;
+  if (!group) {
+    // класс 1 без флага критерия (решение any-модели) — берём группу из официальной строки нарушения
+    const viol = String(r.violation_type || '').split(';').map(s => s.trim()).filter(Boolean);
+    for (const v of viol) { if (VIOL_GROUP[v]) { group = VIOL_GROUP[v]; break; } if (v === 'Некорректная укладка') group = isHip(d) ? 'hip_pos' : 'sp_pos'; }
+  }
+  const margin = main ? main.margin : null;
+  // К3: needs_review приходит из API details (зона «не уверен» по запасу до порога, запасы в models/calibration.pkl)
+  const borderline = (d && d.needs_review === true) || (REVIEW_MARGIN !== null && margin !== null && margin < REVIEW_MARGIN);
+  const code = (doctor || borderline || !group) ? 'review' : 'retake';
+  const a = group ? acts[group] : null;
+  return { code, label: VERDICT[code], group: group || 'review', reason: a?.reason || acts.review?.reason || 'Оценка на границе допуска', hint: a?.hint || acts.review?.hint || '', crit: main, margin, doctor, borderline };
+}
+// Измеренное против нормы — только те величины, для которых есть норма ТЗ или справочный диапазон
+function measuredRows(r) {
+  const d = r.details || {};
+  const norms = CARD_TEXT.measurement_norms || {};
+  const hip = isHip(d);
+  const cols = Array.isArray(d.image_size) ? Number(d.image_size[1]) : NaN;
+  const psx = Array.isArray(d.pixel_spacing_mm_default) ? Number(d.pixel_spacing_mm_default[1]) : 0.6;
+  const out = [];
+  (Array.isArray(d.measurements) ? d.measurements : []).forEach(m => {
+    const key = m.key || MEAS_TITLE_KEY[m.title];
+    const n = key ? norms[key] : null;
+    if (!n) return;
+    const v = Number(m.value);
+    if (!Number.isFinite(v)) return;
+    const dec = /deg|ratio|prominence/.test(key) ? 1 : 0;
+    const absv = Math.abs(v);
+    let valueText = `${fmtNum(absv, dec)} ${n.unit || m.unit || ''}`.trim();
+    if (key === 'center_offset_ratio' && Number.isFinite(cols) && cols > 0) {
+      const mm = absv / 100 * cols * psx;
+      valueText = `${fmtNum(mm, 0)} мм · ${fmtNum(absv, 1)} % ширины ${v > 0 ? '(вправо по снимку)' : v < 0 ? '(влево по снимку)' : ''}`.trim();
+    }
+    let normText = '—', status = 'ref', statusText = 'справочно';
+    if (n.tz_max !== undefined && n.tz_max !== null) {
+      normText = `до ${fmtNum(n.tz_max, 0)} ${n.unit || ''} (ТЗ)`; const ok = absv <= Number(n.tz_max);
+      status = ok ? 'ok' : 'bad'; statusText = ok ? 'в допуске' : 'выше допуска';
+    } else if (n.tz_min !== undefined && n.tz_min !== null) {
+      normText = `не менее ${fmtNum(n.tz_min, 0)} ${n.unit || ''} (ТЗ)`; const ok = absv >= Number(n.tz_min);
+      status = ok ? 'ok' : 'bad'; statusText = ok ? 'в допуске' : 'меньше допуска';
+    } else {
+      const ref = n.ref_q95 ?? (hip ? n.ref_q95_hip : n.ref_q95_spine);
+      if (ref !== undefined && ref !== null) {
+        const low = n.ref_kind === 'q05_normal';
+        normText = `${low ? 'обычно не менее' : 'обычно до'} ${fmtNum(ref, dec)} ${n.unit || ''}`;
+        const typical = low ? absv >= Number(ref) : absv <= Number(ref);
+        status = typical ? 'ok' : 'hi'; statusText = typical ? 'в обычном диапазоне' : (low ? 'меньше обычного' : 'больше обычного');
+      }
+    }
+    out.push({ key, label: n.label || m.title, valueText, normText, status, statusText, value: v });
+  });
+  return out;
+}
+// Предупреждения из details.extras человеческим языком (жёлтые бейджи)
+function extrasBadges(r) {
+  const d = r.details || {}, x = d.extras || {};
+  const b = [];
+  if (needsDoctor(d)) b.push({ text: 'требует врача', cls: 'doctor' });
+  if (x.ood_flag === true || x.ood_flag === 'True' || x.ood_flag === 1) b.push({ text: 'нестандартный источник снимка — оценка ненадёжна' });
+  else if (x.ood_exposure_flag === true || x.ood_exposure_flag === 'True') b.push({ text: 'нестандартная экспозиция снимка' });
+  if (x.endoprosthesis_suspected === true || x.endoprosthesis_suspected === 'True' || x.endoprosthesis_suspected === 1) b.push({ text: 'подозрение на эндопротез' });
+  if (x.white_lines_flag === true || x.white_lines_flag === 'True' || x.white_lines_flag === 1) b.push({ text: 'на снимке служебная графика аппарата' });
+  if (x.axis_curved_flag === true || x.axis_curved_flag === 'True' || x.axis_curved_flag === 1) b.push({ text: 'заметное искривление оси столба' });
+  String(x.study_warnings || '').split('|').map(s => s.trim()).filter(Boolean).forEach(w => {
+    if (/дубликат/i.test(w)) b.push({ text: 'в исследовании дубликаты кадров' });
+    else if (/нет позвоночника/i.test(w)) b.push({ text: 'в исследовании нет снимка позвоночника' });
+    else if (/нет бедра/i.test(w)) b.push({ text: 'в исследовании нет снимка бедра' });
+    else if (/StudyDate/i.test(w)) b.push({ text: 'в исследовании разные даты' });
+    else if (/PatientID/i.test(w)) b.push({ text: 'в исследовании разные идентификаторы пациента' });
+    else if (/x\d/.test(w)) b.push({ text: 'в исследовании несколько снимков одной области' });
+    else b.push({ text: 'предупреждение по исследованию' });
+  });
+  if (/hip_all_features failed/i.test(String(d.warnings || ''))) b.push({ text: 'часть измерений бедра недоступна' });
+  return b;
+}
+const ROI_REASON = { scan_too_short: 'поле сканирования короче требуемого', shaft_below_trochanter_too_short: 'в кадр вошло мало диафиза ниже вертелов', lateral_margin_below_threshold: 'кость ближе к краю кадра, чем требует ТЗ (не менее 20 мм)' };
+function roiHintText(d) {
+  const roi = d.roi || {};
+  if (!roi.needs_correction) return null;
+  const why = ROI_REASON[String(roi.reason)] || 'область интереса требует смещения';
+  const def = Number(roi.deficit_mm);
+  return why[0].toUpperCase() + why.slice(1) + (Number.isFinite(def) && def > 0 ? `, не хватает ${fmtNum(def, 0)} мм` : '') + '. Рекомендуемое положение показано пунктиром; это подсказка для повторной укладки, снимок не изменяется.';
+}
+// Подсказка центрирования для позвоночника — только если измерение смещения реально есть
+function centeringHint(r, rows) {
+  const d = r.details || {};
+  if (isHip(d)) return null;
+  const m = rows.find(x => x.key === 'center_offset_ratio');
+  if (!m) return null;
+  const cols = Array.isArray(d.image_size) ? Number(d.image_size[1]) : NaN;
+  const psx = Array.isArray(d.pixel_spacing_mm_default) ? Number(d.pixel_spacing_mm_default[1]) : 0.6;
+  if (!Number.isFinite(cols) || cols <= 0) return null;
+  const mm = Math.abs(m.value) / 100 * cols * psx;
+  if (mm < 10) return null; // подсказка только при заметном смещении (не менее 10 мм)
+  const dir = m.value > 0 ? 'вправо' : 'влево';
+  return `Центр позвоночника смещён на ${fmtNum(mm, 0)} мм ${dir} по снимку. Для центрирования сместить положение пациента так, чтобы позвоночник вернулся к средней линии кадра.`;
+}
+// Блок изображений: вкладки «Признаки» / «Рекомендуемое положение ROI» (вторая — только при наличии PNG)
+function vizBlock(r, dec, zoom) {
+  const d = r.details || {};
+  const ov = overlaySrc(r), roi = roiSrc(r);
+  const box = el('div', { class: 'viz' });
+  if (!ov && !roi) { box.appendChild(el('div', { class: 'empty', text: 'Визуализация недоступна' })); return box; }
+  const img = el('img', { alt: 'снимок с визуализацией', onclick: e => { e.stopPropagation(); if (zoom) zoom(e.target.src); } });
+  const cap = el('div', { class: 'imgcap' });
+  const legend = el('div', { class: 'roi-legend' }, [
+    el('span', {}, [el('i', { class: 'dash' }), 'рекомендуемое положение области интереса']),
+    el('span', {}, [el('i', { class: 'cur' }), 'текущий контур кости']),
+    el('span', {}, [el('i', { class: 'bar' }), 'недостающая длина скана']),
+  ]);
+  const show = which => {
+    if (which === 'roi' && roi) { img.src = roi; cap.textContent = 'Рекомендуемое положение области интереса бедра (подсказка для повторной укладки, не автоматическое исправление). Клик — увеличить.'; legend.style.display = ''; }
+    else { img.src = ov || roi; cap.textContent = 'Визуализация измерений: ось, контур кости, границы области интереса, плотные объекты. Клик — увеличить.'; legend.style.display = 'none'; }
+    box.querySelectorAll('.viz-tabs button').forEach(b => b.classList.toggle('active', b.dataset.v === which));
+  };
+  if (ov && roi) {
+    box.appendChild(el('div', { class: 'viz-tabs' }, [
+      el('button', { type: 'button', 'data-v': 'ov', onclick: e => { e.stopPropagation(); show('ov'); } }, ['Измерения']),
+      el('button', { type: 'button', 'data-v': 'roi', onclick: e => { e.stopPropagation(); show('roi'); } }, ['Рекомендуемое положение ROI']),
+    ]));
+  }
+  box.appendChild(img); box.appendChild(legend); box.appendChild(cap);
+  show((roi && (roiFlagged(r) || (dec && dec.group === 'hip_roi'))) ? 'roi' : 'ov');
+  return box;
+}
+// Карточка решения для врача
+function decisionCard(r, opts) {
+  opts = opts || {};
+  const d = r.details || {};
+  const dec = decision(r);
+  const rows = measuredRows(r);
+  const card = el('div', { class: 'dcard' });
+  const officialViol = String(r.violation_type || '').split(';').map(s => s.trim()).filter(Boolean);
+  const subParts = [];
+  if (dec.crit) subParts.push(`критерий: ${dec.crit.title || dec.crit.code}`);
+  if (officialViol.length) subParts.push(`в выгрузке: ${officialViol.join('; ')}`);
+  card.appendChild(el('div', { class: 'dc-head' }, [
+    el('span', { class: 'verdict ' + dec.code, text: dec.label }),
+    el('div', { class: 'dc-reason' }, [
+      el('div', { class: 'k', text: dec.code === 'ok' ? 'Итог' : 'Главная причина' }),
+      el('div', { class: 'v', text: dec.reason }),
+      subParts.length ? el('div', { class: 'sub', text: subParts.join(' · ') }) : null,
+    ]),
+  ]));
+  const badges = extrasBadges(r);
+  if (dec.borderline && !badges.some(b => b.cls === 'doctor')) badges.unshift({ text: 'оценка на границе допуска — показать врачу', cls: 'doctor' });
+  if (badges.length) card.appendChild(el('div', { class: 'badges' }, badges.map(b => el('span', { class: 'wbadge ' + (b.cls || ''), text: b.text }))));
+  if (rows.length) {
+    card.appendChild(el('h4', { text: 'Измерено против нормы' }));
+    const t = el('table', { class: 'mtable' });
+    rows.forEach(m => t.appendChild(el('tr', {}, [
+      el('td', { text: m.label }),
+      el('td', {}, [el('div', { class: 'val', text: `измерено ${m.valueText}` }), el('div', { class: 'norm', text: `норма ${m.normText}` })]),
+      el('td', { class: 'st' }, [el('span', { class: 'pill ' + m.status, text: m.statusText })]),
+    ])));
+    card.appendChild(t);
+    card.appendChild(el('div', { class: 'dc-note', text: 'Статус измерения — сравнение с допуском ТЗ или с обычным диапазоном нормальных снимков обучающей выборки (95 % квантиль). Решение принимает модель по совокупности признаков, поэтому оно может не совпадать со статусом отдельного измерения.' }));
+  } else if (dec.code !== 'fail') {
+    card.appendChild(el('div', { class: 'dc-note', text: 'Измерения для этого снимка недоступны.' }));
+  }
+  if (dec.hint) card.appendChild(el('div', { class: 'dc-hint' }, [el('b', { text: dec.code === 'ok' ? 'Действие: ' : 'Что сделать: ' }), document.createTextNode(dec.hint)]));
+  const roiTxt = roiHintText(d);
+  if (roiTxt && isHip(d) && dec.code !== 'ok') card.appendChild(el('div', { class: 'dc-hint' }, [el('b', { text: 'Положение области интереса: ' }), document.createTextNode(roiTxt)]));
+  const cen = centeringHint(r, rows);
+  if (cen && dec.group === 'sp_pos') card.appendChild(el('div', { class: 'dc-hint' }, [el('b', { text: 'Центрирование: ' }), document.createTextNode(cen)]));
+  if (d.error) card.appendChild(el('div', { class: 'warn', text: 'Ошибка обработки: ' + String(d.error) }));
+  card.appendChild(techDetails(r, dec));
+  return card;
+}
+// Технические детали (свёрнуты): скоры, пороги, источники, идентификаторы
+function techDetails(r, dec) {
+  const d = r.details || {};
+  const body = el('div');
+  const kv = el('div', { class: 'kv' });
+  const kvAdd = (k, v, mono) => { kv.appendChild(el('div', { text: k })); kv.appendChild(el('div', { class: mono ? 'mono' : '', text: v })); };
+  kvAdd('Область', (r.anatomical_region || '—') + (SIDE[d.internal_region] ? `, ${SIDE[d.internal_region]} бедро` : '') + (d.region_source ? ` · определена: ${regionSource(d.region_source)}` : ''));
+  kvAdd('quality_class', String(r.quality_class ?? '—'));
+  kvAdd('quality_prob', fmt(r.quality_prob) + (d.quality_prob_raw !== null && d.quality_prob_raw !== undefined && Math.abs(d.quality_prob_raw - r.quality_prob) > 0.0005 ? ` (до согласования с классом: ${fmt(d.quality_prob_raw)})` : ''));
+  if (dec && dec.margin !== null && dec.margin !== undefined) kvAdd('Запас над порогом', fmt(dec.margin, 3) + (dec.borderline ? ' (спорно)' : ''));
+  if (d.risk_level !== undefined && d.risk_level !== null) kvAdd('risk_level', String(d.risk_level));
+  if (d.needs_review !== undefined && d.needs_review !== null) kvAdd('needs_review', String(d.needs_review));
+  kvAdd('Статус', r.processing_status || '—');
+  kvAdd('Размер кадра', Array.isArray(d.image_size) && d.image_size.every(x => x !== null && x !== undefined) ? d.image_size.join('×') + ' px' : '—');
+  kvAdd('study_uid', r.study_uid || '—', true);
+  kvAdd('image_uid', r.image_uid || '—', true);
+  body.appendChild(kv);
+  if (Array.isArray(d.criteria) && d.criteria.length) {
+    body.appendChild(el('h4', { text: 'Критерии модели' }));
+    const t = el('table', { class: 'crit' });
+    t.appendChild(el('thead', {}, [el('tr', {}, [el('th', { text: 'Критерий' }), el('th', { class: 'num', text: 'Скор' }), el('th', { class: 'num', text: 'Порог' }), el('th', { text: 'Решение' }), el('th', { text: 'Источник' })])]));
+    const tb = el('tbody');
+    const METHOD = { stacked_rank_avg: 'геометрия + эмбеддинги', geom_only: 'геометрия', emb_only: 'эмбеддинги', fallback_rule: 'резервное правило' };
+    d.criteria.forEach(c => {
+      const parts = []; if (c.p_geom !== null && c.p_geom !== undefined) parts.push(`геом. ${fmt(c.p_geom, 2)}`); if (c.p_emb !== null && c.p_emb !== undefined) parts.push(`эмб. ${fmt(c.p_emb, 2)}`);
+      tb.appendChild(el('tr', { class: c.flag ? 'flag' : '' }, [
+        el('td', {}, [el('div', { text: String(c.title || c.code || '—') }), el('div', { class: 'sub', text: String(c.violation || '') })]),
+        el('td', { class: 'num', text: fmt(c.score) }), el('td', { class: 'num', text: fmt(c.threshold) }),
+        el('td', { text: c.flag ? 'нарушение' : 'норма' }),
+        el('td', {}, [el('div', { text: METHOD[c.method] || String(c.method || '—') }), parts.length ? el('div', { class: 'sub', text: parts.join(' · ') }) : null]),
+      ]));
+    });
+    t.appendChild(tb); body.appendChild(el('div', { class: 'critwrap' }, [t]));
+  }
+  if (Array.isArray(d.measurements) && d.measurements.length) {
+    body.appendChild(el('h4', { text: 'Все измерения' }));
+    body.appendChild(el('div', { class: 'meas' }, d.measurements.map(m => el('div', {}, [el('span', { text: String(m.title || '') }), el('span', { text: `${m.value} ${m.unit || ''}`.trim() })]))));
+  }
+  const x = d.extras || {};
+  const xk = Object.keys(x).filter(k => !['file', 'image_uid'].includes(k) && x[k] !== null && x[k] !== undefined && x[k] !== '');
+  if (xk.length) {
+    body.appendChild(el('h4', { text: 'Дополнительные флаги (results_extras.csv)' }));
+    body.appendChild(el('div', { class: 'meas' }, xk.map(k => el('div', {}, [el('span', { text: k }), el('span', { class: 'mono', text: String(x[k]) })]))));
+  }
+  if (d.warnings) body.appendChild(el('div', { class: 'warn', text: 'Предупреждения обработки: ' + String(d.warnings) }));
+  return el('details', { class: 'tech' }, [el('summary', { text: 'Технические детали: скоры, пороги, идентификаторы' }), body]);
+}
+// CARD:END
+
 
 // ---------- переключение лендинг / кабинет ----------
 let historyLoaded = false, healthLoaded = false;
@@ -940,6 +1387,7 @@ function renderResults(data) {
   state.rows = (Array.isArray(data.rows) ? data.rows : []).map((r, i) => Object.assign({ _i: i, _state: rowState(r) }, r));
   state.selected = null; state.filter = 'all'; state.region = 'all'; state.q = '';
   resultsEl.textContent = '';
+  resultsEl.appendChild(el('div', { id: 'labHost' }));
   if (!state.rows.length) { resultsEl.appendChild(el('div', { class: 'panel', text: 'Нет строк результата.' })); return; }
   const s = data.summary || {};
   const n = state.rows.length;
@@ -991,6 +1439,8 @@ function renderResults(data) {
   card.appendChild(el('div', { class: 'hotkeys', text: 'Клавиши: стрелки вниз и вверх — переход по снимкам, Enter — открыть или закрыть карточку, Esc — закрыть просмотр' }));
   resultsEl.appendChild(card);
   refresh();
+  lab.idx = 0; lab.done = new Set();
+  renderMode();
 }
 
 function kpi(v, l, cls) { return el('div', { class: 'kpi ' + (cls || '') }, [el('div', { class: 'v', text: String(v) }), el('div', { class: 'l', text: l })]); }
@@ -1053,58 +1503,91 @@ function queueRow(r) {
 function toggle(i) { state.selected = state.selected === i ? null : i; refresh(); const s = document.querySelector('.qrow.selected'); if (s) s.focus({ preventScroll: true }); }
 
 function detailPanel(r) {
-  const d = r.details || {};
   const left = el('div');
-  const ov = overlaySrc(r), roi = roiSrc(r);
-  if (ov) { left.appendChild(el('img', { src: ov, alt: 'визуализация признаков', onclick: e => { e.stopPropagation(); openLightbox(e.target.src); } })); left.appendChild(el('div', { class: 'imgcap', text: 'Визуализация признаков: ось, контур кости, границы области интереса, посторонние предметы. Клик — увеличить.' })); }
-  if (roi) { left.appendChild(el('img', { src: roi, alt: 'предложение исправленной области интереса', onclick: e => { e.stopPropagation(); openLightbox(e.target.src); } })); left.appendChild(el('div', { class: 'imgcap', text: 'Предложение исправленной области интереса бедра (диагностическая картинка, не применяется автоматически).' })); }
-  if (!left.childNodes.length) left.appendChild(el('div', { class: 'empty', text: 'Визуализация недоступна' }));
-
+  left.appendChild(vizBlock(r, decision(r), openLightbox));
   const right = el('div', { onclick: e => e.stopPropagation() });
   right.appendChild(el('h3', { text: 'Карточка решения' }));
-  if (d.action) right.appendChild(el('div', { class: 'action ' + (['accept', 'review', 'manual'].includes(d.action_code) ? d.action_code : ''), text: String(d.action) }));
-  const kv = el('div', { class: 'kv' });
-  const kvAdd = (k, v, mono) => { kv.appendChild(el('div', { text: k })); kv.appendChild(el('div', { class: mono ? 'mono' : '', text: v })); };
-  kvAdd('Область', (r.anatomical_region || '—') + (SIDE[d.internal_region] ? `, ${SIDE[d.internal_region]} бедро` : '') + (d.region_source ? ` · определена: ${regionSource(d.region_source)}` : ''));
-  kvAdd('Нарушения', r.violation_type || 'не выявлены');
-  kvAdd('quality_prob', fmt(r.quality_prob) + (d.quality_prob_raw !== null && d.quality_prob_raw !== undefined && Math.abs(d.quality_prob_raw - r.quality_prob) > 0.0005 ? ` (до согласования с классом: ${fmt(d.quality_prob_raw)})` : ''));
-  kvAdd('Статус', r.processing_status || '—');
-  kvAdd('study_uid', r.study_uid || '—', true);
-  kvAdd('image_uid', r.image_uid || '—', true);
-  right.appendChild(kv);
-
-  if (Array.isArray(d.criteria) && d.criteria.length) {
-    right.appendChild(el('h4', { text: 'Критерии' }));
-    const t = el('table', { class: 'crit' });
-    t.appendChild(el('thead', {}, [el('tr', {}, [el('th', { text: 'Критерий' }), el('th', { class: 'num', text: 'Скор' }), el('th', { class: 'num', text: 'Порог' }), el('th', { text: 'Решение' }), el('th', { text: 'Источник' })])]));
-    const tb = el('tbody');
-    const METHOD = { stacked_rank_avg: 'геометрия + эмбеддинги', geom_only: 'геометрия', emb_only: 'эмбеддинги', fallback_rule: 'резервное правило' };
-    d.criteria.forEach(c => {
-      const src = METHOD[c.method] || String(c.method || '—');
-      const parts = []; if (c.p_geom !== null && c.p_geom !== undefined) parts.push(`геом. ${fmt(c.p_geom, 2)}`); if (c.p_emb !== null && c.p_emb !== undefined) parts.push(`эмб. ${fmt(c.p_emb, 2)}`);
-      tb.appendChild(el('tr', { class: c.flag ? 'flag' : '' }, [
-        el('td', {}, [el('div', { text: String(c.title || c.code || '—') }), el('div', { class: 'sub', text: String(c.violation || '') })]),
-        el('td', { class: 'num', text: fmt(c.score) }), el('td', { class: 'num', text: fmt(c.threshold) }),
-        el('td', { text: c.flag ? 'нарушение' : 'норма' }),
-        el('td', {}, [el('div', { text: src }), parts.length ? el('div', { class: 'sub', text: parts.join(' · ') }) : null]),
-      ]));
-    });
-    t.appendChild(tb); right.appendChild(el('div', { class: 'critwrap' }, [t]));
-  }
-  if (Array.isArray(d.measurements) && d.measurements.length) {
-    right.appendChild(el('h4', { text: 'Измерения' }));
-    right.appendChild(el('div', { class: 'meas' }, d.measurements.map(m => el('div', {}, [el('span', { text: String(m.title || '') }), el('span', { text: `${m.value} ${m.unit || ''}`.trim() })]))));
-  }
-  if (d.roi && d.roi.needs_correction) right.appendChild(el('div', { class: 'warn', text: 'Область интереса: ' + String(d.roi.reason || 'предлагается исправление') + (d.roi.deficit_mm ? `, не хватает ~${Math.round(d.roi.deficit_mm)} мм` : '') }));
-  if (d.warnings) right.appendChild(el('div', { class: 'warn', text: 'Предупреждения обработки: ' + String(d.warnings) }));
-  if (d.error) right.appendChild(el('div', { class: 'warn', text: 'Ошибка: ' + String(d.error) }));
+  right.appendChild(decisionCard(r));
   const links = el('div', { class: 'links' });
   const sr = safeApiUrl(r.bonus_sr_dcm_download);
+  const ov = overlaySrc(r);
   if (sr) links.appendChild(el('a', { class: 'btn sm ghost', href: sr, target: '_blank', rel: 'noopener', text: 'Скачать DICOM SR' }));
   if (ov) links.appendChild(el('a', { class: 'btn sm ghost', href: ov, download: String(r.path_to_study || 'overlay').replace(/[^\w.\-а-яА-ЯёЁ]+/g, '_') + '_overlay.png', text: 'Сохранить визуализацию PNG' }));
   if (links.childNodes.length) right.appendChild(links);
   return el('div', { class: 'detail' }, [left, right]);
 }
+
+// ---------- режим лаборанта: один снимок крупно, без технических деталей ----------
+const lab = { idx: 0, done: new Set() };
+function currentMode() { return localStorage.getItem('densito_mode') === 'lab' ? 'lab' : 'doctor'; }
+function setMode(m) {
+  localStorage.setItem('densito_mode', m === 'lab' ? 'lab' : 'doctor');
+  document.getElementById('modeDoctor').classList.toggle('active', m !== 'lab');
+  document.getElementById('modeLab').classList.toggle('active', m === 'lab');
+  renderMode();
+}
+function renderMode() {
+  const host = document.getElementById('labHost');
+  if (!host) return;
+  host.textContent = '';
+  const panel = document.querySelector('#results > .panel');
+  const isLab = currentMode() === 'lab' && state.rows.length > 0;
+  if (panel) panel.style.display = isLab ? 'none' : '';
+  if (isLab) host.appendChild(labScreen());
+}
+function labOrder() {
+  // сначала переснять, затем спорные, затем ошибки, затем норма; внутри — по убыванию риска
+  const rank = { retake: 0, review: 1, fail: 2, ok: 3 };
+  return state.rows.map(r => Object.assign({ _dec: decision(r) }, r)).sort((a, b) => (rank[a._dec.code] - rank[b._dec.code]) || ((Number(b.quality_prob) || 0) - (Number(a.quality_prob) || 0)) || (a._i - b._i));
+}
+function labScreen() {
+  const rows = labOrder();
+  if (!rows.length) return el('div', { class: 'lab', text: 'Нет снимков.' });
+  lab.idx = Math.max(0, Math.min(lab.idx, rows.length - 1));
+  const r = rows[lab.idx], dec = r._dec, d = r.details || {};
+  const wrap = el('div', { class: 'lab', 'aria-live': 'polite' });
+  const side = SIDE[d.internal_region] ? `, ${SIDE[d.internal_region]} бедро` : '';
+  wrap.appendChild(el('div', { class: 'lab-top' }, [
+    el('span', { text: `Снимок ${lab.idx + 1} из ${rows.length}` }),
+    el('span', { class: 'fname', text: (r.path_to_study || '—') + ' · ' + (REGION_SHORT[r.anatomical_region] || r.anatomical_region || '—') + side }),
+    lab.done.has(r._i) ? el('span', { class: 'lab-done', text: 'отмечено: переснято' }) : null,
+  ]));
+  const body = el('div', { class: 'lab-body' });
+  const roi = roiSrc(r), ov = overlaySrc(r);
+  const showRoi = roi && (roiFlagged(r) || dec.group === 'hip_roi');
+  const src = showRoi ? roi : (ov || roi);
+  const imgCol = el('div');
+  if (src) {
+    imgCol.appendChild(el('img', { src, alt: showRoi ? 'рекомендуемое положение области интереса' : 'снимок с визуализацией', onclick: e => openLightbox(e.target.src) }));
+    imgCol.appendChild(el('div', { class: 'imgcap', text: showRoi ? 'Рекомендуемое положение области интереса (пунктир) — переснять, переставив поле сканирования. Сплошная рамка — текущий контур кости.' : 'Снимок с отметками измерений. Клик — увеличить.' }));
+  } else imgCol.appendChild(el('div', { class: 'empty', text: 'Изображение недоступно' }));
+  const txt = el('div');
+  txt.appendChild(el('div', { class: 'lab-verdict ' + dec.code, text: VERDICT_LAB[dec.code] }));
+  txt.appendChild(el('div', { class: 'lab-reason', text: dec.reason }));
+  if (dec.hint) txt.appendChild(el('div', { class: 'lab-hint', text: dec.hint }));
+  const roiTxt = roiHintText(d);
+  if (roiTxt && showRoi) txt.appendChild(el('div', { class: 'lab-hint', text: roiTxt }));
+  const rowsM = measuredRows(r);
+  const cen = centeringHint(r, rowsM);
+  if (cen && dec.group === 'sp_pos') txt.appendChild(el('div', { class: 'lab-hint', text: cen }));
+  const bad = rowsM.filter(m => m.status === 'bad' || m.status === 'hi');
+  if (bad.length) txt.appendChild(el('div', { class: 'lab-meas' }, bad.map(m => el('div', {}, [el('span', { text: m.label }), el('b', { text: `${m.valueText} · норма ${m.normText}` })]))));
+  const badges = extrasBadges(r);
+  if (badges.length) txt.appendChild(el('div', { class: 'badges', style: 'margin-top:14px' }, badges.map(b => el('span', { class: 'wbadge ' + (b.cls || ''), text: b.text }))));
+  const go = k => { lab.idx = Math.max(0, Math.min(rows.length - 1, lab.idx + k)); renderMode(); };
+  txt.appendChild(el('div', { class: 'lab-btns' }, [
+    el('button', { type: 'button', class: 'btn ghost', onclick: () => go(-1), disabled: lab.idx === 0 ? '' : null, text: 'Предыдущий' }),
+    el('button', { type: 'button', class: 'btn', onclick: () => go(1), disabled: lab.idx >= rows.length - 1 ? '' : null, text: 'Следующий' }),
+    dec.code === 'retake' || dec.code === 'review' ? el('button', { type: 'button', class: 'btn done', onclick: () => { lab.done.add(r._i); go(1); }, text: 'Переснято' }) : null,
+  ]));
+  txt.appendChild(el('div', { class: 'lab-list' }, rows.map((x, k) => el('button', { type: 'button', class: x._dec.code + (k === lab.idx ? ' cur' : '') + (lab.done.has(x._i) ? ' done' : ''), title: x.path_to_study || '', 'aria-label': `снимок ${k + 1}`, text: String(k + 1), onclick: () => { lab.idx = k; renderMode(); } }))));
+  body.appendChild(imgCol); body.appendChild(txt);
+  wrap.appendChild(body);
+  wrap.appendChild(el('div', { class: 'hotkeys', text: 'Клавиши: стрелки влево и вправо — переход по снимкам' }));
+  return wrap;
+}
+document.getElementById('modeDoctor').addEventListener('click', () => setMode('doctor'));
+document.getElementById('modeLab').addEventListener('click', () => setMode('lab'));
 
 // ---------- просмотр изображения и клавиши ----------
 const lightbox = document.getElementById('lightbox');
@@ -1115,6 +1598,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { lightbox.classList.remove('open'); return; }
   if (!document.body.classList.contains('view-app')) return;
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+  if (currentMode() === 'lab' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && state.rows.length) { e.preventDefault(); lab.idx = Math.max(0, Math.min(state.rows.length - 1, lab.idx + (e.key === 'ArrowRight' ? 1 : -1))); renderMode(); return; }
   if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
   const rows = visibleRows(); if (!rows.length) return;
   const idx = rows.findIndex(r => r._i === state.selected);
@@ -1194,7 +1678,9 @@ async function openJob(jobId) {
     // в карточке запроса нет картинок (base64 не сохраняется): подставляем ссылки на PNG из папки запроса
     card.rows = card.rows.map(x => {
       const stem = String(x.path_to_study || '').replace(/\.[^.]+$/, '');
-      return Object.assign({}, x, stem ? { bonus_overlay_png_url: `/api/results/${encodeURIComponent(jobId)}/${encodeURIComponent(stem + '_overlay.png')}` } : {});
+      const extra = stem ? { bonus_overlay_png_url: `/api/results/${encodeURIComponent(jobId)}/${encodeURIComponent(stem + '_overlay.png')}` } : {};
+      if (stem && x.details && x.details.roi && x.details.roi.needs_correction) extra.bonus_roi_png_url = `/api/results/${encodeURIComponent(jobId)}/${encodeURIComponent(stem + '_roi_correction.png')}`;
+      return Object.assign({}, x, extra);
     });
     renderResults(card);
     setRunChip(card);
@@ -1207,6 +1693,9 @@ async function openJob(jobId) {
   }
 }
 document.getElementById('historyBtn').addEventListener('click', () => loadHistory());
+loadCardText().then(() => { if (state.rows.length) { refresh(); renderMode(); } });
+document.getElementById('modeDoctor').classList.toggle('active', currentMode() !== 'lab');
+document.getElementById('modeLab').classList.toggle('active', currentMode() === 'lab');
 route();
 </script>
 </body>

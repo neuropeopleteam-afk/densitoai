@@ -97,6 +97,7 @@ def suggest_hip_roi(img_u8: np.ndarray, feats: Optional[Dict[str, Any]] = None) 
         return out
     x0_bone, x1_bone = int(xs_nonzero.min()), int(xs_nonzero.max())
     y0_bone, y1_bone = int(ys_nonzero.min()), int(ys_nonzero.max())
+    out["bone_box_px"] = (x0_bone, y0_bone, x1_bone, y1_bone)  # текущий контур кости (сплошная рамка на PNG)
 
     # Приоритет: scan_too_short (самый сильный сигнал на реальных данных),
     # затем shaft_below_trochanter (дублирующий тот же дефект по-другому измерению),
@@ -156,16 +157,36 @@ def suggest_hip_roi(img_u8: np.ndarray, feats: Optional[Dict[str, Any]] = None) 
     return out
 
 
+def _dashed_rect(col: np.ndarray, box, color, thickness: int = 2, dash: int = 6) -> None:
+    """Пунктирный прямоугольник (cv2 не умеет штрих): отрезки dash px с промежутком dash px."""
+    import cv2
+    h, w = col.shape[:2]
+    x0, y0, x1, y1 = [int(v) for v in box]
+    x0, x1 = max(0, min(x0, x1)), min(w - 1, max(x0, x1))
+    y0, y1 = max(0, min(y0, y1)), min(h - 1, max(y0, y1))
+    for x in range(x0, x1, dash * 2):
+        cv2.line(col, (x, y0), (min(x + dash, x1), y0), color, thickness)
+        cv2.line(col, (x, y1), (min(x + dash, x1), y1), color, thickness)
+    for y in range(y0, y1, dash * 2):
+        cv2.line(col, (x0, y), (x0, min(y + dash, y1)), color, thickness)
+        cv2.line(col, (x1, y), (x1, min(y + dash, y1)), color, thickness)
+
+
 def draw_roi_correction(img_u8: np.ndarray, suggestion: Dict[str, Any]) -> np.ndarray:
-    """Визуализация предложенной коррекции: жёлтая рамка — предложенный ROI,
-    красная (при выходе за кадр) — диагностическая зона недостающего скана."""
+    """Подсказка положения области интереса (не автокоррекция): сплошная голубая рамка — текущий
+    контур кости в кадре; жёлтый пунктир — рекомендуемое положение области интереса; красная плашка
+    внизу — недостающая длина скана за пределами кадра (+N мм). Подписи на русском выводит UI
+    (шрифты cv2 без кириллицы)."""
     import cv2
     col = cv2.cvtColor(img_u8, cv2.COLOR_GRAY2BGR)
     h, w = img_u8.shape
-    box = suggestion.get("suggested_box_px")
-    if box:
-        x0, y0, x1, y1 = box
-        cv2.rectangle(col, (x0, y0), (x1, y1), (0, 220, 220), 2)
+    cur = suggestion.get("bone_box_px")
+    if cur:
+        x0, y0, x1, y1 = cur
+        cv2.rectangle(col, (x0, y0), (x1, y1), (220, 200, 90), 1)
+    rec = suggestion.get("extended_box_px") or suggestion.get("suggested_box_px")
+    if rec:
+        _dashed_rect(col, rec, (0, 220, 220), 2)
     ext = suggestion.get("extended_box_px")
     if ext:
         x0, y0, x1, y1 = ext

@@ -73,6 +73,7 @@ from geometry_features import (  # noqa: E402
     spine_positioning_features, hip_positioning_features,
 )
 from hip_features import hip_all_features  # noqa: E402
+from calibration_utils import risk_level  # noqa: E402  (К3: правило уровня риска)
 
 __version__ = "2.1.0"
 LOG = logging.getLogger("densito.inference")
@@ -667,6 +668,47 @@ class ModelRegistry:
                     store[region] = mb
         self._load_thresholds()
         self._load_medians()
+        self._load_calibration()
+
+    def _load_calibration(self):
+        """К3: models/calibration.pkl (MODEL_CONTRACT.md, раздел «calibration.pkl»): Platt по критерию и запас
+        зоны «не уверен». Ключи хранятся как sp_*/hip_*; rh_*/lh_* берут hip_*. Отсутствие файла — не ошибка:
+        p_cal = None, запаса нет (тогда «не уверен» только при fallback-правиле/отказе).
+        config.yaml: uncertainty.margin_by_criterion[<crit>] (не null) перекрывает запас из pkl."""
+        self.platt: Dict[str, Tuple[float, float]] = {}
+        self.margins: Dict[str, Optional[float]] = {}
+        calib: Dict[str, Any] = {}
+        p = self.models_dir / "calibration.pkl"
+        if p.exists():
+            try:
+                with open(p, "rb") as f:
+                    calib = pickle.load(f)
+                if not isinstance(calib, dict) or calib.get("kind") != "densito_calibration":
+                    LOG.warning("calibration.pkl: неожиданный формат -> игнорирую")
+                    calib = {}
+                else:
+                    LOG.info("Calibration loaded: calibration.pkl (%d criteria)", len(calib.get("criteria", {}) or {}))
+            except Exception as e:  # noqa: BLE001
+                LOG.warning("calibration.pkl unreadable: %s", e)
+                calib = {}
+        ucfg = self.cfg.get("uncertainty", {}) or {}
+        if ucfg.get("enabled", True) is False:
+            cfg_margins: Dict[str, Any] = {}
+            calib_margins: Dict[str, Any] = {}
+        else:
+            cfg_margins = ucfg.get("margin_by_criterion", {}) or {}
+            calib_margins = calib.get("margin_by_criterion", {}) or {}
+        for region, crits in self.cfg["criteria_by_region"].items():
+            for crit in crits:
+                base = ("hip_" + crit.split("_", 1)[-1]) if region in ("right_hip", "left_hip") else crit
+                rec = (calib.get("criteria", {}) or {}).get(base) or {}
+                pl = rec.get("platt")
+                if isinstance(pl, dict) and pl.get("a") is not None:
+                    self.platt[crit] = (float(pl["a"]), float(pl["b"]))
+                m = cfg_margins.get(crit, cfg_margins.get(base))
+                if m is None:
+                    m = calib_margins.get(base)
+                self.margins[crit] = None if m is None else float(m)
 
     def _load_reference(self, region: str, crit: str):
         key = (region, crit)
@@ -925,6 +967,18 @@ class DensitoInference:
         out["threshold"] = thr
         out["score"] = clip01(out["score"])
         out["flag"] = int(out["score"] >= thr)
+        # К3 (только debug/API, на 9 колонок не влияет): запас до порога, зона «не уверен», Platt-вероятность.
+        # «не уверен» <=> |score - threshold| <= margin (включительно); при fallback-правиле — всегда «не уверен»,
+        # при отсутствии запаса (нет calibration.pkl) — только при fallback.
+        margin = getattr(reg, "margins", {}).get(crit)
+        out["margin"] = round(abs(out["score"] - thr), 6)
+        if out["method"] == "fallback_rule":
+            out["uncertain"] = 1
+        else:
+            out["uncertain"] = int(margin is not None and out["margin"] <= float(margin) + 1e-12)
+        pl = getattr(reg, "platt", {}).get(crit)
+        out["p_cal"] = (round(float(sigmoid(pl[0] * out["score"] + pl[1])), 6)
+                        if (pl is not None and out["method"] != "fallback_rule") else None)
         return out
 
     def fallback_rule(self, crit: str, feats: Dict[str, Any]) -> float:
@@ -972,7 +1026,7 @@ class DensitoInference:
             return any_model
         # 3) смесь двух оценок. Валидация OOF (StratifiedGroupKFold по исследованиям, 3 сида):
         #    ROC-AUC any-модель 0.766/0.702 (spine/hip), max по критериям 0.681/0.761,
-        #    смесь 0.5/0.5 -> 0.781/0.747, после согласования с классом 0.783/0.773 (пересчёт 19.09);
+        #    смесь 0.5/0.5 -> 0.781/0.747, после согласования с классом 0.783/0.773 при F1-опт. порогах, 0.764/0.732 при nested-правилах К3 (19.09);
         #    см. docs/METRICS_REPORT.md (src/eval_oof_metrics.py).
         w = float(self.cfg["stacking"].get("any_blend_weight_model", 0.5))
         return clip01(w * any_model + (1.0 - w) * crit_agg)
@@ -984,7 +1038,7 @@ class DensitoInference:
         смесью моделей. Чтобы строка была непротиворечивой (class=1 <=> prob>=0.5)
         и ROC-AUC учитывал решение по критериям, вероятность монотонно сжимается
         в [0.5, 1] при нарушении и в [0, 0.5) при норме (порядок внутри класса
-        сохраняется). OOF ROC-AUC при этом растёт: spine 0.735 -> 0.783,
+        сохраняется). OOF ROC-AUC при этом растёт: spine 0.735 -> 0.783 (при F1-опт. порогах),
         hip 0.704 -> 0.773 (см. docs/METRICS_REPORT.md)."""
         p = clip01(prob)
         return 0.5 + 0.5 * p if quality_class else min(0.5 * p, 0.499999)
@@ -1081,8 +1135,14 @@ class DensitoInference:
                           **{f"feat_{k}": v for k, v in feats.items()
                                                                   if not isinstance(v, np.ndarray)}})
             for c, r in crit_results.items():
-                for k in ("p_geom", "p_emb", "w_geom", "score", "threshold", "flag", "method"):
+                for k in ("p_geom", "p_emb", "w_geom", "score", "threshold", "flag", "method", "margin", "uncertain", "p_cal"):
                     debug[f"{c}_{k}"] = r.get(k)
+            # К3: строка «не уверен», если не уверен хотя бы один критерий региона; risk_level — правило
+            # calibration_utils.risk_level (высокий: class=1 и уверен; средний: не уверен; низкий: class=0 и уверен)
+            needs_review = int(any(int(r.get("uncertain", 0)) for r in crit_results.values()))
+            debug["needs_review"] = needs_review
+            debug["risk_level"] = risk_level(quality_class, needs_review)
+            debug["uncertain_criteria"] = ";".join(c for c, r in crit_results.items() if int(r.get("uncertain", 0)))
             if info.warnings:
                 LOG.info("%s: %s", path.name, "; ".join(info.warnings))
 
@@ -1106,7 +1166,8 @@ class DensitoInference:
                 "processing_status": cfg_out["status_failure"],
                 "time_of_processing": 0.0,
             }
-            debug.update({"internal_region": region, "region_source": "fallback", "error": err})
+            debug.update({"internal_region": region, "region_source": "fallback", "error": err,
+                          "needs_review": 1, "risk_level": risk_level(0, True), "uncertain_criteria": ""})
             debug.update(self._origin_hashes(path, None))
         row["time_of_processing"] = round(time.perf_counter() - t0, 4)
         debug["time_of_processing"] = row["time_of_processing"]

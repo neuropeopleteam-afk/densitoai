@@ -35,7 +35,10 @@ OOD_GATE_PKL_VERSION = "ood_gate/1"
 
 EXTRAS_COLUMNS = ["file", "image_uid", "white_lines_flag", "white_lines_len_px", "ood_flag",
                   "ood_mahalanobis", "ood_fingerprint_ok", "ood_reason", "endoprosthesis_suspected",
-                  "study_warnings"]
+                  "axis_curved_flag", "study_warnings"]
+# Выраженный изгиб оси столба: std остатка (линейная − квадратичная подгонка оси, px) выше 99 % квантиля
+# размеченной нормы (106 кадров позвоночника, data/geometry_features.csv: q99 = 9.0 px). Не диагноз, только подсказка.
+AXIS_CURVATURE_MAX_PX = 9.0
 
 
 # --------------------------------------------------------------------------- #
@@ -550,6 +553,10 @@ def compute_extras_for_rows(rows: List[Dict[str, Any]], debug_rows: List[Dict[st
         im = im or {}
         tags = im.get("tags") or {}
         fx = compute_file_extras(im.get("img_u8"), im.get("emb"), tags, region, gate=gate)
+        try:
+            fx["axis_curved_flag"] = bool(region == "spine" and float((dbg or {}).get("feat_curvature")) > AXIS_CURVATURE_MAX_PX)
+        except (TypeError, ValueError):
+            fx["axis_curved_flag"] = False
         fx["file"] = row.get("path_to_study", "")
         fx["image_uid"] = row.get("image_uid", "")
         per_file.append(fx)
