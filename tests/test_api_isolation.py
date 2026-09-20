@@ -132,6 +132,15 @@ for asset in ("actions.json", "demo_result.json", "fonts/NotoSans-Regular.woff")
 html = client.get("/").text
 external = re.findall(r'(?:src|href)="(https?://[^"]+)"', html)
 check(not external, f"в кабинете нет внешних src/href (найдено: {external[:3]})")
+# в демо-данных не должно быть настоящих идентификаторов исследований заказчика
+demo = json.loads((Path(os.environ.get("DENSITO_WEB_DIR", ROOT / "web")) / "assets" / "demo_result.json").read_text(encoding="utf-8"))
+blob = json.dumps(demo, ensure_ascii=False)
+real_uids = re.findall(r"1\.2\.(?:840|643)[0-9.]{10,}", blob)
+check(not real_uids, f"в демо-данных нет настоящих DICOM UID (найдено {len(real_uids)})")
+check(all(r.get("demo_role") for r in demo["rows"]), "каждый кадр демо-партии подписан ролью")
+check(sum(1 for r in demo["rows"] if r.get("quality_class") == 1) >= 3,
+      "демо-партия показывает найденные нарушения, а не только норму")
+
 # обход каталога закрыт
 for bad in ("../config.yaml", "../../config.yaml", "%2e%2e%2fconfig.yaml", "/etc/passwd"):
     r = client.get(f"/assets/{bad}")
