@@ -49,8 +49,8 @@ def main() -> int:
         rows.append(out)
     demo = {
         "demo": True,
-        "demo_note": "Три тестовых файла организаторов (tests/sample_test_zip), "
-                     "обработаны сервисом DensitoAI 2.1.0 без изменений. Личных данных нет.",
+        "demo_note": f"Три тестовых файла организаторов (tests/sample_test_zip), "
+                     f"обработаны сервисом DensitoAI {d.get('model_version', '')} без изменений. Личных данных нет.",
         "job_id": "demo",
         "request_id": "demo",
         "model_version": d.get("model_version"),

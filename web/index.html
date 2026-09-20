@@ -380,6 +380,15 @@ table.crit tr.flag td { background: var(--error-soft); }
 .tech summary::before { content: ""; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform .15s; }
 .tech[open] summary::before { transform: rotate(45deg); }
 .tech > div { padding: 4px 14px 14px; }
+/* Раскрывающиеся блоки на лендинге: первый экран секции — вывод, доказательная база — по клику.
+   Ничего не удалено: жюри, которому нужны детали, открывает блок; остальным он не мешает скроллить. */
+.more { margin-top: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.more > summary { cursor: pointer; padding: 13px 18px; font-size: 14.5px; font-weight: 700; color: var(--text); list-style: none; display: flex; align-items: center; gap: 10px; }
+.more > summary::-webkit-details-marker { display: none; }
+.more > summary::before { content: ""; flex: none; width: 8px; height: 8px; border-right: 2px solid var(--primary); border-bottom: 2px solid var(--primary); transform: rotate(-45deg); transition: transform .15s; }
+.more[open] > summary::before { transform: rotate(45deg); }
+.more > summary small { font-weight: 500; color: var(--muted); }
+.more > .more-body { padding: 0 18px 18px; }
 .viz-tabs { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
 .viz-tabs button { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 999px; padding: 5px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
 .viz-tabs button.active { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
@@ -508,14 +517,15 @@ table.crit tr.flag td { background: var(--error-soft); }
     </div>
     <figure class="hero-visual">
       <div class="frame"><img src="assets/demo/demo_spine_overlay.png" alt="Визуализация сервиса: снимок поясничного отдела с найденной осью, контуром кости и плотными посторонними объектами" data-zoom></div>
-      <figcaption><span class="tag">Нарушение: посторонние предметы</span><br>Реальный вывод сервиса на тестовом файле организаторов. Оранжевая линия — измеренная ось (1.2° к вертикали), зелёный контур — костная область, красные рамки — найденные плотные объекты. Скор критерия 0.60 при пороге 0.56.</figcaption>
+      <figcaption><span class="tag">Решение: принять, риск низкий</span><br>Реальный вывод сервиса 2.2.0 на тестовом файле организаторов. Оранжевая линия — измеренная ось (1.2° к вертикали при допуске 5° по ТЗ), зелёный контур — костная область, красные рамки — плотные объекты (1010 мм²). Ни один критерий не превысил 
+ порог: укладка 0.470 при 0.822, ось 0.578 при 0.756, посторонние предметы 0.596 при 0.602 — последний почти у границы, и это видно в карточке.</figcaption>
     </figure>
   </div>
   <div class="facts">
     <div><div class="v">499<small>снимков</small></div><div class="l">из 100 исследований в обучающей выборке, разметка одного эксперта</div></div>
     <div><div class="v">2 <small>области</small></div><div class="l">поясничный отдел позвоночника и проксимальный отдел бедра</div></div>
     <div><div class="v">5 <small>критериев</small></div><div class="l">укладка, ось, посторонние предметы, укладка бедра, область интереса</div></div>
-    <div><div class="v">~0,05 <small>с</small></div><div class="l">на снимок в пакетном режиме на CPU; с визуализацией через API 1–2 с</div></div>
+    <div><div class="v">~0,06 <small>с</small></div><div class="l">на снимок в пакетном режиме на CPU; с визуализацией через API 1–2 с</div></div>
   </div>
 </section>
 
@@ -560,6 +570,9 @@ table.crit tr.flag td { background: var(--error-soft); }
       <div class="step"><h3>Ранговый стэкинг</h3><p>Скор критерия — среднее рангов двух контуров относительно out-of-fold референса. Порог подобран на OOF, не на обучении.</p></div>
       <div class="step"><h3>Отчёт</h3><p>CSV по ТЗ, XLSX-сводка по исследованиям, технический CSV с признаками, PNG-визуализация и карточка решения в кабинете.</p></div>
     </div>
+    <details class="more">
+      <summary>Как устроены оба контура и откуда берётся порог <small>— признаки, модели, стэкинг</small></summary>
+      <div class="more-body">
     <div class="twoloop">
       <div class="loop a">
         <h3>Контур A — геометрия</h3>
@@ -579,6 +592,8 @@ table.crit tr.flag td { background: var(--error-soft); }
         <div class="f">config.yaml · models/metrics_summary.json</div>
       </div>
     </div>
+      </div>
+    </details>
   </div>
 </section>
 
@@ -768,8 +783,11 @@ table.crit tr.flag td { background: var(--error-soft); }
     <div class="sec-head">
       <div class="eyebrow">Как проверить</div>
       <h2>Всё воспроизводится за несколько команд</h2>
-      <p class="lead">Техническая группа может развернуть сервис на своих данных без нашего участия. Внешних вызовов сервис не делает.</p>
+      <p class="lead">Техническая группа может развернуть сервис на своих данных без нашего участия. Сервис не делает ни одного внешнего вызова: кабинет, API и модели лежат внутри образа, и самопроверка из 10 пунктов прогоняется в контейнере с полностью отключённой сетью (<code>--network none</code>).</p>
     </div>
+    <details class="more">
+      <summary>Команды запуска, список документов и состав контейнера <small>— для тех, кто будет разворачивать</small></summary>
+      <div class="more-body">
     <div class="verify">
       <div>
         <div class="card">
@@ -801,17 +819,20 @@ python src/eval_oof_metrics.py             <span class="c"># метрики с �
             <li><code>README.md</code><span>назначение, запуск, API, формат данных, ограничения</span></li>
             <li><code>docs/METRICS_REPORT.md</code><span>метрики по ТЗ §8.4 с 95 % ДИ</span></li>
             <li><code>docs/ROBUSTNESS_REPORT.md</code><span>устойчивость к нестандартному входу</span></li>
-            <li><code>docs/ENGINEERING_REPORT.md</code><span>инженерный отчёт о сдаче</span></li>
+            <li><code>docs/PREPROC_GATE_REPORT.md</code><span>инвариантная предобработка и выбор варианта внутри nested</span></li>
+            <li><code>docs/EVIDENCE.md</code><span>данные, лицензии, отвергнутые гипотезы, ограничения</span></li>
             <li><code>models/MODEL_CONTRACT.md</code><span>формат моделей и порогов</span></li>
             <li><code>config.yaml</code><span>все строки, пороги и веса в одном файле</span></li>
           </ul>
         </div>
         <div class="card">
           <h3>Что внутри контейнера</h3>
-          <p>Python 3.12, PyTorch CPU, scikit-learn, pydicom. Модели — файлы pkl с зафиксированным контрактом, бэкбон EfficientNet-B0 лежит в образе. Ошибки отдельных файлов не роняют запрос: строка получает статус Failure и вероятность 0.5.</p>
+          <p>Python 3.12, PyTorch CPU, scikit-learn, pydicom. Модели — файлы pkl с зафиксированным контрактом, бэкбон EfficientNet-B0 и этот самый кабинет лежат в образе — интерфейс открывается на корне того же порта, что и API. Ошибки отдельных файлов не роняют запрос: строка получает статус Failure и вероятность 0.5.</p>
         </div>
       </div>
     </div>
+      </div>
+    </details>
   </div>
 </section>
 

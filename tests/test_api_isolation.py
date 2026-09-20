@@ -6,6 +6,7 @@
 (модели загружаются один раз; ~1–2 мин на CPU).
 """
 import json, os
+import re
 import sys
 import tempfile
 import threading
@@ -119,6 +120,22 @@ check(ok_rows, "каждый ответ содержит свой файл")
 # 8. /api/batch — output_csv вне OUTPUT_DIR отклоняется
 r = client.post("/api/batch", json={"input_dir": str(SAMPLES[0].parent), "output_csv": "/tmp/evil.csv"})
 check(r.status_code == 400, f"batch output_csv вне OUTPUT_DIR → 400 ({r.status_code})")
+
+# 9. веб-интерфейс раздаётся самим сервисом (требование локальной работы: кабинет едет в образе)
+r = client.get("/")
+check(r.status_code == 200 and "DensitoAI" in r.text, f"корень отдаёт кабинет ({r.status_code})")
+check("text/html" in r.headers.get("content-type", ""), "корень отдаёт HTML")
+for asset in ("actions.json", "demo_result.json", "fonts/NotoSans-Regular.woff"):
+    r = client.get(f"/assets/{asset}")
+    check(r.status_code == 200 and len(r.content) > 0, f"статика /assets/{asset} отдаётся ({r.status_code})")
+# страница не должна тянуть ничего из интернета — иначе она не откроется у заказчика без сети
+html = client.get("/").text
+external = re.findall(r'(?:src|href)="(https?://[^"]+)"', html)
+check(not external, f"в кабинете нет внешних src/href (найдено: {external[:3]})")
+# обход каталога закрыт
+for bad in ("../config.yaml", "../../config.yaml", "%2e%2e%2fconfig.yaml", "/etc/passwd"):
+    r = client.get(f"/assets/{bad}")
+    check(r.status_code == 404, f"/assets/{bad} → 404 ({r.status_code})")
 
 print("\nИТОГ:", "все проверки пройдены" if not fails else f"{len(fails)} провалов: {fails}")
 sys.exit(1 if fails else 0)

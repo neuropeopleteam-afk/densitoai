@@ -567,6 +567,43 @@ def download(name: str):
     return FileResponse(str(p), filename=safe)
 
 
+# --------------------------------------------------------------------------- #
+# Веб-интерфейс внутри образа
+#
+# Организаторы требуют полностью локальной работы без обращений к внешним API, и решение
+# разворачивает техгруппа заказчика сама. Значит кабинет должен ехать В ОБРАЗЕ, а не жить
+# только на нашем демо-стенде. web/index.html ходит в API ОТНОСИТЕЛЬНЫМИ путями (/api/...),
+# поэтому при раздаче с корня того же сервера он работает без единой правки в самом HTML.
+# Шрифты и картинки локальные (web/assets), CDN нет — страница открывается без интернета.
+# Каталог переопределяется DENSITO_WEB_DIR; если его нет — API работает как раньше, без UI.
+# --------------------------------------------------------------------------- #
+WEB_DIR = Path(os.environ.get("DENSITO_WEB_DIR", PROJECT_ROOT / "web")).resolve()
+
+
+@app.get("/", include_in_schema=False)
+def web_index():
+    """Лендинг и кабинет врача (один файл, без CDN)."""
+    p = WEB_DIR / "index.html"
+    if not p.is_file():
+        raise HTTPException(404, "web UI not bundled in this image")
+    return FileResponse(str(p), media_type="text/html; charset=utf-8")
+
+
+@app.get("/assets/{path:path}", include_in_schema=False)
+def web_assets(path: str):
+    """Статика кабинета: шрифты, PNG кейсов и демо, actions.json, demo_result.json."""
+    if ".." in path or path.startswith("/"):
+        raise HTTPException(404, "file not found")
+    p = (WEB_DIR / "assets" / path).resolve()
+    try:
+        p.relative_to(WEB_DIR / "assets")
+    except ValueError:
+        raise HTTPException(404, "file not found")
+    if not p.is_file():
+        raise HTTPException(404, "file not found")
+    return FileResponse(str(p))
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="DensitoAI API server")
     ap.add_argument("--host", default="0.0.0.0")

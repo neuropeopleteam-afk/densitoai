@@ -57,6 +57,10 @@ COPY tests/ /app/tests/
 COPY tools/ /app/tools/
 # JSON Schema результата (inference.validate_output_csv, tests/test_schema.py)
 COPY schema/ /app/schema/
+# Веб-интерфейс (лендинг + кабинет врача + режим лаборанта, один HTML без CDN).
+# Кабинет обязан быть в образе: решение разворачивает техгруппа заказчика без интернета,
+# и UI не должен зависеть от нашего демо-стенда (api_server отдаёт его с корня).
+COPY web/ /app/web/
 RUN chmod +x /app/tools/*.sh /app/tools/*.py
 
 # --- непривилегированный пользователь, точки монтирования -------------------
