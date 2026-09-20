@@ -1,4 +1,4 @@
-# Карточка модели DensitoAI v2.1.0
+# Карточка модели DensitoAI v2.3.0
 
 Сформировано автоматически `tools/make_model_card.py` 2026-09-20 из `models/metrics_summary.json`, `models/models_manifest.json`, `config.yaml`, `requirements.txt`. Ручные правки не вносить — перегенерировать.
 
@@ -43,7 +43,7 @@ Out-of-fold (OOF) предсказания: повторный GroupKFold с г�
 | Критерий | Назначение | n_valid | n_pos | AUC geom | AUC emb (источник) | AUC стек | Порог (метод) | F1 OOF [95% ДИ] | Примечание |
 |---|---|---|---|---|---|---|---|---|---|
 | sp_pos | Позвоночник: укладка (центр, симметрия) | 166 | 10 | 0.681 | 0.790 (densito) | 0.734 | 0.822 (prevalence) | 0.476 [0.14; 0.78] |  |
-| sp_axis | Позвоночник: ось позвоночника | 166 | 17 | 0.839 | 0.491 (imagenet) | 0.738 | 0.756 (prevalence_x1.4) | 0.381 [0.10; 0.60] |  |
+| sp_axis | Позвоночник: ось позвоночника | 166 | 17 | 0.839 | 0.797 (densito_inv) | 0.889 | 0.777 (prevalence_x1.4) | 0.605 [0.31; 0.81] |  |
 | sp_art | Позвоночник: посторонние предметы | 166 | 35 | 0.560 | 0.897 (imagenet) | 0.823 | 0.602 (prevalence_x1.4) | 0.535 [0.23; 0.73] |  |
 | hip_pos | Бедро (обе стороны, общая модель): укладка | 329 | 79 | 0.710 | 0.635 (imagenet) | 0.725 | 0.658 (prevalence) | 0.432 [0.20; 0.60] |  |
 | hip_roi | Бедро (обе стороны, общая модель): область интереса | 329 | 16 | 0.902 | 0.877 (imagenet) | 0.917 | 0.918 (prevalence) | 0.514 [0.00; 0.89] |  |
@@ -58,11 +58,11 @@ Nested-оценка (порог и стекинг подобраны внутр�
 
 Протокол: repeated GroupKFold 5 внешних фолдов × 10 повторов, 3 внутренних; группы — исследование + хэш пикселей; вес стэкинга и порог выбираются только на внутренних фолдах (`tools/nested_gate.py`, `docs/NESTED_GATE_REPORT.md`). AUC — среднее по 10 повторам для базового стэкинга 0.5/0.5 (он и используется); полные таблицы с ДИ — в отчёте.
 
-- sp_pos: nested AUC = 0.702; OOF AUC = 0.734
-- sp_axis: nested AUC = 0.755; OOF AUC = 0.738
-- sp_art: nested AUC = 0.817; OOF AUC = 0.823
-- hip_pos: nested AUC = 0.709; OOF AUC = 0.725
-- hip_roi: nested AUC = 0.873; OOF AUC = 0.917
+- sp_pos: nested AUC = 0.702; OOF AUC = 0.734, протокол nested_gate_K2
+- sp_axis: nested AUC = 0.860; OOF AUC = 0.889, протокол emb_gate_K13
+- sp_art: nested AUC = 0.817; OOF AUC = 0.823, протокол nested_gate_K2
+- hip_pos: nested AUC = 0.709; OOF AUC = 0.725, протокол nested_gate_K2
+- hip_roi: nested AUC = 0.873; OOF AUC = 0.917, протокол nested_gate_K2
 
 ## 6. Пороги и правило решения
 
@@ -80,7 +80,7 @@ Nested-оценка (порог и стекинг подобраны внутр�
 
 ## 8. Версия и хэши
 
-- Версия пайплайна (config.yaml → version): **2.1.0**; config_hash: **910797006a07** (тот же пишется в DICOM SR и ответ API).
+- Версия пайплайна (config.yaml → version): **2.3.0**; config_hash: **378ee6b98c9b** (тот же пишется в DICOM SR и ответ API).
 - Ключевые библиотеки (requirements.txt): torch 2.14.0+cpu, torchvision 0.29.0+cpu, numpy 2.5.3, scipy 1.18.1, scikit-learn 1.9.1, pandas 3.0.5, pydicom 3.0.2, opencv-python-headless 5.0.0.93, scikit-image 0.26.0, PyYAML 6.0.3, fastapi 0.141.1.
 
 | Файл модели | Критерий | Признаки / источник | n_pos | sha256[:12] |
@@ -88,7 +88,7 @@ Nested-оценка (порог и стекинг подобраны внутр�
 | model_spine_sp_pos_geom.pkl | sp_pos | center_offset_ratio, bone_width_ratio | 10 | 61c4f76fe1cc |
 | model_spine_sp_pos_emb_pca.pkl | sp_pos | densito | 10 | b905b160ae25 |
 | model_spine_sp_axis_geom.pkl | sp_axis | axis_angle_deg | 17 | 297e08c840f3 |
-| model_spine_sp_axis_emb_pca.pkl | sp_axis | imagenet | 17 | 474e3948afb9 |
+| model_spine_sp_axis_emb_pca.pkl | sp_axis | densito_inv | 17 | 4996fdee1eb7 |
 | model_spine_sp_art_geom.pkl | sp_art | metal_metal_area_mm2, metal_metal_max_intensity_gap | 35 | 2d3037b0876a |
 | model_spine_sp_art_emb_pca.pkl | sp_art | imagenet | 35 | 54a78475d746 |
 | model_spine_any_geom.pkl | any | axis_angle_deg, bone_width_ratio, center_offset_ratio, metal_metal_area_mm2, metal_metal_max_intensity_gap | 60 | ef372ec24204 |

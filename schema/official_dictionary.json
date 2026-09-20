@@ -1,0 +1,27 @@
+{
+ "_source": "Разъяснения по вопросам ЛЦТ, версия V2 (файл организаторов Raziasneniia-po-voprosam-LTsT_V2.docx), ответы на вопросы 1, 6, 8, 15. Получен 20.09.2026.",
+ "_purpose": "Машиночитаемый словарь организаторов. Проверяется автоматически (tools/verify_checks.py: official_dictionary_check) — строки в config.yaml, схема выгрузки и константа размера пикселя обязаны совпадать с этим файлом. Правка руками без сверки с документом запрещена.",
+ "violation_type": {
+  "Поясничный отдел позвоночника": [
+   "Некорректная укладка",
+   "Не выравнена ось позвоночника",
+   "Присутствуют посторонние предметы"
+  ],
+  "Проксимальный отдел бедра": [
+   "Некорректная укладка",
+   "Некорректная область интереса"
+  ]
+ },
+ "violation_separator": ";",
+ "violation_empty_when_none": true,
+ "anatomical_region": [
+  "Поясничный отдел позвоночника",
+  "Проксимальный отдел бедра"
+ ],
+ "anatomical_region_side_matters": false,
+ "probability_column": "quality_prob",
+ "probability_range": [0.0, 1.0],
+ "pixel_spacing_mm": {"y_row": 1.05, "x_col": 0.6},
+ "single_device_in_datasets": true,
+ "filename_suffixes_in_closed_test": false
+}

@@ -182,9 +182,13 @@ def main(argv=None) -> int:
     any_nested = False
     for region, crit in order:
         m = metrics.get(region, {}).get(crit)
-        if m and m.get("nested_auc_base_mean") is not None:
+        if m and (m.get("nested_auc_production") or m.get("nested_auc_base_mean")) is not None:
             any_nested = True
-            w(f"- {crit}: nested AUC = {f3(m['nested_auc_base_mean'])}; OOF AUC = {f3(m.get('auc_stacked'))}")
+            # печатаем оценку того, что стоит в продакшене (К13 сменил источник эмбеддингов для sp_axis,
+            # и для него nested-оценка берётся из emb_gate, а не из К2)
+            prod = m.get("nested_auc_production", m.get("nested_auc_base_mean"))
+            src = f", протокол {m['nested_protocol']}" if m.get("nested_protocol") else ""
+            w(f"- {crit}: nested AUC = {f3(prod)}; OOF AUC = {f3(m.get('auc_stacked'))}{src}")
     if not any_nested:
         w("- nested: не рассчитано")
     w("")

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # make_release.sh — релиз-архив исходников и (по запросу) образа с контрольными суммами.
 #   bash tools/make_release.sh [version]            # dist/densitoai-<version>-src.tar.gz + SHA256SUMS
-#   WITH_IMAGE=1 bash tools/make_release.sh 2.1.0   # + docker save densitoai:2.2.0 | gzip -> dist/...-image.tar.gz
+#   WITH_IMAGE=1 bash tools/make_release.sh 2.1.0   # + docker save densitoai:2.3.0 | gzip -> dist/...-image.tar.gz
 # В архив исходников НЕ входят: outputs/, data/ (кроме geometry_features.csv), gpu/, external_datasets,
 # *.pyc, .git, dist/. Конкурсные DICOM в архив не попадают (в репозитории их нет, см. docs/LICENSES_AND_DATA_AUDIT.md);
 # tests/sample_test_zip/ (образец организаторов «Для теста») включается только при WITH_SAMPLE=1.

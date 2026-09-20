@@ -156,6 +156,141 @@ def preproc_consistency_check() -> tuple:
         return name, False, f"проверка не выполнена: {e}"
 
 
+def emb_source_consistency_check() -> tuple:
+    """(имя, ok, детали): config.yaml embeddings.source_by_criterion == meta в .pkl и metrics_summary.json.
+
+    К13 сделал источник эмбеддингов контура B настраиваемым по критерию. Если конфиг
+    расходится с тем, на чём обучена модель, сервис посчитает эмбеддинг одним бэкбоном,
+    а логрегрессию применит от другого — предсказания тихо испортятся, без ошибки.
+    """
+    name = "К13: источник эмбеддингов в config == источнику обучения моделей"
+    root = Path(__file__).resolve().parents[1]
+    try:
+        import pickle
+
+        import yaml
+
+        cfg = yaml.safe_load((root / "config.yaml").read_text(encoding="utf-8")) or {}
+        by_crit = ((cfg.get("embeddings") or {}).get("source_by_criterion") or {})
+
+        def want(crit):
+            # конфиг — источник истины; при отсутствии записи — imagenet, как в train_stacked
+            return str(by_crit.get(crit) or ("densito" if not by_crit and crit == "sp_pos" else "imagenet"))
+
+        models_dir = root / "models"
+        problems, checked = [], 0
+        pkl_map = {"sp_pos": "model_spine_sp_pos", "sp_axis": "model_spine_sp_axis",
+                   "sp_art": "model_spine_sp_art", "hip_pos": "model_hip_pos", "hip_roi": "model_hip_roi"}
+        for crit, base in pkl_map.items():
+            p = models_dir / f"{base}_emb_pca.pkl"
+            if not p.exists():
+                continue
+            with open(p, "rb") as fh:
+                obj = pickle.load(fh)
+            meta = obj if isinstance(obj, dict) else {}
+            got = str(meta.get("emb_source", "imagenet"))
+            checked += 1
+            if got != want(crit):
+                problems.append(f"{p.name}: обучена на '{got}', config требует '{want(crit)}'")
+            # файл весов бэкбона должен быть в образе (imagenet берётся из torch_home)
+            if got != "imagenet":
+                wfile = models_dir / f"backbone_{got}.pth"
+                checked += 1
+                if not wfile.exists():
+                    problems.append(f"нет файла весов {wfile.name} для источника '{got}' ({crit})")
+
+        ms = models_dir / "metrics_summary.json"
+        if ms.exists():
+            summary = json.loads(ms.read_text(encoding="utf-8"))
+            for region in ("spine", "hip"):
+                for crit, payload in (summary.get(region) or {}).items():
+                    if not isinstance(payload, dict) or "emb_source" not in payload:
+                        continue
+                    checked += 1
+                    got = str(payload.get("emb_source") or "imagenet")
+                    if got != want(crit):
+                        problems.append(f"metrics_summary {region}/{crit}: обучено на '{got}', "
+                                        f"config требует '{want(crit)}'")
+        detail = (f"сверено {checked} записей: " + ", ".join(f"{c}={want(c)}" for c in pkl_map)
+                  if not problems else "; ".join(problems[:6]))
+        return name, not problems, detail
+    except Exception as e:  # noqa: BLE001
+        return name, False, f"проверка не выполнена: {e}"
+
+
+def official_dictionary_check() -> tuple:
+    """(имя, ok, детали): строки выгрузки совпадают со словарём организаторов.
+
+    Словарь лежит в schema/official_dictionary.json и списан с файла разъяснений
+    организаторов (ответы на вопросы 1, 6, 8, 15). Проверяется ровно то, от чего
+    зависит их скрипт подсчёта метрик: значения violation_type, значения
+    anatomical_region, разделитель нескольких нарушений, имя колонки вероятности
+    и паспортный размер пикселя. Расхождение здесь стоит дороже любой модели:
+    правильный класс с чужой строкой в их подсчёте — это промах.
+    """
+    name = "Строки выгрузки == словарю организаторов (violation_type, регионы, разделитель)"
+    root = Path(__file__).resolve().parents[1]
+    try:
+        import yaml
+
+        d = json.loads((root / "schema" / "official_dictionary.json").read_text(encoding="utf-8"))
+        cfg_text = (root / "config.yaml").read_text(encoding="utf-8")
+        cfg = yaml.safe_load(cfg_text)
+        problems = []
+
+        # 1. каждая строка нарушения из словаря присутствует в конфиге
+        for region, items in d["violation_type"].items():
+            for s in items:
+                if s not in cfg_text:
+                    problems.append(f"нет строки нарушения «{s}» ({region})")
+
+        # 2. в конфиге нет строк нарушений, которых нет в словаре
+        allowed = {s for items in d["violation_type"].values() for s in items}
+        declared = set()
+        for section in ("violations", "violation_type", "criteria"):
+            node = cfg.get(section)
+            if isinstance(node, dict):
+                for v in node.values():
+                    if isinstance(v, str):
+                        declared.add(v)
+                    elif isinstance(v, dict):
+                        for vv in v.values():
+                            if isinstance(vv, str):
+                                declared.add(vv)
+        for s in sorted(declared):
+            looks_like_violation = s in allowed or s.startswith(("Некорректн", "Не выравнена", "Присутствуют"))
+            if looks_like_violation and s not in allowed:
+                problems.append(f"строка «{s}» отсутствует в словаре организаторов")
+
+        # 3. регионы
+        for s in d["anatomical_region"]:
+            if s not in cfg_text:
+                problems.append(f"нет строки региона «{s}»")
+
+        # 4. разделитель и имя колонки вероятности
+        inf = (root / "src" / "inference.py").read_text(encoding="utf-8")
+        sep = d["violation_separator"]
+        if f"'{sep}'.join" not in inf and f'"{sep}".join' not in inf:
+            problems.append(f"в inference.py не найдено объединение нарушений через «{sep}»")
+        col = d["probability_column"]
+        for f in ("schema/results_row.schema.json", "schema/api_analyze_response.schema.json"):
+            if col not in (root / f).read_text(encoding="utf-8"):
+                problems.append(f"колонка {col} отсутствует в {f}")
+
+        # 5. паспортный размер пикселя
+        px = d["pixel_spacing_mm"]
+        for val in (px["y_row"], px["x_col"]):
+            if str(val) not in cfg_text:
+                problems.append(f"размер пикселя {val} мм отсутствует в config.yaml")
+
+        detail = (f"сверено: {sum(len(v) for v in d['violation_type'].values())} строк нарушений, "
+                  f"{len(d['anatomical_region'])} региона, разделитель «{sep}», колонка {col}, "
+                  f"пиксель {px['y_row']}×{px['x_col']} мм" if not problems else "; ".join(problems[:6]))
+        return name, not problems, detail
+    except Exception as e:  # noqa: BLE001
+        return name, False, f"проверка не выполнена: {e}"
+
+
 def run_checks(a) -> int:
     checks: list[dict] = []
 
@@ -242,6 +377,14 @@ def run_checks(a) -> int:
     # Без этой проверки расхождение конфига и pkl тихо даёт неправильные предсказания:
     # признаки считались бы на одном варианте кадра, а модель ждала бы другого.
     add(*preproc_consistency_check())
+
+    # 7b2. К13: источник эмбеддингов в config.yaml == тому, на котором обучена логрегрессия контура B,
+    # и файл весов этого бэкбона лежит в models/ (иначе контур B тихо отключится в образе).
+    add(*emb_source_consistency_check())
+
+    # 7c. Словарь организаторов: их скрипт сверяет строки буквально, поэтому расхождение
+    # в одном символе обнуляет macro-F1 по типам нарушений при верном классе.
+    add(*official_dictionary_check())
 
     # 8. сравнение с эталоном
     expected = Path(a.expected) if a.expected else None

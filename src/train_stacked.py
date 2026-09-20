@@ -55,8 +55,13 @@ REGION_CRITERIA = {
 # контура B 0.60 -> 0.80, стек 0.60 -> 0.72 на этом протоколе; в gpu/eval_embeddings.py +0.13,
 # 10/10 повторов). Для hip_pos на боевом протоколе (метка по обнаруженной стороне) выигрыша нет
 # (0.635 -> 0.636), для артефактов он хуже (-0.14) — там остаётся ImageNet.
+# Значение по умолчанию (поведение 2.1.0/2.2.0), если в config.yaml нет секции embeddings.
+# К13: источник истины — config.yaml embeddings.source_by_criterion (см. emb_source_config).
 EMB_SOURCE_BY_CRITERION = {'sp_pos': 'densito'}
-EMB_FILES = {'imagenet': 'embeddings.npy', 'densito': 'embeddings_densito.npy'}
+EMB_FILES = {'imagenet': 'embeddings.npy', 'densito': 'embeddings_densito.npy',
+             # К13: бэкбоны, обученные на инвариантность эмбеддинга к гамме и шуму
+             'densito_inv': 'embeddings_densito_inv.npy',
+             'densito_inv_free': 'embeddings_densito_inv_free.npy'}
 
 # К11: вариант предобработки по критерию (config.yaml: preprocessing.variant_by_criterion).
 # Источник истины — конфиг; здесь только чтение и прокидывание в metrics_summary.json / pkl.
@@ -102,8 +107,27 @@ def load_embeddings_by_source():
     return out
 
 
+def emb_source_config():
+    """{критерий: источник эмбеддингов} из config.yaml embeddings.source_by_criterion.
+
+    Источник истины — конфиг; при отсутствии секции берётся EMB_SOURCE_BY_CRITERION
+    (поведение до К13). Значение попадает в meta .pkl (emb_source) и в metrics_summary.json,
+    согласованность проверяется tools/verify_checks.py."""
+    sec = load_config_section('embeddings') or {}
+    by = sec.get('source_by_criterion') or {}
+    if not by:
+        return dict(EMB_SOURCE_BY_CRITERION)
+    out = {}
+    for crit, src in by.items():
+        s = str(src)
+        assert s == 'imagenet' or s in EMB_FILES, \
+            f"config embeddings.source_by_criterion.{crit}: неизвестный источник '{s}'"
+        out[str(crit)] = s
+    return out
+
+
 def emb_source_for(crit, available):
-    src = EMB_SOURCE_BY_CRITERION.get(crit, 'imagenet')
+    src = emb_source_config().get(crit, 'imagenet')
     if src not in available:
         print(f"  [warn] эмбеддинги '{src}' для {crit} не найдены — используется imagenet")
         src = 'imagenet'
@@ -172,6 +196,10 @@ PCA_COMPONENTS = 32  # снижаем размерность эмбеддинг�
 # ВНИМАНИЕ: сам этот скрипт вес НЕ подбирает — иначе OOF-метрики были бы оптимистичны.
 DEFAULT_WEIGHT_GEOM = 0.5
 NESTED_DECISIONS_FILE = 'nested_gate_decisions.json'
+# К13: nested-гейт источника эмбеддингов (tools/emb_gate.py). Нужен здесь потому, что запись К2
+# считалась при СВОЁМ источнике эмбеддингов: если источник с тех пор изменён, её AUC к продакшену
+# уже не относится, и честную nested-оценку берём из ветки fixed:<источник> этого файла.
+EMB_GATE_DECISIONS_FILE = 'emb_gate_decisions.json'
 
 
 def load_stacking_weights():
@@ -238,6 +266,55 @@ def nested_decision_for(crit):
     except Exception as e:  # noqa: BLE001
         print(f"  [warn] {p.name} не прочитан: {e}")
     return None
+
+
+def emb_gate_decision_for(crit):
+    """Запись nested-гейта источника эмбеддингов для критерия (models/emb_gate_decisions.json)."""
+    p = OUT_DIR / EMB_GATE_DECISIONS_FILE
+    if not p.exists():
+        return None
+    try:
+        with open(p, 'r', encoding='utf-8') as f:
+            d = json.load(f)
+        for rec in d.get('decisions', []):
+            if rec.get('criterion') == crit:
+                return rec
+    except Exception as e:  # noqa: BLE001
+        print(f"  [warn] {p.name} не прочитан: {e}")
+    return None
+
+
+def nested_block_for(crit, emb_src, nested):
+    """nested-оценка AUC стэка для критерия ПРИ ТЕКУЩЕМ источнике эмбеддингов.
+
+    Оба протокола одинаковы по схеме (внешний GroupKFold 5 × повторы, внутренний 3, порог по
+    правилу на inner-OOF) и отличаются тем, что выбирается внутри: К2 — вес вентиля,
+    К13 — источник эмбеддингов. Берём ту запись, которая относится к текущему источнику;
+    если ни одной нет, поле остаётся пустым, а не заполняется числом от другого бэкбона.
+    """
+    empty = {'protocol': None, 'mean': None, 'ci': None, 'base_mean': None, 'gain': None,
+             'production': None, 'alternative': None, 'alternative_what': None}
+    if nested is not None and str(nested.get('emb_source') or 'imagenet') == emb_src:
+        # К2: в продакшене стоит базовый стэкинг 0.5/0.5 (вентиль не принят),
+        # альтернатива — вес вентиля, выбранный внутри фолдов.
+        return {'protocol': 'nested_gate_K2', 'mean': nested.get('auc_gate_mean_over_repeats'),
+                'ci': nested.get('auc_gate_ci'), 'base_mean': nested.get('auc_base_mean_over_repeats'),
+                'gain': nested.get('n_repeats_gain_ge_0.03'),
+                'production': nested.get('auc_base_mean_over_repeats'),
+                'alternative': nested.get('auc_gate_mean_over_repeats'),
+                'alternative_what': 'вес вентиля по критерию (К2, не принят)'}
+    g = emb_gate_decision_for(crit)
+    fx = ((g or {}).get('fixed') or {}).get(emb_src)
+    if fx:
+        # К13: в продакшене стоит текущий источник (ветка fixed), альтернатива — прежний источник.
+        return {'protocol': 'emb_gate_K13', 'mean': fx.get('auc_mean_over_repeats'),
+                'ci': fx.get('auc_ci'), 'base_mean': (g or {}).get('auc_base_mean_over_repeats'),
+                'gain': fx.get('n_repeats_gain_ge_0.03'),
+                'production': fx.get('auc_mean_over_repeats'),
+                'alternative': (g or {}).get('auc_base_mean_over_repeats'),
+                'alternative_what': f"прежний источник эмбеддингов '{(g or {}).get('base_source')}'"}
+    print(f"  [warn] нет nested-записи для {crit} при источнике '{emb_src}' — поля nested_* пустые")
+    return empty
 
 
 def prevalence_threshold(y_train, scores_train):
@@ -411,6 +488,7 @@ def train_region_stacked(region, criteria):
         # rank-average stacking с весом по критерию (вентиль К2; вес из config.yaml, НЕ подбирается здесь)
         w_geom = weight_geom_for(crit)
         nested = nested_decision_for(crit)
+        nested_block = nested_block_for(crit, emb_src, nested)
         gate_selected_by = 'nested' if (nested is not None and nested.get('accepted')) else 'default'
         rank_geom = pd.Series(oof_geom).rank(pct=True).values
         rank_emb = pd.Series(oof_emb).rank(pct=True).values
@@ -454,10 +532,17 @@ def train_region_stacked(region, criteria):
             'f1_ci_lo': ci_lo, 'f1_ci_hi': ci_hi,
             # вентиль К2: вес контура A и откуда он взят
             'weight_geom': w_geom, 'weight_emb': 1.0 - w_geom, 'gate_selected_by': gate_selected_by,
-            'nested_auc_mean': (None if nested is None else nested.get('auc_gate_mean_over_repeats')),
-            'nested_auc_ci': (None if nested is None else nested.get('auc_gate_ci')),
-            'nested_auc_base_mean': (None if nested is None else nested.get('auc_base_mean_over_repeats')),
-            'nested_repeats_gain_ge_0.03': (None if nested is None else nested.get('n_repeats_gain_ge_0.03')),
+            # nested-оценка берётся из протокола, который относится к текущему источнику эмбеддингов
+            'nested_protocol': nested_block['protocol'],
+            # nested_auc_production — оценка ТОГО, ЧТО СТОИТ В ПРОДАКШЕНЕ (её и печатать в документах);
+            # nested_auc_alternative — то, с чем сравнивали и что не взяли (или взяли взамен).
+            'nested_auc_production': nested_block['production'],
+            'nested_auc_alternative': nested_block['alternative'],
+            'nested_alternative_what': nested_block['alternative_what'],
+            'nested_auc_mean': nested_block['mean'],
+            'nested_auc_ci': nested_block['ci'],
+            'nested_auc_base_mean': nested_block['base_mean'],
+            'nested_repeats_gain_ge_0.03': nested_block['gain'],
         }
 
         # save OOF details

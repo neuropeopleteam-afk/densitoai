@@ -76,7 +76,7 @@ from hip_features import hip_all_features  # noqa: E402
 from calibration_utils import risk_level  # noqa: E402  (К3: правило уровня риска)
 import preprocess  # noqa: E402  (инвариантная предобработка: маска тела, канонизация экспозиции)
 
-__version__ = "2.2.0"
+__version__ = "2.3.0"
 LOG = logging.getLogger("densito.inference")
 # pydicom шумит предупреждениями о нестандартных UID в анонимизированных файлах — не ошибка
 logging.getLogger("pydicom").setLevel(logging.ERROR)
@@ -85,7 +85,7 @@ logging.getLogger("pydicom").setLevel(logging.ERROR)
 # Конфиг (с жёстко зашитыми значениями по умолчанию на случай отсутствия yaml)
 # --------------------------------------------------------------------------- #
 DEFAULT_CONFIG: Dict[str, Any] = {
-    "version": "2.2.0",
+    "version": "2.3.0",
     "output": {
         "columns": ["path_to_study", "study_uid", "image_uid", "anatomical_region",
                     "quality_class", "violation_type", "quality_prob",

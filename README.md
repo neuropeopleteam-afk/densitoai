@@ -8,7 +8,7 @@
 Работает **полностью локально** (CPU, без внешних сервисов), обрабатывает каждый файл
 независимо и **никогда не прерывает пакет** из-за одного плохого файла.
 
-Версия **2.2.0**. Демо: [neuropeople.pro](https://neuropeople.pro) (логин `demo` / `Hakaton`),
+Версия **2.3.0**. Демо: [neuropeople.pro](https://neuropeople.pro) (логин `demo` / `Hakaton`),
 публичный репозиторий: `git clone https://neuropeople.pro/git/densitoai.git`
 ([gitweb](https://neuropeople.pro/git/browse?p=densitoai.git;a=summary)).
 Ключевые документы: `docs/METRICS_REPORT.md` (метрики ТЗ §8.4 с 95 % ДИ),
@@ -115,7 +115,7 @@ densito_rebuild/
 │   └── embeddings.npy           ← эмбеддинги трейна (не входит в образ)
 ├── schema/                      ← JSON Schema строки результата и ответа /api/analyze
 ├── tools/
-│   ├── verify.sh, verify_checks.py, verification_report.py ← самопроверка без сети (фантомы, детерминизм, sha256, эталон)
+│   ├── verify.sh, verify_checks.py, verification_report.py ← самопроверка без сети (фантомы, детерминизм, sha256, эталон, словарь организаторов)
 │   ├── make_phantoms.py, hash_weights.py, pii_scan.py, make_release.sh, offline_check.sh
 │   ├── validate_sr.py           ← валидатор DICOM SR исследования
 │   ├── make_model_card.py       ← генерирует models/MODEL_CARD.md из metrics_summary.json
@@ -185,7 +185,7 @@ fastapi 0.141.1, uvicorn 0.53.0. **Версию scikit-learn менять нел
 Требуется Docker (BuildKit). Всё выполняется из корня проекта.
 
 ```bash
-# 1) Собрать образ densitoai:2.2.0 (внутри сборки запускается самопроверка на образце)
+# 1) Собрать образ densitoai:2.3.0 (внутри сборки запускается самопроверка на образце)
 ./build_and_run.sh build
 
 # 2) Пакетная обработка: входная папка (или zip) → выходная папка
@@ -202,14 +202,14 @@ fastapi 0.141.1, uvicorn 0.53.0. **Версию scikit-learn менять нел
 Эквивалент «руками»:
 
 ```bash
-docker build -t densitoai:2.2.0 .
-docker run --rm -v /path/to/input:/data/input:ro -v $(pwd)/outputs:/data/output densitoai:2.2.0 batch
-docker run --rm -p 8000:8000 -v $(pwd)/outputs:/data/output densitoai:2.2.0 api
+docker build -t densitoai:2.3.0 .
+docker run --rm -v /path/to/input:/data/input:ro -v $(pwd)/outputs:/data/output densitoai:2.3.0 batch
+docker run --rm -p 8000:8000 -v $(pwd)/outputs:/data/output densitoai:2.3.0 api
 # после этого http://localhost:8000/ — рабочий кабинет (загрузка снимков, карточки решений,
 # история запросов), http://localhost:8000/docs — Swagger. Интерфейс лежит внутри образа,
 # ничего не тянет из интернета: ни одного внешнего src/href, шрифты и изображения локальные.
 # любые аргументы inference.py можно передать после batch:
-docker run --rm -v ...:/data/input:ro -v ...:/data/output densitoai:2.2.0 batch --no-embeddings --limit 50
+docker run --rm -v ...:/data/input:ro -v ...:/data/output densitoai:2.3.0 batch --no-embeddings --limit 50
 ```
 
 Через docker compose:
@@ -241,8 +241,8 @@ docker compose up densito-api
 Образ содержит средства самопроверки без сети. Полная инструкция для технической группы — `docs/VERIFICATION.md`.
 
 ```bash
-docker build --platform linux/amd64 -t densitoai:2.2.0 .        # базовый образ закреплён по digest
-bash tools/offline_check.sh densitoai:2.2.0 ./outputs            # = docker run --rm --network none ... verify
+docker build --platform linux/amd64 -t densitoai:2.3.0 .        # базовый образ закреплён по digest
+bash tools/offline_check.sh densitoai:2.3.0 ./outputs            # = docker run --rm --network none ... verify
 # отчёт: outputs/verify/verification_report.html, код возврата 0/1
 ```
 
@@ -250,7 +250,12 @@ bash tools/offline_check.sh densitoai:2.2.0 ./outputs            # = docker run 
 15 синтетических DICOM-фантомов (`tests/phantoms/`, генератор `tools/make_phantoms.py`, sha256 в `MANIFEST.json`) —
 схема CSV (9 столбцов), строки = файлы, study_uid/image_uid = теги, Failure ровно для 3 битых файлов,
 детерминизм двух прогонов (все столбцы кроме time_of_processing), совпадение с эталоном
-`tests/phantoms/expected_results.csv`, sha256 весов по `models/WEIGHTS_SHA256.txt` (`tools/hash_weights.py --check`).
+`tests/phantoms/expected_results.csv`, sha256 весов по `models/WEIGHTS_SHA256.txt` (`tools/hash_weights.py --check`),
+совпадение варианта предобработки в `config.yaml` с тем, на котором обучены модели, совпадение источника
+эмбеддингов контура B в `config.yaml` с `emb_source` в обученных моделях (и наличие самого файла весов
+бэкбона в образе), и **сверка строк выгрузки со словарём организаторов** (`schema/official_dictionary.json`:
+значения `violation_type` и `anatomical_region`, разделитель `;`, имя колонки `quality_prob`, паспортный
+размер пикселя 1,05 × 0,6 мм) — итого 12 пунктов.
 Проверка на собственных данных: `verify --data /data/input [--expected-sha <sha>]`.
 
 Ресурсы: стенд 2 CPU / 3 ГБ (`docker-compose.yml`: `mem_limit: 3g`, `cpus: 2`; пик памяти инференса около 0,6 ГБ).
@@ -487,7 +492,7 @@ F1, ROC-AUC, PR-AUC, macro-F1, ДИ) — **`docs/METRICS_REPORT.md`**; восп�
 
 | Область | n / n_pos | Sens | Spec | Bal.Acc | F1 [95 % ДИ] | ROC-AUC [95 % ДИ] | PR-AUC |
 |---|---|---|---|---|---|---|---|
-| Позвоночник | 166 / 60 | 0.70 | 0.66 | 0.68 | 0.61 [0.43; 0.75] | 0.76 [0.63; 0.87] | 0.62 |
+| Позвоночник | 166 / 60 | 0.72 | 0.67 | 0.69 | 0.62 [0.45; 0.77] | 0.77 [0.65; 0.88] | 0.66 |
 | Бедро | 329 / 92 | 0.48 | 0.81 | 0.64 | 0.48 [0.29; 0.64] | 0.75 [0.63; 0.86] | 0.62 |
 
 **По типам нарушений, OOF (стек геометрия + эмбеддинги):**
@@ -495,21 +500,27 @@ F1, ROC-AUC, PR-AUC, macro-F1, ДИ) — **`docs/METRICS_REPORT.md`**; восп�
 | Область | Тип нарушения | n_pos / n | Sens | Spec | F1 [95 % ДИ] | ROC-AUC [95 % ДИ] | Надёжность |
 |---|---|---|---|---|---|---|---|
 | Позвоночник | Присутствуют посторонние предметы (`sp_art`) | 35 / 166 | 0.66 | 0.79 | 0.53 [0.23; 0.73] | 0.82 [0.69; 0.91] | **приемлемая** — работает контур B (эмбеддинги) |
-| Позвоночник | Не выравнена ось позвоночника (`sp_axis`) | 17 / 166 | 0.47 | 0.89 | 0.38 [0.09; 0.62] | 0.74 [0.56; 0.89] | умеренная — работает геометрия (угол оси); мало позитивов |
+| Позвоночник | Не выравнена ось позвоночника (`sp_axis`) | 17 / 166 | 0.77 | 0.91 | 0.61 [0.29; 0.82] | 0.89 [0.75; 0.98] | **приемлемая** — работают оба контура: геометрия (угол оси) и контур B на бэкбоне `densito_inv` (К13); позитивов мало (17) |
 | Позвоночник | Некорректная укладка (`sp_pos`) | 10 / 166 | 0.50 | 0.96 | 0.48 [0.11; 0.82] | 0.73 [0.45; 1.00] | **низкая** — 10 позитивов, порог prevalence; контур B — наш бэкбон `densito`; предобработка `canonical` (К11) |
 | Бедро | Некорректная область интереса (`hip_roi`) | 16 / 329 | 0.56 | 0.98 | 0.58 [0.00; 0.91] | 0.92 [0.73; 1.00] | **хорошая** — единая модель обеих сторон + физические признаки (длина скана, диафиз ниже вертела) |
 | Бедро | Некорректная укладка (`hip_pos`) | 79 / 329 | 0.44 | 0.81 | 0.43 [0.22; 0.60] | 0.73 [0.61; 0.82] | умеренная — консервативный порог, признаки ротации ловятся частично; предобработка `canonical` (К11) |
 
-Macro-F1 по типам нарушений: позвоночник 0.46 [0.28; 0.62], бедро 0.51 [0.21; 0.69].
+Macro-F1 по типам нарушений: позвоночник 0.54 [0.36; 0.69], бедро 0.51 [0.21; 0.69].
 
 Предобработка (20.09, К11): вариант выбран по критерию внутри nested (`tools/preproc_gate.py`,
 `docs/PREPROC_GATE_REPORT.md`): критерии укладки `sp_pos` и `hip_pos` — на канонизированной экспозиции
 (экспозиция для них — шум), `sp_axis` / `sp_art` / `hip_roi` — без неё, как в 2.1.0 (абсолютная плотность для них —
 сигнал). Критерии на `baseline` воспроизводят цифры 2.1.0 бит в бит.
 
+Источник эмбеддингов контура B (20.09, К13): выбран по критерию внутри nested (`tools/emb_gate.py`,
+`docs/EMB_GATE_REPORT.md`). Принято одно изменение: `sp_axis` перешёл с ImageNet на наш бэкбон
+`densito_inv` (EfficientNet-B0, предобучен на инвариантность эмбеддинга к гамме и шуму) — nested ΔAUC
+стэка +0.111, прирост ≥0.03 в 19 из 20 повторов, Δmacro-F1 +0.113. `sp_pos` остался на `densito`,
+`sp_art` / `hip_pos` / `hip_roi` — на ImageNet (все кандидаты там не прошли правило приёмки).
+
 Пороги (19.09, К3): правило порога по критерию выбрано nested-сравнением трёх предзаданных правил по минимальному regret F1
 (`config.yaml: thresholds_rule`, раздел «Калибровка и зона не уверен» в `docs/METRICS_REPORT.md`): `sp_pos` prevalence 0.822,
-`sp_axis` prevalence×1.4 0.756, `sp_art` prevalence×1.4 0.602, `hip_pos` prevalence 0.658, `hip_roi` prevalence 0.918.
+`sp_axis` prevalence×1.4 0.777, `sp_art` prevalence×1.4 0.602, `hip_pos` prevalence 0.658, `hip_roi` prevalence 0.918.
 Значения порогов `sp_pos` и `hip_pos` сдвинулись (0.791 → 0.822, 0.643 → 0.658) только потому, что правило
 prevalence пересчитано на новом стэке (К11); само правило не менялось. До К3
 пороги `sp_art`/`hip_pos`/`hip_roi` были F1-оптимумом на тех же OOF-предсказаниях (0.557 / 0.709 / 0.891), что давало
@@ -524,7 +535,7 @@ OOF-предсказаниях, поэтому они оптимистичны. 
 | Критерий | ROC-AUC OOF | ROC-AUC nested | F1 OOF | F1 nested |
 |---|---|---|---|---|
 | `sp_pos` | 0.734 | 0.702 (0.64–0.74) | 0.48 | 0.50 |
-| `sp_axis` | 0.738 | 0.755 (0.70–0.85) | 0.38 | 0.24 (было 0.18 при F1-оптимуме) |
+| `sp_axis` | 0.889 | 0.860 (0.83–0.88) | 0.61 | 0.43 (0.748 и 0.22 были на ImageNet до К13) |
 | `sp_art` | 0.824 | 0.817 (0.74–0.89) | 0.53 | 0.56 (было 0.47) |
 | `hip_pos` | 0.725 | 0.709 (0.69–0.74) | 0.43 | 0.47 (было 0.45) |
 | `hip_roi` | 0.917 | 0.873 (0.79–0.91) | 0.51 | 0.35 (было 0.34) |
@@ -545,7 +556,9 @@ OOF-предсказаниях, поэтому они оптимистичны. 
   заметный прирост против раздельных моделей 2.0.x (AUC 0.58/0.48 → 0.70).
 - **Ось позвоночника (`sp_axis`).** Геометрия работает (AUC 0.84 отдельно), но измеренный угол
   систематически меньше экспертной оценки (медиана позитивов 2.9° при пороге ТЗ 5°) —
-  эксперт, вероятно, оценивает не только глобальный наклон.
+  эксперт, вероятно, оценивает не только глобальный наклон. Именно это и подтвердил К13:
+  контур B на ImageNet был около случайного (AUC 0.49), а на бэкбоне `densito_inv` даёт 0.80,
+  то есть в кадре есть признак наклона помимо измеренного угла.
 - **Посторонние предметы (`sp_art`).** Геометрический детектор металла слаб (AUC 0.56) —
   большинство «посторонних предметов» в разметке не металл (одежда, пуговицы низкой
   плотности); задачу решают эмбеддинги (AUC 0.90).
@@ -617,7 +630,7 @@ lh_pos, lh_roi`) и повторить шаги 2–5. Случайные зёр
    `download.pytorch.org` **только на этапе сборки** (в работе сеть не нужна).
 2. `git clone … && cd densito_rebuild && ./build_and_run.sh build`.
    Офлайн-стенд: соберите образ на машине с интернетом и перенесите
-   `docker save densitoai:2.2.0 | gzip > densitoai.tar.gz` → `docker load`.
+   `docker save densitoai:2.3.0 | gzip > densitoai.tar.gz` → `docker load`.
 3. Пакетный режим: `./build_and_run.sh run <input> <output>`; сервисный режим:
    `docker compose up -d densito-api` (порт 8000, `restart: unless-stopped`, healthcheck на
    `/api/health`).

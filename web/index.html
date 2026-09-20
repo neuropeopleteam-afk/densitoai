@@ -521,9 +521,8 @@ table.crit tr.flag td { background: var(--error-soft); }
       </div>
     </div>
     <figure class="hero-visual">
-      <div class="frame"><img src="assets/demo/demo_spine_overlay.png" alt="Визуализация сервиса: снимок поясничного отдела с найденной осью, контуром кости и плотными посторонними объектами" data-zoom></div>
-      <figcaption><span class="tag">Решение: принять, риск низкий</span><br>Реальный вывод сервиса 2.2.0 на тестовом файле организаторов. Оранжевая линия — измеренная ось (1.2° к вертикали при допуске 5° по ТЗ), зелёный контур — костная область, красные рамки — плотные объекты (1010 мм²). Ни один критерий не превысил 
- порог: укладка 0.470 при 0.822, ось 0.578 при 0.756, посторонние предметы 0.596 при 0.602 — последний почти у границы, и это видно в карточке.</figcaption>
+      <div class="frame"><img src="assets/demo/03_poz.png" alt="Визуализация сервиса: снимок поясничного отдела с найденной осью, контуром кости и плотными посторонними объектами" data-zoom></div>
+      <figcaption><span class="tag">Решение: проверить и при подтверждении переснять</span><br>Реальный вывод сервиса 2.2.0 на снимке из выборки заказчика. Оранжевая линия — измеренная ось (наклон 3.1° к вертикали), зелёный контур — костная область, красные рамки — плотные объекты (188 мм², контраст к кости 4.2 сигмы). Два критерия превысили порог: ось 0.864 при 0.756, посторонние предметы 0.964 при 0.602; укладка в норме — 0.226 при 0.822. Эксперт на этом снимке отметил те же два нарушения.</figcaption>
     </figure>
   </div>
   <div class="facts">
@@ -632,16 +631,16 @@ table.crit tr.flag td { background: var(--error-soft); }
 <colgroup><col style="width:18%"><col style="width:10%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:7%"><col style="width:15%"><col style="width:11%"><col style="width:15%"></colgroup>
 <thead><tr><th>Критерий</th><th>Область</th><th class="num">n / позит.</th><th class="num">AUC геом.</th><th class="num">AUC эмб.</th><th class="num">AUC стек</th><th>Где мы относительно ориентира</th><th class="num">F1 OOF [95 % ДИ]</th><th>Надёжность</th></tr></thead><tbody>
 <tr><td><div class="crit-title">Укладка пациента</div><div class="crit-sub">sp_pos · порог по доле позитивов, порог 0.822</div></td><td>позвоночник</td><td class="num">166 / 10</td><td class="num">0.681</td><td class="num">0.790</td><td class="num strong">0.734</td><td><div class="aucbar" role="img" aria-label="AUC 0.734, ниже ориентира"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark below" style="left:46.8%"></span></div><div class="zone-txt below">ниже ориентира</div></td><td class="num">0.48 [0.14; 0.78]</td><td>мало позитивов (10): результат ненадёжен, читать по AUC</td></tr>
-<tr><td><div class="crit-title">Ось позвоночника</div><div class="crit-sub">sp_axis · prevalence_x1.4, порог 0.756</div></td><td>позвоночник</td><td class="num">166 / 17</td><td class="num">0.839</td><td class="num">0.491</td><td class="num strong">0.738</td><td><div class="aucbar" role="img" aria-label="AUC 0.738, ниже ориентира"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark below" style="left:47.5%"></span></div><div class="zone-txt below">ниже ориентира</div></td><td class="num">0.38 [0.10; 0.60]</td><td>умеренная: сильнее геометрия</td></tr>
+<tr><td><div class="crit-title">Ось позвоночника</div><div class="crit-sub">sp_axis · prevalence_x1.4, порог 0.777</div></td><td>позвоночник</td><td class="num">166 / 17</td><td class="num">0.839</td><td class="num">0.797</td><td class="num strong">0.889</td><td><div class="aucbar" role="img" aria-label="AUC 0.889, приемлемо"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark ok" style="left:77.8%"></span></div><div class="zone-txt ok">приемлемо</div></td><td class="num">0.60 [0.31; 0.81]</td><td>приемлемая, работает геометрия</td></tr>
 <tr><td><div class="crit-title">Посторонние предметы</div><div class="crit-sub">sp_art · prevalence_x1.4, порог 0.602</div></td><td>позвоночник</td><td class="num">166 / 35</td><td class="num">0.560</td><td class="num">0.897</td><td class="num strong">0.823</td><td><div class="aucbar" role="img" aria-label="AUC 0.823, приемлемо"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark ok" style="left:64.5%"></span></div><div class="zone-txt ok">приемлемо</div></td><td class="num">0.53 [0.23; 0.73]</td><td>приемлемая, работает контур B (эмбеддинги)</td></tr>
 <tr><td><div class="crit-title">Укладка пациента</div><div class="crit-sub">hip_pos · порог по доле позитивов, порог 0.658</div></td><td>бедро, обе стороны</td><td class="num">329 / 79</td><td class="num">0.710</td><td class="num">0.635</td><td class="num strong">0.725</td><td><div class="aucbar" role="img" aria-label="AUC 0.725, ниже ориентира"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark below" style="left:45.1%"></span></div><div class="zone-txt below">ниже ориентира</div></td><td class="num">0.43 [0.20; 0.60]</td><td>умеренная: сильнее геометрия</td></tr>
 <tr><td><div class="crit-title">Область интереса</div><div class="crit-sub">hip_roi · порог по доле позитивов, порог 0.918</div></td><td>бедро, обе стороны</td><td class="num">329 / 16</td><td class="num">0.902</td><td class="num">0.877</td><td class="num strong">0.917</td><td><div class="aucbar" role="img" aria-label="AUC 0.917, высоко"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark high" style="left:83.5%"></span></div><div class="zone-txt high">высоко</div></td><td class="num">0.51 [0.00; 0.89]</td><td>приемлемая, работает геометрия</td></tr>
 </tbody></table></div>
-<p class="metrics-summary">Из пяти критериев 2 достигают ориентира «приемлемо» (AUC &gt; 0.81) и 1 — ориентира «высоко» (AUC &gt; 0.9). Остальные ниже ориентира, и мы это показываем, а не скрываем. Источник: <code>models/metrics_summary.json</code> (OOF, группировка по исследованию), ДИ по F1 — бутстрап по исследованиям.</p>
+<p class="metrics-summary">Из пяти критериев 3 достигают ориентира «приемлемо» (AUC &gt; 0.81) и 1 — ориентира «высоко» (AUC &gt; 0.9). Остальные ниже ориентира, и мы это показываем, а не скрываем. Источник: <code>models/metrics_summary.json</code> (OOF, группировка по исследованию), ДИ по F1 — бутстрап по исследованиям.</p>
 <h3 class="metrics-h3">Бинарная задача «есть нарушение» по областям, OOF</h3>
 <div class="table-wrap"><table class="metrics compact"><thead><tr><th>Область</th><th class="num">ROC-AUC [95 % ДИ]</th><th class="num">F1 [95 % ДИ]</th><th class="num">Macro-F1 по типам нарушений [95 % ДИ]</th></tr></thead><tbody>
-<tr><td>Поясничный отдел позвоночника</td><td class="num strong">0.764 [0.63; 0.88]</td><td class="num">0.618 [0.44; 0.76]</td><td class="num">0.439 [0.25; 0.60]</td></tr>
-<tr><td>Проксимальный отдел бедра</td><td class="num strong">0.732 [0.58; 0.86]</td><td class="num">0.489 [0.32; 0.63]</td><td class="num">0.500 [0.21; 0.67]</td></tr>
+<tr><td>Поясничный отдел позвоночника</td><td class="num strong">0.773 [0.65; 0.88]</td><td class="num">0.623 [0.45; 0.77]</td><td class="num">0.539 [0.36; 0.69]</td></tr>
+<tr><td>Проксимальный отдел бедра</td><td class="num strong">0.752 [0.63; 0.86]</td><td class="num">0.484 [0.29; 0.64]</td><td class="num">0.506 [0.21; 0.69]</td></tr>
 </tbody></table></div>
 <p class="metrics-src">Источник: <code>docs/METRICS_REPORT.md</code>, таблица «Итого» (<code>python src/eval_oof_metrics.py</code>, 95 % ДИ — бутстрап по исследованиям, 2000 повторов).</p>
 <!-- METRICS:END -->
@@ -701,8 +700,8 @@ table.crit tr.flag td { background: var(--error-soft); }
 <rect x="300" y="290" width="272" height="20" rx="3" class="rob-bar"/>
 <text x="582" y="305" class="rob-val">27.2 % (22/81)</text>
 <text x="288" y="338" class="rob-label" text-anchor="end">ярче (гамма 0,7)</text>
-<rect x="300" y="324" width="210" height="20" rx="3" class="rob-bar"/>
-<text x="520" y="339" class="rob-val">21.0 % (17/81)</text>
+<rect x="300" y="324" width="185" height="20" rx="3" class="rob-bar"/>
+<text x="495" y="339" class="rob-val">18.5 % (15/81)</text>
 <text x="288" y="372" class="rob-label" text-anchor="end">темнее (гамма 1,4)</text>
 <rect x="300" y="358" width="173" height="20" rx="3" class="rob-bar"/>
 <text x="483" y="373" class="rob-val">17.3 % (14/81)</text>
@@ -712,7 +711,7 @@ table.crit tr.flag td { background: var(--error-soft); }
 <text x="600.0" y="410" class="rob-tick" text-anchor="middle">30 %</text>
 </svg>
 <div class="rob-legend"><span><i class="sw fmt"></i>формат файла и теги</span><span><i class="sw"></i>пиксели: яркость, шум, масштаб, обрезка</span></div>
-<p class="rob-note">Выборка: 81 снимков разметки (27 позвоночник, 54 бедро), из них с нарушениями 40. Каждый снимок пересохранён с одним искажением и прогнан повторно; показана доля снимков, у которых изменился класс качества. Ошибок обработки (Failure) ни в одном варианте не было (максимум 0.0 %), область снимка не менялась ни разу (максимум 0.0 %). Время на снимок в исходном прогоне: медиана 0.05 с, 95-й перцентиль 0.07 с.</p>
+<p class="rob-note">Выборка: 81 снимков разметки (27 позвоночник, 54 бедро), из них с нарушениями 40. Каждый снимок пересохранён с одним искажением и прогнан повторно; показана доля снимков, у которых изменился класс качества. Ошибок обработки (Failure) ни в одном варианте не было (максимум 0.0 %), область снимка не менялась ни разу (максимум 0.0 %). Время на снимок в исходном прогоне: медиана 0.05 с, 95-й перцентиль 0.09 с.</p>
 <p class="rob-note">На реальном потоке одного аппарата GE Lunar с фиксированным экспортом искажений яркости, шума и масштаба нет: все снимки приходят в одном формате. Изменения формата и тегов на потоке возможны, и к ним система устойчива полностью. Перевороты при изменении экспозиции сосредоточены у порога решения (медианный запас 0,09–0,11), то есть касаются спорных снимков.</p>
 <p class="rob-src">Источник: docs/qa/robustness_results.json (2026-09-20), docs/ROBUSTNESS_REPORT.md; скрипт tests/robustness_suite.py.</p>
 </div>
@@ -724,43 +723,16 @@ table.crit tr.flag td { background: var(--error-soft); }
   <div class="wrap">
     <div class="sec-head">
       <div class="eyebrow">Кейсы</div>
-      <h2>Что видит врач</h2>
-      <p class="lead">Первые три карточки — реальный вывод сервиса на тестовых файлах организаторов (без личных данных): ось, контур кости, границы области интереса и найденные предметы наносятся на снимок. Две последние — примеры критериев из обучающей выборки.</p>
+      <h2>Почему нужны оба контура</h2>
+      <p class="lead">Два критерия, на которых видно разделение труда между контурами. Разбор каждого снимка партии со скорами, порогами и измерениями — в кабинете: там демо-партия из 10 снимков, где у каждого кадра подписано, что отметил эксперт и что ответил сервис.</p>
     </div>
     <div class="cases">
-      <div class="case">
-        <div class="img"><img src="assets/demo/demo_spine_overlay.png" alt="Поясничный отдел, нарушение: посторонние предметы" data-zoom></div>
-        <div class="body">
-          <span class="badge violation">Нарушение</span>
-          <h3>Поясничный отдел: посторонние предметы</h3>
-          <p>Геометрия нашла 10 плотных объектов вне кости (красные рамки), эмбеддинги уверенно подтвердили: вероятность по контуру B 0.99. Ось при этом в норме.</p>
-          <div class="kv"><span>Скор критерия / порог</span><span>0.60 / 0.56</span><span>Наклон оси</span><span>1.2°</span><span>quality_prob</span><span>0.825</span></div>
-        </div>
-      </div>
-      <div class="case">
-        <div class="img"><img src="assets/demo/demo_right_hip_overlay.png" alt="Правое бедро, без нарушений" data-zoom></div>
-        <div class="body">
-          <span class="badge ok">Норма</span>
-          <h3>Правое бедро: укладка и область интереса в норме</h3>
-          <p>Диафиз почти вертикален, от кости до бокового края поля 49 мм, ниже вертела захвачено 101 мм диафиза. Оба критерия далеко от порога.</p>
-          <div class="kv"><span>Укладка: скор / порог</span><span>0.53 / 0.71</span><span>Область интереса: скор / порог</span><span>0.15 / 0.89</span><span>Угол диафиза</span><span>4.5°</span></div>
-        </div>
-      </div>
-      <div class="case">
-        <div class="img"><img src="assets/demo/demo_left_hip_overlay.png" alt="Левое бедро, без нарушений" data-zoom></div>
-        <div class="body">
-          <span class="badge ok">Норма</span>
-          <h3>Левое бедро: сторона определена по анатомии</h3>
-          <p>Тега стороны в файле нет, сторона определена по форме кости. Скор укладки 0.66 ближе к порогу 0.71: в кабинете такой снимок виден в очереди выше остальных нормальных.</p>
-          <div class="kv"><span>Укладка: скор / порог</span><span>0.66 / 0.71</span><span>Край поля до кости</span><span>44 мм</span><span>Диафиз ниже вертела</span><span>91 мм</span></div>
-        </div>
-      </div>
       <div class="case">
         <div class="img pair"><img src="assets/cases/sample_axis_violation.png" alt="Снимок с нарушением оси позвоночника" data-zoom><img src="assets/cases/sample_axis_ok.png" alt="Снимок без нарушения оси" data-zoom></div>
         <div class="body">
           <span class="badge neutral">Критерий: ось позвоночника</span>
           <h3>Слева метка эксперта «не выравнена ось», справа норма</h3>
-          <p>Геометрический контур измеряет глобальный наклон оси и отдельно даёт AUC 0.84. Эксперт, судя по данным, учитывает и локальные изгибы, поэтому часть меток геометрия не объясняет.</p>
+          <p>Геометрия измеряет глобальный наклон оси и отдельно даёт AUC 0.84. Эксперт учитывает и локальные изгибы, поэтому часть меток геометрия не объясняет — её добирает второй контур.</p>
         </div>
       </div>
       <div class="case">
@@ -768,7 +740,7 @@ table.crit tr.flag td { background: var(--error-soft); }
         <div class="body">
           <span class="badge neutral">Критерий: посторонние предметы</span>
           <h3>Слева предметы в поле сканирования, справа чистый снимок</h3>
-          <p>Большинство «посторонних предметов» в разметке не металл, а одежда и объекты низкой плотности. Их ловят эмбеддинги (AUC 0.90), детектор плотных включений здесь слаб (AUC 0.56). Поэтому контуры и объединены.</p>
+          <p>Большинство «посторонних предметов» в разметке — не металл, а одежда и объекты низкой плотности. Их ловят эмбеддинги (AUC 0.90), детектор плотных включений здесь слаб (AUC 0.56). Поэтому контуры и объединены.</p>
         </div>
       </div>
       <div class="case">
@@ -776,7 +748,7 @@ table.crit tr.flag td { background: var(--error-soft); }
           <span class="badge neutral">В кабинете</span>
           <h3>Каждый снимок — с карточкой решения</h3>
           <p>Критерии со скорами, порогами и вкладом каждого контура, измерения в мм и градусах, визуализация, рекомендуемое действие: принять, проверить и при подтверждении переснять, либо проверить вручную, если файл не обработан.</p>
-          <div class="links"><a class="btn" href="#app/demo">Открыть демо-пример</a></div>
+          <div class="links"><a class="btn" href="#app/demo">Открыть демо-партию из 10 снимков</a></div>
         </div>
       </div>
     </div>
@@ -788,7 +760,7 @@ table.crit tr.flag td { background: var(--error-soft); }
     <div class="sec-head">
       <div class="eyebrow">Как проверить</div>
       <h2>Всё воспроизводится за несколько команд</h2>
-      <p class="lead">Техническая группа может развернуть сервис на своих данных без нашего участия. Сервис не делает ни одного внешнего вызова: кабинет, API и модели лежат внутри образа, и самопроверка из 10 пунктов прогоняется в контейнере с полностью отключённой сетью (<code>--network none</code>).</p>
+      <p class="lead">Техническая группа может развернуть сервис на своих данных без нашего участия. Сервис не делает ни одного внешнего вызова: кабинет, API и модели лежат внутри образа, и самопроверка из 12 пунктов прогоняется в контейнере с полностью отключённой сетью (<code>--network none</code>).</p>
     </div>
     <details class="more">
       <summary>Команды запуска, список документов и состав контейнера <small>— для тех, кто будет разворачивать</small></summary>

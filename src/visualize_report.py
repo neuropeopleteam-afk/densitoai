@@ -166,7 +166,7 @@ def _render_spine_overlay(col: np.ndarray, img_u8: np.ndarray, feats: Dict[str, 
         labels.append((f"Ось к вертикали кадра: {angle:.1f}°", COL_OK_TEXT if ok else COL_VIOLATION_TEXT))
     curvature = feats.get("curvature")
     if curvature is not None and curvature > 0.6:
-        labels.append(("Кривизна повышена (возможен сколиоз — не штраф по оси)", (0, 200, 200)))
+        labels.append(("Кривизна оси повышена — анатомическая особенность, по оси не штрафуем", (0, 200, 200)))
     if boxes:
         labels.append((f"Посторонние объекты: {len(boxes)}", COL_VIOLATION_TEXT))
     return col, labels

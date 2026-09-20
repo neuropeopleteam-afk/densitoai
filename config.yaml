@@ -3,7 +3,7 @@
 # порог берётся из models/metrics_summary.json (поле "threshold"), а если и там
 # нет — из fallback_threshold.
 
-version: "2.2.0"
+version: "2.3.0"
 
 output:
   # Официальные названия колонок (порядок важен, не менять).
@@ -151,6 +151,25 @@ preprocessing:
     sp_art:  {geom: baseline,  emb: baseline}    # A: -0.019 (плотность предмета — сигнал); B: -0.030
     hip_pos: {geom: canonical, emb: baseline}    # A: +0.002, 30/50 фолдов за canonical; B: -0.003 — не принят (замер альтернативы — docs/PREPROC_GATE_REPORT.md)
     hip_roi: {geom: baseline,  emb: baseline}    # A: -0.029 (длина скана/диафиза по маске); B: -0.003
+
+# Источник эмбеддингов контура B ПО КРИТЕРИЮ (К13). Значения — src/embeddings.py: BACKBONE_FILES
+# плюс `imagenet` (torchvision, без файла весов):
+#   imagenet         — EfficientNet-B0 ImageNet1k;
+#   densito          — наш B0, предобученный на GPU прокси-задачами укладки (15 633 плитки);
+#   densito_inv      — тот же пул, но loss инвариантности эмбеддинга к гамме и шуму (v3_inv);
+#   densito_inv_free — то же без данных с несвободной лицензией (v3_nolic; только CC BY 4.0 + AASCE + DEXA + наши).
+# Источник истины — этот конфиг: train_stacked.py и train_final_models.py читают его, значение попадает
+# в meta .pkl (emb_source) и в metrics_summary.json; расхождение роняет самопроверку (tools/verify_checks.py).
+# Выбор сделан ТОЛЬКО nested repeated GroupKFold 5×10 (tools/emb_gate.py), отчёт — docs/EMB_GATE_REPORT.md,
+# решения — models/emb_gate_decisions.json. Ключи hip_pos / hip_roi используются для rh_*/lh_*.
+# После изменения обязательны train_stacked.py и train_final_models.py, затем hash_weights и verify --update-expected.
+embeddings:
+  source_by_criterion:
+    sp_pos:  densito     # К13: ни один новый бэкбон правило не прошёл (canonical AUC 0.747 против 0.565 у v3)
+    sp_axis: densito_inv # ПРИНЯТ nested 5×20: стек ΔAUC +0.111 (≥0.03 в 19/20 повторов, в плюсе 20/20), Δmacro-F1 +0.113, выбран в 69/100 фолдов
+    sp_art:  imagenet    # ImageNet на посторонних предметах недостижим (все кандидаты хуже: ΔAUC −0.045…−0.083)
+    hip_pos: imagenet    # К13 обещал +0.131 на контуре B, но на полном стеке ΔAUC +0.007 (6/20) — не принят
+    hip_roi: imagenet    # v2 формально проходил, но до 79 % переворотов при гамме 0.7; inv/inv_free хуже (−0.064/−0.068)
 
 pixel_spacing_mm:
   # Lunar Prodigy Advance (подтверждено организаторами). Используется, если

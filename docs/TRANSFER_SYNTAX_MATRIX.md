@@ -1,10 +1,10 @@
 # Матрица transfer syntax и вариантов кодирования DICOM
 
-Сгенерировано `tests/test_transfer_syntax.py` 2026-09-20 09:53; окружение: pydicom 3.0.2, numpy 2.5.3, Python 3.14.3; кодеки: pylibjpeg —, libjpeg —, openjpeg —, jpeg_ls —, gdcm —.
+Сгенерировано `tests/test_transfer_syntax.py` 2026-09-20 15:03; окружение: pydicom 3.0.2, numpy 2.5.3, Python 3.14.3; кодеки: pylibjpeg —, libjpeg —, openjpeg —, jpeg_ls —, gdcm —.
 
 Источник: 3 файла из `tests/sample_test_zip` (CR000000_ПОП.dcm, CR000000_ППОБ.dcm, CR000001_ЛПОБ.dcm). Критерий «OK»: processing_status = Success, anatomical_region и quality_class совпадают с оригиналом (Implicit VR LE, 8 бит, MONOCHROME2, без PixelSpacing). Δprob — максимальное по файлам |Δ quality_prob|.
 
-Инференс всех вариантов одним прогоном: 6.0 с.
+Инференс всех вариантов одним прогоном: 6.3 с.
 
 | Вариант | Описание | Записан | Success | Регион | Класс | Тип нарушения | UID | max Δprob | Итог |
 |---|---|---|---|---|---|---|---|---|---|

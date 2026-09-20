@@ -44,7 +44,11 @@ def embeddings_filename(source: str, variant: str = "baseline") -> str:
 
 
 MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
-BACKBONE_FILES = {"densito": "backbone_densito.pth"}
+BACKBONE_FILES = {"densito": "backbone_densito.pth",
+                  # К13: тот же B0, но предобученный на инвариантность к экспозиции и шуму
+                  "densito_inv": "backbone_densito_inv.pth",
+                  # то же, но без источников с несвободной лицензией
+                  "densito_inv_free": "backbone_densito_inv_free.pth"}
 EMB_DIM = 1280
 
 

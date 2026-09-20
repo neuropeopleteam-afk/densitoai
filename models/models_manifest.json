@@ -25,7 +25,7 @@
   "model_spine_sp_axis_emb_pca.pkl": {
     "criterion": "sp_axis",
     "n_pos": 17,
-    "emb_source": "imagenet",
+    "emb_source": "densito_inv",
     "preproc_emb": "baseline"
   },
   "model_spine_sp_art_geom.pkl": {

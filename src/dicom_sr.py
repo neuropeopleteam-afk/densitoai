@@ -103,7 +103,7 @@ def _container_item(relationship: str, concept_code: str, concept_meaning: str,
 # смысл вынести в SR как измеренные величины (по региону).
 _SPINE_MEASURES = [
     ("axis_angle_deg", "AXIS-ANGLE", "Угол оси позвоночника к вертикали кадра", "deg"),
-    ("curvature", "CURVATURE", "Показатель кривизны центральной линии (сколиоз)", "1"),
+    ("curvature", "CURVATURE", "Показатель кривизны центральной линии", "1"),
     ("metal_outside_bone_mm2", "METAL-AREA", "Площадь посторонних объектов вне кости", "mm2"),
 ]
 _HIP_MEASURES = [
