@@ -3,7 +3,7 @@
 # порог берётся из models/metrics_summary.json (поле "threshold"), а если и там
 # нет — из fallback_threshold.
 
-version: "2.1.0"
+version: "2.2.0"
 
 output:
   # Официальные названия колонок (порядок важен, не менять).
@@ -130,6 +130,27 @@ validation:
   # результат остаётся консервативным).
   min_bone_fraction: 0.01
   max_bone_fraction: 0.90
+
+# Предобработка по критерию (К11). Варианты — src/preprocess.py: VARIANTS:
+#   baseline  — как в 2.1.0 (маска тела жёстким порогом по сырому кадру, без канонизации);
+#   mask      — маска тела по сглаженному кадру (только устойчивость к шуму);
+#   canonical — mask + канонизация экспозиции по models/exposure_reference.json.
+#
+# Почему не один вариант на всё: для УКЛАДКИ экспозиция — шум (канонизация помогает),
+# а для ПОСТОРОННИХ ПРЕДМЕТОВ и ROI абсолютная плотность — сигнал, и канонизация его стирает.
+# Выбор сделан ТОЛЬКО nested repeated GroupKFold 5×10 (tools/preproc_gate.py, две стадии: контур A,
+# затем контур B), отчёт — docs/PREPROC_GATE_REPORT.md, решения — models/preproc_gate_decisions_{a,b}.json.
+# Значения ОБЯЗАНЫ совпадать с применёнными в train_stacked.py (проверка при загрузке моделей:
+# metrics_summary.json → <crit>.preproc). После изменения обязательны train_stacked.py и train_final_models.py.
+# Откат к поведению 2.1.0: enabled: false (все критерии читают baseline) + перезапуск обучения.
+preprocessing:
+  enabled: true
+  variant_by_criterion:
+    sp_pos:  {geom: canonical, emb: canonical}   # A: +0.028 AUC, 44/49 фолдов; B: +0.021, ДИ [0.000; 0.066]
+    sp_axis: {geom: baseline,  emb: baseline}    # A: -0.003; B: -0.023 — канонизация не принята
+    sp_art:  {geom: baseline,  emb: baseline}    # A: -0.019 (плотность предмета — сигнал); B: -0.030
+    hip_pos: {geom: canonical, emb: baseline}    # A: +0.002, 30/50 фолдов за canonical; B: -0.003 — не принят (замер альтернативы — docs/PREPROC_GATE_REPORT.md)
+    hip_roi: {geom: baseline,  emb: baseline}    # A: -0.029 (длина скана/диафиза по маске); B: -0.003
 
 pixel_spacing_mm:
   # Lunar Prodigy Advance (подтверждено организаторами). Используется, если

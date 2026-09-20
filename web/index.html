@@ -611,10 +611,10 @@ table.crit tr.flag td { background: var(--error-soft); }
 <div class="table-wrap"><table class="metrics main">
 <colgroup><col style="width:18%"><col style="width:10%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:7%"><col style="width:15%"><col style="width:11%"><col style="width:15%"></colgroup>
 <thead><tr><th>Критерий</th><th>Область</th><th class="num">n / позит.</th><th class="num">AUC геом.</th><th class="num">AUC эмб.</th><th class="num">AUC стек</th><th>Где мы относительно ориентира</th><th class="num">F1 OOF [95 % ДИ]</th><th>Надёжность</th></tr></thead><tbody>
-<tr><td><div class="crit-title">Укладка пациента</div><div class="crit-sub">sp_pos · порог по доле позитивов, порог 0.791</div></td><td>позвоночник</td><td class="num">166 / 10</td><td class="num">0.611</td><td class="num">0.797</td><td class="num strong">0.715</td><td><div class="aucbar" role="img" aria-label="AUC 0.715, ниже ориентира"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark below" style="left:42.9%"></span></div><div class="zone-txt below">ниже ориентира</div></td><td class="num">0.40 [0.00; 0.72]</td><td>мало позитивов (10): результат ненадёжен, читать по AUC</td></tr>
+<tr><td><div class="crit-title">Укладка пациента</div><div class="crit-sub">sp_pos · порог по доле позитивов, порог 0.822</div></td><td>позвоночник</td><td class="num">166 / 10</td><td class="num">0.681</td><td class="num">0.790</td><td class="num strong">0.734</td><td><div class="aucbar" role="img" aria-label="AUC 0.734, ниже ориентира"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark below" style="left:46.8%"></span></div><div class="zone-txt below">ниже ориентира</div></td><td class="num">0.48 [0.14; 0.78]</td><td>мало позитивов (10): результат ненадёжен, читать по AUC</td></tr>
 <tr><td><div class="crit-title">Ось позвоночника</div><div class="crit-sub">sp_axis · prevalence_x1.4, порог 0.756</div></td><td>позвоночник</td><td class="num">166 / 17</td><td class="num">0.839</td><td class="num">0.491</td><td class="num strong">0.738</td><td><div class="aucbar" role="img" aria-label="AUC 0.738, ниже ориентира"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark below" style="left:47.5%"></span></div><div class="zone-txt below">ниже ориентира</div></td><td class="num">0.38 [0.10; 0.60]</td><td>умеренная: сильнее геометрия</td></tr>
 <tr><td><div class="crit-title">Посторонние предметы</div><div class="crit-sub">sp_art · prevalence_x1.4, порог 0.602</div></td><td>позвоночник</td><td class="num">166 / 35</td><td class="num">0.560</td><td class="num">0.897</td><td class="num strong">0.823</td><td><div class="aucbar" role="img" aria-label="AUC 0.823, приемлемо"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark ok" style="left:64.5%"></span></div><div class="zone-txt ok">приемлемо</div></td><td class="num">0.53 [0.23; 0.73]</td><td>приемлемая, работает контур B (эмбеддинги)</td></tr>
-<tr><td><div class="crit-title">Укладка пациента</div><div class="crit-sub">hip_pos · порог по доле позитивов, порог 0.643</div></td><td>бедро, обе стороны</td><td class="num">329 / 79</td><td class="num">0.694</td><td class="num">0.635</td><td class="num strong">0.704</td><td><div class="aucbar" role="img" aria-label="AUC 0.704, ниже ориентира"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark below" style="left:40.9%"></span></div><div class="zone-txt below">ниже ориентира</div></td><td class="num">0.42 [0.23; 0.59]</td><td>умеренная: сильнее геометрия</td></tr>
+<tr><td><div class="crit-title">Укладка пациента</div><div class="crit-sub">hip_pos · порог по доле позитивов, порог 0.658</div></td><td>бедро, обе стороны</td><td class="num">329 / 79</td><td class="num">0.710</td><td class="num">0.635</td><td class="num strong">0.725</td><td><div class="aucbar" role="img" aria-label="AUC 0.725, ниже ориентира"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark below" style="left:45.1%"></span></div><div class="zone-txt below">ниже ориентира</div></td><td class="num">0.43 [0.20; 0.60]</td><td>умеренная: сильнее геометрия</td></tr>
 <tr><td><div class="crit-title">Область интереса</div><div class="crit-sub">hip_roi · порог по доле позитивов, порог 0.918</div></td><td>бедро, обе стороны</td><td class="num">329 / 16</td><td class="num">0.902</td><td class="num">0.877</td><td class="num strong">0.917</td><td><div class="aucbar" role="img" aria-label="AUC 0.917, высоко"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark high" style="left:83.5%"></span></div><div class="zone-txt high">высоко</div></td><td class="num">0.51 [0.00; 0.89]</td><td>приемлемая, работает геометрия</td></tr>
 </tbody></table></div>
 <p class="metrics-summary">Из пяти критериев 2 достигают ориентира «приемлемо» (AUC &gt; 0.81) и 1 — ориентира «высоко» (AUC &gt; 0.9). Остальные ниже ориентира, и мы это показываем, а не скрываем. Источник: <code>models/metrics_summary.json</code> (OOF, группировка по исследованию), ДИ по F1 — бутстрап по исследованиям.</p>
@@ -669,32 +669,32 @@ table.crit tr.flag td { background: var(--error-soft); }
 <rect x="300" y="154" width="2" height="20" rx="3" class="rob-bar fmt"/>
 <text x="312" y="169" class="rob-val">0.0 % (0/81)</text>
 <text x="288" y="202" class="rob-label" text-anchor="end">обрезка 4 % по краям</text>
-<rect x="300" y="188" width="86" height="20" rx="3" class="rob-bar"/>
-<text x="396" y="203" class="rob-val">8.6 % (7/81)</text>
+<rect x="300" y="188" width="160" height="20" rx="3" class="rob-bar"/>
+<text x="470" y="203" class="rob-val">16.0 % (13/81)</text>
 <text x="288" y="236" class="rob-label" text-anchor="end">уменьшение ×0,8 с пересчётом шага</text>
-<rect x="300" y="222" width="136" height="20" rx="3" class="rob-bar"/>
-<text x="446" y="237" class="rob-val">13.6 % (11/81)</text>
+<rect x="300" y="222" width="198" height="20" rx="3" class="rob-bar"/>
+<text x="508" y="237" class="rob-val">19.8 % (16/81)</text>
 <text x="288" y="270" class="rob-label" text-anchor="end">увеличение ×1,25 с пересчётом шага</text>
-<rect x="300" y="256" width="148" height="20" rx="3" class="rob-bar"/>
-<text x="458" y="271" class="rob-val">14.8 % (12/81)</text>
+<rect x="300" y="256" width="86" height="20" rx="3" class="rob-bar"/>
+<text x="396" y="271" class="rob-val">8.6 % (7/81)</text>
 <text x="288" y="304" class="rob-label" text-anchor="end">шум 3 %</text>
-<rect x="300" y="290" width="222" height="20" rx="3" class="rob-bar"/>
-<text x="532" y="305" class="rob-val">22.2 % (18/81)</text>
+<rect x="300" y="290" width="272" height="20" rx="3" class="rob-bar"/>
+<text x="582" y="305" class="rob-val">27.2 % (22/81)</text>
 <text x="288" y="338" class="rob-label" text-anchor="end">ярче (гамма 0,7)</text>
-<rect x="300" y="324" width="247" height="20" rx="3" class="rob-bar"/>
-<text x="557" y="339" class="rob-val">24.7 % (20/81)</text>
+<rect x="300" y="324" width="210" height="20" rx="3" class="rob-bar"/>
+<text x="520" y="339" class="rob-val">21.0 % (17/81)</text>
 <text x="288" y="372" class="rob-label" text-anchor="end">темнее (гамма 1,4)</text>
-<rect x="300" y="358" width="284" height="20" rx="3" class="rob-bar"/>
-<text x="594" y="373" class="rob-val">28.4 % (23/81)</text>
+<rect x="300" y="358" width="173" height="20" rx="3" class="rob-bar"/>
+<text x="483" y="373" class="rob-val">17.3 % (14/81)</text>
 <text x="300.0" y="410" class="rob-tick" text-anchor="middle">0 %</text>
 <text x="400.0" y="410" class="rob-tick" text-anchor="middle">10 %</text>
 <text x="500.0" y="410" class="rob-tick" text-anchor="middle">20 %</text>
 <text x="600.0" y="410" class="rob-tick" text-anchor="middle">30 %</text>
 </svg>
 <div class="rob-legend"><span><i class="sw fmt"></i>формат файла и теги</span><span><i class="sw"></i>пиксели: яркость, шум, масштаб, обрезка</span></div>
-<p class="rob-note">Выборка: 81 снимков разметки (27 позвоночник, 54 бедро), из них с нарушениями 40. Каждый снимок пересохранён с одним искажением и прогнан повторно; показана доля снимков, у которых изменился класс качества. Ошибок обработки (Failure) ни в одном варианте не было (максимум 0.0 %), область снимка не менялась ни разу (максимум 0.0 %). Время на снимок в исходном прогоне: медиана 0.04 с, 95-й перцентиль 0.06 с.</p>
+<p class="rob-note">Выборка: 81 снимков разметки (27 позвоночник, 54 бедро), из них с нарушениями 40. Каждый снимок пересохранён с одним искажением и прогнан повторно; показана доля снимков, у которых изменился класс качества. Ошибок обработки (Failure) ни в одном варианте не было (максимум 0.0 %), область снимка не менялась ни разу (максимум 0.0 %). Время на снимок в исходном прогоне: медиана 0.05 с, 95-й перцентиль 0.07 с.</p>
 <p class="rob-note">На реальном потоке одного аппарата GE Lunar с фиксированным экспортом искажений яркости, шума и масштаба нет: все снимки приходят в одном формате. Изменения формата и тегов на потоке возможны, и к ним система устойчива полностью. Перевороты при изменении экспозиции сосредоточены у порога решения (медианный запас 0,09–0,11), то есть касаются спорных снимков.</p>
-<p class="rob-src">Источник: docs/qa/robustness_results.json (2026-09-18), docs/ROBUSTNESS_REPORT.md; скрипт tests/robustness_suite.py.</p>
+<p class="rob-src">Источник: docs/qa/robustness_results.json (2026-09-20), docs/ROBUSTNESS_REPORT.md; скрипт tests/robustness_suite.py.</p>
 </div>
 <!-- ROBUSTNESS:END -->
   </div>

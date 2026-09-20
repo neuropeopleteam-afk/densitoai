@@ -31,9 +31,16 @@ try:
 except Exception:
     pass
 
+import preprocess
 from geometry_features import read_dicom_normalized
 
 DEVICE = torch.device('cpu')
+
+# Имя файла эмбеддингов по (источник, вариант предобработки). Без суффикса варианта — baseline
+# (семантика 2.1.0): их используют OOD-gate и аудиты extras, их цифры не должны ездить.
+def embeddings_filename(source: str, variant: str = "baseline") -> str:
+    base = "embeddings" if source == "imagenet" else f"embeddings_{source}"
+    return f"{base}.npy" if variant == "baseline" else f"{base}_{variant}.npy"
 
 
 MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
@@ -107,7 +114,10 @@ if __name__ == '__main__':
     import argparse
     ap = argparse.ArgumentParser(description="Построить эмбеддинги для labels_full.csv")
     ap.add_argument("--source", default="imagenet", choices=["imagenet"] + list(BACKBONE_FILES))
+    ap.add_argument("--variant", default="baseline", choices=list(preprocess.VARIANTS),
+                    help="вариант предобработки кадра (src/preprocess.py)")
     a = ap.parse_args()
+    preprocess.set_variant(a.variant)
     DATA_DIR = Path(__file__).resolve().parent.parent / "data"
     df = pd.read_csv(DATA_DIR / "labels_full.csv")
     df = df[df['region'].isin(['spine', 'right_hip', 'left_hip'])].reset_index(drop=True)
@@ -117,5 +127,6 @@ if __name__ == '__main__':
         assert (old['file_path'].values == df['file_path'].values).all(), "порядок строк labels_for_embeddings.csv изменился"
     else:
         df.to_csv(lab, index=False)
-    out = DATA_DIR / ("embeddings.npy" if a.source == "imagenet" else f"embeddings_{a.source}.npy")
+    out = DATA_DIR / embeddings_filename(a.source, a.variant)
+    print(f"источник '{a.source}', вариант предобработки '{a.variant}' -> {out.name}")
     build_embeddings_for_df(df, out, a.source)

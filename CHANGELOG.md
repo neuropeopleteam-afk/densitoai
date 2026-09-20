@@ -1,3 +1,27 @@
+## 2.2.0 (20.09.2026)
+- **К11: инвариантная предобработка, вариант выбирается по критерию внутри nested** (`src/preprocess.py`,
+  `tools/preproc_gate.py`, `docs/PREPROC_GATE_REPORT.md`, `models/preproc_gate_decisions_{a,b}.json`).
+  Канонизация экспозиции — один параметр γ, приводящий квантили пикселей тела к эталону обучающей выборки
+  (`models/exposure_reference.json`, `tools/build_exposure_reference.py`), плюс маска тела по сглаженному кадру.
+  Выбор по критерию (`config.yaml: preprocessing.variant_by_criterion`): sp_pos — canonical (контуры A и B),
+  hip_pos — canonical (контур A); sp_axis, sp_art, hip_roi — baseline, как в 2.1.0.
+- Метрики: sp_pos AUC 0.715 → 0.734 (F1 0.400 → 0.476), hip_pos 0.704 → 0.725 (F1 0.420 → 0.432),
+  rh_pos 0.669 → 0.711; sp_axis / sp_art / hip_roi воспроизводят 2.1.0 **бит в бит**. Бинарное «есть нарушение»:
+  позвоночник ROC-AUC 0.764 → 0.758, F1 0.618 → 0.609, macro-F1 0.439 → 0.464; бедро 0.732 → 0.752,
+  F1 0.489 → 0.484, macro-F1 0.500 → 0.506. Пороги prevalence пересчитаны на новом стэке:
+  sp_pos 0.791 → 0.822, hip_pos 0.643 → 0.658 (само правило не менялось).
+- Устойчивость (`docs/ROBUSTNESS_REPORT.md`, n = 81): перевороты класса при гамме 1.4 — 39.5 % → 17.3 %,
+  при гамме 0.7 — 25.9 % → 21.0 %, шум σ=3 % — 28.4 % → 27.2 %, resize ×1.25 — 9.9 % → 8.6 %.
+  Сдвиги формата (пересохранение, теги, UID, MONOCHROME1, 12 бит в 16-битном контейнере) — по-прежнему 0.0 %.
+  Время на снимок 0.038 → 0.041 с.
+- Инференс считает оба варианта кадра и берёт по критерию нужный; `info.img_u8` остаётся кадром 2.1.0,
+  поэтому оверлеи, SR, extras, OOD-gate и хэши пикселей не меняются. `DicomInfo.exposure_gamma` — диагностика.
+- `src/extract_all_features.py --variant`, `src/embeddings.py --variant`, `tools/make_pixel_hashes.py`,
+  `tools/sync_metrics_report.py` (таблицы METRICS_REPORT.md больше не переносятся руками).
+- Исправлено: `docs/ROBUSTNESS_REPORT.md` содержал числа от 18.09, снятые до смены порогов К3 (фактические
+  перевороты были выше заявленных); отчёт пересчитан. Старый пароль сайта `Densito2026` заменён на `Hakaton`
+  в `README.md` и `docs/LETTER_TO_ORGANIZERS.md`.
+
 ## 2.1.1-dev (19.09.2026)
 - К3: правило порога по критерию выбрано nested (`config.yaml: thresholds_rule`): sp_art 0.557→0.602, hip_pos 0.709→0.643, hip_roi 0.891→0.918 (sp_pos, sp_axis без изменений); на 499 файлах изменился класс 39 строк (28: 0→1, 11: 1→0). Зона «не уверен» (`needs_review`, `risk_level`, `<crit>_margin`) и Platt-калибровка критериев (`<crit>_p_cal`, `models/calibration.pkl`) — только debug-CSV и API. Калибровка quality_prob не принята (Brier без значимого прироста).
 - К7: карточка решения «измерено против нормы», одна причина, подсказка рекомендуемого положения ROI (пунктир, не автокоррекция), режим лаборанта, блок устойчивости, генератор офлайн-casebook (`tools/web/build_casebook.py`).

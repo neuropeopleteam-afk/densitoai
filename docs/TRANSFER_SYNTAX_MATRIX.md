@@ -1,10 +1,10 @@
 # Матрица transfer syntax и вариантов кодирования DICOM
 
-Сгенерировано `tests/test_transfer_syntax.py` 2026-09-19 10:48; окружение: pydicom 3.0.2, numpy 2.5.3, Python 3.14.3; кодеки: pylibjpeg 2.1.0, libjpeg 2.4.0, openjpeg 2.5.0, jpeg_ls —, gdcm —.
+Сгенерировано `tests/test_transfer_syntax.py` 2026-09-20 09:53; окружение: pydicom 3.0.2, numpy 2.5.3, Python 3.14.3; кодеки: pylibjpeg —, libjpeg —, openjpeg —, jpeg_ls —, gdcm —.
 
 Источник: 3 файла из `tests/sample_test_zip` (CR000000_ПОП.dcm, CR000000_ППОБ.dcm, CR000001_ЛПОБ.dcm). Критерий «OK»: processing_status = Success, anatomical_region и quality_class совпадают с оригиналом (Implicit VR LE, 8 бит, MONOCHROME2, без PixelSpacing). Δprob — максимальное по файлам |Δ quality_prob|.
 
-Инференс всех вариантов одним прогоном: 5.9 с.
+Инференс всех вариантов одним прогоном: 6.0 с.
 
 | Вариант | Описание | Записан | Success | Регион | Класс | Тип нарушения | UID | max Δprob | Итог |
 |---|---|---|---|---|---|---|---|---|---|
@@ -12,7 +12,7 @@
 | `explicit_le` | Explicit VR Little Endian (1.2.840.10008.1.2.1) | записан | 3/3 | 3/3 | 3/3 | 3/3 | 3/3 | 0.0e+00 | OK |
 | `explicit_be` | Explicit VR Big Endian (1.2.840.10008.1.2.2, retired) | записан | 3/3 | 3/3 | 3/3 | 3/3 | 3/3 | 0.0e+00 | OK |
 | `rle` | RLE Lossless (1.2.840.10008.1.2.5) | записан | 3/3 | 3/3 | 3/3 | 3/3 | 3/3 | 0.0e+00 | OK |
-| `jpeg2000_lossless` | JPEG 2000 Lossless (1.2.840.10008.1.2.4.90) | записан | 3/3 | 3/3 | 3/3 | 3/3 | 3/3 | 0.0e+00 | OK |
+| `jpeg2000_lossless` | JPEG 2000 Lossless (1.2.840.10008.1.2.4.90) | не проверено: RuntimeError: The pixel data encoder for 'JPEG 2000 Image Compression (Lossless Only)' is unavailable because all of its plu | — | — | — | — | — | — | не проверено |
 | `jpegls_lossless` | JPEG-LS Lossless (1.2.840.10008.1.2.4.80) | не проверено: RuntimeError: The pixel data encoder for 'JPEG-LS Lossless Image Compression' is unavailable because all of its plugins are  | — | — | — | — | — | — | не проверено |
 | `jpeg_lossless_sv1` | JPEG Lossless SV1 (1.2.840.10008.1.2.4.70) | не проверено: NotImplementedError: No pixel data encoders have been implemented for 'JPEG Lossless, Non-Hierarchical, First-Order Prediction (Pro | — | — | — | — | — | — | не проверено |
 | `bits16` | 16 бит (BitsAllocated 16 / BitsStored 12), Explicit VR LE | записан | 3/3 | 3/3 | 3/3 | 3/3 | 3/3 | 0.0e+00 | OK |
@@ -23,7 +23,7 @@
 | `raw_no_meta` | Без преамбулы и file meta header (raw Implicit VR LE) | записан; pydicom.pixel_array: AttributeError | 3/3 | 3/3 | 3/3 | 3/3 | 3/3 | 0.0e+00 | OK |
 | `no_uids` | Без StudyInstanceUID и SOPInstanceUID (ожидается hash-UID, Success) | записан | 3/3 | 3/3 | 3/3 | 3/3 | 0/3 | 0.0e+00 | OK |
 
-Итог: 12 из 12 проверенных вариантов без расхождений; 2 вариантов не удалось записать текущими кодеками (статус «не проверено»).
+Итог: 11 из 11 проверенных вариантов без расхождений; 3 вариантов не удалось записать текущими кодеками (статус «не проверено»).
 
 Примечания.
 

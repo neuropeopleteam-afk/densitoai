@@ -57,9 +57,15 @@ shaft_len_below_troch_mm — легитимные признаки. При эт�
 для этого критерия по 4 точкам получить нельзя; см. комментарии в
 train_stacked.py.
 """
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 import numpy as np
 import cv2
 from scipy.signal import find_peaks
+
+import preprocess
 
 PIXEL_SPACING_Y_MM = 1.05
 PIXEL_SPACING_X_MM = 0.6
@@ -72,7 +78,8 @@ def segment_bone_hip(img_u8, frac=0.75):
     """
     Сегментация кости для бедра.
     Отличия от segment_bone() (позвоночник):
-      * порог Otsu считается только по пикселям тела (>8), а не по всему кадру
+      * порог Otsu считается только по пикселям тела (preprocess.body_mask:
+        порог 8 по сглаженному кадру — иначе шум σ=3 % загоняет воздух в «тело»), а не по всему кадру
         (воздух/вырезанные углы скана занимают до половины кадра и смещают порог);
       * порог строчно-адаптивный: отдельный Otsu для верхних 60% (таз+головка,
         ярко) и нижних 40% (диафиз+мягкие ткани), с линейным переходом между
@@ -88,7 +95,7 @@ def segment_bone_hip(img_u8, frac=0.75):
         < 0.5% кадра отбрасываем как шум/оверлеи.
     """
     h, w = img_u8.shape
-    body = img_u8 > 8
+    body = preprocess.body_mask(img_u8)
     if body.sum() < 100:
         return np.zeros_like(img_u8)
     blurred = cv2.GaussianBlur(img_u8, (5, 5), 0)
@@ -153,7 +160,7 @@ def hip_side_score(img_u8, mask=None):
     top = xs[ys <= h // 3]
     top_cue = (top.mean() / w - 0.5) if len(top) >= 5 else (xs.mean() / w - 0.5)
     k = max(1, int(0.12 * w))
-    body = img_u8 > 8
+    body = preprocess.body_mask(img_u8)
     edge_cue = float(body[:, w - k:].mean() - body[:, :k].mean())
     return float(2.0 * top_cue + edge_cue)
 

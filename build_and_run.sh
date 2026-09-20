@@ -20,7 +20,7 @@
 set -euo pipefail
 cd "$(dirname "$(readlink -f "$0")")"
 
-IMAGE="${IMAGE:-densitoai:2.1.0}"
+IMAGE="${IMAGE:-densitoai:2.2.0}"
 # по умолчанию — все ядра хоста, но не больше 8 (docker падает с ошибкой, если
 # запросить --cpus больше, чем реально доступно на машине; nproc всегда <= фактического)
 _NPROC="$(nproc 2>/dev/null || echo 4)"

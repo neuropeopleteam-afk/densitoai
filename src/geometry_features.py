@@ -15,9 +15,15 @@ end-to-end CNN на крошечном датасете (см. рецензию 
 """
 import warnings
 warnings.filterwarnings("ignore")
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 import numpy as np
 import cv2
 import pydicom
+
+import preprocess
 
 PIXEL_SPACING_Y_MM = 1.05
 PIXEL_SPACING_X_MM = 0.6
@@ -41,7 +47,21 @@ def read_dicom_normalized(path):
         arr = np.clip((arr - lo) / (hi - lo) * 255.0, 0, 255)
     else:
         arr = np.zeros_like(arr)
-    return arr.astype(np.uint8), ds
+    img_u8 = arr.astype(np.uint8)
+    # Канонизация экспозиции (один параметр γ к эталону обучения): окно 1–99 % снимает
+    # только линейные сдвиги яркости, степенные — нет (src/preprocess.py).
+    img_u8, _ = preprocess.canonicalize_exposure(img_u8)
+    return img_u8, ds
+
+
+def read_dicom_raw_normalized(path):
+    """То же, но без канонизации экспозиции — для диагностики и аудитов сырой экспозиции."""
+    saved = preprocess.flags()["exposure_canonicalization"]
+    preprocess.flags()["exposure_canonicalization"] = False
+    try:
+        return read_dicom_normalized(path)
+    finally:
+        preprocess.flags()["exposure_canonicalization"] = saved
 
 
 def segment_bone(img_u8):

@@ -1,0 +1,171 @@
+{
+  "protocol": {
+    "stage": "b",
+    "outer": 5,
+    "inner": 3,
+    "repeats": 10,
+    "w_stacking": 0.5,
+    "gain_min": 0.03,
+    "gain_repeats": 7,
+    "noninferior_margin": -0.02,
+    "emb_branches": {
+      "base": "base",
+      "gate": "gate"
+    },
+    "fixed_variants": {
+      "sp_pos": "canonical",
+      "sp_axis": "baseline",
+      "sp_art": "baseline",
+      "hip_pos": "canonical",
+      "hip_roi": "baseline"
+    },
+    "groups": "connected components (study, pixel_hash) на сырой предобработке",
+    "variants": [
+      "baseline",
+      "mask",
+      "canonical"
+    ]
+  },
+  "decisions": [
+    {
+      "region": "spine",
+      "criterion": "sp_pos",
+      "n": 166,
+      "n_pos": 10,
+      "emb_source": "densito",
+      "threshold_rule": "prevalence",
+      "variant_mode": "canonical",
+      "freq_baseline": 0,
+      "freq_mask": 0,
+      "freq_canonical": 49,
+      "n_repeats": 10,
+      "n_repeats_gain_ge_0.03": 3,
+      "mean_delta_auc": 0.02105735060958941,
+      "mean_delta_macro_f1": -0.003941152198318898,
+      "mean_delta_f1pos": -0.006884635832004243,
+      "auc_base_pooled": 0.739102564102564,
+      "auc_gate_pooled": 0.7647435897435897,
+      "delta_auc_pooled_ci": [
+        0.0,
+        0.024186054149146232,
+        0.0659157993397125
+      ],
+      "macro_f1_base_pooled": 0.733974358974359,
+      "macro_f1_gate_pooled": 0.7079178885630498,
+      "accepted_gain_rule": false,
+      "noninferior": true
+    },
+    {
+      "region": "spine",
+      "criterion": "sp_axis",
+      "n": 166,
+      "n_pos": 17,
+      "emb_source": "imagenet",
+      "threshold_rule": "prevalence_x1.4",
+      "variant_mode": "baseline",
+      "freq_baseline": 50,
+      "freq_mask": 0,
+      "freq_canonical": 0,
+      "n_repeats": 10,
+      "n_repeats_gain_ge_0.03": 0,
+      "mean_delta_auc": -0.02287801026450851,
+      "mean_delta_macro_f1": -0.05353615026328491,
+      "mean_delta_f1pos": -0.10296561485054827,
+      "auc_base_pooled": 0.7943150414528227,
+      "auc_gate_pooled": 0.7662850375049348,
+      "delta_auc_pooled_ci": [
+        -0.0843990452925875,
+        -0.027299066197052156,
+        0.021583209233060334
+      ],
+      "macro_f1_base_pooled": 0.5496630786733175,
+      "macro_f1_gate_pooled": 0.5326576576576577,
+      "accepted_gain_rule": false,
+      "noninferior": false
+    },
+    {
+      "region": "spine",
+      "criterion": "sp_art",
+      "n": 166,
+      "n_pos": 35,
+      "emb_source": "imagenet",
+      "threshold_rule": "prevalence_x1.4",
+      "variant_mode": "baseline",
+      "freq_baseline": 50,
+      "freq_mask": 0,
+      "freq_canonical": 0,
+      "n_repeats": 10,
+      "n_repeats_gain_ge_0.03": 0,
+      "mean_delta_auc": -0.030305343511450412,
+      "mean_delta_macro_f1": -0.047604876810683636,
+      "mean_delta_f1pos": -0.0783969618350325,
+      "auc_base_pooled": 0.8567066521264994,
+      "auc_gate_pooled": 0.8344601962922573,
+      "delta_auc_pooled_ci": [
+        -0.06949161408614903,
+        -0.01854665050787016,
+        0.03359318043488441
+      ],
+      "macro_f1_base_pooled": 0.6962702322308234,
+      "macro_f1_gate_pooled": 0.7216840536512668,
+      "accepted_gain_rule": false,
+      "noninferior": false
+    },
+    {
+      "region": "hip",
+      "criterion": "hip_pos",
+      "n": 329,
+      "n_pos": 79,
+      "emb_source": "imagenet",
+      "threshold_rule": "prevalence",
+      "variant_mode": "canonical",
+      "freq_baseline": 0,
+      "freq_mask": 0,
+      "freq_canonical": 50,
+      "n_repeats": 10,
+      "n_repeats_gain_ge_0.03": 0,
+      "mean_delta_auc": -0.0034151898734177456,
+      "mean_delta_macro_f1": -0.018023561923487075,
+      "mean_delta_f1pos": -0.014315801421216861,
+      "auc_base_pooled": 0.7481012658227848,
+      "auc_gate_pooled": 0.7448101265822785,
+      "delta_auc_pooled_ci": [
+        -0.03751777227044225,
+        -0.004280491154373944,
+        0.023418821265160754
+      ],
+      "macro_f1_base_pooled": 0.6680425609979821,
+      "macro_f1_gate_pooled": 0.6422189087076919,
+      "accepted_gain_rule": false,
+      "noninferior": false
+    },
+    {
+      "region": "hip",
+      "criterion": "hip_roi",
+      "n": 329,
+      "n_pos": 16,
+      "emb_source": "imagenet",
+      "threshold_rule": "prevalence",
+      "variant_mode": "baseline",
+      "freq_baseline": 49,
+      "freq_mask": 0,
+      "freq_canonical": 0,
+      "n_repeats": 10,
+      "n_repeats_gain_ge_0.03": 0,
+      "mean_delta_auc": -0.002668350726174373,
+      "mean_delta_macro_f1": -0.0035275997509599645,
+      "mean_delta_f1pos": -0.00898618177486391,
+      "auc_base_pooled": 0.8957667731629393,
+      "auc_gate_pooled": 0.8893769968051117,
+      "delta_auc_pooled_ci": [
+        -0.04217321202835511,
+        -0.008271521484175648,
+        0.022572991965444204
+      ],
+      "macro_f1_base_pooled": 0.6805825242718446,
+      "macro_f1_gate_pooled": 0.6969212121212122,
+      "accepted_gain_rule": false,
+      "noninferior": false
+    }
+  ]
+}

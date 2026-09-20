@@ -2,19 +2,38 @@
 сохраняет в data/geometry_features.csv для последующей оценки разделяющей
 способности и обучения логрегрессии/бустинга поверх признаков.
 """
+import argparse
 import warnings
 warnings.filterwarnings("ignore")
 import sys, time
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 import pandas as pd
+import preprocess
 from geometry_features import extract_all_features
 
-DATA_CSV = Path("/home/user/workspace/densito_rebuild/data/labels_full.csv")
-OUT_CSV = Path("/home/user/workspace/densito_rebuild/data/geometry_features.csv")
+ROOT = Path(__file__).resolve().parents[1]
+DATA_CSV = ROOT / "data" / "labels_full.csv"
+
+# Варианты предобработки контура A — src/preprocess.py: VARIANTS. Файл без суффикса —
+# вариант baseline (семантика 2.1.0): его читают аудиты и протоколы, их цифры не должны ездить.
+# Выбор варианта по критерию — только nested (tools/preproc_gate.py).
+VARIANTS = preprocess.VARIANTS
+VARIANT_FILES = {
+    "baseline": "geometry_features.csv",
+    "mask": "geometry_features_mask.csv",
+    "canonical": "geometry_features_canonical.csv",
+}
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--variant", default="baseline", choices=list(VARIANTS))
+    a = ap.parse_args()
+    preprocess.set_variant(a.variant)
+    OUT_CSV = ROOT / "data" / VARIANT_FILES[a.variant]
+    print(f"вариант предобработки: {a.variant} -> {OUT_CSV.name}; флаги {preprocess.flags()}")
+
     df = pd.read_csv(DATA_CSV)
     df = df[df['region'].isin(['spine', 'right_hip', 'left_hip'])].reset_index(drop=True)
     print(f"Extracting features for {len(df)} images...")

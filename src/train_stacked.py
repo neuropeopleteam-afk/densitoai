@@ -58,14 +58,46 @@ REGION_CRITERIA = {
 EMB_SOURCE_BY_CRITERION = {'sp_pos': 'densito'}
 EMB_FILES = {'imagenet': 'embeddings.npy', 'densito': 'embeddings_densito.npy'}
 
+# К11: вариант предобработки по критерию (config.yaml: preprocessing.variant_by_criterion).
+# Источник истины — конфиг; здесь только чтение и прокидывание в metrics_summary.json / pkl.
+PREPROC_DEFAULT = {'geom': 'baseline', 'emb': 'baseline'}
+GEOM_VARIANT_FILES = {'baseline': 'geometry_features.csv',
+                      'mask': 'geometry_features_mask.csv',
+                      'canonical': 'geometry_features_canonical.csv'}
+
+
+def preproc_for(crit):
+    """{'geom': вариант, 'emb': вариант} для критерия. enabled: false -> всё baseline (2.1.0)."""
+    sec = load_config_section('preprocessing') or {}
+    if not sec.get('enabled', False):
+        return dict(PREPROC_DEFAULT)
+    entry = (sec.get('variant_by_criterion') or {}).get(crit) or {}
+    out = dict(PREPROC_DEFAULT)
+    for k in ('geom', 'emb'):
+        if entry.get(k):
+            v = str(entry[k])
+            assert v in GEOM_VARIANT_FILES, f"config preprocessing.variant_by_criterion.{crit}.{k}: неизвестный вариант '{v}'"
+            out[k] = v
+    return out
+
+
+def emb_file_for(source, variant):
+    base = 'embeddings' if source == 'imagenet' else f'embeddings_{source}'
+    return f'{base}.npy' if variant == 'baseline' else f'{base}_{variant}.npy'
+
 
 def load_embeddings_by_source():
-    """{source: np.ndarray} для всех источников, файлы которых есть в DATA_DIR (imagenet обязателен)."""
+    """{(source, variant): np.ndarray} для всех найденных файлов + плоские ключи source
+    (= вариант baseline) для совместимости с tools/nested_gate.py и аудитами."""
     out = {}
-    for src, fn in EMB_FILES.items():
-        f = DATA_DIR / fn
-        if f.exists():
-            out[src] = np.load(f)
+    for src in EMB_FILES:
+        for variant in GEOM_VARIANT_FILES:
+            f = DATA_DIR / emb_file_for(src, variant)
+            if f.exists():
+                arr = np.load(f)
+                out[(src, variant)] = arr
+                if variant == 'baseline':
+                    out[src] = arr
     assert 'imagenet' in out, 'нет data/embeddings.npy'
     return out
 
@@ -76,6 +108,16 @@ def emb_source_for(crit, available):
         print(f"  [warn] эмбеддинги '{src}' для {crit} не найдены — используется imagenet")
         src = 'imagenet'
     return src
+
+
+def emb_matrix_for(crit, available):
+    """(матрица эмбеддингов, source, variant) для критерия с учётом варианта предобработки."""
+    src = emb_source_for(crit, available)
+    variant = preproc_for(crit)['emb']
+    if (src, variant) not in available:
+        print(f"  [warn] эмбеддинги '{src}'/'{variant}' для {crit} не найдены — берётся baseline")
+        variant = 'baseline'
+    return available[(src, variant)], src, variant
 
 
 # критерий -> колонка метки в geometry_features.csv (по умолчанию совпадают)
@@ -258,9 +300,20 @@ def study_level_bootstrap_f1(df_region, y_true_col, oof_pred_col, threshold, n_b
 
 def train_region_stacked(region, criteria):
     print(f"\n=== {region} | criteria: {criteria} ===")
-    geom_df = pd.read_csv(DATA_DIR / 'geometry_features.csv')
     region_rows = REGION_ROWS.get(region, [region])
-    geom_df = geom_df[geom_df['region'].isin(region_rows)].reset_index(drop=True)
+    # К11: все варианты контура A, какой брать — решает preproc_for(критерий).
+    geom_by_variant = {}
+    for variant, fn in GEOM_VARIANT_FILES.items():
+        f = DATA_DIR / fn
+        if not f.exists():
+            continue
+        g = pd.read_csv(f)
+        geom_by_variant[variant] = g[g['region'].isin(region_rows)].reset_index(drop=True)
+    assert 'baseline' in geom_by_variant, 'нет data/geometry_features.csv'
+    geom_df = geom_by_variant['baseline']
+    for variant, g in geom_by_variant.items():
+        assert (g['file_path'].values == geom_df['file_path'].values).all(), \
+            f"порядок строк geometry_features варианта '{variant}' не совпадает с baseline"
 
     # Эмбеддинги: ОРИГИНАЛЬНЫЕ (без зеркалирования). Проверено (hip_eval /
     # embeddings_hip_canonical.py): зеркалирование левого бедра перед
@@ -288,17 +341,23 @@ def train_region_stacked(region, criteria):
         n_pos = y_valid.sum()
         print(f"\n--- criterion: {crit} | n_valid={valid_mask.sum()} | n_pos={n_pos} ---")
 
+        preproc = preproc_for(crit)
+        geom_variant = preproc['geom'] if preproc['geom'] in geom_by_variant else 'baseline'
+        if geom_variant != preproc['geom']:
+            print(f"  [warn] признаки варианта '{preproc['geom']}' не найдены — берётся baseline")
+        geom_src_df = geom_by_variant[geom_variant]
+
         geom_cols = CRITERION_GEOMETRY_COLS[crit]
-        X_geom_raw = geom_df[geom_cols].values.astype(np.float64)
+        X_geom_raw = geom_src_df[geom_cols].values.astype(np.float64)
         col_medians = np.nanmedian(X_geom_raw, axis=0)
         for j in range(X_geom_raw.shape[1]):
             mask_nan = np.isnan(X_geom_raw[:, j])
             X_geom_raw[mask_nan, j] = col_medians[j]
 
         X_geom = X_geom_raw[valid_mask]
-        emb_src = emb_source_for(crit, region_emb_by_source)
-        print(f"  контур B: эмбеддинги '{emb_src}'")
-        X_emb = region_emb_by_source[emb_src][valid_mask]
+        emb_matrix, emb_src, emb_variant = emb_matrix_for(crit, region_emb_by_source)
+        print(f"  контур A: предобработка '{geom_variant}' | контур B: эмбеддинги '{emb_src}'/'{emb_variant}'")
+        X_emb = emb_matrix[valid_mask]
         groups_valid = groups[valid_mask]
         studies_valid = geom_df['study'].values[valid_mask]
         file_paths_valid = geom_df['file_path'].values[valid_mask]
@@ -386,6 +445,7 @@ def train_region_stacked(region, criteria):
         results[crit] = {
             'n_valid': int(valid_mask.sum()), 'n_pos': int(n_pos),
             'auc_geom': aucs['geom'], 'auc_emb': aucs['emb'], 'auc_stacked': aucs['stacked'], 'emb_source': emb_src,
+            'preproc': {'geom': geom_variant, 'emb': emb_variant},
             'threshold': float(thresh) if thresh is not None else None,
             'threshold_method': thresh_method,
             'threshold_rule': thr_rule,

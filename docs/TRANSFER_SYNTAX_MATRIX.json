@@ -49,18 +49,6 @@
    "internal_region_same": true
   },
   {
-   "variant": "jpeg2000_lossless",
-   "src": "CR000000_ПОП.dcm",
-   "ok": true,
-   "status": "Success",
-   "region_same": true,
-   "class_same": true,
-   "violation_same": true,
-   "uid_same": true,
-   "dprob": 0.0,
-   "internal_region_same": true
-  },
-  {
    "variant": "bits16",
    "src": "CR000000_ПОП.dcm",
    "ok": true,
@@ -193,18 +181,6 @@
    "internal_region_same": true
   },
   {
-   "variant": "jpeg2000_lossless",
-   "src": "CR000000_ППОБ.dcm",
-   "ok": true,
-   "status": "Success",
-   "region_same": true,
-   "class_same": true,
-   "violation_same": true,
-   "uid_same": true,
-   "dprob": 0.0,
-   "internal_region_same": true
-  },
-  {
    "variant": "bits16",
    "src": "CR000000_ППОБ.dcm",
    "ok": true,
@@ -326,18 +302,6 @@
   },
   {
    "variant": "rle",
-   "src": "CR000001_ЛПОБ.dcm",
-   "ok": true,
-   "status": "Success",
-   "region_same": true,
-   "class_same": true,
-   "violation_same": true,
-   "uid_same": true,
-   "dprob": 0.0,
-   "internal_region_same": true
-  },
-  {
-   "variant": "jpeg2000_lossless",
    "src": "CR000001_ЛПОБ.dcm",
    "ok": true,
    "status": "Success",
@@ -438,7 +402,7 @@
   "explicit_le": "записан",
   "explicit_be": "записан",
   "rle": "записан",
-  "jpeg2000_lossless": "записан",
+  "jpeg2000_lossless": "не проверено: RuntimeError: The pixel data encoder for 'JPEG 2000 Image Compression (Lossless Only)' is unavailable because all of its plu",
   "jpegls_lossless": "не проверено: RuntimeError: The pixel data encoder for 'JPEG-LS Lossless Image Compression' is unavailable because all of its plugins are ",
   "jpeg_lossless_sv1": "не проверено: NotImplementedError: No pixel data encoders have been implemented for 'JPEG Lossless, Non-Hierarchical, First-Order Prediction (Pro",
   "bits16": "записан",

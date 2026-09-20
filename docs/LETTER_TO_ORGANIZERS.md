@@ -12,7 +12,7 @@
 | Что | Где |
 |---|---|
 | Публичный репозиторий (код, веса, документация) | `git clone https://neuropeople.pro/git/densitoai.git` — просмотр: https://neuropeople.pro/git/browse?p=densitoai.git;a=summary |
-| Работающая демонстрация (веб-интерфейс + API) | https://neuropeople.pro (логин `demo`, пароль `Densito2026`) |
+| Работающая демонстрация (веб-интерфейс + API) | https://neuropeople.pro (логин `demo`, пароль `Hakaton`) |
 | Swagger API | https://neuropeople.pro/docs |
 
 Все веса моделей лежат в репозитории (`models/`, включая офлайн-веса EfficientNet-B0 в

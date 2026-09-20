@@ -74,8 +74,9 @@ from geometry_features import (  # noqa: E402
 )
 from hip_features import hip_all_features  # noqa: E402
 from calibration_utils import risk_level  # noqa: E402  (К3: правило уровня риска)
+import preprocess  # noqa: E402  (инвариантная предобработка: маска тела, канонизация экспозиции)
 
-__version__ = "2.1.0"
+__version__ = "2.2.0"
 LOG = logging.getLogger("densito.inference")
 # pydicom шумит предупреждениями о нестандартных UID в анонимизированных файлах — не ошибка
 logging.getLogger("pydicom").setLevel(logging.ERROR)
@@ -84,7 +85,7 @@ logging.getLogger("pydicom").setLevel(logging.ERROR)
 # Конфиг (с жёстко зашитыми значениями по умолчанию на случай отсутствия yaml)
 # --------------------------------------------------------------------------- #
 DEFAULT_CONFIG: Dict[str, Any] = {
-    "version": "2.1.0",
+    "version": "2.2.0",
     "output": {
         "columns": ["path_to_study", "study_uid", "image_uid", "anatomical_region",
                     "quality_class", "violation_type", "quality_prob",
@@ -155,6 +156,25 @@ def stacking_weights(cfg: Dict[str, Any], crit: str) -> Tuple[float, float]:
             wg = float(np.clip(float(by_crit[key]), 0.0, 1.0))
             return wg, 1.0 - wg
     return float(st.get("weight_geom", 0.5)), float(st.get("weight_emb", 0.5))
+
+
+def preproc_variants(cfg: Dict[str, Any], crit: str) -> Dict[str, str]:
+    """{'geom': вариант, 'emb': вариант} для критерия (К11).
+    config.yaml: preprocessing.enabled + variant_by_criterion. Ключи rh_*/lh_* берут запись
+    единой модели бедра (hip_pos / hip_roi). По умолчанию и при enabled: false — baseline (2.1.0)."""
+    out = {"geom": "baseline", "emb": "baseline"}
+    sec = cfg.get("preprocessing") or {}
+    if not sec.get("enabled", False):
+        return out
+    by_crit = sec.get("variant_by_criterion") or {}
+    for key in (crit, HIP_CRIT_TO_MODEL.get(crit)):
+        entry = by_crit.get(key) if key is not None else None
+        if isinstance(entry, dict):
+            for k in ("geom", "emb"):
+                if entry.get(k):
+                    out[k] = str(entry[k])
+            return out
+    return out
 
 
 def _deep_update(base: Dict[str, Any], upd: Dict[str, Any]) -> Dict[str, Any]:
@@ -338,6 +358,8 @@ class DicomInfo:
     pixel_spacing: Tuple[float, float]  # (y_mm, x_mm)
     warnings: List[str] = field(default_factory=list)
     tags: Dict[str, str] = field(default_factory=dict)
+    exposure_gamma: float = 1.0  # γ канонизации экспозиции (1.0 — кадр уже в эталонной экспозиции)
+    img_canonical: Optional[np.ndarray] = None  # кадр с канонизированной экспозицией (К11)
 
 
 def _tag(ds, name: str, default: str = "") -> str:
@@ -351,9 +373,14 @@ def _tag(ds, name: str, default: str = "") -> str:
         return default
 
 
-def normalize_pixels(ds) -> np.ndarray:
-    """Нормализация в uint8 [0,255]: MONOCHROME1 -> инверсия, Rescale, RGB -> gray,
-    многокадровые -> первый кадр, перцентильное окно 1–99 %."""
+def normalize_pixels_ex(ds) -> Tuple[np.ndarray, np.ndarray, float]:
+    """(кадр baseline, кадр canonical, γ).
+
+    baseline — ровно как в 2.1.0: MONOCHROME1 -> инверсия, Rescale, RGB -> gray,
+    многокадровые -> первый кадр, перцентильное окно 1–99 %. Этот кадр идёт в оверлеи,
+    SR, extras, OOD-gate и хэши — их цифры не меняются.
+    canonical — тот же кадр с канонизацией экспозиции (src/preprocess.py); его берут только
+    те критерии, для которых это выбрал nested (config.yaml: preprocessing.variant_by_criterion)."""
     arr = ds.pixel_array
     if arr is None or arr.size == 0:
         raise ValueError("empty pixel_array")
@@ -381,7 +408,16 @@ def normalize_pixels(ds) -> np.ndarray:
         arr = np.clip((arr - lo) / (hi - lo) * 255.0, 0, 255)
     else:
         arr = np.zeros_like(arr)
-    return arr.astype(np.uint8)
+    img_u8 = arr.astype(np.uint8)
+    # Канонизация экспозиции — тот же код, что у обучения (src/preprocess.py):
+    # окно 1–99 % снимает только линейные сдвиги яркости, степенные — нет.
+    img_canonical, gamma = preprocess.canonical_frame(img_u8)
+    return img_u8, img_canonical, gamma
+
+
+def normalize_pixels(ds) -> np.ndarray:
+    """Кадр baseline (семантика 2.1.0) — используется аудитами в tools/ и хэшами."""
+    return normalize_pixels_ex(ds)[0]
 
 
 def read_and_validate(path: Path, cfg: Dict[str, Any]) -> DicomInfo:
@@ -407,7 +443,7 @@ def read_and_validate(path: Path, cfg: Dict[str, Any]) -> DicomInfo:
         else:
             ts = pydicom.uid.ExplicitVRBigEndian
         ds.file_meta.TransferSyntaxUID = ts
-    img = normalize_pixels(ds)
+    img, img_canonical, exposure_gamma = normalize_pixels_ex(ds)
     rows, cols = img.shape
     if not (v["min_rows"] <= rows <= v["max_rows"] and v["min_cols"] <= cols <= v["max_cols"]):
         raise ValueError(f"image size out of range: {rows}x{cols}")
@@ -444,7 +480,8 @@ def read_and_validate(path: Path, cfg: Dict[str, Any]) -> DicomInfo:
     if tags["Modality"] and tags["Modality"] not in ("OT", "CR", "DX", "RG", "SC", ""):
         warns.append(f"unexpected Modality={tags['Modality']}")
     return DicomInfo(ds=ds, img_u8=img, rows=rows, cols=cols, study_uid=study_uid,
-                     image_uid=image_uid, pixel_spacing=(ps_y, ps_x), warnings=warns, tags=tags)
+                     image_uid=image_uid, pixel_spacing=(ps_y, ps_x), warnings=warns, tags=tags,
+                     exposure_gamma=exposure_gamma, img_canonical=img_canonical)
 
 
 # --------------------------------------------------------------------------- #
@@ -537,8 +574,15 @@ def official_region_name(internal_region: str, cfg: Dict[str, Any]) -> str:
 # --------------------------------------------------------------------------- #
 # Признаки контура A
 # --------------------------------------------------------------------------- #
-def extract_geometry(info: DicomInfo, region: str, cfg: Dict[str, Any]) -> Dict[str, Any]:
-    img = info.img_u8
+def extract_geometry(info: DicomInfo, region: str, cfg: Dict[str, Any],
+                     variant: str = "baseline") -> Dict[str, Any]:
+    """Геометрические признаки (контур A) для заданного варианта предобработки (К11)."""
+    with preprocess.variant(variant):
+        return _extract_geometry_inner(info, region, cfg, variant)
+
+
+def _extract_geometry_inner(info: DicomInfo, region: str, cfg: Dict[str, Any], variant: str) -> Dict[str, Any]:
+    img = info.img_u8 if (variant == "baseline" or info.img_canonical is None) else info.img_canonical
     mask = segment_bone(img)
     feats: Dict[str, Any] = {"region": region}
     bone_fraction = float((mask > 0).mean())
@@ -1075,7 +1119,12 @@ class DensitoInference:
                     self._study_headers[info.study_uid] = study_header_from_ds(info.ds)
                 except Exception:  # noqa: BLE001
                     self._study_headers[info.study_uid] = {}
-            feats = extract_geometry(info, region, self.cfg)
+            # К11: признаки контура A для каждого варианта предобработки, который нужен критериям региона.
+            # baseline считается всегда: на нём обучены any-модели, от него идут оверлеи, карточка и SR.
+            crit_preproc = {c: preproc_variants(self.cfg, c) for c in self.cfg["criteria_by_region"][region]}
+            geom_variants = {"baseline"} | {p["geom"] for p in crit_preproc.values()}
+            feats_by_variant = {v: extract_geometry(info, region, self.cfg, variant=v) for v in sorted(geom_variants)}
+            feats = feats_by_variant["baseline"]
 
             need_emb = any((region, c) in self.registry.emb for c in self.cfg["criteria_by_region"][region]) \
                 or region in self.registry.any_emb
@@ -1085,12 +1134,24 @@ class DensitoInference:
                 mb = next((self.registry.emb.get((region, c)) for c in self.cfg["criteria_by_region"][region]
                            if self.registry.emb.get((region, c)) is not None), None)
                 mirror = bool(mb.meta.get("mirror_right", False)) if mb is not None else False
-            embs: Dict[str, np.ndarray] = {}
+            # К11: эмбеддинги по (вариант кадра, источник). any-модель всегда на baseline.
+            embs_by_variant: Dict[str, Dict[str, np.ndarray]] = {}
             if need_emb:
-                sources = {str(mb.meta.get("emb_source", EmbeddingExtractor.DEFAULT_SOURCE))
-                           for mb in [self.registry.emb.get((region, c)) for c in self.cfg["criteria_by_region"][region]]
-                           + [self.registry.any_emb.get(region)] if mb is not None}
-                embs = self.embedder.extract_many(info.img_u8, sources, mirror=mirror)
+                need: Dict[str, set] = {}
+                for c in self.cfg["criteria_by_region"][region]:
+                    mb = self.registry.emb.get((region, c))
+                    if mb is None:
+                        continue
+                    src = str(mb.meta.get("emb_source", EmbeddingExtractor.DEFAULT_SOURCE))
+                    need.setdefault(crit_preproc[c]["emb"], set()).add(src)
+                mb_any = self.registry.any_emb.get(region)
+                if mb_any is not None:
+                    need.setdefault("baseline", set()).add(
+                        str(mb_any.meta.get("emb_source", EmbeddingExtractor.DEFAULT_SOURCE)))
+                for v, sources in need.items():
+                    frame = info.img_u8 if (v == "baseline" or info.img_canonical is None) else info.img_canonical
+                    embs_by_variant[v] = self.embedder.extract_many(frame, sources, mirror=mirror)
+            embs = embs_by_variant.get("baseline", {})
             emb = embs.get(EmbeddingExtractor.DEFAULT_SOURCE) if embs else None
             if self.extras:  # [EXTRAS] входы для extras (незеркалированный imagenet-эмбеддинг, как в data/embeddings.npy)
                 try:
@@ -1103,8 +1164,11 @@ class DensitoInference:
                     LOG.warning("extras input failed for %s: %s", path, ex)
                     self._extras_input = None
 
-            crit_results = {c: self.score_criterion(region, c, feats, embs)
-                            for c in self.cfg["criteria_by_region"][region]}
+            crit_results = {c: self.score_criterion(
+                region, c,
+                feats_by_variant.get(crit_preproc[c]["geom"], feats),
+                embs_by_variant.get(crit_preproc[c]["emb"], embs))
+                for c in self.cfg["criteria_by_region"][region]}
             violations: List[str] = []
             for c, r in crit_results.items():
                 if r["flag"]:

@@ -46,7 +46,8 @@ from sklearn.preprocessing import StandardScaler
 
 from train_stacked import (DATA_DIR, OUT_DIR, REGION_CRITERIA, CRITERION_GEOMETRY_COLS,
                            load_embeddings_by_source, emb_source_for,
-                           CRITERION_LABEL_COL, REGION_ROWS, HIP_SIDE_REPORT, PCA_COMPONENTS)
+                           CRITERION_LABEL_COL, REGION_ROWS, HIP_SIDE_REPORT, PCA_COMPONENTS,
+                           GEOM_VARIANT_FILES, preproc_for, emb_matrix_for)
 
 # Гиперпараметры — ТЕ ЖЕ, что в train_stacked.train_region_stacked
 GEOM_C, EMB_C = 1.0, 0.1
@@ -103,14 +104,22 @@ def save(d, name):
 
 
 def main():
-    geom_all = pd.read_csv(DATA_DIR / 'geometry_features.csv')
+    # К11: все варианты предобработки контура A; по критерию выбирает preproc_for().
+    geom_all_by_variant = {v: pd.read_csv(DATA_DIR / fn) for v, fn in GEOM_VARIANT_FILES.items()
+                           if (DATA_DIR / fn).exists()}
+    geom_all = geom_all_by_variant['baseline']
     emb_labels = pd.read_csv(DATA_DIR / 'labels_for_embeddings.csv')
     emb_by_source = load_embeddings_by_source()
     manifest = {}
 
     for region, criteria in REGION_CRITERIA.items():
         rows = REGION_ROWS.get(region, [region])
-        gdf = geom_all[geom_all['region'].isin(rows)].reset_index(drop=True)
+        gdf_by_variant = {v: g[g['region'].isin(rows)].reset_index(drop=True)
+                          for v, g in geom_all_by_variant.items()}
+        gdf = gdf_by_variant['baseline']
+        for v, g in gdf_by_variant.items():
+            assert (g['file_path'].values == gdf['file_path'].values).all(), \
+                f"порядок строк варианта '{v}' не совпадает с baseline"
         eidx = np.nonzero(emb_labels['region'].isin(rows).values)[0]
         E_by_source = {k: v[eidx] for k, v in emb_by_source.items()}
         E_all = E_by_source['imagenet']
@@ -127,12 +136,16 @@ def main():
             valid = ~np.isnan(y)
             any_label[valid] = np.maximum(any_label[valid], y[valid]); any_seen |= valid
             yv = y[valid].astype(int)
+            preproc = preproc_for(crit)
+            geom_variant = preproc['geom'] if preproc['geom'] in gdf_by_variant else 'baseline'
             cols = CRITERION_GEOMETRY_COLS[crit]
-            Xraw = gdf[cols].values.astype(np.float64)
+            Xraw = gdf_by_variant[geom_variant][cols].values.astype(np.float64)
             med = np.nanmedian(Xraw, axis=0)           # медианы по всем строкам региона (как в OOF)
             X = _impute(Xraw, med)[valid]
-            emb_src = emb_source_for(crit, E_by_source)
-            E = E_by_source[emb_src][valid]
+            E_full, emb_src, emb_variant = emb_matrix_for(crit, E_by_source)
+            E = E_full[valid]
+            extra_crit = dict(extra, preproc_geom=geom_variant, preproc_emb=emb_variant)
+            print(f"  {crit}: контур A '{geom_variant}', контур B '{emb_src}'/'{emb_variant}'")
 
             oof_path = OUT_DIR / f'oof_stacked_{region}_{crit}.csv'
             oof = pd.read_csv(oof_path) if oof_path.exists() else None
@@ -142,11 +155,13 @@ def main():
             oof_e = None if oof is None else oof['oof_emb'].values
 
             base = f'model_{region}_{crit}' if not is_hip else f'model_{crit}'   # model_hip_pos / model_hip_roi
-            dg = fit_geom(X, yv, cols, med, oof_g, dict(extra, criterion=crit, region=region))
-            de = fit_emb(E, yv, oof_e, dict(extra, criterion=crit, region=region), emb_source=emb_src)
+            dg = fit_geom(X, yv, cols, med, oof_g, dict(extra_crit, criterion=crit, region=region))
+            de = fit_emb(E, yv, oof_e, dict(extra_crit, criterion=crit, region=region), emb_source=emb_src)
             save(dg, f'{base}_geom.pkl'); save(de, f'{base}_emb_pca.pkl')
             manifest[f'{base}_geom.pkl'] = {'criterion': crit, 'feature_cols': cols, 'n_pos': int(yv.sum())}
-            manifest[f'{base}_emb_pca.pkl'] = {'criterion': crit, 'n_pos': int(yv.sum()), 'emb_source': emb_src}
+            manifest[f'{base}_geom.pkl'].update({'preproc_geom': geom_variant})
+            manifest[f'{base}_emb_pca.pkl'] = {'criterion': crit, 'n_pos': int(yv.sum()), 'emb_source': emb_src,
+                                               'preproc_emb': emb_variant}
 
             # per-side OOF csv для совместимости с oof_stacked_<region>_<crit>.csv инференса
             if is_hip and oof is not None and 'hip_side_detected' in oof:
