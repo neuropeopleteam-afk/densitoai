@@ -20,7 +20,9 @@ case "$cmd" in
   verify)
     exec bash /app/tools/verify.sh "$@" ;;
   test)
-    exec python /app/tests/test_inference_format.py ;;
+    # два набора: формат и фантомы — и поведение на входе, которого в выборке не было
+    python /app/tests/test_inference_format.py || exit 1
+    exec python /app/tests/test_ood_foreign.py ;;
   *)
     exec "$cmd" "$@" ;;
 esac
