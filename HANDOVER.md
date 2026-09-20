@@ -224,9 +224,8 @@ e2c4ec7 первая публикация (v2.0.x)
    `python src/eval_oof_metrics.py` (обновит `models/metrics_oof_full.json`, `docs/metrics_oof_full.md`),
    затем руками сверить числа в `docs/METRICS_REPORT.md`, README §10 и презентации.
    Актуальные по-критериальные цифры — `models/metrics_summary.json` (18:07) и раздел 6 ниже.
-2. В документах местами упомянут **старый пароль сайта `Densito2026`** (`docs/EXPERT_TESTING_GUIDE.md`,
-   `docs/RADIOLOGIST_TEST_BRIEF.md`, файл доступов владельца, `HANDOVER_PRIVATE.md`). Пароль изменён
-   18.09 ~21:00 (раздел 12). Обновить перед финалом.
+2. ~~В документах местами упомянут **старый пароль сайта `Densito2026`**~~ — **закрыто 20.09.2026**: актуальный пароль `demo` / `Hakaton` проставлен в `README.md` и `docs/LETTER_TO_ORGANIZERS.md`; в `docs/EXPERT_TESTING_GUIDE.md` и `docs/RADIOLOGIST_TEST_BRIEF.md` старого пароля не осталось.
+
 3. ФИО/контакты команды — заглушки (презентация `docs/DensitoAI_LCT2026_presentation.pptx`,
    `docs/LETTER_TO_ORGANIZERS.md`).
 4. Старая landing-версия сайта нравилась владельцу больше — раздел 4.1.

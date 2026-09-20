@@ -1001,7 +1001,7 @@ async function loadCardText() {
 }
 // Зона «не уверен». Источник — поля details.risk_level / needs_review (если сервер их отдаёт).
 // Собственное правило по запасу над порогом отключено (REVIEW_MARGIN = null): проверка на OOF показала, что
-// малый запас не означает меньшую точность (у hip_roi порог 0.89 и запас никогда не превышает 0.11, у hip_pos
+// малый запас не означает меньшую точность (у hip_roi порог 0.918 и запас никогда не превышает 0.08, у hip_pos
 // точность при запасе < 0.10 выше, чем при большем). Запас показывается только в технических деталях.
 const REVIEW_MARGIN = null;
 const CRIT_GROUP = { sp_pos: 'sp_pos', sp_axis: 'sp_axis', sp_art: 'sp_art', rh_pos: 'hip_pos', lh_pos: 'hip_pos', rh_roi: 'hip_roi', lh_roi: 'hip_roi' };
