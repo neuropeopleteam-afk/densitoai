@@ -97,6 +97,65 @@ def env_info() -> dict:
 
 
 # --------------------------------------------------------------------------- #
+def preproc_consistency_check() -> tuple:
+    """(имя, ok, детали): config.yaml preprocessing.variant_by_criterion == meta в .pkl и metrics_summary.json."""
+    name = "К11: вариант предобработки в config == варианту обучения моделей"
+    root = Path(__file__).resolve().parents[1]
+    try:
+        import pickle
+
+        import yaml
+
+        cfg = yaml.safe_load((root / "config.yaml").read_text(encoding="utf-8")) or {}
+        sec = cfg.get("preprocessing") or {}
+        enabled = bool(sec.get("enabled", False))
+        by_crit = (sec.get("variant_by_criterion") or {}) if enabled else {}
+
+        def want(crit, kind):
+            entry = by_crit.get(crit) or {}
+            return str(entry.get(kind) or "baseline")
+
+        models_dir = root / "models"
+        problems, checked = [], 0
+        pkl_map = {"sp_pos": "model_spine_sp_pos", "sp_axis": "model_spine_sp_axis",
+                   "sp_art": "model_spine_sp_art", "hip_pos": "model_hip_pos", "hip_roi": "model_hip_roi"}
+        for crit, base in pkl_map.items():
+            for kind, suffix, meta_key in (("geom", "_geom.pkl", "preproc_geom"),
+                                           ("emb", "_emb_pca.pkl", "preproc_emb")):
+                p = models_dir / f"{base}{suffix}"
+                if not p.exists():
+                    continue
+                with open(p, "rb") as fh:
+                    obj = pickle.load(fh)
+                # train_final_models кладёт meta в верхний уровень dict (там же, где emb_source)
+                meta = obj if isinstance(obj, dict) else {}
+                got = str(meta.get(meta_key, meta.get("meta", {}).get(meta_key, "baseline")
+                                   if isinstance(meta.get("meta"), dict) else "baseline"))
+                checked += 1
+                if got != want(crit, kind):
+                    problems.append(f"{p.name}: обучена на '{got}', config требует '{want(crit, kind)}'")
+
+        ms = models_dir / "metrics_summary.json"
+        if ms.exists():
+            summary = json.loads(ms.read_text(encoding="utf-8"))
+            for region in ("spine", "hip"):
+                for crit, payload in (summary.get(region) or {}).items():
+                    if not isinstance(payload, dict) or "preproc" not in payload:
+                        continue
+                    pp = payload["preproc"] or {}
+                    for kind in ("geom", "emb"):
+                        checked += 1
+                        got = str(pp.get(kind, "baseline"))
+                        if got != want(crit, kind):
+                            problems.append(f"metrics_summary {region}/{crit}.{kind}: обучено на '{got}', "
+                                            f"config требует '{want(crit, kind)}'")
+        detail = (f"enabled={enabled}, сверено {checked} записей" if not problems
+                  else "; ".join(problems[:6]))
+        return name, not problems, detail
+    except Exception as e:  # noqa: BLE001
+        return name, False, f"проверка не выполнена: {e}"
+
+
 def run_checks(a) -> int:
     checks: list[dict] = []
 
@@ -178,6 +237,11 @@ def run_checks(a) -> int:
             f"нет в списке: {wj['missing_in_manifest']}; models_manifest.json -> отсутствуют: {wj['manifest_json_missing_files']}")
     else:
         add("sha256 весов моделей = models/WEIGHTS_SHA256.txt", False, "результат hash_weights.py --check не найден")
+
+    # 7b. К11: вариант предобработки в config.yaml == тому, с которым обучались модели.
+    # Без этой проверки расхождение конфига и pkl тихо даёт неправильные предсказания:
+    # признаки считались бы на одном варианте кадра, а модель ждала бы другого.
+    add(*preproc_consistency_check())
 
     # 8. сравнение с эталоном
     expected = Path(a.expected) if a.expected else None
