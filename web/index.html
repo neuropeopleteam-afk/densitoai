@@ -219,7 +219,10 @@ table.metrics.compact td, table.metrics.compact th { padding: 12px 14px; }
 /* проверка */
 .verify { display: grid; grid-template-columns: 1.1fr .9fr; gap: 28px; align-items: start; }
 .verify > div { min-width: 0; }
-.verify pre { overflow-x: auto; max-width: 100%; }
+/* длинные комментарии в примерах команд не должны обрезаться по правому краю:
+   переносим с отступом, чтобы команда оставалась читаемой и копируемой */
+.verify pre { overflow-x: auto; max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; }
+.verify pre code { display: block; padding-left: 1.6em; text-indent: -1.6em; }
 
 .verify .card h3 { font-size: 17px; }
 .verify .card + .card { margin-top: 18px; }
