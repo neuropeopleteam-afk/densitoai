@@ -1,19 +1,19 @@
 {
  "demo": true,
- "demo_note": "Партия из 10 снимков обучающей выборки заказчика, обработана сервисом DensitoAI 2.2.0 без изменений: 5 с нарушениями по всем пяти критериям ТЗ, остальные — норма. Каждый кадр подписан: что отметил эксперт и что сказал сервис. Пропусков в партии: 1 — показаны намеренно, чтобы была видна граница возможностей. Личных данных в файлах нет.",
+ "demo_note": "Партия из 10 снимков обучающей выборки заказчика, обработана сервисом DensitoAI 2.3.0 без изменений: 5 с нарушениями по всем пяти критериям ТЗ, остальные — норма. Каждый кадр подписан: что отметил эксперт и что сказал сервис. Пропусков в партии: 1 — показаны намеренно, чтобы была видна граница возможностей. Личных данных в файлах нет.",
  "job_id": "demo",
  "request_id": "demo",
- "model_version": "2.2.0",
- "config_hash": "8fa492df1fa2",
+ "model_version": "2.3.0",
+ "config_hash": "378ee6b98c9b",
  "summary": {
   "n_files": 10,
   "n_failures": 0,
   "n_violations": 5,
-  "total_processing_time_s": 0.768,
-  "wall_time_s": 0.935,
+  "total_processing_time_s": 29.828,
+  "wall_time_s": 30.535,
   "n_studies": 10,
   "n_files_uploaded": 10,
-  "bytes_uploaded": 827232
+  "bytes_uploaded": 826834
  },
  "format_check": "OK",
  "result_csv": null,
@@ -32,7 +32,7 @@
    "violation_type": "Некорректная укладка;Присутствуют посторонние предметы",
    "quality_prob": 0.93633,
    "processing_status": "Success",
-   "time_of_processing": 0.0832,
+   "time_of_processing": 4.5417,
    "details": {
     "internal_region": "spine",
     "region_source": "dims",
@@ -62,15 +62,15 @@
       "code": "sp_axis",
       "title": "Ось позвоночника",
       "violation": "Не выравнена ось позвоночника",
-      "score": 0.654,
-      "threshold": 0.756,
+      "score": 0.271,
+      "threshold": 0.777,
       "flag": false,
       "method": "stacked_rank_avg",
       "p_geom": 0.307,
-      "p_emb": 0.084,
-      "margin": 0.1024,
+      "p_emb": 0.0,
+      "margin": 0.506,
       "uncertain": false,
-      "p_cal": 0.145
+      "p_cal": 0.004
      },
      {
       "code": "sp_art",
@@ -190,9 +190,9 @@
    "anatomical_region": "Поясничный отдел позвоночника",
    "quality_class": 1,
    "violation_type": "Не выравнена ось позвоночника",
-   "quality_prob": 0.94863,
+   "quality_prob": 0.93884,
    "processing_status": "Success",
-   "time_of_processing": 0.0787,
+   "time_of_processing": 4.0505,
    "details": {
     "internal_region": "spine",
     "region_source": "dims",
@@ -202,7 +202,7 @@
     ],
     "warnings": "no PixelSpacing tag -> device default 1.05x0.6 mm",
     "error": null,
-    "quality_prob_raw": 0.897259,
+    "quality_prob_raw": 0.877681,
     "criteria": [
      {
       "code": "sp_pos",
@@ -222,15 +222,15 @@
       "code": "sp_axis",
       "title": "Ось позвоночника",
       "violation": "Не выравнена ось позвоночника",
-      "score": 0.985,
-      "threshold": 0.756,
+      "score": 0.946,
+      "threshold": 0.777,
       "flag": true,
       "method": "stacked_rank_avg",
       "p_geom": 0.989,
-      "p_emb": 0.807,
-      "margin": 0.2289,
+      "p_emb": 0.903,
+      "margin": 0.1687,
       "uncertain": false,
-      "p_cal": 0.462
+      "p_cal": 0.585
      },
      {
       "code": "sp_art",
@@ -349,10 +349,10 @@
    "image_uid": "demo-image-03",
    "anatomical_region": "Поясничный отдел позвоночника",
    "quality_class": 1,
-   "violation_type": "Не выравнена ось позвоночника;Присутствуют посторонние предметы",
+   "violation_type": "Присутствуют посторонние предметы",
    "quality_prob": 0.942169,
    "processing_status": "Success",
-   "time_of_processing": 0.0802,
+   "time_of_processing": 4.4331,
    "details": {
     "internal_region": "spine",
     "region_source": "dims",
@@ -382,15 +382,15 @@
       "code": "sp_axis",
       "title": "Ось позвоночника",
       "violation": "Не выравнена ось позвоночника",
-      "score": 0.864,
-      "threshold": 0.756,
-      "flag": true,
+      "score": 0.651,
+      "threshold": 0.777,
+      "flag": false,
       "method": "stacked_rank_avg",
       "p_geom": 0.691,
-      "p_emb": 0.146,
-      "margin": 0.1084,
+      "p_emb": 0.015,
+      "margin": 0.1265,
       "uncertain": false,
-      "p_cal": 0.323
+      "p_cal": 0.097
      },
      {
       "code": "sp_art",
@@ -512,7 +512,7 @@
    "violation_type": "Некорректная укладка",
    "quality_prob": 0.990019,
    "processing_status": "Success",
-   "time_of_processing": 0.0762,
+   "time_of_processing": 1.678,
    "details": {
     "internal_region": "left_hip",
     "region_source": "dims+anatomy",
@@ -652,7 +652,7 @@
    "violation_type": "Некорректная укладка;Некорректная область интереса",
    "quality_prob": 0.981872,
    "processing_status": "Success",
-   "time_of_processing": 0.0619,
+   "time_of_processing": 1.6642,
    "details": {
     "internal_region": "right_hip",
     "region_source": "dims+anatomy",
@@ -798,7 +798,7 @@
    "violation_type": "",
    "quality_prob": 0.042674,
    "processing_status": "Success",
-   "time_of_processing": 0.0944,
+   "time_of_processing": 1.7285,
    "details": {
     "internal_region": "right_hip",
     "region_source": "dims+anatomy",
@@ -938,7 +938,7 @@
    "violation_type": "",
    "quality_prob": 0.069782,
    "processing_status": "Success",
-   "time_of_processing": 0.0805,
+   "time_of_processing": 1.7137,
    "details": {
     "internal_region": "right_hip",
     "region_source": "dims+anatomy",
@@ -1078,7 +1078,7 @@
    "violation_type": "",
    "quality_prob": 0.12513,
    "processing_status": "Success",
-   "time_of_processing": 0.0719,
+   "time_of_processing": 4.3597,
    "details": {
     "internal_region": "spine",
     "region_source": "dims",
@@ -1108,15 +1108,15 @@
       "code": "sp_axis",
       "title": "Ось позвоночника",
       "violation": "Не выравнена ось позвоночника",
-      "score": 0.066,
-      "threshold": 0.756,
+      "score": 0.196,
+      "threshold": 0.777,
       "flag": false,
       "method": "stacked_rank_avg",
       "p_geom": 0.178,
-      "p_emb": 0.0,
-      "margin": 0.6898,
+      "p_emb": 0.002,
+      "margin": 0.5813,
       "uncertain": false,
-      "p_cal": 0.009
+      "p_cal": 0.002
      },
      {
       "code": "sp_art",
@@ -1236,9 +1236,9 @@
    "anatomical_region": "Поясничный отдел позвоночника",
    "quality_class": 0,
    "violation_type": "",
-   "quality_prob": 0.126725,
+   "quality_prob": 0.164376,
    "processing_status": "Success",
-   "time_of_processing": 0.0717,
+   "time_of_processing": 4.126,
    "details": {
     "internal_region": "spine",
     "region_source": "dims",
@@ -1248,7 +1248,7 @@
     ],
     "warnings": "no PixelSpacing tag -> device default 1.05x0.6 mm",
     "error": null,
-    "quality_prob_raw": 0.253451,
+    "quality_prob_raw": 0.328752,
     "criteria": [
      {
       "code": "sp_pos",
@@ -1268,15 +1268,15 @@
       "code": "sp_axis",
       "title": "Ось позвоночника",
       "violation": "Не выравнена ось позвоночника",
-      "score": 0.328,
-      "threshold": 0.756,
+      "score": 0.479,
+      "threshold": 0.777,
       "flag": false,
       "method": "stacked_rank_avg",
       "p_geom": 0.293,
-      "p_emb": 0.0,
-      "margin": 0.4277,
+      "p_emb": 0.018,
+      "margin": 0.2982,
       "uncertain": false,
-      "p_cal": 0.033
+      "p_cal": 0.023
      },
      {
       "code": "sp_art",
@@ -1398,7 +1398,7 @@
    "violation_type": "",
    "quality_prob": 0.452654,
    "processing_status": "Success",
-   "time_of_processing": 0.0694,
+   "time_of_processing": 1.5323,
    "details": {
     "internal_region": "left_hip",
     "region_source": "dims+anatomy",
