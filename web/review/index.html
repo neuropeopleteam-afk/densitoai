@@ -63,15 +63,13 @@ button.sel{background:#111827;border-color:#111827;color:#fff}
     <h1>Слепая ревизия снимков DXA</h1>
     <ol class="lines">
       <li>Мы просим вас оценить снимки денситометрии до того, как вы увидите вывод сервиса DensitoAI.</li>
-      <li>Полный набор — 44 показа, примерно 20–25 минут; короткий набор — 24 показа, примерно 10–12 минут.</li>
-      <li>По каждому снимку один вопрос: годно исследование для оценки или нет, и если нет, то по какой причине.</li>
+      <li>Полный набор — 44 показа, короткий набор — 24 показа.</li>
+      <li>По каждому снимку один вопрос: исследование выполнено правильно или нет, и если нет, то что именно не так.</li>
       <li>Сразу после вашего ответа мы показываем, что о том же снимке сказал сервис, и спрашиваем только о формулировке.</li>
       <li>Мы не просим разметку для обучения модели и не просим оценивать, согласны ли вы с моделью.</li>
       <li>Ответы сохраняются в браузере по ходу работы, поэтому закрытая вкладка ничего не потеряет.</li>
     </ol>
     <p class="muted">Версия сервиса <span id="w-ver"></span>. Идентификатор набора (sha256): <span id="w-sha"></span>. Режим: <span id="w-mode"></span>.</p>
-    <label class="f" for="reviewer">Ваше имя или инициалы</label>
-    <input type="text" id="reviewer" autocomplete="off" placeholder="например, И. И.">
     <p id="resume" class="note hidden"></p>
     <div class="row" style="margin-top:14px">
       <button class="primary" id="btn-start">Начать</button>
@@ -82,16 +80,15 @@ button.sel{background:#111827;border-color:#111827;color:#fff}
   <section id="s-frame" class="card hidden">
     <div class="head">
       <div><strong id="f-progress"></strong> <span class="muted" id="f-repeathint"></span></div>
-      <div class="muted" id="f-reviewer"></div>
     </div>
     <div class="pbar"><div id="f-bar"></div></div>
     <div class="frame"><img id="f-img" alt="Снимок денситометрии"></div>
 
     <div id="f-ask">
-      <div class="q">Исследование годно для оценки?</div>
+      <div class="q">Исследование выполнено правильно?</div>
       <div class="row">
-        <button class="bigbtn" id="btn-ok">Годно</button>
-        <button class="bigbtn" id="btn-bad">Не годно</button>
+        <button class="bigbtn" id="btn-ok">Правильно</button>
+        <button class="bigbtn" id="btn-bad">Неправильно</button>
         <button class="bigbtn" id="btn-unsure">Затрудняюсь ответить</button>
       </div>
       <div id="f-reasons" class="reasons hidden"></div>
@@ -219,11 +216,9 @@ const saved = load();
 if (saved && Array.isArray(saved.answers) && saved.answers.length > 0 && saved.pos < TOTAL) {
   $("resume").classList.remove("hidden");
   $("resume").textContent = "Найдены сохранённые ответы: " + saved.answers.length + " из " + TOTAL + ". Нажмите «Начать», работа продолжится с этого места.";
-  $("reviewer").value = saved.reviewer || "";
 }
 
 $("btn-start").addEventListener("click", () => {
-  S.reviewer = ($("reviewer").value || "").trim();
   if (saved && Array.isArray(saved.answers) && saved.answers.length > 0) {
     S.answers = saved.answers;
     S.phrases = Array.isArray(saved.phrases) ? saved.phrases : [];
@@ -247,7 +242,6 @@ function renderFrame() {
   S.t0 = Date.now();
   $("f-progress").textContent = "Кадр " + (S.pos + 1) + " из " + TOTAL;
   $("f-repeathint").textContent = "";
-  $("f-reviewer").textContent = S.reviewer ? "Ревизор: " + S.reviewer : "";
   $("f-bar").style.width = Math.round((S.pos / TOTAL) * 100) + "%";
   const img = $("f-img");
   img.removeAttribute("src");
@@ -283,7 +277,9 @@ $("btn-bad").addEventListener("click", () => {
   lockVerdict("btn-bad");
   const box = $("f-reasons");
   box.innerHTML = '<div class="q" style="font-size:15px">Укажите одну причину</div>';
-  REASONS.forEach((r) => {
+  const reg = ((DATA.service[S.cur.file] || {}).region || "");
+  const pref = /бедр/i.test(reg) ? "hip_" : (/позвоночник/i.test(reg) ? "sp_" : "");
+  REASONS.filter((r) => !pref || r.id.indexOf(pref) === 0).forEach((r) => {
     const b = document.createElement("button");
     b.textContent = r.text;
     b.addEventListener("click", () => {
