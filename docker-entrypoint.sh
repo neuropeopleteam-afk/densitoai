@@ -22,6 +22,7 @@ case "$cmd" in
   test)
     # два набора: формат и фантомы — и поведение на входе, которого в выборке не было
     python /app/tests/test_inference_format.py || exit 1
+    python /app/tests/test_api_security.py || exit 1
     exec python /app/tests/test_ood_foreign.py ;;
   *)
     exec "$cmd" "$@" ;;

@@ -99,7 +99,7 @@ densito_rebuild/
 │   ├── embeddings.py            ← Контур B: замороженный EfficientNet-B0 → 1280-d
 │   ├── build_dataset.py         ← сборка labels_full.csv из разметки .xlsx и DICOM
 │   ├── extract_all_features.py  ← признаки контура A для всего трейна → data/geometry_features.csv
-│   ├── train_stacked.py         ← обучение: 5×5 GroupKFold, LR, ранг-стэкинг, пороги, ДИ
+│   ├── train_stacked.py         ← обучение: GroupKFold(5) по исследованию, LR, ранг-стэкинг, пороги, ДИ
 │   ├── train_final_models.py    ← финальные модели по критериям + any-модели (geom/emb)
 │   ├── eval_oof_metrics.py      ← отчёт по метрикам ТЗ §8.4 с 95 % ДИ → docs/metrics_oof_full.md
 │   ├── visualize_report.py      ← [бонус] прозрачный оверлей: измерения + оценки моделей по критериям
@@ -329,15 +329,19 @@ python tests/test_inference_format.py
 | Метод | Путь | Назначение |
 |---|---|---|
 | GET | `/api/health` | статус, версия, число загруженных моделей, активные пороги, включены ли fallback-правила |
-| POST | `/api/analyze` | `multipart/form-data`, поле `files` (1..N файлов `.dcm` и/или `.zip`), query `xlsx=true/false`. Ответ JSON: `job_id`, `summary`, `format_check`, `rows` (строки официального формата), `csv` (текст CSV), имена файлов результата |
+| POST | `/api/analyze` | `multipart/form-data`, поле `files` (1..N файлов `.dcm` и/или `.zip`), query `xlsx=true/false`. Ответ JSON: `job_id`, **`job_token`** (код доступа к результатам этого запроса), `summary`, `format_check`, `rows` (строки официального формата), `csv` (текст CSV), имена и ссылки файлов результата — ссылки уже подписаны кодом доступа |
 | POST | `/api/batch` | JSON `{"input_dir": "/data/input", "output_csv": "/data/output/results.csv", "xlsx": true, "limit": null}` — обработать папку/архив, уже доступный внутри контейнера (смонтированный том). Ответ: `summary`, `format_check`, пути к файлам |
-| GET | `/api/results/{name}` | скачать файл результата из папки результатов по имени |
+| GET | `/api/jobs/{job_id}` | карточка запроса: сводка, строки без картинок, ссылки на файлы. **Нужен код доступа**: `?t=<job_token>` или заголовок `X-Job-Token` |
+| GET | `/api/results/{job_id}/{name}` | файл результата этого запроса (CSV, XLSX, технический CSV, `summary.json`, PNG-оверлей, DICOM SR). **Нужен код доступа** |
+| GET | `/api/jobs` | список всех запросов сервиса — **закрыт**: отдаётся только по админскому ключу (`DENSITO_ADMIN_KEY`, заголовок `X-Admin-Key`). Кабинет ведёт свою историю в браузере, поэтому один пользователь не видит запросы другого |
+| GET | `/api/results/{name}` | совместимость: файл результата `/api/batch` из корня папки результатов по имени |
 
 Примеры:
 
 ```bash
 curl http://localhost:8000/api/health
-curl -F "files=@study.zip" "http://localhost:8000/api/analyze?xlsx=true"
+curl -F "files=@study.zip" "http://localhost:8000/api/analyze?xlsx=true"   # в ответе job_id и job_token
+curl -O "http://localhost:8000/api/results/<job_id>/results.csv?t=<job_token>"
 curl -X POST -H 'Content-Type: application/json' \
      -d '{"input_dir":"/data/input","output_csv":"/data/output/results.csv","xlsx":true}' \
      http://localhost:8000/api/batch
@@ -379,7 +383,7 @@ curl -O http://localhost:8000/api/results/results.csv
 | `anatomical_region` | str | **точно** `Поясничный отдел позвоночника` или `Проксимальный отдел бедра` |
 | `quality_class` | int | `0` — качественное, `1` — есть нарушение (= `violation_type` непустой) |
 | `violation_type` | str | нарушения из закрытого перечня через `;` (без пробела), пусто если нет |
-| `quality_prob` | float | вероятность наличия нарушения ∈ [0, 1] (для ROC-AUC) |
+| `quality_prob` | float | оценка риска нарушения ∈ [0, 1] (для ROC-AUC): ранговый скор стэкинга, согласованный с классом, не калиброванная вероятность — калиброванная величина по критерию лежит в `<crit>_p_cal` (debug-CSV, details API) |
 | `processing_status` | str | `Success` / `Failure` (строки по ТЗ п.2.5) |
 | `time_of_processing` | float | секунды на файл (чтение → признаки → модели), без учёта записи |
 
@@ -464,6 +468,9 @@ OOF-распределения на трейне (`models/oof_stacked_*.csv`), �
 | Нестандартная ширина кадра (не 300/280/248 px: 512×512, 1024×1400, 350×500…) | `Success`, регион — моделью по содержимому (`region_src = content_emb`) |
 | Пустой (0 байт) файл, загруженный через API | `Failure`, HTTP 200, `quality_prob = 0.5` |
 | Пустой multipart-запрос к `/api/analyze` | HTTP 422 с описанием ошибки |
+| Файл результата чужого запроса (код запроса известен, кода доступа нет) | HTTP 403; список всех запросов — HTTP 403 без админского ключа. Проверено `tests/test_api_security.py` |
+| Загрузка больше `DENSITO_MAX_UPLOAD_MB` (512 МБ) | HTTP 413; предел проверяется во время чтения, файл не загружается в память целиком |
+| «Zip-бомба»: архив разжимается больше чем в 200 раз, либо больше 4 ГБ, либо больше 20 000 файлов | HTTP 400 с понятным текстом, распаковка прерывается (пределы: `DENSITO_MAX_ZIP_RATIO`, `DENSITO_MAX_ZIP_UNPACKED_MB`, `DENSITO_MAX_ZIP_MEMBERS`) |
 | Нет `StudyInstanceUID` / `SOPInstanceUID` | `Success`, UID заменён на `hash-…` |
 | Нет `PixelSpacing` | `Success`, константа аппарата, предупреждение в debug |
 | Невалидные UID (частое у анонимизированных файлов) | предупреждение pydicom подавлено, обработка штатная |
@@ -592,7 +599,7 @@ python src/build_dataset.py
 python src/extract_all_features.py
 # 3) эмбеддинги контура B  ->  data/embeddings.npy (+ data/labels_for_embeddings.csv)
 python src/embeddings.py
-# 4) обучение + OOF-валидация 5x5 GroupKFold + пороги + bootstrap-ДИ
+# 4) обучение + OOF-валидация GroupKFold(5) по исследованию + пороги + bootstrap-ДИ
 python src/train_stacked.py
 #    -> models/oof_stacked_*.csv, models/metrics_summary.json
 #    и (после доработки сохранения) models/model_<region>_<crit>_{geom,emb_pca}.pkl

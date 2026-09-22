@@ -345,35 +345,32 @@ def f1_optimal_threshold(y_true, scores, min_positives_for_optimization=15):
 
 
 def study_level_bootstrap_f1(df_region, y_true_col, oof_pred_col, threshold, n_boot=1000, seed=42):
-    """Bootstrap ДИ для F1, ресэмплинг на уровне study (не изображения)."""
+    """Bootstrap ДИ для F1, ресэмплинг на уровне study (не изображения).
+
+    Ресэмплы, в которых не оказалось ни одного положительного исследования, исключаются:
+    F1 на них не определён. До 22.09.2026 таким ресэмплам присваивалось F1 = 1.0, что
+    завышало верхнюю границу ДИ у критериев с 5–17 положительными исследованиями.
+    Доля исключённых ресэмплов остаётся в `study_level_bootstrap_f1.last_share_skipped`.
+    """
     rng = np.random.default_rng(seed)
-    studies = df_region['study'].unique()
+    valid = df_region.dropna(subset=[y_true_col, oof_pred_col]).reset_index(drop=True)
+    y = valid[y_true_col].to_numpy()
+    flag = (valid[oof_pred_col].to_numpy() >= threshold).astype(int)
+    studies = valid['study'].to_numpy()
+    uniq = np.unique(studies)
+    idx_by_study = {s: np.nonzero(studies == s)[0] for s in uniq}
     f1_scores = []
-    valid = df_region.dropna(subset=[y_true_col, oof_pred_col])
     for _ in range(n_boot):
-        sampled_studies = rng.choice(studies, size=len(studies), replace=True)
-        sample_df = pd.concat([valid[valid['study'] == s] for s in sampled_studies], ignore_index=True) \
-            if len(sampled_studies) < 200 else None
-        # эффективнее: строим индекс через merge count, но для простоты и малых данных ок
-        rows = []
-        for s in sampled_studies:
-            rows.append(valid[valid['study'] == s])
-        if not rows:
+        sampled = rng.choice(uniq, size=len(uniq), replace=True)
+        idx = np.concatenate([idx_by_study[s] for s in sampled])
+        yb = y[idx]
+        if yb.sum() == 0:                      # F1 не определён — ресэмпл не учитываем
             continue
-        sample = pd.concat(rows, ignore_index=True)
-        if sample[y_true_col].sum() == 0 and (sample[oof_pred_col] >= threshold).sum() == 0:
-            f1_scores.append(1.0)  # both agree no positives -> trivially perfect on this resample
-            continue
-        preds = (sample[oof_pred_col] >= threshold).astype(int)
-        try:
-            f1 = f1_score(sample[y_true_col], preds, zero_division=0)
-            f1_scores.append(f1)
-        except Exception:
-            continue
+        f1_scores.append(f1_score(yb, flag[idx], zero_division=0))
+    study_level_bootstrap_f1.last_share_skipped = 1.0 - len(f1_scores) / float(n_boot)
     if not f1_scores:
         return (0.0, 0.0, 0.0)
     return (float(np.percentile(f1_scores, 2.5)), float(np.mean(f1_scores)), float(np.percentile(f1_scores, 97.5)))
-
 
 def train_region_stacked(region, criteria):
     print(f"\n=== {region} | criteria: {criteria} ===")

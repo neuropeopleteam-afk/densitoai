@@ -80,8 +80,8 @@ RUN python -c "import sys; sys.path.insert(0,'/app/src'); import inference, api_
  && VERIFY_OUT=/tmp/verify_build bash /app/tools/verify.sh \
  && rm -rf /tmp/verify_build
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD python -c "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=4).status==200 else 1)"
+HEALTHCHECK --interval=30s --timeout=15s --start-period=60s --retries=5 \
+  CMD python -c "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=12).status==200 else 1)"
 
 # По умолчанию — пакетная обработка смонтированной папки.
 # Команды entrypoint: batch | api | verify [--data DIR --expected-sha SHA] | test | bash

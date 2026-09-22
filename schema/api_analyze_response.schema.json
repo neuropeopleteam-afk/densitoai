@@ -9,6 +9,10 @@
   "additionalProperties": true,
   "properties": {
     "job_id": { "type": "string", "pattern": "^[0-9]{8}_[0-9]{6}_[0-9a-f]{6}$" },
+    "job_token": {
+      "description": "Код доступа к результатам этого запроса: без него /api/jobs/{job} и /api/results/{job}/{name} отвечают 403. Передаётся как ?t=<код> или заголовком X-Job-Token; в summary.json не сохраняется.",
+      "type": "string", "minLength": 20
+    },
     "request_id": { "type": "string", "pattern": "^[0-9]{8}_[0-9]{6}_[0-9a-f]{6}$" },
     "model_version": { "type": "string", "minLength": 1 },
     "config_hash": { "type": "string", "pattern": "^[0-9a-f]{12}$" },
@@ -37,13 +41,13 @@
     "result_csv": { "type": "string", "const": "results.csv" },
     "result_debug_csv": { "type": "string", "const": "results_debug.csv" },
     "result_xlsx": { "type": ["string", "null"] },
-    "result_csv_url": { "type": "string", "pattern": "^/api/results/[0-9]{8}_[0-9]{6}_[0-9a-f]{6}/results\\.csv$" },
-    "result_debug_csv_url": { "type": "string", "pattern": "^/api/results/[0-9]{8}_[0-9]{6}_[0-9a-f]{6}/results_debug\\.csv$" },
+    "result_csv_url": { "type": "string", "pattern": "^/api/results/[0-9]{8}_[0-9]{6}_[0-9a-f]{6}/results\\.csv(\\?t=[A-Za-z0-9_\\-]+)?$" },
+    "result_debug_csv_url": { "type": "string", "pattern": "^/api/results/[0-9]{8}_[0-9]{6}_[0-9a-f]{6}/results_debug\\.csv(\\?t=[A-Za-z0-9_\\-]+)?$" },
     "result_xlsx_url": { "type": ["string", "null"] },
     "study_sr": {
       "description": "Один DICOM SR на исследование (режим sr_study): {study_uid: url}. Пусто, если бонус-выходы отключены.",
       "type": "object",
-      "additionalProperties": { "type": "string", "pattern": "^/api/results/[0-9]{8}_[0-9]{6}_[0-9a-f]{6}/.+_SR\\.dcm$" }
+      "additionalProperties": { "type": "string", "pattern": "^/api/results/[0-9]{8}_[0-9]{6}_[0-9a-f]{6}/.+_SR\\.dcm(\\?t=[A-Za-z0-9_\\-]+)?$" }
     },
     "rows": {
       "type": "array",
@@ -71,7 +75,7 @@
         "bonus_overlay_png_base64": { "type": "string" },
         "bonus_sr_dcm_download": { "type": "string" },
         "bonus_roi_png_base64": { "type": "string" },
-        "study_sr_download": { "type": "string", "pattern": "^/api/results/.+_SR\\.dcm$" },
+        "study_sr_download": { "type": "string", "pattern": "^/api/results/.+_SR\\.dcm(\\?t=[A-Za-z0-9_\\-]+)?$" },
         "details": {
           "type": "object",
           "required": ["internal_region", "criteria", "measurements", "action", "action_code"],

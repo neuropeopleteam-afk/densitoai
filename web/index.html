@@ -636,17 +636,17 @@ table.crit tr.flag td { background: var(--error-soft); }
 <div class="table-wrap"><table class="metrics main">
 <colgroup><col style="width:18%"><col style="width:10%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:7%"><col style="width:15%"><col style="width:11%"><col style="width:15%"></colgroup>
 <thead><tr><th>Критерий</th><th>Область</th><th class="num">n / позит.</th><th class="num">AUC геом.</th><th class="num">AUC эмб.</th><th class="num">AUC стек</th><th>Где мы относительно ориентира</th><th class="num">F1 OOF [95 % ДИ]</th><th>Надёжность</th></tr></thead><tbody>
-<tr><td><div class="crit-title">Укладка пациента</div><div class="crit-sub">sp_pos · порог по доле позитивов, порог 0.822</div></td><td>позвоночник</td><td class="num">166 / 10</td><td class="num">0.681</td><td class="num">0.790</td><td class="num strong">0.734</td><td><div class="aucbar" role="img" aria-label="AUC 0.734, ниже ориентира"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark below" style="left:46.8%"></span></div><div class="zone-txt below">ниже ориентира</div></td><td class="num">0.48 [0.14; 0.78]</td><td>мало позитивов (10): результат ненадёжен, читать по AUC</td></tr>
-<tr><td><div class="crit-title">Ось позвоночника</div><div class="crit-sub">sp_axis · prevalence_x1.4, порог 0.777</div></td><td>позвоночник</td><td class="num">166 / 17</td><td class="num">0.839</td><td class="num">0.797</td><td class="num strong">0.889</td><td><div class="aucbar" role="img" aria-label="AUC 0.889, приемлемо"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark ok" style="left:77.8%"></span></div><div class="zone-txt ok">приемлемо</div></td><td class="num">0.60 [0.31; 0.81]</td><td>приемлемая, работает геометрия</td></tr>
-<tr><td><div class="crit-title">Посторонние предметы</div><div class="crit-sub">sp_art · prevalence_x1.4, порог 0.602</div></td><td>позвоночник</td><td class="num">166 / 35</td><td class="num">0.560</td><td class="num">0.897</td><td class="num strong">0.823</td><td><div class="aucbar" role="img" aria-label="AUC 0.823, приемлемо"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark ok" style="left:64.5%"></span></div><div class="zone-txt ok">приемлемо</div></td><td class="num">0.53 [0.23; 0.73]</td><td>приемлемая, работает контур B (эмбеддинги)</td></tr>
-<tr><td><div class="crit-title">Укладка пациента</div><div class="crit-sub">hip_pos · порог по доле позитивов, порог 0.658</div></td><td>бедро, обе стороны</td><td class="num">329 / 79</td><td class="num">0.710</td><td class="num">0.635</td><td class="num strong">0.725</td><td><div class="aucbar" role="img" aria-label="AUC 0.725, ниже ориентира"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark below" style="left:45.1%"></span></div><div class="zone-txt below">ниже ориентира</div></td><td class="num">0.43 [0.20; 0.60]</td><td>умеренная: сильнее геометрия</td></tr>
-<tr><td><div class="crit-title">Область интереса</div><div class="crit-sub">hip_roi · порог по доле позитивов, порог 0.918</div></td><td>бедро, обе стороны</td><td class="num">329 / 16</td><td class="num">0.902</td><td class="num">0.877</td><td class="num strong">0.917</td><td><div class="aucbar" role="img" aria-label="AUC 0.917, высоко"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark high" style="left:83.5%"></span></div><div class="zone-txt high">высоко</div></td><td class="num">0.51 [0.00; 0.89]</td><td>приемлемая, работает геометрия</td></tr>
+<tr><td><div class="crit-title">Укладка пациента</div><div class="crit-sub">sp_pos · порог по доле позитивов, порог 0.822</div></td><td>позвоночник</td><td class="num">166 / 10</td><td class="num">0.681</td><td class="num">0.790</td><td class="num strong">0.734</td><td><div class="aucbar" role="img" aria-label="AUC 0.734, ниже ориентира"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark below" style="left:46.8%"></span></div><div class="zone-txt below">ниже ориентира</div></td><td class="num">0.48 [0.11; 0.82]</td><td>мало позитивов (10): результат ненадёжен, читать по AUC</td></tr>
+<tr><td><div class="crit-title">Ось позвоночника</div><div class="crit-sub">sp_axis · prevalence_x1.4, порог 0.777</div></td><td>позвоночник</td><td class="num">166 / 17</td><td class="num">0.839</td><td class="num">0.797</td><td class="num strong">0.889</td><td><div class="aucbar" role="img" aria-label="AUC 0.889, приемлемо"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark ok" style="left:77.8%"></span></div><div class="zone-txt ok">приемлемо</div></td><td class="num">0.60 [0.29; 0.82]</td><td>приемлемая, работает геометрия</td></tr>
+<tr><td><div class="crit-title">Посторонние предметы</div><div class="crit-sub">sp_art · prevalence_x1.4, порог 0.602</div></td><td>позвоночник</td><td class="num">166 / 35</td><td class="num">0.560</td><td class="num">0.897</td><td class="num strong">0.823</td><td><div class="aucbar" role="img" aria-label="AUC 0.823, приемлемо"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark ok" style="left:64.5%"></span></div><div class="zone-txt ok">приемлемо</div></td><td class="num">0.53 [0.24; 0.74]</td><td>приемлемая, работает контур B (эмбеддинги)</td></tr>
+<tr><td><div class="crit-title">Укладка пациента</div><div class="crit-sub">hip_pos · порог по доле позитивов, порог 0.658</div></td><td>бедро, обе стороны</td><td class="num">329 / 79</td><td class="num">0.710</td><td class="num">0.635</td><td class="num strong">0.725</td><td><div class="aucbar" role="img" aria-label="AUC 0.725, ниже ориентира"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark below" style="left:45.1%"></span></div><div class="zone-txt below">ниже ориентира</div></td><td class="num">0.43 [0.22; 0.60]</td><td>умеренная: сильнее геометрия</td></tr>
+<tr><td><div class="crit-title">Область интереса</div><div class="crit-sub">hip_roi · порог по доле позитивов, порог 0.918</div></td><td>бедро, обе стороны</td><td class="num">329 / 16</td><td class="num">0.902</td><td class="num">0.877</td><td class="num strong">0.917</td><td><div class="aucbar" role="img" aria-label="AUC 0.917, высоко"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark high" style="left:83.5%"></span></div><div class="zone-txt high">высоко</div></td><td class="num">0.51 [0.00; 0.91]</td><td>приемлемая, работает геометрия</td></tr>
 </tbody></table></div>
 <p class="metrics-summary">Из пяти критериев 3 достигают ориентира «приемлемо» (AUC &gt; 0.81) и 1 — ориентира «высоко» (AUC &gt; 0.9). Остальные ниже ориентира, и мы это показываем, а не скрываем. Источник: <code>models/metrics_summary.json</code> (OOF, группировка по исследованию), ДИ по F1 — бутстрап по исследованиям.</p>
 <h3 class="metrics-h3">Бинарная задача «есть нарушение» по областям, OOF</h3>
 <div class="table-wrap"><table class="metrics compact"><thead><tr><th>Область</th><th class="num">ROC-AUC [95 % ДИ]</th><th class="num">F1 [95 % ДИ]</th><th class="num">Macro-F1 по типам нарушений [95 % ДИ]</th></tr></thead><tbody>
 <tr><td>Поясничный отдел позвоночника</td><td class="num strong">0.773 [0.65; 0.88]</td><td class="num">0.623 [0.45; 0.77]</td><td class="num">0.539 [0.36; 0.69]</td></tr>
-<tr><td>Проксимальный отдел бедра</td><td class="num strong">0.752 [0.63; 0.86]</td><td class="num">0.484 [0.29; 0.64]</td><td class="num">0.506 [0.21; 0.69]</td></tr>
+<tr><td>Проксимальный отдел бедра</td><td class="num strong">0.760 [0.63; 0.86]</td><td class="num">0.516 [0.31; 0.68]</td><td class="num">0.473 [0.20; 0.68]</td></tr>
 </tbody></table></div>
 <p class="metrics-src">Источник: <code>docs/METRICS_REPORT.md</code>, таблица «Итого» (<code>python src/eval_oof_metrics.py</code>, 95 % ДИ — бутстрап по исследованиям, 2000 повторов).</p>
 <!-- METRICS:END -->
@@ -937,7 +937,7 @@ function humanError(status, bodyText) {
 function safeApiUrl(u) {
   // ссылки с сервера принимаем только относительные, внутрь /api/ или assets/
   if (typeof u !== 'string') return null;
-  if (/^\/api\/[\w\-./%]+$/.test(u)) return u;
+  if (/^\/api\/[\w\-./%]+(\?t=[\w\-]+)?$/.test(u)) return u;
   if (/^assets\/[\w\-./]+$/.test(u)) return u;
   return null;
 }
@@ -1366,6 +1366,7 @@ analyzeBtn.addEventListener('click', () => {
     statusLine.className = 'status-line ok';
     statusLine.textContent = `Готово за ${fmt(s.wall_time_s, 1)} с: ${s.n_files ?? data.rows.length} файл(ов), ${s.n_violations ?? '—'} с нарушением, ${s.n_failures ?? '—'} ошибок обработки. Проверка формата: ${data.format_check === 'OK' ? 'OK' : JSON.stringify(data.format_check)}`;
     setRunChip(data);
+    rememberJob(data);
     historyLoaded = true; loadHistory();
   };
   xhr.send(form);
@@ -1641,7 +1642,30 @@ document.addEventListener('keydown', e => {
   const s = document.querySelector('.qrow.selected'); if (s) { s.focus({ preventScroll: true }); s.scrollIntoView({ block: 'nearest' }); }
 });
 
-// ---------- история запросов (устойчива к пустому ответу и ошибкам) ----------
+// ---------- история запросов ----------
+// Список запросов сервер больше не отдаёт: результаты принадлежат тому, кто их загрузил.
+// Кабинет помнит свои запросы сам — код запроса и код доступа (job_token) хранятся в этом браузере.
+const HIST_KEY = 'densito_jobs_v1';
+function histRead() {
+  try { const a = JSON.parse(lsGet(HIST_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+}
+function histSave(list) { lsSet(HIST_KEY, JSON.stringify(list.slice(0, 20))); }
+function rememberJob(data) {
+  const jobId = String(data.job_id || '');
+  if (!/^[0-9]{8}_[0-9]{6}_[0-9a-f]{6}$/.test(jobId)) return;
+  const s = data.summary || {};
+  const item = {
+    job_id: jobId, token: String(data.job_token || ''),
+    created_at: new Date().toISOString().slice(0, 19),
+    summary: { n_files: s.n_files, n_studies: s.n_studies, n_violations: s.n_violations, n_failures: s.n_failures, wall_time_s: s.wall_time_s },
+    format_check: data.format_check, n_rows: Array.isArray(data.rows) ? data.rows.length : null,
+  };
+  histSave([item].concat(histRead().filter(x => x && x.job_id !== jobId)));
+}
+function jobUrl(jobId, token, name) {
+  const u = '/api/results/' + encodeURIComponent(jobId) + '/' + encodeURIComponent(name);
+  return token ? u + '?t=' + encodeURIComponent(token) : u;
+}
 let historyBusy = false;
 function fmtWhen(it) {
   const s = String(it.created_at || '');
@@ -1655,15 +1679,10 @@ async function loadHistory() {
   if (historyBusy) return;
   historyBusy = true; btn.disabled = true;
   box.textContent = '';
-  box.appendChild(el('div', { class: 'hist-state', text: 'Загружаем историю…' }));
   try {
-    const r = await fetch('/api/jobs?limit=20', { cache: 'no-store' });
-    if (!r.ok) throw new Error(humanError(r.status, await r.text().catch(() => '')));
-    let j;
-    try { j = await r.json(); } catch (e) { throw new Error('сервер вернул не JSON'); }
-    const jobs = Array.isArray(j) ? j : (j && Array.isArray(j.jobs) ? j.jobs : []);
+    const jobs = histRead();
     box.textContent = '';
-    if (!jobs.length) { box.appendChild(el('div', { class: 'hist-state', text: 'Запросов пока нет. После первой обработанной партии здесь появятся её код, сводка и ссылки на файлы.' })); return; }
+    if (!jobs.length) { box.appendChild(el('div', { class: 'hist-state', text: 'Запросов пока нет. После первой обработанной партии здесь появятся её код, сводка и ссылки на файлы. История хранится в этом браузере: чужие запросы сервис не показывает.' })); return; }
     for (const it of jobs) {
       if (!it || typeof it !== 'object') continue;
       const jobId = String(it.job_id || '');
@@ -1685,10 +1704,10 @@ async function loadHistory() {
       row.appendChild(mid);
       const links = el('div', { class: 'links' });
       if (jobOk && !it.error) {
-        const base = '/api/results/' + encodeURIComponent(jobId) + '/';
-        links.appendChild(el('a', { class: 'btn sm ghost', href: base + 'results.csv', target: '_blank', rel: 'noopener', text: 'CSV' }));
-        links.appendChild(el('a', { class: 'btn sm ghost', href: base + 'results.xlsx', target: '_blank', rel: 'noopener', text: 'XLSX' }));
-        links.appendChild(el('button', { type: 'button', class: 'btn sm', text: 'Открыть', onclick: () => openJob(jobId) }));
+        const tok = String(it.token || '');
+        links.appendChild(el('a', { class: 'btn sm ghost', href: jobUrl(jobId, tok, 'results.csv'), target: '_blank', rel: 'noopener', text: 'CSV' }));
+        links.appendChild(el('a', { class: 'btn sm ghost', href: jobUrl(jobId, tok, 'results.xlsx'), target: '_blank', rel: 'noopener', text: 'XLSX' }));
+        links.appendChild(el('button', { type: 'button', class: 'btn sm', text: 'Открыть', onclick: () => openJob(jobId, tok) }));
       }
       row.appendChild(links);
       box.appendChild(row);
@@ -1701,19 +1720,20 @@ async function loadHistory() {
     ]));
   } finally { historyBusy = false; btn.disabled = false; }
 }
-async function openJob(jobId) {
+async function openJob(jobId, token) {
   statusLine.className = 'status-line';
   statusLine.textContent = 'Открываем запрос ' + jobId + '…';
   try {
-    const r = await fetch('/api/jobs/' + encodeURIComponent(jobId), { cache: 'no-store' });
+    const q = token ? '?t=' + encodeURIComponent(token) : '';
+    const r = await fetch('/api/jobs/' + encodeURIComponent(jobId) + q, { cache: 'no-store' });
     if (!r.ok) throw new Error(humanError(r.status, await r.text().catch(() => '')));
     const card = await r.json();
     if (!card || !Array.isArray(card.rows)) throw new Error('карточка запроса без строк');
     // в карточке запроса нет картинок (base64 не сохраняется): подставляем ссылки на PNG из папки запроса
     card.rows = card.rows.map(x => {
       const stem = String(x.path_to_study || '').replace(/\.[^.]+$/, '');
-      const extra = stem ? { bonus_overlay_png_url: `/api/results/${encodeURIComponent(jobId)}/${encodeURIComponent(stem + '_overlay.png')}` } : {};
-      if (stem && x.details && x.details.roi && x.details.roi.needs_correction) extra.bonus_roi_png_url = `/api/results/${encodeURIComponent(jobId)}/${encodeURIComponent(stem + '_roi_correction.png')}`;
+      const extra = stem ? { bonus_overlay_png_url: jobUrl(jobId, token, stem + '_overlay.png') } : {};
+      if (stem && x.details && x.details.roi && x.details.roi.needs_correction) extra.bonus_roi_png_url = jobUrl(jobId, token, stem + '_roi_correction.png');
       return Object.assign({}, x, extra);
     });
     renderResults(card);

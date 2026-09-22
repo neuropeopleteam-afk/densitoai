@@ -63,6 +63,7 @@ COL_TEXT_BG = (0, 0, 0)
 COL_TEXT = (255, 255, 255)
 COL_VIOLATION_TEXT = (0, 0, 255)
 COL_OK_TEXT = (0, 220, 0)
+COL_UNCERTAIN_TEXT = (0, 200, 255)    # жёлтый — решение в зоне «не уверен» (нужен просмотр)
 
 
 def _put_label(img, text, org, color=COL_TEXT, scale=0.42, thickness=1):
@@ -255,8 +256,15 @@ def render_overlay(img_u8: np.ndarray, region: str, feats: Dict[str, Any],
     h, w = img_u8.shape
 
     # --- собираем все подписи для нижней панели ---
+    # К3: если хотя бы один критерий попал в зону «не уверен», на картинке это должно быть
+    # видно так же, как в карточке кабинета и в колонке needs_review debug-CSV: иначе оверлей
+    # уверенно пишет «БЕЗ НАРУШЕНИЙ» там, где сервис просит просмотр человека.
+    uncertain_any = bool(crit_results) and any(int(r.get("uncertain", 0) or 0) for r in crit_results.values())
     header = "НАРУШЕНИЕ" if quality_class else "БЕЗ НАРУШЕНИЙ"
     header_color = COL_VIOLATION_TEXT if quality_class else COL_OK_TEXT
+    if uncertain_any:
+        header = f"{header} · НЕ УВЕРЕН, НУЖЕН ПРОСМОТР"
+        header_color = COL_UNCERTAIN_TEXT
     panel_lines = [(header, header_color, 0.44)]
     if violation_type:
         # в CSV-выводе разделитель ";" без пробела (спецификация ТЗ) — для
@@ -276,9 +284,12 @@ def render_overlay(img_u8: np.ndarray, region: str, feats: Dict[str, Any],
             name = CRIT_SHORT.get(crit, crit)
             thr = r.get("threshold", 0.5)
             flagged = bool(r.get("flag"))
+            unc = bool(int(r.get("uncertain", 0) or 0))
             mark = "НАРУШЕНИЕ" if flagged else "норма"
-            panel_lines.append((f"Модель · {name}: {r['score']:.2f} / порог {thr:.2f} → {mark}",
-                                COL_VIOLATION_TEXT if flagged else COL_OK_TEXT, 0.34))
+            if unc:
+                mark = f"{mark} (не уверен)"
+            color = COL_UNCERTAIN_TEXT if unc else (COL_VIOLATION_TEXT if flagged else COL_OK_TEXT)
+            panel_lines.append((f"Модель · {name}: {r['score']:.2f} / порог {thr:.2f} → {mark}", color, 0.34))
 
     # --- вычисляем высоту панели с учётом переноса строк ---
     pad_x = 6

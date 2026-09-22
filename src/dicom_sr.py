@@ -165,7 +165,7 @@ def build_sr(ref_ds, region: str, quality_class: int, violation_type: str,
     root_children = [
         _text_item("HAS CONCEPT MOD", "REGION", "Анатомическая область", region_name),
         _code_content_item("CONTAINS", "VERDICT", "Итоговое заключение", verdict_code, verdict_text),
-        _num_item("CONTAINS", "QPROB", "Вероятность нарушения (quality_prob)", quality_prob, "1"),
+        _num_item("CONTAINS", "QPROB", "Оценка риска нарушения (quality_prob, шкала 0-1)", quality_prob, "1"),
         _text_item("CONTAINS", "VIOL-LIST", "Типы нарушений", violation_type or "нет"),
     ]
 
@@ -383,7 +383,7 @@ def build_study_sr(study_uid: str, items: list, model_version: str, config_hash:
         qp = it.get("quality_prob")
         if qp is not None:
             try:
-                children.append(_num_item("CONTAINS", "QPROB", "Вероятность нарушения (quality_prob)", float(qp), "1"))
+                children.append(_num_item("CONTAINS", "QPROB", "Оценка риска нарушения (quality_prob, шкала 0-1)", float(qp), "1"))
             except (TypeError, ValueError):
                 pass
         for key, code, meaning in (("sha256_file", "SHA256-FILE", "SHA-256 исходного файла DICOM (неизменность оригинала)"),

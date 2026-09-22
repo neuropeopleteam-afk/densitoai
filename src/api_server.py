@@ -34,6 +34,7 @@ import base64
 import io
 import json
 import re
+import secrets
 import threading
 import logging
 import os
@@ -55,7 +56,7 @@ from inference import (  # noqa: E402
 )
 
 try:
-    from fastapi import FastAPI, File, HTTPException, UploadFile
+    from fastapi import FastAPI, File, Header, HTTPException, UploadFile
     from fastapi.responses import FileResponse, JSONResponse
     from starlette.concurrency import run_in_threadpool
     from pydantic import BaseModel
@@ -72,6 +73,11 @@ MAX_FILES_PER_REQUEST = int(os.environ.get("DENSITO_MAX_FILES", "500"))
 JOBS_DIR = OUTPUT_DIR / "jobs"           # результаты каждого запроса — в отдельной папке
 JOBS_DIR.mkdir(parents=True, exist_ok=True)
 JOB_RE = re.compile(r"^[0-9]{8}_[0-9]{6}_[0-9a-f]{6}$")
+# Результаты запроса принадлежат тому, кто его загрузил: при загрузке выдаётся одноразовый
+# код доступа (job_token). Без него карточка и файлы запроса не отдаются, даже если код
+# запроса известен. Список всех запросов закрыт и включается только админским ключом.
+JOB_TOKEN_FILE = ".job_token"
+ADMIN_KEY = os.environ.get("DENSITO_ADMIN_KEY", "").strip()
 _RUN_LOCK = threading.Lock()             # инференс сериализуем: один запрос — один прогон,
                                          # без гонок за файлы бонус-визуализаций
 
@@ -418,18 +424,26 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
         limit = int(MAX_UPLOAD_MB * 1024 * 1024)
         for uf in files:
             rel = _safe_upload_rel(uf.filename)
-            data = await uf.read()
-            total += len(data)
-            if total > limit:
-                raise HTTPException(413, f"Объём загрузки превышает {MAX_UPLOAD_MB:.0f} МБ. Разбейте партию на части.")
-            if not data:
-                raise HTTPException(400, f"Файл «{rel}» пустой.")
             target = tmp / rel
             target.parent.mkdir(parents=True, exist_ok=True)
             if target.exists():
                 target = unique_path(target)
                 LOG.warning("Upload %r duplicates an earlier name, stored as %r", rel, target.name)
-            target.write_bytes(data)
+            # читаем кусками и останавливаемся на лимите, а не после полной загрузки в память
+            n_file = 0
+            with open(target, "wb") as dst:
+                while True:
+                    chunk = await uf.read(1 << 20)
+                    if not chunk:
+                        break
+                    total += len(chunk)
+                    n_file += len(chunk)
+                    if total > limit:
+                        raise HTTPException(413, f"Объём загрузки превышает {MAX_UPLOAD_MB:.0f} МБ. "
+                                                 f"Разбейте партию на части.")
+                    dst.write(chunk)
+            if n_file == 0:
+                raise HTTPException(400, f"Файл «{rel}» пустой.")
         eng, out_csv, rows, debug_rows = await run_in_threadpool(_run_job, job, tmp, job_dir, xlsx)
         problems = validate_output_csv(out_csv, eng.cfg)
         study_sr = _study_sr_urls(eng, job)
@@ -449,8 +463,10 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
             rows_out.append(rb)
         xlsx_path = out_csv.with_suffix(".xlsx")
         has_xlsx = bool(xlsx and xlsx_path.exists())
+        job_token = _issue_job_token(job_dir)
         resp = {
             "job_id": job,
+            "job_token": job_token,
             "request_id": job,
             "model_version": PIPELINE_VERSION,
             "config_hash": _config_hash(eng.cfg),
@@ -472,15 +488,15 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
             "rows": rows_out,
             "csv": _rows_to_csv_text(rows, eng.cfg),
         }
-        # краткая карточка запроса для истории (без base64-картинок)
+        # краткая карточка запроса для истории (без base64-картинок и без кода доступа)
         try:
-            card = {k: v for k, v in resp.items() if k not in ("rows", "csv")}
+            card = {k: v for k, v in resp.items() if k not in ("rows", "csv", "job_token")}
             card["created_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
             card["rows"] = [{k: v for k, v in r.items() if not str(k).endswith("_base64")} for r in rows_out]
             (job_dir / "summary.json").write_text(json.dumps(card, ensure_ascii=False, indent=1), encoding="utf-8")
         except Exception as e:  # noqa: BLE001
             LOG.warning("summary.json failed: %s", e)
-        return resp
+        return _with_token(resp, job, job_token)
     except HTTPException:
         shutil.rmtree(job_dir, ignore_errors=True)
         raise
@@ -535,6 +551,46 @@ def batch(req: BatchRequest):
         raise HTTPException(500, f"{type(e).__name__}: {e}")
 
 
+def _issue_job_token(job_dir: Path) -> str:
+    """Создать код доступа к запросу. Файл начинается с точки — _safe_job_file его не отдаёт."""
+    tok = secrets.token_urlsafe(24)
+    p = job_dir / JOB_TOKEN_FILE
+    p.write_text(tok, encoding="utf-8")
+    try:
+        os.chmod(p, 0o600)
+    except OSError:  # pragma: no cover — файловая система без прав
+        pass
+    return tok
+
+
+def _check_job_access(job: str, given: str) -> None:
+    """Пустить к результатам запроса только по его коду доступа (или админскому ключу)."""
+    if not JOB_RE.match(job or ""):
+        raise HTTPException(404, "job not found")
+    given = (given or "").strip()
+    if ADMIN_KEY and given and secrets.compare_digest(given, ADMIN_KEY):
+        return
+    tp = JOBS_DIR / job / JOB_TOKEN_FILE
+    if not tp.is_file():
+        raise HTTPException(404, "job not found")
+    real = tp.read_text(encoding="utf-8").strip()
+    if not given or not secrets.compare_digest(given, real):
+        raise HTTPException(403, "Нужен код доступа к запросу (job_token): он выдаётся в ответе на загрузку "
+                                 "и передаётся как ?t=<код> или заголовком X-Job-Token.")
+
+
+def _with_token(obj: Any, job: str, tok: str) -> Any:
+    """Добавить код доступа во все ссылки на файлы этого запроса (включая вложенные)."""
+    pref = f"/api/results/{job}/"
+    if isinstance(obj, str):
+        return f"{obj}?t={tok}" if obj.startswith(pref) and "?" not in obj else obj
+    if isinstance(obj, dict):
+        return {k: _with_token(v, job, tok) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_with_token(v, job, tok) for v in obj]
+    return obj
+
+
 def _safe_job_file(job: str, name: str) -> Path:
     if not JOB_RE.match(job or ""):
         raise HTTPException(404, "job not found")
@@ -550,23 +606,36 @@ def _safe_job_file(job: str, name: str) -> Path:
 
 
 @app.get("/api/results/{job}/{name}")
-def download_job_file(job: str, name: str):
+def download_job_file(job: str, name: str, t: Optional[str] = None,
+                      x_job_token: Optional[str] = Header(None)):
     """Файл результата конкретного запроса: results.csv, results_debug.csv, results.xlsx,
-    summary.json, SR исследования (sr/<study_uid>_SR.dcm) или бонус-файлы (overlay PNG, SR снимка, ROI PNG)."""
+    summary.json, SR исследования (sr/<study_uid>_SR.dcm) или бонус-файлы (overlay PNG, SR снимка, ROI PNG).
+    Нужен код доступа к запросу: ?t=<job_token> или заголовок X-Job-Token."""
+    _check_job_access(job, x_job_token or t)
     p = _safe_job_file(job, name)
     return FileResponse(str(p), filename=p.name)
 
 
 @app.get("/api/jobs/{job}")
-def job_card(job: str):
-    """Карточка запроса (summary.json): сводка, строки без картинок, ссылки на файлы."""
-    p = _safe_job_file(job, "summary.json")
-    return JSONResponse(json.loads(p.read_text(encoding="utf-8")))
+def job_card(job: str, t: Optional[str] = None, x_job_token: Optional[str] = Header(None)):
+    """Карточка запроса (summary.json): сводка, строки без картинок, ссылки на файлы.
+    Нужен код доступа к запросу: ?t=<job_token> или заголовок X-Job-Token."""
+    given = (x_job_token or t or "").strip()
+    _check_job_access(job, given)
+    card = json.loads(_safe_job_file(job, "summary.json").read_text(encoding="utf-8"))
+    return JSONResponse(_with_token(card, job, given))
 
 
 @app.get("/api/jobs")
-def jobs_list(limit: int = 50):
-    """История запросов (последние N): job_id, время, сводка. Для кабинета врача/лаборанта."""
+def jobs_list(limit: int = 50, t: Optional[str] = None, x_admin_key: Optional[str] = Header(None)):
+    """Список всех запросов сервиса. Закрыт: отдаётся только по админскому ключу
+    (DENSITO_ADMIN_KEY, заголовок X-Admin-Key). Кабинет ведёт свою историю в браузере —
+    по кодам запросов и кодам доступа, полученным при загрузке, — поэтому один пользователь
+    не видит запросы другого."""
+    given = (x_admin_key or t or "").strip()
+    if not ADMIN_KEY or not given or not secrets.compare_digest(given, ADMIN_KEY):
+        raise HTTPException(403, "Список запросов закрыт: запросы видны только тому, кто их загрузил "
+                                 "(история ведётся в браузере). Администратору — ключ X-Admin-Key.")
     items = []
     for d in sorted(JOBS_DIR.iterdir(), key=lambda x: x.name, reverse=True):
         if not d.is_dir() or not JOB_RE.match(d.name):

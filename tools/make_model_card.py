@@ -119,8 +119,14 @@ def main(argv=None) -> int:
     w("Двухконтурный стекинг для каждого критерия (см. `src/inference.py`, `models/MODEL_CONTRACT.md`):")
     w("")
     w("- контур A — геометрические признаки сегментированной кости (логистическая регрессия, `model_<регион>_<критерий>_geom.pkl`);")
-    w("- контур B — эмбеддинги замороженного EfficientNet-B0 (источник `imagenet` или `densito` — дообученный на внешних DXA-наборах "
-      "бэкбон `models/backbone_densito.pth`) → PCA → логистическая регрессия (`model_..._emb_pca.pkl`);")
+    w("- контур B — эмбеддинги замороженного EfficientNet-B0 → PCA → логистическая регрессия (`model_..._emb_pca.pkl`). "
+      "Источник эмбеддингов выбран по критерию (К13, nested-протокол): `imagenet` — веса torchvision (BSD-3-Clause); "
+      "`densito` — `models/backbone_densito.pth`, дообучен на пуле внешних DXA/рентген-наборов; `densito_inv` — "
+      "`models/backbone_densito_inv.pth`, инвариантный вариант того же пула. В пул входят Arak (CC BY-NC) и "
+      "BUU-LSPINE (некоммерческое EULA), поэтому критерии на `densito`/`densito_inv` (`sp_pos`, `sp_axis`) "
+      "ограничены исследовательским использованием; `sp_art`, `hip_pos`, `hip_roi` работают на `imagenet` и "
+      "ограничений не имеют. Разбор и варианты — `docs/LICENSES_AND_DATA_AUDIT.md`, свободный по лицензиям "
+      "`backbone_densito_inv_free.pth` в образе тоже есть;")
     w(f"- объединение: ранговое усреднение перцентилей относительно OOF-распределения с весами geom={st.get('weight_geom')}, "
       f"emb={st.get('weight_emb')}; quality_prob = {st.get('any_blend_weight_model')}·any-модель + "
       f"{1 - float(st.get('any_blend_weight_model', 0.5)):.1f}·{st.get('any_violation_aggregation')} по критериям; "

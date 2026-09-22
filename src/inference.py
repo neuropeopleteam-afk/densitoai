@@ -38,6 +38,7 @@ import json
 import logging
 import os
 import pickle
+import re
 import shutil
 import sys
 import tempfile
@@ -289,6 +290,12 @@ def unique_path(base: Path) -> Path:
     return base.with_name(f"{stem}_{uuid.uuid4().hex[:8]}{suf}")
 
 
+# Пределы распаковки архива: защита от «zip-бомбы» (маленький архив, гигантское содержимое).
+MAX_ZIP_MEMBERS = int(os.environ.get("DENSITO_MAX_ZIP_MEMBERS", "20000"))
+MAX_ZIP_UNPACKED_MB = float(os.environ.get("DENSITO_MAX_ZIP_UNPACKED_MB", "4096"))
+MAX_ZIP_RATIO = float(os.environ.get("DENSITO_MAX_ZIP_RATIO", "200"))
+
+
 def safe_extract_zip(zip_path: Path, dest: Path) -> List[Tuple[Path, str]]:
     """Безопасная распаковка: нормализуем кодировку имён, отбрасываем абсолютные пути и
     `..` (zip-slip), служебные каталоги __MACOSX. Элементы с совпадающим полным именем
@@ -296,10 +303,23 @@ def safe_extract_zip(zip_path: Path, dest: Path) -> List[Tuple[Path, str]]:
     Возвращает [(файл на диске, путь внутри архива)]."""
     out: List[Tuple[Path, str]] = []
     dest = dest.resolve()
+    cap = int(MAX_ZIP_UNPACKED_MB * 1024 * 1024)
+    unpacked = 0
     with zipfile.ZipFile(zip_path) as zf:
-        for zi in zf.infolist():
-            if zi.is_dir():
-                continue
+        members = [zi for zi in zf.infolist() if not zi.is_dir()]
+        if len(members) > MAX_ZIP_MEMBERS:
+            raise ValueError(f"В архиве «{zip_path.name}» {len(members)} файлов — больше предела "
+                             f"{MAX_ZIP_MEMBERS}. Разбейте архив на части.")
+        declared = sum(int(zi.file_size or 0) for zi in members)
+        if declared > cap:
+            raise ValueError(f"Распакованный объём архива «{zip_path.name}» ({declared / 1048576:.0f} МБ) "
+                             f"превышает предел {MAX_ZIP_UNPACKED_MB:.0f} МБ. Разбейте архив на части.")
+        for zi in members:
+            if zi.compress_size > 0 and zi.file_size > (1 << 20) \
+                    and zi.file_size / zi.compress_size > MAX_ZIP_RATIO:
+                raise ValueError(f"Элемент «{zi.filename}» архива «{zip_path.name}» распаковывается в "
+                                 f"{zi.file_size / zi.compress_size:.0f}× больший объём (предел "
+                                 f"{MAX_ZIP_RATIO:.0f}×) — архив отклонён как небезопасный.")
             name = _fix_zip_name(zi).replace("\\", "/")
             parts = [p for p in name.split("/") if p not in ("", ".", "..")]
             if not parts or parts[0] == "__MACOSX" or parts[-1] == ".DS_Store":
@@ -315,7 +335,15 @@ def safe_extract_zip(zip_path: Path, dest: Path) -> List[Tuple[Path, str]]:
                 rel = "/".join(parts[:-1] + [target.name])
                 LOG.warning("Zip entry %r duplicates an earlier name, stored as %r", zi.filename, rel)
             with zf.open(zi) as src, open(target, "wb") as dst:
-                shutil.copyfileobj(src, dst)
+                while True:
+                    buf = src.read(1 << 20)
+                    if not buf:
+                        break
+                    unpacked += len(buf)
+                    if unpacked > cap:      # заявленный размер в заголовке может врать
+                        raise ValueError(f"Распакованный объём архива «{zip_path.name}» превысил предел "
+                                         f"{MAX_ZIP_UNPACKED_MB:.0f} МБ на файле «{rel}» — архив отклонён.")
+                    dst.write(buf)
             out.append((target, rel))
     return out
 
@@ -1306,7 +1334,7 @@ class DensitoInference:
                             violations: List[str], quality_prob: float, debug: Dict[str, Any]) -> None:
         if not (self.visualize_dir or self.sr_dir or self.roi_autocorrect_dir):
             return
-        stem = path.stem
+        stem = self._bonus_stem(path)
         violation_type_str = self.cfg["output"]["violation_separator"].join(violations)
 
         if self.visualize_dir:
@@ -1348,6 +1376,19 @@ class DensitoInference:
             except Exception as e:  # noqa: BLE001
                 LOG.warning("auto_roi failed for %s: %s", path.name, e)
                 debug["bonus_roi_error"] = str(e)
+
+    def _bonus_stem(self, path: Path) -> str:
+        """Имя бонус-файла, уникальное в пределах прогона.
+
+        В DXA-датасетах имена файлов повторяются (`CR000001.dcm` есть почти в каждом
+        исследовании), поэтому `path.stem` затирал бы оверлеи и SR разных исследований в
+        одной папке. Берём имя файла и короткий хэш полного пути: имя остаётся читаемым,
+        а совпадений нет. Соответствие «бонус-файл -> исходный снимок» есть в debug-CSV
+        (колонки `bonus_overlay_png`, `bonus_sr_dcm`, `bonus_roi_png`).
+        """
+        h = hashlib.sha1(str(path.resolve()).encode("utf-8", errors="ignore")).hexdigest()[:10]
+        safe = re.sub(r"[^A-Za-z0-9_.-]+", "_", path.stem)[:60] or "image"
+        return f"{safe}__{h}"
 
     def _path_str(self, path: Path, root: Optional[Path]) -> str:
         mode = self.cfg["output"].get("path_mode", "relative")

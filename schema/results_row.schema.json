@@ -74,7 +74,7 @@
       "type": "number",
       "minimum": 0.0,
       "maximum": 1.0,
-      "description": "Вероятность наличия нарушения; согласована с классом: class=1 <=> prob >= 0.5 (config stacking.consistent_quality_prob). При Failure — output.fallback_quality_prob."
+      "description": "Оценка риска нарушения в шкале [0,1] — ранговый скор стэкинга, согласованный с классом (class=1 <=> prob >= 0.5, config stacking.consistent_quality_prob), а НЕ калиброванная вероятность: порог критерия не равен 0.5, монотонного соответствия скора частоте не гарантируется. Калиброванная величина по критерию — <crit>_p_cal в debug-CSV и details API. При Failure — output.fallback_quality_prob."
     },
     "processing_status": {
       "type": "string",
