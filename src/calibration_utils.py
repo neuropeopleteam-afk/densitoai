@@ -81,15 +81,30 @@ def margins_for_quota(margins_data, q):
     return out
 
 
-def select_margins(margins_data, region_criteria, max_reject=0.05, step=0.0025):
-    """Подбор квоты q ПО РЕГИОНУ (от max_reject вниз шагом step): доля «не уверен» <= max_reject и по каждому
-    критерию региона, и по строкам региона (строка «не уверена», если не уверен хотя бы один критерий).
-    margins_data[c] — массивы одной длины внутри региона (одни и те же строки в одном порядке).
-    Возвращает ({crit: margin}, {region: q})."""
+def select_margins(margins_data, region_criteria, max_reject=0.05, step=0.0025,
+                   quota_scope="per_criterion"):
+    """Подбор запасов зоны «не уверен».
+
+    quota_scope = "per_criterion" (по умолчанию): квота max_reject применяется к каждому
+    критерию отдельно. Строка попадает на просмотр, если не уверен хотя бы один критерий,
+    поэтому доля строк региона выше квоты по критерию и возвращается в `row_rates`.
+
+    quota_scope = "per_region": квота q снижается от max_reject шагом step, пока доля
+    СТРОК региона в зоне не станет <= max_reject. На пяти критериях это давало запас 0.0
+    четырём критериям из пяти, то есть зона срабатывала только при точном совпадении с
+    порогом; режим оставлен для воспроизведения прежних цифр.
+
+    Запас не влияет на `quality_class` и девять колонок выгрузки — только на признак
+    `needs_review`. margins_data[c] — массивы одной длины внутри региона (одни и те же
+    строки в одном порядке). Возвращает ({crit: margin}, {region: q})."""
     margins, quotas = {}, {}
     for region, crits in region_criteria.items():
         sub = {c: margins_data[c] for c in crits if c in margins_data}
         if not sub:
+            continue
+        if quota_scope == "per_criterion":
+            mg = margins_for_quota(sub, max_reject)
+            margins.update(mg); quotas[region] = float(max_reject)
             continue
         q = max_reject
         mg = margins_for_quota(sub, q)

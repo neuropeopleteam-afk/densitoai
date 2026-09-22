@@ -215,6 +215,8 @@ table.metrics.compact td, table.metrics.compact th { padding: 12px 14px; }
 .badge.violation { background: var(--error-soft); color: var(--error); }
 .badge.fail { background: var(--warning-soft); color: var(--warning); }
 .badge.neutral { background: var(--surface-alt); color: var(--muted); }
+.badge.uncertain { background: var(--warning-soft); color: var(--warning); margin-left: 6px;
+  border: 1px solid color-mix(in srgb, var(--warning) 35%, transparent); }
 
 /* проверка */
 .verify { display: grid; grid-template-columns: 1.1fr .9fr; gap: 28px; align-items: start; }
@@ -240,6 +242,10 @@ table.metrics.compact td, table.metrics.compact th { padding: 12px 14px; }
 
 footer { padding: 36px 0; color: var(--muted); font-size: 14px; border-top: 1px solid var(--border); }
 footer .wrap { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.disclaimer { flex-basis: 100%; font-size: 13px; line-height: 1.55; color: var(--muted);
+  border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px; }
+.app-disclaimer { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px;
+  margin: 18px 0 8px; background: rgba(148,163,184,.06); }
 
 /* ---------- лайтбокс ---------- */
 .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.9); display: none; align-items: center; justify-content: center; z-index: 100; cursor: zoom-out; }
@@ -827,7 +833,8 @@ python src/eval_oof_metrics.py             <span class="c"># метрики с �
 <footer>
   <div class="wrap">
     <div>DensitoAI · ООО «НЕЙРОПИПЛ» · хакатон «Лидеры цифровой трансформации 2026», задача 4</div>
-    <div>Версия сервиса 2.1.0 · EfficientNet-B0 + геометрия · OOF с группировкой по исследованию</div>
+    <div>Версия сервиса 2.3.0 · EfficientNet-B0 + геометрия · OOF с группировкой по исследованию</div>
+    <div class="disclaimer">Программа не является медицинским изделием и не предназначена для диагностики, профилактики, лечения или мониторинга заболеваний. Сервис оценивает техническое качество укладки и области интереса исследования и не формирует медицинское заключение. Решение по исследованию принимает врач. Область применения: денситометрия (DXA) поясничного отдела позвоночника и проксимального отдела бедра, оборудование GE Lunar Prodigy.</div>
   </div>
 </footer>
 </main>
@@ -878,6 +885,8 @@ python src/eval_oof_metrics.py             <span class="c"># метрики с �
         </div>
         <div id="historyList"></div>
       </div>
+
+      <div class="disclaimer app-disclaimer">Программа не является медицинским изделием и не предназначена для диагностики, профилактики, лечения или мониторинга заболеваний. Сервис оценивает техническое качество укладки и области интереса исследования и не формирует медицинское заключение. Решение по исследованию принимает врач. Область применения: денситометрия (DXA) поясничного отдела позвоночника и проксимального отдела бедра, оборудование GE Lunar Prodigy.</div>
     </div>
   </div>
 </main>
@@ -1010,6 +1019,21 @@ function decision(r) {
   if (!isViol) {
     const near = withMargin.length ? Math.min(...withMargin.map(c => -c.margin)) : null; // расстояние до порога снизу
     const code = (doctor || (d && d.needs_review === true)) ? 'review' : 'ok'; // К3: зона «не уверен» из API details
+    if (code === 'review') {
+      // пограничная норма: класс 0, но хотя бы один критерий в зоне «не уверен» (запас до порога мал).
+      // Здесь нельзя писать «повторное сканирование не требуется» — причину просмотра надо назвать.
+      const ucodes = Array.isArray(d.uncertain_criteria) ? d.uncertain_criteria.map(String) : [];
+      const named = crits.filter(c => ucodes.includes(String(c.code)));
+      const titles = (named.length ? named : []).map(c => String(c.title || c.code).toLowerCase());
+      const nearest = withMargin.slice().sort((a, b) => Math.abs(a.margin) - Math.abs(b.margin))[0] || null;
+      const gap = nearest ? Math.abs(nearest.margin) : null;
+      return { code, label: VERDICT[code], group: 'ok',
+        reason: 'Оценка у порога — посмотреть глазами',
+        hint: (titles.length ? 'В зоне «не уверен»: ' + titles.join(', ') + '. ' : '')
+          + (gap !== null ? 'Запас до порога ' + fmtNum(gap, 3) + '. ' : '')
+          + 'Класс качества и выгрузка не меняются: сервис отдал «норма», но уверенности мало — решение за врачом.',
+        crit: nearest, margin: near, doctor: true, borderline: true };
+    }
     return { code, label: VERDICT[code], group: 'ok', reason: acts.ok?.reason || 'Отклонений не выявлено', hint: acts.ok?.hint || '', crit: null, margin: near, doctor };
   }
   let main = flagged[0] || null, group = null;
@@ -1417,7 +1441,8 @@ function renderResults(data) {
 
   // панель фильтров
   const tb = el('div', { class: 'toolbar' });
-  const chipsDef = [['all', 'Все', n], ['violation', 'Нарушения', nv], ['ok', 'Норма', n - nv - nf], ['fail', 'Ошибки', nf]];
+  const nu = state.rows.filter(r => needsDoctor(r.details || {})).length;
+  const chipsDef = [['all', 'Все', n], ['violation', 'Нарушения', nv], ['uncertain', 'Не уверен', nu], ['ok', 'Норма', n - nv - nf], ['fail', 'Ошибки', nf]];
   chipsDef.forEach(([k, t, c]) => tb.appendChild(el('button', { type: 'button', class: 'fchip' + (state.filter === k ? ' active' : ''), 'data-f': k, onclick: () => { state.filter = k; refresh(); } }, [t, el('span', { class: 'n', text: String(c) })])));
   const regSel = el('select', { 'aria-label': 'Область', onchange: e => { state.region = e.target.value; refresh(); } }, [
     el('option', { value: 'all', text: 'Все области' }), el('option', { value: 'Поясничный отдел позвоночника', text: 'Позвоночник' }), el('option', { value: 'Проксимальный отдел бедра', text: 'Бедро' })]);
@@ -1446,7 +1471,8 @@ function kpi(v, l, cls) { return el('div', { class: 'kpi ' + (cls || '') }, [el(
 function plural(n, one, few, many) { const m10 = n % 10, m100 = n % 100; const w = (m10 === 1 && m100 !== 11) ? one : (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) ? few : many; return `${n} ${w}`; }
 
 function visibleRows() {
-  let rows = state.rows.filter(r => state.filter === 'all' || r._state === state.filter);
+  let rows = state.rows.filter(r => state.filter === 'all' ? true
+    : state.filter === 'uncertain' ? needsDoctor(r.details || {}) : r._state === state.filter);
   if (state.region !== 'all') rows = rows.filter(r => r.anatomical_region === state.region);
   if (state.q) rows = rows.filter(r => [r.path_to_study, r.study_uid, r.image_uid, r.violation_type, r.anatomical_region].join(' ').toLowerCase().includes(state.q));
   const key = { risk: r => -(Number(r.quality_prob) || 0) - (r._state === 'fail' ? 2 : 0), name: r => String(r.path_to_study || ''), time: r => -(Number(r.time_of_processing) || 0) }[state.sort];
@@ -1473,6 +1499,7 @@ function refresh() {
         el('span', { class: 'uid', text: uid }),
         el('span', { class: 'sp' }),
         el('span', { class: 'badge ' + (nf ? 'fail' : nv ? 'violation' : 'ok'), text: nf ? `${nf} не обработано` : nv ? `${nv} с нарушением` : 'все в норме' }),
+        (() => { const nu = rs.filter(r => needsDoctor(r.details || {})).length; return nu ? el('span', { class: 'badge uncertain', text: `${nu} на просмотр` }) : null; })(),
       ]));
       rs.forEach(r => queue.appendChild(queueRow(r)));
     }
@@ -1495,7 +1522,9 @@ function queueRow(r) {
     el('div', { text: (REGION_SHORT[r.anatomical_region] || r.anatomical_region || '—') + side }),
     el('div', {}, viol.length ? viol.map(v => el('div', { text: v })) : [el('span', { class: 'sub', text: r._state === 'fail' ? String(d.error || 'файл не обработан') : '—' })]),
     el('div', { class: 'risk' + (p >= 0.5 ? ' hot' : '') }, [el('span', { class: 'bar' }, [el('i', { style: `width:${Math.round(p * 100)}%` }), el('b')]), el('span', { text: fmt(p) })]),
-    el('div', {}, [el('span', { class: 'badge ' + r._state, text: STATE_TEXT[r._state] })]),
+    // зона «не уверен»: решение взято, но запас до порога мал — в очереди видно сразу
+    el('div', {}, [el('span', { class: 'badge ' + r._state, text: STATE_TEXT[r._state] }),
+      needsDoctor(d) ? el('span', { class: 'badge uncertain', text: 'Не уверен' , title: 'Запас до порога мал' + (Array.isArray(d.uncertain_criteria) && d.uncertain_criteria.length ? ' (' + d.uncertain_criteria.join(', ') + ')' : '') + ' — посмотреть глазами' }) : null]),
   ]);
   if (state.selected === r._i) row.appendChild(detailPanel(r));
   return row;
@@ -1520,9 +1549,13 @@ function detailPanel(r) {
 
 // ---------- режим лаборанта: один снимок крупно, без технических деталей ----------
 const lab = { idx: 0, done: new Set() };
-function currentMode() { return localStorage.getItem('densito_mode') === 'lab' ? 'lab' : 'doctor'; }
+// localStorage может быть запрещён (приватный режим, политика браузера, iframe без same-origin) —
+// кабинет от этого падать не должен: режим просто не запоминается между открытиями
+const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* режим не сохраняем */ } };
+function currentMode() { return lsGet('densito_mode') === 'lab' ? 'lab' : 'doctor'; }
 function setMode(m) {
-  localStorage.setItem('densito_mode', m === 'lab' ? 'lab' : 'doctor');
+  lsSet('densito_mode', m === 'lab' ? 'lab' : 'doctor');
   document.getElementById('modeDoctor').classList.toggle('active', m !== 'lab');
   document.getElementById('modeLab').classList.toggle('active', m === 'lab');
   renderMode();

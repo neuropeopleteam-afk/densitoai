@@ -1,0 +1,17 @@
+{
+  "format_version": 1,
+  "kind": "densito_geometry_medians",
+  "source": "data/geometry_features.csv",
+  "n_rows": 499,
+  "note": "Медианы столбцов признаков для импутации NaN. Только агрегаты: ни путей, ни UID, ни меток.",
+  "medians": {
+    "axis_angle_deg": 1.3199659410897475,
+    "bone_area_ratio": 0.2160847547974413,
+    "bone_width_ratio": 0.3566666666666667,
+    "center_offset_ratio": -0.00626733355822135,
+    "edge_distance_ratio": 0.2678571428571428,
+    "metal_metal_area_mm2": 0.0,
+    "metal_metal_max_intensity_gap": 0.0,
+    "shaft_angle_deg": 3.787229827480624
+  }
+}

@@ -48,8 +48,9 @@ RUN python -m pip install --upgrade "pip==25.0.1" \
 COPY config.yaml /app/config.yaml
 COPY src/ /app/src/
 COPY models/ /app/models/
-# data/geometry_features.csv нужен только для медиан импутации (маленький файл)
-COPY data/geometry_features.csv /app/data/geometry_features.csv
+# Медианы импутации едут агрегатом models/geometry_medians.json (см. tools/make_geometry_medians.py).
+# Выгрузка обучающего набора data/geometry_features.csv в образ НЕ копируется: в ней пути,
+# StudyInstanceUID / SOPInstanceUID и экспертные метки заказчика.
 # tests/: test_inference_format.py, test_transfer_syntax.py, синтетические фантомы + эталон
 # (tests/phantoms/); tests/sample_test_zip/ копируется, если есть в контексте сборки
 # (в релиз-архив образец организаторов по умолчанию не входит, см. tools/make_release.sh)
@@ -80,7 +81,7 @@ RUN python -c "import sys; sys.path.insert(0,'/app/src'); import inference, api_
  && rm -rf /tmp/verify_build
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD python -c "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=4).status==200 else 1)" || exit 0
+  CMD python -c "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=4).status==200 else 1)"
 
 # По умолчанию — пакетная обработка смонтированной папки.
 # Команды entrypoint: batch | api | verify [--data DIR --expected-sha SHA] | test | bash

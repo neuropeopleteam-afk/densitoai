@@ -553,7 +553,10 @@ def train_region_stacked(region, criteria):
         })
         if 'hip_side_detected' in geom_df.columns:
             oof_out['hip_side_detected'] = geom_df['hip_side_detected'].values[valid_mask]
-        oof_out.to_csv(OUT_DIR / f'oof_stacked_{region}_{crit}.csv', index=False)
+        # %.17g — полная точность double: значение, равное порогу, должно остаться
+        # равным ему и после чтения CSV (иначе отчёт метрик разойдётся с сервисом)
+        oof_out.to_csv(OUT_DIR / f'oof_stacked_{region}_{crit}.csv', index=False,
+                       float_format='%.17g')
 
         # --- per-side отчёт для бедра (та же модель, тот же порог) ---
         if region == 'hip':
@@ -601,7 +604,9 @@ def build_calibration(all_results):
                                'brier_oof_constant': float(np.mean((y.mean() - y) ** 2)),
                                'p_cal_at_threshold': float(apply_platt(thr, a, b))}
             margins_data[crit] = np.abs(s - thr)
-    margins, q = select_margins(margins_data, REGION_CRITERIA, max_reject=ucfg['max_reject_rate'], step=ucfg['quota_step'])
+    margins, q = select_margins(margins_data, REGION_CRITERIA, max_reject=ucfg['max_reject_rate'],
+                                step=ucfg['quota_step'],
+                                quota_scope=ucfg.get('quota_scope', 'per_criterion'))
     rows = row_reject_rates(margins_data, REGION_CRITERIA, margins)
     import math
     margins = {c: (0.0 if abs(v) < 1e-9 else math.ceil(float(v) * 1e9) / 1e9) for c, v in margins.items()}  # вверх до 1e-9

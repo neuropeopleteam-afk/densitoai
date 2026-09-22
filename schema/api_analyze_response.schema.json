@@ -110,7 +110,7 @@
             },
             "roi": { "type": "object" },
             "action": { "type": "string" },
-            "action_code": { "type": "string", "enum": ["accept", "review", "manual"] }
+            "action_code": { "type": "string", "enum": ["accept", "review", "review_uncertain", "manual"] }
           }
         }
       }

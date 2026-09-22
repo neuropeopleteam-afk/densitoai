@@ -120,6 +120,33 @@ def oof_any_model(region, criteria):
     return gdf[["study", "file_path"]].assign(y_any=ya, any_model_oof=oof.mean(0), seen=seen)
 
 
+# Допуск сравнения с порогом. Оценки в CSV записаны текстом, и значение, равное порогу
+# в памяти, после разбора может оказаться на 1e-16 ниже. Без допуска такие случаи
+# перестают считаться нарушением, и отчёт показывает F1 выше, чем даёт сервис.
+THR_TIE_ATOL = 1e-9
+
+
+def flags_from_scores(df: pd.DataFrame, s: np.ndarray, thr: float) -> np.ndarray:
+    """Флаги нарушения ровно те же, что выдаёт сервис.
+
+    Приоритет — колонка `pred_label`, записанная обучением в момент, когда оценки были
+    в памяти: это решение, которое принимает инференс. Если колонки нет, сравниваем с
+    порогом с допуском THR_TIE_ATOL, чтобы совпадения «оценка == порог» не терялись
+    из-за округления при записи CSV.
+    """
+    if "pred_label" in df.columns:
+        pl = pd.to_numeric(df["pred_label"], errors="coerce")
+        if not pl.isna().any():
+            yhat = pl.values.astype(int)
+            recomputed = (s >= thr - THR_TIE_ATOL).astype(int)
+            n_diff = int((yhat != recomputed).sum())
+            if n_diff:
+                print(f"    внимание: pred_label и сравнение с порогом расходятся в {n_diff} случаях "
+                      f"(совпадения с порогом); берём pred_label — это решение сервиса")
+            return yhat
+    return (s >= thr - THR_TIE_ATOL).astype(int)
+
+
 def main():
     summary = json.load(open(OUT_DIR / "metrics_summary.json", encoding="utf-8"))
     out = {"method": {"cv": "StratifiedGroupKFold / repeated GroupKFold by study; OOF predictions only",
@@ -140,7 +167,7 @@ def main():
             df = pd.read_csv(OUT_DIR / f"oof_stacked_{region}_{crit}.csv")
             thr = summary[region][crit]["threshold"]
             y = df["y_true"].values.astype(int); s = df["oof_stacked"].values.astype(float)
-            yhat = (s >= thr).astype(int)
+            yhat = flags_from_scores(df, s, thr)
             g = df["study"].values
             pm = point_metrics(y, s, yhat); ci = bootstrap_ci(y, s, yhat, g)
             pm["threshold"] = float(thr); pm["ci95"] = ci

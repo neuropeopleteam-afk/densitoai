@@ -80,7 +80,7 @@ Nested-оценка (порог и стекинг подобраны внутр�
 
 ## 8. Версия и хэши
 
-- Версия пайплайна (config.yaml → version): **2.3.0**; config_hash: **378ee6b98c9b** (тот же пишется в DICOM SR и ответ API).
+- Версия пайплайна (config.yaml → version): **2.3.0**; config_hash: **62cbe30c011f** (тот же пишется в DICOM SR и ответ API).
 - Ключевые библиотеки (requirements.txt): torch 2.14.0+cpu, torchvision 0.29.0+cpu, numpy 2.5.3, scipy 1.18.1, scikit-learn 1.9.1, pandas 3.0.5, pydicom 3.0.2, opencv-python-headless 5.0.0.93, scikit-image 0.26.0, PyYAML 6.0.3, fastapi 0.141.1.
 
 | Файл модели | Критерий | Признаки / источник | n_pos | sha256[:12] |

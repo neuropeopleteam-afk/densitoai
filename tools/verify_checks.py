@@ -437,6 +437,10 @@ def run_checks(a) -> int:
         else:
             add("Данные пользователя: инференс завершился", False, f"нет файла {dcsv}")
 
+    # 10. одна версия и один config_hash во всех файлах поставки
+    ok_ver, det_ver = version_consistency()
+    add("Версия и config_hash одинаковы во всех файлах поставки", ok_ver, det_ver)
+
     timings = {}
     if a.timings and Path(a.timings).exists():
         timings = json.loads(Path(a.timings).read_text(encoding="utf-8"))
@@ -466,6 +470,58 @@ def run_checks(a) -> int:
             print("       " + c["detail"][:600])
     print("VERIFY:", "OK" if result["ok"] else "FAILED", f"({len(checks) - len(hard_fail)}/{len(checks)} checks passed)")
     return 0 if result["ok"] else 1
+
+
+# места, где версия и config_hash продублированы текстом. Ключ — файл, значение — список
+# (регулярное выражение с одной группой, что за значение). Файл, которого нет, пропускается.
+VERSION_PLACES = {
+    "README.md": [(r"^Версия \*\*([0-9]+\.[0-9]+\.[0-9]+)\*\*", "version"),
+                  (r"tools/make_release\.sh ([0-9]+\.[0-9]+\.[0-9]+)", "version")],
+    "docs/VERIFICATION.md": [(r"^# Проверка поставки DensitoAI ([0-9]+\.[0-9]+\.[0-9]+)", "version"),
+                             (r"densitoai:([0-9]+\.[0-9]+\.[0-9]+)", "version")],
+    "docs/DZM_CONFORMANCE.md": [(r"^Версия решения ([0-9]+\.[0-9]+\.[0-9]+)", "version"),
+                                (r"config_hash ([0-9a-f]{12})", "config_hash")],
+    "models/MODEL_CARD.md": [(r"config\.yaml → version\): \*\*([0-9]+\.[0-9]+\.[0-9]+)\*\*", "version"),
+                             (r"config_hash: \*\*([0-9a-f]{12})\*\*", "config_hash")],
+    "tools/make_release.sh": [(r"^VERSION=\$\{1:-\$\{VERSION:-([0-9]+\.[0-9]+\.[0-9]+)\}\}", "version")],
+    "web/index.html": [(r"Версия сервиса ([0-9]+\.[0-9]+\.[0-9]+)", "version")],
+}
+
+
+def version_consistency():
+    """Версия и config_hash из config.yaml против тех же значений, вписанных в документы,
+    сборочные скрипты и веб. Расхождение версий между образом и инструкцией проверки
+    ломает саму проверку поставки, поэтому это ошибка, а не замечание."""
+    import re as _re
+    import sys as _sys
+    cfg_path = ROOT / "config.yaml"
+    if not cfg_path.exists():
+        return False, "нет config.yaml"
+    _sys.path.insert(0, str(ROOT / "src"))
+    try:
+        from inference import load_config, config_hash  # noqa: E402
+        cfg = load_config()
+        want = {"version": str(cfg.get("version", "")).strip(), "config_hash": config_hash(cfg)}
+    except Exception as e:  # noqa: BLE001
+        return False, f"не удалось прочитать config.yaml: {e}"
+    bad, seen = [], 0
+    for rel, pats in VERSION_PLACES.items():
+        p = ROOT / rel
+        if not p.exists():
+            continue
+        text = p.read_text(encoding="utf-8", errors="replace")
+        for pat, kind in pats:
+            found = _re.findall(pat, text, _re.M)
+            if not found:
+                bad.append(f"{rel}: не найдено {kind} по шаблону")
+                continue
+            for v in set(found):
+                seen += 1
+                if v != want[kind]:
+                    bad.append(f"{rel}: {kind} {v} != {want[kind]}")
+    detail = ("; ".join(bad) if bad else
+              f"версия {want['version']}, config_hash {want['config_hash']} — совпадают в {seen} местах")
+    return not bad, detail
 
 
 def update_expected(a) -> int:

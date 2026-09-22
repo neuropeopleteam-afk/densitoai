@@ -1,4 +1,12 @@
-# Проверка поставки DensitoAI 2.1.0 (инструкция для технической группы заказчика)
+# Проверка поставки DensitoAI 2.3.0 (инструкция для технической группы заказчика)
+
+> **Назначение и ограничения.** Программа не является медицинским изделием и не предназначена
+> для диагностики, профилактики, лечения или мониторинга заболеваний. Сервис оценивает
+> техническое качество укладки и области интереса исследования и не формирует медицинское
+> заключение. Решение по исследованию принимает врач. Область применения: денситометрия (DXA)
+> поясничного отдела позвоночника и проксимального отдела бедра, оборудование GE Lunar Prodigy;
+> вне этой области применения результат не определён. Источник формулировки —
+> `config.yaml → intended_use`, та же строка отдаётся в `/api/health` и показана в веб-интерфейсе.
 
 Проверка выполняется на машине с Docker (Linux x86-64, 2 CPU и 3 ГБ памяти достаточно), без доступа в интернет.
 Пик памяти процесса обработки в наших замерах — около 0,6 ГБ; самопроверка на 15 фантомах занимает
@@ -9,14 +17,14 @@
 1. Проверить контрольные суммы и загрузить образ.
 
         cd dist && sha256sum -c SHA256SUMS && cd ..
-        docker load -i dist/densitoai-2.1.0-image.tar.gz
+        docker load -i dist/densitoai-2.3.0-image.tar.gz
 
 2. Самопроверка образа без сети (фантомные DICOM внутри образа, два прогона, сравнение с эталоном, sha256 весов).
 
         mkdir -p outputs
         docker run --rm --network none --cpus=2 --memory=3g --user "$(id -u):$(id -g)" \
-          -v "$PWD/outputs:/data/output" densitoai:2.1.0 verify
-        # то же одной строкой: bash tools/offline_check.sh densitoai:2.1.0 ./outputs
+          -v "$PWD/outputs:/data/output" densitoai:2.3.0 verify
+        # то же одной строкой: bash tools/offline_check.sh densitoai:2.3.0 ./outputs
 
    Код возврата 0 — все проверки пройдены; 1 — есть расхождение. Отчёт: `outputs/verify/verification_report.html`
    (таблица проверок зелёным/красным, версии пакетов, sha256 весов, время), машинно — `outputs/verify/verify_results.json`.
@@ -24,7 +32,7 @@
 3. Пакетная обработка собственных DICOM (папка монтируется только на чтение; сеть не нужна).
 
         docker run --rm --network none --cpus=2 --memory=3g --user "$(id -u):$(id -g)" \
-          -v /path/to/dicoms:/data/input:ro -v "$PWD/outputs:/data/output" densitoai:2.1.0 batch
+          -v /path/to/dicoms:/data/input:ro -v "$PWD/outputs:/data/output" densitoai:2.3.0 batch
 
    Результат: `outputs/results.csv` (9 столбцов: study_uid, image_uid, anatomical_region, quality_class, quality_prob,
    violation_list, processing_status, time_of_processing, error_message), `outputs/results.xlsx`, журнал `outputs/inference.log`.
@@ -34,14 +42,14 @@
    кодом 0 только при точном совпадении предсказаний.
 
         docker run --rm --network none -v /path/to/dicoms:/data/input:ro -v "$PWD/outputs:/data/output" \
-          densitoai:2.1.0 verify --data /data/input
+          densitoai:2.3.0 verify --data /data/input
         docker run --rm --network none -v /path/to/dicoms:/data/input:ro -v "$PWD/outputs:/data/output" \
-          densitoai:2.1.0 verify --data /data/input --expected-sha <sha из предыдущего вывода>
+          densitoai:2.3.0 verify --data /data/input --expected-sha <sha из предыдущего вывода>
 
 5. Проверить, что веса модели в образе — те, что заявлены в поставке (`models/WEIGHTS_SHA256.txt`).
 
-        docker run --rm --network none densitoai:2.1.0 bash -c "cd /app && sha256sum -c models/WEIGHTS_SHA256.txt"
-        docker run --rm --network none densitoai:2.1.0 bash -c "cd /app && python tools/hash_weights.py --check"
+        docker run --rm --network none densitoai:2.3.0 bash -c "cd /app && sha256sum -c models/WEIGHTS_SHA256.txt"
+        docker run --rm --network none densitoai:2.3.0 bash -c "cd /app && python tools/hash_weights.py --check"
 
 ## Что именно проверяет `verify`
 

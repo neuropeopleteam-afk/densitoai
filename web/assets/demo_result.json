@@ -4,13 +4,13 @@
  "job_id": "demo",
  "request_id": "demo",
  "model_version": "2.3.0",
- "config_hash": "378ee6b98c9b",
+ "config_hash": "62cbe30c011f",
  "summary": {
   "n_files": 10,
   "n_failures": 0,
   "n_violations": 5,
-  "total_processing_time_s": 29.828,
-  "wall_time_s": 30.535,
+  "total_processing_time_s": 28.251,
+  "wall_time_s": 28.969,
   "n_studies": 10,
   "n_files_uploaded": 10,
   "bytes_uploaded": 826834
@@ -32,7 +32,7 @@
    "violation_type": "Некорректная укладка;Присутствуют посторонние предметы",
    "quality_prob": 0.93633,
    "processing_status": "Success",
-   "time_of_processing": 4.5417,
+   "time_of_processing": 4.3646,
    "details": {
     "internal_region": "spine",
     "region_source": "dims",
@@ -192,7 +192,7 @@
    "violation_type": "Не выравнена ось позвоночника",
    "quality_prob": 0.93884,
    "processing_status": "Success",
-   "time_of_processing": 4.0505,
+   "time_of_processing": 4.0584,
    "details": {
     "internal_region": "spine",
     "region_source": "dims",
@@ -352,7 +352,7 @@
    "violation_type": "Присутствуют посторонние предметы",
    "quality_prob": 0.942169,
    "processing_status": "Success",
-   "time_of_processing": 4.4331,
+   "time_of_processing": 3.9258,
    "details": {
     "internal_region": "spine",
     "region_source": "dims",
@@ -512,7 +512,7 @@
    "violation_type": "Некорректная укладка",
    "quality_prob": 0.990019,
    "processing_status": "Success",
-   "time_of_processing": 1.678,
+   "time_of_processing": 1.4745,
    "details": {
     "internal_region": "left_hip",
     "region_source": "dims+anatomy",
@@ -652,7 +652,7 @@
    "violation_type": "Некорректная укладка;Некорректная область интереса",
    "quality_prob": 0.981872,
    "processing_status": "Success",
-   "time_of_processing": 1.6642,
+   "time_of_processing": 1.5346,
    "details": {
     "internal_region": "right_hip",
     "region_source": "dims+anatomy",
@@ -798,7 +798,7 @@
    "violation_type": "",
    "quality_prob": 0.042674,
    "processing_status": "Success",
-   "time_of_processing": 1.7285,
+   "time_of_processing": 1.5057,
    "details": {
     "internal_region": "right_hip",
     "region_source": "dims+anatomy",
@@ -938,7 +938,7 @@
    "violation_type": "",
    "quality_prob": 0.069782,
    "processing_status": "Success",
-   "time_of_processing": 1.7137,
+   "time_of_processing": 1.5553,
    "details": {
     "internal_region": "right_hip",
     "region_source": "dims+anatomy",
@@ -1078,7 +1078,7 @@
    "violation_type": "",
    "quality_prob": 0.12513,
    "processing_status": "Success",
-   "time_of_processing": 4.3597,
+   "time_of_processing": 4.2991,
    "details": {
     "internal_region": "spine",
     "region_source": "dims",
@@ -1238,7 +1238,7 @@
    "violation_type": "",
    "quality_prob": 0.164376,
    "processing_status": "Success",
-   "time_of_processing": 4.126,
+   "time_of_processing": 4.0684,
    "details": {
     "internal_region": "spine",
     "region_source": "dims",
@@ -1398,7 +1398,7 @@
    "violation_type": "",
    "quality_prob": 0.452654,
    "processing_status": "Success",
-   "time_of_processing": 1.5323,
+   "time_of_processing": 1.4649,
    "details": {
     "internal_region": "left_hip",
     "region_source": "dims+anatomy",
@@ -1435,7 +1435,7 @@
       "p_geom": 0.667,
       "p_emb": 0.995,
       "margin": 0.0015,
-      "uncertain": false,
+      "uncertain": true,
       "p_cal": 0.267
      }
     ],
@@ -1498,11 +1498,13 @@
      "reason": "shaft_below_trochanter_too_short",
      "deficit_mm": 1.5
     },
-    "action": "Принять",
-    "action_code": "accept",
-    "risk_level": "низкий",
-    "needs_review": false,
-    "uncertain_criteria": [],
+    "action": "Пограничный случай: проверить вручную",
+    "action_code": "review_uncertain",
+    "risk_level": "средний",
+    "needs_review": true,
+    "uncertain_criteria": [
+     "lh_roi"
+    ],
     "extras": {
      "file": "10_BEDRO.dcm",
      "image_uid": "demo-image-10",

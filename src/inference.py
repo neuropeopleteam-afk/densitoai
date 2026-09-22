@@ -43,6 +43,7 @@ import sys
 import tempfile
 import time
 import traceback
+import uuid
 import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -130,6 +131,9 @@ DEFAULT_CONFIG: Dict[str, Any] = {
 }
 
 DICOM_EXTENSIONS = {".dcm", ".dicom", ".dic", ".ima"}
+# Предел вложенности архивов (zip в zip …): защита от архивных бомб.
+# Архив глубже предела не распаковывается и попадает в выгрузку строкой Failure.
+MAX_ZIP_DEPTH = int(os.environ.get("DENSITO_MAX_ZIP_DEPTH", "4"))
 # Подсказки региона из имени файла (образец "Для теста.zip": CR000000_ПОП.dcm,
 # CR000000_ППОБ.dcm, CR000001_ЛПОБ.dcm). На закрытом тесте суффиксов может не быть.
 FILENAME_HINTS = (
@@ -271,9 +275,25 @@ def _fix_zip_name(zi: "zipfile.ZipInfo") -> str:
     return best
 
 
+def unique_path(base: Path) -> Path:
+    """Свободное имя рядом с `base`: `IM1.dcm` → `IM1 (2).dcm` → `IM1 (3).dcm` …
+    Нужно, чтобы одинаковые имена входных файлов не перетирали друг друга: ТЗ п. 2.5
+    требует строку на каждый входной файл."""
+    if not base.exists():
+        return base
+    stem, suf = base.stem, base.suffix
+    for i in range(2, 10000):
+        cand = base.with_name(f"{stem} ({i}){suf}")
+        if not cand.exists():
+            return cand
+    return base.with_name(f"{stem}_{uuid.uuid4().hex[:8]}{suf}")
+
+
 def safe_extract_zip(zip_path: Path, dest: Path) -> List[Tuple[Path, str]]:
     """Безопасная распаковка: нормализуем кодировку имён, отбрасываем абсолютные пути и
-    `..` (zip-slip), служебные каталоги __MACOSX. Возвращает [(файл на диске, путь внутри архива)]."""
+    `..` (zip-slip), служебные каталоги __MACOSX. Элементы с совпадающим полным именем
+    (zip это допускает) получают различающиеся имена, а не перетирают друг друга.
+    Возвращает [(файл на диске, путь внутри архива)]."""
     out: List[Tuple[Path, str]] = []
     dest = dest.resolve()
     with zipfile.ZipFile(zip_path) as zf:
@@ -290,6 +310,10 @@ def safe_extract_zip(zip_path: Path, dest: Path) -> List[Tuple[Path, str]]:
                 LOG.warning("Zip entry skipped (path escapes destination): %r", zi.filename)
                 continue
             target.parent.mkdir(parents=True, exist_ok=True)
+            if target.exists():
+                target = unique_path(target)
+                rel = "/".join(parts[:-1] + [target.name])
+                LOG.warning("Zip entry %r duplicates an earlier name, stored as %r", zi.filename, rel)
             with zf.open(zi) as src, open(target, "wb") as dst:
                 shutil.copyfileobj(src, dst)
             out.append((target, rel))
@@ -324,19 +348,38 @@ def discover_files(input_path: Path, tmp_holder: List[Path],
     if not root.exists():
         raise FileNotFoundError(f"Input path does not exist: {input_path}")
     files = [p for p in sorted(root.rglob("*")) if p.is_file() and is_dicom_candidate(p)]
-    # вложенные zip внутри папки — тоже распаковываем (пакетная обработка "из архива")
+    # zip внутри папки и zip внутри zip — распаковываем на любой глубине до MAX_ZIP_DEPTH
+    # (ограничение — защита от архивных бомб; архив глубже предела попадает в выгрузку
+    # строкой Failure, а не исчезает молча)
+    pending: List[Tuple[Path, str, int]] = []
     for z in sorted(root.rglob("*.zip")):
+        try:
+            z_rel = str(z.resolve().relative_to(root.resolve()))
+        except ValueError:
+            z_rel = z.name
+        pending.append((z, z_rel, 1))
+    while pending:
+        z, z_rel, depth = pending.pop(0)
         try:
             sub = Path(tempfile.mkdtemp(prefix="densito_in_"))
             tmp_holder.append(sub)
-            try:
-                z_rel = str(z.resolve().relative_to(root.resolve()))
-            except ValueError:
-                z_rel = z.name
             extracted = safe_extract_zip(z, sub)
             for target, rel in extracted:
                 display[target.resolve()] = f"{z_rel}/{rel}"
             files += [p for p in sorted(sub.rglob("*")) if p.is_file() and is_dicom_candidate(p)]
+            inner = sorted(sub.rglob("*.zip"))
+            for z2 in inner:
+                try:
+                    z2_rel = str(z2.resolve().relative_to(sub.resolve()))
+                except ValueError:
+                    z2_rel = z2.name
+                if depth < MAX_ZIP_DEPTH:
+                    pending.append((z2, f"{z_rel}/{z2_rel}", depth + 1))
+                else:
+                    LOG.warning("Archive nesting deeper than %d, not extracted: %s",
+                                MAX_ZIP_DEPTH, f"{z_rel}/{z2_rel}")
+                    display[z2.resolve()] = f"{z_rel}/{z2_rel}"
+                    files.append(z2)
         except Exception as e:  # noqa: BLE001
             # битый архив не пропускаем молча: он попадёт в результаты строкой Failure
             LOG.warning("Nested archive %s is broken: %s", z, e)
@@ -811,18 +854,35 @@ class ModelRegistry:
                 self.thresholds[crit] = float(t)
 
     def _load_medians(self):
-        """Медианы геометрических признаков для импутации NaN (как при обучении)."""
-        p = PROJECT_ROOT / "data" / "geometry_features.csv"
+        """Медианы геометрических признаков для импутации NaN (как при обучении).
+
+        В образе лежит только `models/geometry_medians.json` — агрегаты без путей, UID и
+        меток. `data/geometry_features.csv` (выгрузка обучающего набора) используется только
+        на машине разработки, если JSON ещё не собран. Оба пути дают одни и те же числа
+        (сверка: `python tools/make_geometry_medians.py --check`).
+        """
         cols = sorted({c for cs in self.cfg["geometry_cols"].values() for c in cs})
-        if p.exists():
+        j = MODELS_DIR / "geometry_medians.json"
+        if j.exists():
             try:
-                import pandas as pd
-                df = pd.read_csv(p, usecols=lambda c: c in cols or c == "region")
+                payload = json.loads(j.read_text(encoding="utf-8"))
+                med = payload.get("medians", payload) or {}
                 for c in cols:
-                    if c in df:
-                        self.geometry_medians[c] = float(np.nanmedian(df[c].values.astype(np.float64)))
+                    if c in med and med[c] is not None:
+                        self.geometry_medians[c] = float(med[c])
             except Exception as e:  # noqa: BLE001
-                LOG.warning("geometry medians not loaded: %s", e)
+                LOG.warning("geometry medians json not loaded: %s", e)
+        if len(self.geometry_medians) < len(cols):
+            p = PROJECT_ROOT / "data" / "geometry_features.csv"
+            if p.exists():
+                try:
+                    import pandas as pd
+                    df = pd.read_csv(p, usecols=lambda c: c in cols or c == "region")
+                    for c in cols:
+                        if c not in self.geometry_medians and c in df:
+                            self.geometry_medians[c] = float(np.nanmedian(df[c].values.astype(np.float64)))
+                except Exception as e:  # noqa: BLE001
+                    LOG.warning("geometry medians not loaded: %s", e)
         for c in cols:
             self.geometry_medians.setdefault(c, 0.0)
 

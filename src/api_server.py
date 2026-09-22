@@ -51,6 +51,7 @@ sys.path.insert(0, str(SRC_DIR))
 from inference import (  # noqa: E402
     DensitoInference, MODELS_DIR, PROJECT_ROOT, load_config, setup_logging,
     write_results, validate_output_csv, config_hash as _cfg_hash, __version__ as PIPELINE_VERSION,
+    unique_path,
 )
 
 try:
@@ -169,6 +170,7 @@ def health():
             "fallback_rules_active": not reg.has_any_model(),
             "thresholds": reg.thresholds,
             "output_dir": str(OUTPUT_DIR),
+            "intended_use": eng.cfg.get("intended_use", {}),
         }
     except Exception as e:  # noqa: BLE001
         return JSONResponse(status_code=500, content={"status": "error", "detail": str(e)})
@@ -360,6 +362,30 @@ def _study_sr_urls(eng: DensitoInference, job: str) -> Dict[str, str]:
     return out
 
 
+def _safe_upload_rel(filename: Optional[str]) -> str:
+    """Относительный путь для файла загрузки.
+
+    Сохраняет структуру папок, которую прислал браузер при загрузке каталога, и режет
+    опасное: абсолютные пути, `..`, букву диска Windows, служебные элементы и
+    управляющие символы. Благодаря этому два файла с одинаковым базовым именем из
+    разных папок остаются двумя файлами и дают две строки выгрузки (ТЗ п. 2.5),
+    а path_to_study показывает тот же путь, который видит пользователь.
+    """
+    raw = (filename or "").replace("\\", "/")
+    parts: List[str] = []
+    for p in raw.split("/"):
+        p = re.sub(r"[\x00-\x1f\x7f]", "", p).strip()
+        if p in ("", ".", "..", "__MACOSX", ".DS_Store"):
+            continue
+        parts.append(p)
+    if parts and len(parts[0]) == 2 and parts[0][1] == ":":
+        parts = parts[1:]          # "C:" в начале пути Windows
+    parts = [p[:120] for p in parts if p]
+    if not parts:
+        return f"upload_{uuid.uuid4().hex[:6]}.dcm"
+    return "/".join(parts[-8:])    # разумный предел глубины
+
+
 def _run_job(job: str, tmp: Path, job_dir: Path, xlsx: bool):
     """Синхронная часть: инференс под глобальной блокировкой + сбор бонус-файлов в папку запроса."""
     eng = engine()
@@ -391,14 +417,19 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
         total = 0
         limit = int(MAX_UPLOAD_MB * 1024 * 1024)
         for uf in files:
-            name = Path(uf.filename or f"upload_{uuid.uuid4().hex[:6]}.dcm").name  # без путей
+            rel = _safe_upload_rel(uf.filename)
             data = await uf.read()
             total += len(data)
             if total > limit:
                 raise HTTPException(413, f"Объём загрузки превышает {MAX_UPLOAD_MB:.0f} МБ. Разбейте партию на части.")
             if not data:
-                raise HTTPException(400, f"Файл «{name}» пустой.")
-            (tmp / name).write_bytes(data)
+                raise HTTPException(400, f"Файл «{rel}» пустой.")
+            target = tmp / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if target.exists():
+                target = unique_path(target)
+                LOG.warning("Upload %r duplicates an earlier name, stored as %r", rel, target.name)
+            target.write_bytes(data)
         eng, out_csv, rows, debug_rows = await run_in_threadpool(_run_job, job, tmp, job_dir, xlsx)
         problems = validate_output_csv(out_csv, eng.cfg)
         study_sr = _study_sr_urls(eng, job)
