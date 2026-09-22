@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Документы и проверка — DensitoAI</title>
+<meta name="description" content="DensitoAI: как работает сервис, полные таблицы метрик OOF, метаморфический стенд устойчивости, команды проверки и состав контейнера.">
+<style>
+/* ---------- шрифты (локально, без CDN) ---------- */
+@font-face { font-family: "Noto Sans W"; font-weight: 400; font-style: normal; font-display: swap; src: url("assets/fonts/NotoSans-Regular.woff") format("woff"); }
+@font-face { font-family: "Noto Sans W"; font-weight: 600; font-style: normal; font-display: swap; src: url("assets/fonts/NotoSans-SemiBold.woff") format("woff"); }
+@font-face { font-family: "Noto Sans W"; font-weight: 700; font-style: normal; font-display: swap; src: url("assets/fonts/NotoSans-Bold.woff") format("woff"); }
+@font-face { font-family: "Noto Sans Display W"; font-weight: 600; font-style: normal; font-display: swap; src: url("assets/fonts/NotoSansDisplay-SemiBold.woff") format("woff"); }
+@font-face { font-family: "Noto Sans Display W"; font-weight: 700; font-style: normal; font-display: swap; src: url("assets/fonts/NotoSansDisplay-Bold.woff") format("woff"); }
+
+/* ---------- токены ---------- */
+:root {
+  --bg: #F7F6F2; --surface: #FFFFFF; --surface-alt: #F1F0EB; --surface-2: #E9E7E0; --border: #D9D6CE; --border-strong: #BDB9AF;
+  --text: #1F1D18; --muted: #66645E; --faint: #A3A19B;
+  --primary: #01696F; --primary-hover: #0C4E54; --primary-soft: #E1EFF0; --primary-ink: #FFFFFF;
+  --accent: #4F98A3;
+  --error: #A12C7B; --error-soft: #F8E7F1; --success: #3E7A1E; --success-soft: #E8F1E0; --warning: #964219; --warning-soft: #F5E6D8;
+  --ink: #15171A; --ink-2: #1E2124; --ink-border: #2E3236; --ink-text: #F2F1EC; --ink-muted: #A9B0B3;
+  --shadow: 0 1px 2px rgba(20,18,12,.05), 0 8px 24px rgba(20,18,12,.06);
+  --r: 14px; --r-sm: 8px;
+  --font: "Noto Sans W", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-display: "Noto Sans Display W", "Noto Sans W", "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #131415; --surface: #1B1D1F; --surface-alt: #212427; --surface-2: #2A2D31; --border: #33373B; --border-strong: #4A4F54;
+    --text: #E6E4DF; --muted: #A09E98; --faint: #6E6C67;
+    --primary: #5FB3BE; --primary-hover: #82C7D0; --primary-soft: #1B3236; --primary-ink: #0F1A1C;
+    --accent: #6FB6C0;
+    --error: #D876B4; --error-soft: #3A2233; --success: #86C05A; --success-soft: #22301A; --warning: #DB8A57; --warning-soft: #3A2A1C;
+    --ink: #0F1012; --ink-2: #17191C; --ink-border: #2A2E32;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  }
+}
+
+/* ---------- база ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; } section[id], #results, #app, #historyCard { scroll-margin-top: 84px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation: none !important; transition: none !important; } }
+body { margin: 0; font-family: var(--font); background: var(--bg); color: var(--text); font-size: 16px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+h1, h2, h3, h4 { font-family: var(--font-display); line-height: 1.15; margin: 0; letter-spacing: -.01em; }
+h1 { font-size: clamp(44px, 6vw, 76px); font-weight: 700; letter-spacing: -.02em; }
+h2 { font-size: clamp(30px, 3.4vw, 42px); font-weight: 700; }
+h3 { font-size: 20px; font-weight: 600; }
+p { margin: 0; }
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: var(--mono); font-size: .92em; background: var(--surface-alt); padding: 1px 6px; border-radius: 5px; }
+pre { font-family: var(--mono); font-size: 13.5px; line-height: 1.6; background: var(--ink); color: var(--ink-text); padding: 18px 20px; border-radius: var(--r-sm); overflow-x: auto; margin: 0; }
+pre .c { color: var(--ink-muted); }
+img { max-width: 100%; }
+button { font-family: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+.section { padding: 88px 0; }
+.section.alt { background: var(--surface-alt); }
+.eyebrow { font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--primary); margin-bottom: 14px; }
+.lead { font-size: 19px; color: var(--muted); max-width: 760px; margin-top: 18px; }
+.sec-head { max-width: 820px; margin-bottom: 44px; }
+.num, .tnum { font-variant-numeric: tabular-nums lining-nums; }
+.hidden { display: none !important; }
+
+/* ---------- кнопки ---------- */
+.btn { display: inline-flex; align-items: center; gap: 10px; border: 1px solid transparent; border-radius: 10px; padding: 12px 22px; font-size: 15.5px; font-weight: 600; cursor: pointer; text-decoration: none; background: var(--primary); color: var(--primary-ink); transition: background .15s, transform .15s, border-color .15s; white-space: nowrap; }
+.btn:hover { background: var(--primary-hover); text-decoration: none; }
+.btn:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+.btn.lg { padding: 18px 34px; font-size: 19px; border-radius: 12px; }
+.btn.sm { padding: 7px 14px; font-size: 13.5px; border-radius: 8px; }
+.btn.ghost { background: transparent; color: var(--primary); border-color: var(--primary); }
+.btn.ghost:hover { background: var(--primary-soft); }
+.btn.on-dark { background: var(--accent); color: #0F1A1C; }
+.btn.on-dark:hover { background: #7CC0CA; }
+.btn.ghost.on-dark { background: transparent; color: var(--ink-text); border-color: rgba(255,255,255,.35); }
+.btn.ghost.on-dark:hover { background: rgba(255,255,255,.08); }
+.btn .arrow { transition: transform .15s; }
+.btn:hover .arrow { transform: translateX(3px); }
+
+/* ---------- верхняя панель ---------- */
+.topbar { position: sticky; top: 0; z-index: 30; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+.topbar .wrap { display: flex; align-items: center; gap: 28px; height: 68px; }
+.brand { display: flex; align-items: center; gap: 12px; color: var(--text); font-weight: 700; font-size: 18px; font-family: var(--font-display); text-decoration: none; }
+.brand:hover { text-decoration: none; }
+.brand .mark { width: 34px; height: 34px; border-radius: 9px; background: #fff; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--border); }
+.brand .mark img { width: 30px; height: 30px; display: block; }
+.topnav { display: flex; gap: 22px; margin-left: 8px; }
+.topnav a { color: var(--muted); font-size: 14.5px; font-weight: 600; }
+.topnav a:hover { color: var(--text); text-decoration: none; }
+.topbar .sp { flex: 1; }
+.view-app .topnav { display: none; }
+.view-app .topbar-open { display: none; }
+.topbar-back { display: none; }
+.view-app .topbar-back { display: inline-flex; }
+
+/* ---------- герой ---------- */
+.hero { background: var(--ink); color: var(--ink-text); position: relative; overflow: hidden; }
+.hero::before { content: ""; position: absolute; inset: -40% -20% auto auto; width: 70%; height: 140%; background: radial-gradient(closest-side, rgba(79,152,163,.22), transparent 70%); pointer-events: none; }
+.hero .wrap { position: relative; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(320px, .9fr); gap: 56px; align-items: center; padding-top: 84px; padding-bottom: 84px; }
+.hero .eyebrow { color: var(--accent); }
+.hero h1 { color: #fff; }
+.hero .tagline { font-size: clamp(22px, 2.4vw, 30px); font-weight: 600; font-family: var(--font-display); color: #fff; margin-top: 12px; max-width: 640px; line-height: 1.25; }
+.hero .lead { color: var(--ink-muted); }
+.hero .cta { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 34px; }
+.hero .logo-tile { display: inline-flex; align-items: center; gap: 14px; background: #fff; border-radius: 14px; padding: 8px 16px 8px 8px; margin-bottom: 30px; color: #1F1D18; font-weight: 700; letter-spacing: .06em; font-size: 13px; }
+.hero .logo-tile img { width: 44px; height: 44px; display: block; }
+.hero .logo-tile span { color: #4A4A4A; font-weight: 600; letter-spacing: 0; }
+.hero-visual { background: var(--ink-2); border: 1px solid var(--ink-border); border-radius: 18px; padding: 16px; box-shadow: 0 30px 60px rgba(0,0,0,.35); }
+.hero-visual .frame { border-radius: 10px; overflow: hidden; background: #000; display: grid; place-items: center; }
+.hero-visual img { display: block; width: 100%; max-height: 440px; object-fit: contain; }
+.hero-visual figcaption { font-size: 13px; color: var(--ink-muted); margin-top: 12px; line-height: 1.45; }
+.hero-visual .tag { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: rgba(216,118,180,.18); color: #F0A4D3; margin-bottom: 8px; letter-spacing: .02em; }
+.facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--ink-border); border-top: 1px solid var(--ink-border); }
+.facts div { background: var(--ink); padding: 26px 32px; }
+.facts .v { font-family: var(--font-display); font-size: 34px; font-weight: 700; color: #fff; line-height: 1; }
+.facts .l { color: var(--ink-muted); font-size: 14px; margin-top: 8px; }
+.facts .v small { font-size: 18px; color: var(--ink-muted); font-weight: 600; margin-left: 4px; }
+
+/* ---------- карточки ---------- */
+.grid { display: grid; gap: 22px; }
+.grid.c2 { grid-template-columns: repeat(2, 1fr); }
+.grid.c3 { grid-template-columns: repeat(3, 1fr); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 28px; box-shadow: var(--shadow); }
+.card h3 { margin-bottom: 10px; }
+.card p { color: var(--muted); font-size: 15.5px; }
+.card .who { font-size: 13px; font-weight: 700; color: var(--primary); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 10px; }
+.card ul { margin: 12px 0 0; padding-left: 18px; color: var(--muted); font-size: 15px; }
+.card li + li { margin-top: 5px; }
+
+/* как работает */
+.steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; counter-reset: step; }
+.step { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 22px 20px; position: relative; }
+.step::before { counter-increment: step; content: counter(step); display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--primary); color: var(--primary-ink); font-weight: 700; font-size: 14px; margin-bottom: 14px; }
+.step h3 { font-size: 17px; margin-bottom: 6px; }
+.step p { color: var(--muted); font-size: 14px; }
+.twoloop { margin-top: 26px; display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: stretch; gap: 14px; }
+.loop { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 22px 24px; }
+.loop.a { border-top: 4px solid var(--primary); }
+.loop.b { border-top: 4px solid var(--accent); }
+.loop.s { border-top: 4px solid var(--text); }
+.loop h3 { font-size: 17px; margin-bottom: 8px; }
+.loop p { color: var(--muted); font-size: 14.5px; }
+.loop .f { margin-top: 10px; font-family: var(--mono); font-size: 12.5px; color: var(--text); background: var(--surface-alt); padding: 8px 10px; border-radius: 6px; }
+.plus { display: grid; place-items: center; font-family: var(--font-display); font-size: 28px; color: var(--faint); }
+
+/* критерии */
+.crit-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+.crit { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 22px; display: flex; flex-direction: column; gap: 8px; }
+.crit .reg { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.crit h3 { font-size: 18px; }
+.crit .off { font-size: 13px; color: var(--primary); font-weight: 600; }
+.crit p { color: var(--muted); font-size: 14.5px; }
+.crit .sig { margin-top: auto; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 13px; color: var(--muted); }
+.crit .sig b { color: var(--text); font-weight: 600; }
+
+/* метрики */
+.metrics-legend { display: flex; gap: 22px; flex-wrap: wrap; font-size: 14px; color: var(--muted); margin-bottom: 16px; align-items: center; }
+.metrics-legend .lg { display: inline-block; width: 14px; height: 10px; border-radius: 3px; margin-right: 7px; vertical-align: -1px; background: var(--surface-2); }
+.metrics-legend .lg.ok { background: color-mix(in srgb, var(--primary) 35%, var(--surface)); }
+.metrics-legend .lg.high { background: var(--primary); }
+.metrics-legend-note { margin-left: auto; font-size: 13px; color: var(--muted); }
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); }
+table.metrics { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.metrics.main { table-layout: fixed; min-width: 960px; }
+table.metrics th, table.metrics td { padding: 13px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+table.metrics th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .03em; overflow-wrap: anywhere; color: var(--muted); font-weight: 700; background: var(--surface-alt); }
+table.metrics tbody tr:last-child td { border-bottom: none; }
+table.metrics td.num { text-align: right; font-variant-numeric: tabular-nums lining-nums; white-space: nowrap; }
+table.metrics th.num { text-align: right; }
+table.metrics td:last-child { font-size: 13px; color: var(--muted); }
+table.metrics .strong { font-weight: 700; font-size: 16px; }
+table.metrics .crit-title { font-weight: 600; }
+table.metrics .crit-sub { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+.aucbar { position: relative; height: 10px; border-radius: 5px; background: var(--surface-2); min-width: 110px; overflow: visible; }
+.aucbar-zone { position: absolute; top: 0; bottom: 0; }
+.aucbar-zone.ok { background: color-mix(in srgb, var(--primary) 35%, var(--surface)); }
+.aucbar-zone.high { background: var(--primary); border-radius: 0 5px 5px 0; }
+.aucbar-mark { position: absolute; top: -5px; width: 4px; height: 20px; margin-left: -2px; border-radius: 2px; background: var(--text); box-shadow: 0 0 0 2px var(--surface); }
+.aucbar-mark.below { background: var(--warning); }
+.aucbar-mark.ok, .aucbar-mark.high { background: var(--text); }
+.zone-txt { font-size: 12.5px; margin-top: 8px; font-weight: 600; }
+.zone-txt.below { color: var(--warning); } .zone-txt.ok { color: var(--primary); } .zone-txt.high { color: var(--success); }
+.metrics-summary { margin-top: 18px; font-size: 15px; color: var(--muted); max-width: 900px; }
+.metrics-h3 { margin: 36px 0 14px; }
+.metrics-src { margin-top: 12px; font-size: 13.5px; color: var(--muted); }
+table.metrics.compact td, table.metrics.compact th { padding: 12px 14px; }
+
+/* ограничения */
+.limits { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+.limit { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--warning); border-radius: var(--r); padding: 24px 26px; }
+.limit h3 { font-size: 17px; margin-bottom: 8px; }
+.limit p { color: var(--muted); font-size: 14.5px; }
+
+/* кейсы */
+.cases { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+.case { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; }
+.case .img { background: #000; display: grid; place-items: center; padding: 10px; }
+.case .img img { max-height: 380px; object-fit: contain; display: block; cursor: zoom-in; }
+.case .img.pair { grid-template-columns: 1fr 1fr; gap: 10px; }
+.case .img.pair img { width: 100%; max-height: 300px; }
+.case .body { padding: 18px 22px 22px; display: flex; flex-direction: column; gap: 8px; }
+.case .badge { align-self: flex-start; }
+.case h3 { font-size: 17px; }
+.case p { color: var(--muted); font-size: 14.5px; }
+.case .kv { display: grid; grid-template-columns: 1fr auto; gap: 4px 14px; font-size: 13.5px; margin-top: 6px; }
+.case .kv span:nth-child(odd) { color: var(--muted); }
+.case .kv span:nth-child(even) { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; }
+.badge { display: inline-block; padding: 3px 11px; border-radius: 999px; font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+.badge.ok { background: var(--success-soft); color: var(--success); }
+.badge.violation { background: var(--error-soft); color: var(--error); }
+.badge.fail { background: var(--warning-soft); color: var(--warning); }
+.badge.neutral { background: var(--surface-alt); color: var(--muted); }
+.badge.uncertain { background: var(--warning-soft); color: var(--warning); margin-left: 6px;
+  border: 1px solid color-mix(in srgb, var(--warning) 35%, transparent); }
+
+/* проверка */
+.verify { display: grid; grid-template-columns: 1.1fr .9fr; gap: 28px; align-items: start; }
+.verify > div { min-width: 0; }
+/* длинные комментарии в примерах команд не должны обрезаться по правому краю:
+   переносим с отступом, чтобы команда оставалась читаемой и копируемой */
+.verify pre { overflow-x: auto; max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; }
+.verify pre code { display: block; padding-left: 1.6em; text-indent: -1.6em; }
+
+.verify .card h3 { font-size: 17px; }
+.verify .card + .card { margin-top: 18px; }
+.doclist { list-style: none; margin: 0; padding: 0; }
+.doclist li { display: block; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14.5px; }
+.doclist li:last-child { border-bottom: none; }
+.doclist code { display: block; white-space: normal; overflow-wrap: anywhere; }
+.doclist span { display: block; color: var(--muted); margin-top: 3px; font-size: 13.5px; }
+
+/* большой CTA */
+.cta-band { background: var(--ink); color: var(--ink-text); text-align: center; padding: 88px 0; }
+.cta-band h2 { color: #fff; margin-bottom: 14px; }
+.cta-band p { color: var(--ink-muted); font-size: 18px; max-width: 640px; margin: 0 auto 32px; }
+.cta-band .cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+footer { padding: 36px 0; color: var(--muted); font-size: 14px; border-top: 1px solid var(--border); }
+footer .wrap { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.disclaimer { flex-basis: 100%; font-size: 13px; line-height: 1.55; color: var(--muted);
+  border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px; }
+.app-disclaimer { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px;
+  margin: 18px 0 8px; background: rgba(148,163,184,.06); }
+
+/* ---------- лайтбокс ---------- */
+.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.9); display: none; align-items: center; justify-content: center; z-index: 100; cursor: zoom-out; }
+.lightbox.open { display: flex; }
+.lightbox img { height: min(92vh, 1400px); width: auto; max-width: 94vw; object-fit: contain; border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+
+/* ======================= КАБИНЕТ ======================= */
+#landing, #app { display: block; }
+.view-app #landing { display: none; }
+body:not(.view-app) #app { display: none; }
+.app-head { background: var(--ink); color: var(--ink-text); padding: 44px 0 40px; }
+.app-head .wrap { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+.app-head h1 { font-size: clamp(32px, 4vw, 48px); color: #fff; }
+.app-head .sub { color: var(--ink-muted); margin-top: 8px; font-size: 16px; max-width: 720px; }
+.app-head .chips { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.chip { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ink-muted); border: 1px solid var(--ink-border); border-radius: 999px; padding: 4px 12px; background: var(--ink-2); font-variant-numeric: tabular-nums; }
+.chip .dot { width: 8px; height: 8px; }
+.app-main { padding: 36px 0 90px; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 28px 30px; margin-bottom: 24px; box-shadow: var(--shadow); }
+.panel h2 { font-size: 24px; margin-bottom: 6px; }
+.panel .hint { font-size: 13.5px; color: var(--muted); }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+.panel-head .right { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.dropzone { border: 2px dashed var(--border-strong); border-radius: 12px; padding: 40px 24px; text-align: center; cursor: pointer; transition: border-color .15s, background .15s; background: var(--surface-alt); }
+.dropzone:hover, .dropzone.drag { border-color: var(--primary); background: var(--primary-soft); }
+.dropzone .big { font-size: 18px; font-weight: 600; }
+.dropzone .big b { color: var(--primary); }
+.dropzone .hint { margin-top: 6px; }
+.dropzone input { display: none; }
+.filelist { margin-top: 12px; font-size: 13.5px; color: var(--muted); overflow-wrap: anywhere; }
+.progress { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; margin-top: 14px; display: none; }
+.progress > div { height: 100%; width: 0; background: var(--primary); transition: width .2s; }
+.progress.indeterminate > div { width: 30%; animation: slide 1.2s infinite ease-in-out; }
+@keyframes slide { 0% { margin-left: -30%; } 100% { margin-left: 100%; } }
+.actions { display: flex; gap: 10px; align-items: center; margin-top: 16px; flex-wrap: wrap; }
+.status-line { font-size: 14px; color: var(--muted); margin-top: 10px; min-height: 20px; }
+.status-line.error { color: var(--error); font-weight: 600; }
+.status-line.ok { color: var(--success); }
+.demo-note { background: var(--primary-soft); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text); border-radius: 10px; padding: 12px 16px; font-size: 14px; margin-bottom: 18px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.demo-note b { color: var(--primary); }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.kpi { background: var(--surface-alt); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+.kpi .v { font-family: var(--font-display); font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.05; }
+.kpi .l { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+.kpi.viol .v { color: var(--error); } .kpi.ok .v { color: var(--success); } .kpi.fail .v { color: var(--warning); }
+.toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 18px 0 14px; }
+.toolbar .sp { flex: 1; }
+.fchip { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 999px; padding: 6px 14px; font-size: 13.5px; cursor: pointer; font-weight: 600; margin: 0; }
+.fchip.active { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
+.fchip .n { color: inherit; opacity: .75; margin-left: 5px; font-variant-numeric: tabular-nums; }
+select, input[type=search] { border: 1px solid var(--border); border-radius: 8px; padding: 7px 11px; font-size: 13.5px; background: var(--surface); color: var(--text); font-family: inherit; }
+input[type=search] { min-width: 240px; }
+label.cb { font-size: 13.5px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+.queue { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.qhead, .qrow { display: grid; grid-template-columns: 24px minmax(160px, 2fr) minmax(120px, 1fr) minmax(150px, 2fr) minmax(140px, 1.1fr) minmax(120px, 1fr); gap: 14px; align-items: center; padding: 10px 16px; }
+.qhead { background: var(--surface-alt); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; border-bottom: 1px solid var(--border); }
+.qrow { border-bottom: 1px solid var(--border); cursor: pointer; background: var(--surface); font-size: 14px; }
+.qrow:hover { background: var(--surface-alt); }
+.qrow.selected { background: var(--primary-soft); }
+.qrow:last-child { border-bottom: none; }
+.qrow .fname { font-weight: 600; overflow-wrap: anywhere; }
+.qrow .sub, .sub { font-size: 12.5px; color: var(--muted); }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; background: var(--faint); }
+.dot.ok { background: var(--success); } .dot.violation { background: var(--error); } .dot.fail { background: var(--warning); }
+.risk { display: flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; font-size: 13.5px; }
+.risk .bar { flex: 1; height: 6px; background: var(--surface-2); border-radius: 3px; position: relative; overflow: hidden; }
+.risk .bar > i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--primary); }
+.risk.hot .bar > i { background: var(--error); }
+.risk .bar > b { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--faint); }
+.ghead { display: flex; align-items: center; gap: 12px; padding: 9px 16px; background: var(--surface-2); border-bottom: 1px solid var(--border); font-size: 13.5px; }
+.ghead .uid { font-family: var(--mono); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.ghead .sp { flex: 1; }
+.detail { grid-column: 1 / -1; display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 24px; padding: 20px; background: var(--surface-alt); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); cursor: default; }
+.detail img { width: 100%; border-radius: 8px; border: 1px solid var(--border); display: block; cursor: zoom-in; background: #000; }
+.imgcap { font-size: 12.5px; color: var(--muted); margin: 6px 0 12px; }
+.detail h3 { margin: 0 0 10px; font-size: 20px; }
+.detail > div { min-width: 0; }
+.critwrap { overflow-x: auto; }
+.detail h4 { margin: 18px 0 8px; font-size: 12.5px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.action { border-radius: 10px; padding: 12px 16px; font-weight: 700; margin-bottom: 14px; font-size: 15px; }
+.action.accept { background: var(--success-soft); color: var(--success); }
+.action.review { background: var(--error-soft); color: var(--error); }
+.action.manual { background: var(--warning-soft); color: var(--warning); }
+table.crit { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table.crit th, table.crit td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+table.crit th { color: var(--muted); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+table.crit td.num { font-variant-numeric: tabular-nums; text-align: right; }
+table.crit th.num { text-align: right; }
+table.crit tr.flag td { background: var(--error-soft); }
+.meas { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 6px 18px; font-size: 13.5px; }
+.meas div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dotted var(--border); padding: 4px 0; }
+.meas span:first-child { color: var(--muted); }
+.meas span:last-child { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
+.kv { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 4px 12px; font-size: 13.5px; }
+.kv div:nth-child(odd) { color: var(--muted); }
+.kv div:nth-child(even) { overflow-wrap: anywhere; }
+.mono { font-family: var(--mono); font-size: 12.5px; overflow-wrap: anywhere; }
+.links { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+.warn { font-size: 13px; color: var(--warning); margin-top: 8px; }
+.empty { padding: 34px; text-align: center; color: var(--muted); }
+.hotkeys { font-size: 12.5px; color: var(--muted); margin-top: 12px; }
+.hist { display: grid; grid-template-columns: auto 1fr auto; gap: 8px 16px; align-items: center; font-size: 13.5px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.hist:last-child { border-bottom: none; }
+.hist .when { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; }
+.hist .links { margin-top: 0; }
+.hist .badge { margin-left: 8px; }
+.hist-state { font-size: 13.5px; color: var(--muted); padding: 8px 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.hist-state.error { color: var(--error); }
+
+/* CARD:BEGIN — карточка решения (общая для кабинета и casebook.html) */
+.dcard { min-width: 0; }
+.dc-head { display: flex; gap: 18px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 14px; }
+.verdict { display: inline-flex; align-items: center; font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: -.01em; padding: 10px 18px; border-radius: 10px; white-space: nowrap; }
+.verdict.retake { background: var(--error); color: #fff; }
+.verdict.review { background: var(--warning); color: #fff; }
+.verdict.ok { background: var(--success); color: #fff; }
+.verdict.fail { background: var(--surface-2); color: var(--text); }
+.dc-reason { flex: 1; min-width: 220px; }
+.dc-reason .k { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; }
+.dc-reason .v { font-size: 18px; font-weight: 600; line-height: 1.3; margin-top: 2px; }
+.dc-reason .sub { margin-top: 4px; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
+.wbadge { display: inline-flex; align-items: center; gap: 6px; background: var(--warning-soft); color: var(--warning); border: 1px solid color-mix(in srgb, var(--warning) 35%, transparent); border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 600; }
+.wbadge.doctor { background: var(--error-soft); color: var(--error); border-color: color-mix(in srgb, var(--error) 35%, transparent); }
+.mtable { width: 100%; border-collapse: collapse; font-size: 14px; }
+.mtable td { padding: 8px 10px 8px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+.mtable td:first-child { color: var(--muted); width: 36%; }
+.mtable td.st { text-align: right; white-space: nowrap; }
+.mtable .val { font-variant-numeric: tabular-nums; font-weight: 600; }
+.mtable .norm { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; margin-top: 2px; }
+.pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+.pill.ok { background: var(--success-soft); color: var(--success); }
+.pill.bad { background: var(--error-soft); color: var(--error); }
+.pill.ref { background: var(--surface-2); color: var(--muted); }
+.pill.hi { background: var(--warning-soft); color: var(--warning); }
+.dc-hint { background: var(--primary-soft); border-radius: 10px; padding: 12px 16px; font-size: 14.5px; line-height: 1.5; margin-top: 12px; }
+.dc-hint b { color: var(--primary); }
+.dc-note { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+.demo-role { font-size: 12px; margin-top: 3px; color: var(--primary); font-weight: 600; }
+.demo-role.miss { color: #b45309; }
+.tech { margin-top: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.tech summary { cursor: pointer; padding: 10px 14px; font-size: 13.5px; font-weight: 600; color: var(--muted); list-style: none; display: flex; align-items: center; gap: 8px; }
+.tech summary::before { content: ""; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform .15s; }
+.tech[open] summary::before { transform: rotate(45deg); }
+.tech > div { padding: 4px 14px 14px; }
+/* Раскрывающиеся блоки на лендинге: первый экран секции — вывод, доказательная база — по клику.
+   Ничего не удалено: жюри, которому нужны детали, открывает блок; остальным он не мешает скроллить. */
+.more { margin-top: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.more > summary { cursor: pointer; padding: 13px 18px; font-size: 14.5px; font-weight: 700; color: var(--text); list-style: none; display: flex; align-items: center; gap: 10px; }
+.more > summary::-webkit-details-marker { display: none; }
+.more > summary::before { content: ""; flex: none; width: 8px; height: 8px; border-right: 2px solid var(--primary); border-bottom: 2px solid var(--primary); transform: rotate(-45deg); transition: transform .15s; }
+.more[open] > summary::before { transform: rotate(45deg); }
+.more > summary small { font-weight: 500; color: var(--muted); }
+.more > .more-body { padding: 0 18px 18px; }
+.viz-tabs { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.viz-tabs button { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 999px; padding: 5px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.viz-tabs button.active { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
+.roi-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); margin: 6px 0 4px; }
+.roi-legend i { display: inline-block; width: 22px; height: 0; border-top: 3px solid #d8b400; vertical-align: middle; margin-right: 6px; }
+.roi-legend i.dash { border-top-style: dashed; }
+.roi-legend i.cur { border-top: 2px solid #5ac8dc; }
+.roi-legend i.bar { border-top: 6px solid #d33; }
+/* CARD:END */
+
+/* ---------- режим лаборанта ---------- */
+.mode-switch { display: inline-flex; border: 1px solid var(--ink-border); border-radius: 999px; padding: 3px; background: var(--ink-2); }
+.mode-switch button { border: none; background: transparent; color: var(--ink-muted); border-radius: 999px; padding: 6px 16px; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.mode-switch button.active { background: var(--accent); color: #0F1A1C; }
+.lab { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); padding: 28px 32px; margin-bottom: 24px; }
+.lab-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; color: var(--muted); font-size: 15px; margin-bottom: 18px; }
+.lab-top .fname { font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+.lab-body { display: grid; grid-template-columns: minmax(280px, 420px) minmax(0, 1fr); gap: 32px; align-items: start; }
+.lab-body img { width: 100%; border-radius: 10px; border: 1px solid var(--border); background: #000; display: block; }
+.lab-verdict { font-family: var(--font-display); font-weight: 700; font-size: clamp(34px, 4.5vw, 56px); line-height: 1.05; letter-spacing: -.02em; padding: 18px 26px; border-radius: 14px; display: inline-block; }
+.lab-verdict.retake { background: var(--error); color: #fff; }
+.lab-verdict.review { background: var(--warning); color: #fff; }
+.lab-verdict.ok { background: var(--success); color: #fff; }
+.lab-verdict.fail { background: var(--surface-2); color: var(--text); }
+.lab-reason { font-size: clamp(22px, 2.4vw, 30px); font-weight: 600; line-height: 1.25; margin-top: 22px; }
+.lab-hint { font-size: 19px; line-height: 1.5; margin-top: 14px; color: var(--text); }
+.lab-meas { margin-top: 18px; font-size: 17px; }
+.lab-meas div { padding: 6px 0; border-bottom: 1px solid var(--border); display: flex; gap: 12px; justify-content: space-between; }
+.lab-meas b { font-variant-numeric: tabular-nums; }
+.lab-btns { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 28px; }
+.lab-btns .btn { padding: 18px 30px; font-size: 19px; border-radius: 12px; }
+.lab-btns .btn.done { background: var(--success); }
+.lab-done { display: inline-block; margin-left: 10px; font-size: 14px; color: var(--success); font-weight: 600; }
+.lab-list { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 22px; }
+.lab-list button { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-weight: 600; font-size: 13px; color: var(--text); font-variant-numeric: tabular-nums; }
+.lab-list button.retake { border-color: var(--error); color: var(--error); }
+.lab-list button.review { border-color: var(--warning); color: var(--warning); }
+.lab-list button.ok { border-color: var(--success); color: var(--success); }
+.lab-list button.cur { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
+.lab-list button.done { text-decoration: line-through; opacity: .6; }
+
+/* ---------- устойчивость к искажениям (статический SVG) ---------- */
+.rob-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 28px 30px; box-shadow: var(--shadow); }
+.rob-svg { width: 100%; height: auto; display: block; font-family: var(--font); }
+.rob-label { font-size: 13px; fill: var(--text); }
+.rob-val { font-size: 12.5px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.rob-tick { font-size: 11px; fill: var(--faint); }
+.rob-axis { stroke: var(--border-strong); stroke-width: 1; }
+.rob-bar { fill: var(--error); }
+.rob-bar.fmt { fill: var(--primary); }
+.rob-legend { display: flex; gap: 22px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin-top: 6px; }
+.rob-legend .sw { display: inline-block; width: 14px; height: 10px; border-radius: 2px; background: var(--error); margin-right: 7px; vertical-align: middle; }
+.rob-legend .sw.fmt { background: var(--primary); }
+.rob-note { font-size: 14px; color: var(--muted); margin-top: 14px; max-width: 900px; }
+.rob-src { font-size: 12.5px; color: var(--faint); margin-top: 10px; }
+
+/* ---------- адаптивность ---------- */
+@media (max-width: 1100px) {
+  .steps { grid-template-columns: repeat(3, 1fr); }
+  .crit-grid { grid-template-columns: repeat(3, 1fr); }
+  .cases, .limits { grid-template-columns: repeat(2, 1fr); }
+  .facts { grid-template-columns: repeat(2, 1fr); }
+  .twoloop { grid-template-columns: 1fr; }
+  .plus { padding: 0; }
+  .verify { grid-template-columns: 1fr; }
+  .hero .wrap { grid-template-columns: 1fr; }
+  .hero-visual { max-width: 520px; }
+  .topnav { display: none; }
+  .qhead, .qrow { grid-template-columns: 20px minmax(140px, 1.6fr) minmax(90px, .9fr) minmax(120px, 1.6fr) minmax(110px, 1fr) minmax(90px, .8fr); gap: 10px; padding: 10px 12px; }
+  .qrow { font-size: 13.5px; }
+  .ghead .uid { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .detail { grid-template-columns: 1fr; }
+  .detail img, .detail .viz { max-width: 420px; }
+  .lab-body { grid-template-columns: 1fr; }
+  .lab-body img { max-width: 420px; }
+}
+@media (max-width: 820px) {
+  .wrap { padding: 0 20px; }
+  .section { padding: 60px 0; }
+  .topnav { display: none; }
+  .grid.c2, .grid.c3, .steps, .crit-grid, .cases, .limits { grid-template-columns: 1fr; }
+  .qhead { display: none; }
+  .qrow { grid-template-columns: 20px 1fr; }
+  .qrow > :nth-child(n+3) { grid-column: 2; }
+  .detail { grid-template-columns: 1fr; }
+  .metrics-legend-note { margin-left: 0; }
+  .hist { grid-template-columns: 1fr; }
+}
+
+/* ---------- облегчённая главная ---------- */
+.hero .wrap.hero-lite { grid-template-columns: minmax(0, 1fr); max-width: 900px; }
+.hero-disclaimer { color: var(--ink-muted); font-size: 13.5px; line-height: 1.55; margin-top: 30px; max-width: 760px; }
+.numbers { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.numbers .n { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 20px 22px; }
+.numbers .n .v { font-family: var(--font-display); font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums lining-nums; line-height: 1.1; }
+.numbers .n .ci { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums lining-nums; margin-top: 4px; }
+.numbers .n .l { font-size: 13.5px; color: var(--muted); margin-top: 8px; }
+.bounds { list-style: none; margin: 26px 0 0; padding: 0; display: grid; gap: 12px; max-width: 900px; }
+.bounds li { font-size: 14.5px; color: var(--muted); border-left: 3px solid var(--warning); padding-left: 14px; }
+@media (max-width: 1100px) { .numbers { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .numbers { grid-template-columns: minmax(0, 1fr); } }
+
+/* плашка отказа по неподдерживаемой области (карточка решения и режим лаборанта) */
+.dc-unsupported { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+.dc-unsupported .t { font-family: var(--font-display); font-weight: 700; font-size: 18px; line-height: 1.25; }
+.dc-unsupported .r { color: var(--muted); font-size: 14.5px; margin-top: 8px; }
+.lab .dc-unsupported .t { font-size: clamp(22px, 2.4vw, 30px); }
+.lab .dc-unsupported .r { font-size: 17px; }
+/* одна ссылка в шапке остаётся доступной на планшете и телефоне */
+body:not(.view-app) .topbar .topnav { display: flex; }
+@media (max-width: 560px) { body:not(.view-app) .topbar .topnav { display: none; } }
+
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="index.html"><span class="mark"><img src="assets/neuropeople_logo.png" alt="NEUROPEOPLE"></span>DensitoAI</a>
+    <span class="sp"></span>
+    <a class="btn ghost sm" href="index.html">Назад на главную</a>
+    <a class="btn sm" href="index.html#app">Открыть кабинет</a>
+  </div>
+</header>
+
+<section class="section">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow"><a href="index.html">Назад на главную</a></div>
+      <h1 style="font-size:clamp(34px,4.4vw,56px)">Документы и проверка</h1>
+      <p class="lead">Как устроен сервис, полные таблицы метрик, стенд устойчивости к искажениям и команды, которыми всё воспроизводится.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section alt" id="about">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Задача и рамки</div>
+      <h2>Что оценивает сервис</h2>
+      <p class="lead">Вход — DICOM-файлы денситометрии GE Lunar Prodigy (прямые проекции поясничного
+      отдела позвоночника и проксимального отдела бедра). Выход — CSV из девяти колонок в заданном
+      порядке: область, признак нарушения, тип нарушения из закрытого перечня, вероятность и время
+      обработки. Проверяются пять критериев ТЗ: укладка и ось позвоночника, посторонние предметы,
+      поворот бедра и область интереса бедра. Медицинского заключения сервис не формирует.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Как работает</div>
+      <h2>Как устроено решение</h2>
+      <p class="lead">Один контур измеряет геометрию, второй смотрит на снимок целиком. Решение по критерию — их согласование, порог зафиксирован на out-of-fold.</p>
+    </div>
+    <div class="steps">
+      <div class="step"><h3>DICOM на входе</h3><p>Папка, zip или файл. Сбой одного снимка не останавливает партию.</p></div>
+      <div class="step"><h3>Область</h3><p>Позвоночник или бедро — по размеру кадра и тегам, для нестандартных — по содержимому.</p></div>
+      <div class="step"><h3>Два контура</h3><p>A — измерения, B — эмбеддинги EfficientNet-B0. Обучены отдельно на каждый критерий.</p></div>
+      <div class="step"><h3>Ранговый стэкинг</h3><p>Скор — среднее рангов двух контуров. Порог взят на OOF, не на обучении.</p></div>
+      <div class="step"><h3>Отчёт</h3><p>CSV по ТЗ, XLSX по исследованиям, технический CSV, PNG и карточка решения.</p></div>
+    </div>
+    <details class="more" open>
+      <summary>Как устроены оба контура и откуда берётся порог <small>— признаки, модели, стэкинг</small></summary>
+      <div class="more-body">
+    <div class="twoloop">
+      <div class="loop a">
+        <h3>Контур A — геометрия</h3>
+        <p>Сегментация кости, измерение наклона оси, смещения от центра кадра, ширины костной области, угла диафиза бедра, расстояния до бокового края, площади плотных включений. Логистическая регрессия на 1–5 признаках.</p>
+        <div class="f">axis_angle_deg, center_offset_ratio, shaft_angle_deg, edge_distance_ratio, metal_area_mm2</div>
+      </div>
+      <div class="plus">+</div>
+      <div class="loop b">
+        <h3>Контур B — эмбеддинги</h3>
+        <p>EfficientNet-B0 даёт вектор 1280 признаков, затем стандартизация, PCA до 32 компонент и логистическая регрессия с сильной регуляризацией. Для укладки позвоночника используется дообученный на наших данных бэкбон.</p>
+        <div class="f">1280-d → StandardScaler → PCA32 → LogReg C=0.1</div>
+      </div>
+      <div class="plus">=</div>
+      <div class="loop s">
+        <h3>Стэкинг и порог</h3>
+        <p>score = 0.5·rank(геометрия) + 0.5·rank(эмбеддинги). Пороги для каждого критерия зафиксированы по out-of-fold предсказаниям с группировкой по исследованию; для редкого критерия укладки позвоночника порог взят по доле позитивов, чтобы не подстраиваться под шум.</p>
+        <div class="f">config.yaml · models/metrics_summary.json</div>
+      </div>
+    </div>
+      </div>
+    </details>
+  </div>
+</section>
+
+<section class="section alt" id="metrics">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Метрики</div>
+      <h2>Метрики out-of-fold</h2>
+      <p class="lead">Все оценки — out-of-fold с группировкой по исследованию: модель никогда не видела снимки того исследования, на котором проверяется. Рядом с каждым критерием — ориентир заказчика: приемлемо AUC выше 0.81, высоко — выше 0.9. Мы честно показываем, где мы уже там, а где нет.</p>
+    </div>
+    <!-- METRICS:BEGIN -->
+<div class="metrics-legend"><span><i class="lg below"></i>ниже 0.81</span><span><i class="lg ok"></i>приемлемо: AUC &gt; 0.81</span><span><i class="lg high"></i>высоко: AUC &gt; 0.9</span><span class="metrics-legend-note">шкала 0.5–1.0, метка — AUC стека на OOF</span></div>
+<div class="table-wrap"><table class="metrics main">
+<colgroup><col style="width:18%"><col style="width:10%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:7%"><col style="width:15%"><col style="width:11%"><col style="width:15%"></colgroup>
+<thead><tr><th>Критерий</th><th>Область</th><th class="num">n / позит.</th><th class="num">AUC геом.</th><th class="num">AUC эмб.</th><th class="num">AUC стек</th><th>Где мы относительно ориентира</th><th class="num">F1 OOF [95 % ДИ]</th><th>Надёжность</th></tr></thead><tbody>
+<tr><td><div class="crit-title">Укладка пациента</div><div class="crit-sub">sp_pos · порог по доле позитивов, порог 0.822</div></td><td>позвоночник</td><td class="num">166 / 10</td><td class="num">0.681</td><td class="num">0.790</td><td class="num strong">0.734</td><td><div class="aucbar" role="img" aria-label="AUC 0.734, ниже ориентира"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark below" style="left:46.8%"></span></div><div class="zone-txt below">ниже ориентира</div></td><td class="num">0.48 [0.11; 0.82]</td><td>мало позитивов (10): результат ненадёжен, читать по AUC</td></tr>
+<tr><td><div class="crit-title">Ось позвоночника</div><div class="crit-sub">sp_axis · prevalence_x1.4, порог 0.777</div></td><td>позвоночник</td><td class="num">166 / 17</td><td class="num">0.839</td><td class="num">0.797</td><td class="num strong">0.889</td><td><div class="aucbar" role="img" aria-label="AUC 0.889, приемлемо"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark ok" style="left:77.8%"></span></div><div class="zone-txt ok">приемлемо</div></td><td class="num">0.60 [0.29; 0.82]</td><td>приемлемая, работает геометрия</td></tr>
+<tr><td><div class="crit-title">Посторонние предметы</div><div class="crit-sub">sp_art · prevalence_x1.4, порог 0.602</div></td><td>позвоночник</td><td class="num">166 / 35</td><td class="num">0.560</td><td class="num">0.897</td><td class="num strong">0.823</td><td><div class="aucbar" role="img" aria-label="AUC 0.823, приемлемо"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark ok" style="left:64.5%"></span></div><div class="zone-txt ok">приемлемо</div></td><td class="num">0.53 [0.24; 0.74]</td><td>приемлемая, работает контур B (эмбеддинги)</td></tr>
+<tr><td><div class="crit-title">Укладка пациента</div><div class="crit-sub">hip_pos · порог по доле позитивов, порог 0.658</div></td><td>бедро, обе стороны</td><td class="num">329 / 79</td><td class="num">0.710</td><td class="num">0.635</td><td class="num strong">0.725</td><td><div class="aucbar" role="img" aria-label="AUC 0.725, ниже ориентира"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark below" style="left:45.1%"></span></div><div class="zone-txt below">ниже ориентира</div></td><td class="num">0.43 [0.22; 0.60]</td><td>умеренная: сильнее геометрия</td></tr>
+<tr><td><div class="crit-title">Область интереса</div><div class="crit-sub">hip_roi · порог по доле позитивов, порог 0.918</div></td><td>бедро, обе стороны</td><td class="num">329 / 16</td><td class="num">0.902</td><td class="num">0.877</td><td class="num strong">0.917</td><td><div class="aucbar" role="img" aria-label="AUC 0.917, высоко"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark high" style="left:83.5%"></span></div><div class="zone-txt high">высоко</div></td><td class="num">0.51 [0.00; 0.91]</td><td>приемлемая, работает геометрия</td></tr>
+</tbody></table></div>
+<p class="metrics-summary">Из пяти критериев 3 достигают ориентира «приемлемо» (AUC &gt; 0.81) и 1 — ориентира «высоко» (AUC &gt; 0.9). Остальные ниже ориентира, и мы это показываем, а не скрываем. Источник: <code>models/metrics_summary.json</code> (OOF, группировка по исследованию), ДИ по F1 — бутстрап по исследованиям.</p>
+<h3 class="metrics-h3">Бинарная задача «есть нарушение» по областям, OOF</h3>
+<div class="table-wrap"><table class="metrics compact"><thead><tr><th>Область</th><th class="num">ROC-AUC [95 % ДИ]</th><th class="num">F1 [95 % ДИ]</th><th class="num">Macro-F1 по типам нарушений [95 % ДИ]</th></tr></thead><tbody>
+<tr><td>Поясничный отдел позвоночника</td><td class="num strong">0.773 [0.65; 0.88]</td><td class="num">0.623 [0.45; 0.77]</td><td class="num">0.539 [0.36; 0.69]</td></tr>
+<tr><td>Проксимальный отдел бедра</td><td class="num strong">0.760 [0.63; 0.86]</td><td class="num">0.516 [0.31; 0.68]</td><td class="num">0.473 [0.20; 0.68]</td></tr>
+</tbody></table></div>
+<p class="metrics-src">Источник: <code>docs/METRICS_REPORT.md</code>, таблица «Итого» (<code>python src/eval_oof_metrics.py</code>, 95 % ДИ — бутстрап по исследованиям, 2000 повторов).</p>
+<!-- METRICS:END -->
+  </div>
+</section>
+
+<section class="section" id="limits">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Честные ограничения</div>
+      <h2>Ограничения применимости</h2>
+    </div>
+    <div class="limits">
+      <div class="limit"><h3>Десять позитивов на укладку позвоночника</h3><p>В обучающей выборке нарушение укладки позвоночника встретилось 10 раз из 166. Любая модель на таких данных ненадёжна: порог взят по доле позитивов, доверительный интервал F1 — от 0.00 до 0.72. На закрытом тесте по этому критерию следует ожидать результат, близкий к случайному.</p></div>
+      <div class="limit"><h3>Один аппарат, одна клиника, один разметчик</h3><p>Все 499 снимков получены на одном GE Lunar Prodigy и размечены одним экспертом. Перенос на другие денситометры не проверен. Часть меток опирается на признаки, которые наши измерения ловят частично: например, у эксперта ось позвоночника оценивается шире, чем глобальный наклон.</p></div>
+      <div class="limit"><h3>Финальная проверка — у организатора</h3><p>Метрики технического задания считаются организаторами на закрытом тесте. Наши OOF-оценки — честный ориентир без утечек, но не гарантия. Поэтому вместе с сервисом мы отдаём воспроизводимый протокол обучения, тесты и код подсчёта метрик.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section alt" id="robustness">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Устойчивость к искажениям</div>
+      <h2>Устойчивость к искажениям</h2>
+      <p class="lead">Измеренные заранее кривые, а не живые ползунки: каждый вид искажения прогнан на выборке размеченных снимков, показана доля снимков, у которых изменился класс качества.</p>
+    </div>
+<!-- ROBUSTNESS:BEGIN -->
+<div class="rob-wrap">
+<svg class="rob-svg" viewBox="0 0 720 416" role="img" aria-label="Доля снимков, у которых изменился класс качества, по видам искажений">
+<line x1="300" y1="8" x2="300" y2="394" class="rob-axis"/>
+<text x="288" y="32" class="rob-label" text-anchor="end">пересохранение файла</text>
+<rect x="300" y="18" width="2" height="20" rx="3" class="rob-bar fmt"/>
+<text x="312" y="33" class="rob-val">0.0 % (0/81)</text>
+<text x="288" y="66" class="rob-label" text-anchor="end">удалены теги (шаг пикселя, описание)</text>
+<rect x="300" y="52" width="2" height="20" rx="3" class="rob-bar fmt"/>
+<text x="312" y="67" class="rob-val">0.0 % (0/81)</text>
+<text x="288" y="100" class="rob-label" text-anchor="end">нет UID исследования и снимка</text>
+<rect x="300" y="86" width="2" height="20" rx="3" class="rob-bar fmt"/>
+<text x="312" y="101" class="rob-val">0.0 % (0/81)</text>
+<text x="288" y="134" class="rob-label" text-anchor="end">инвертированная шкала (MONOCHROME1)</text>
+<rect x="300" y="120" width="2" height="20" rx="3" class="rob-bar fmt"/>
+<text x="312" y="135" class="rob-val">0.0 % (0/81)</text>
+<text x="288" y="168" class="rob-label" text-anchor="end">16-битный контейнер</text>
+<rect x="300" y="154" width="2" height="20" rx="3" class="rob-bar fmt"/>
+<text x="312" y="169" class="rob-val">0.0 % (0/81)</text>
+<text x="288" y="202" class="rob-label" text-anchor="end">обрезка 4 % по краям</text>
+<rect x="300" y="188" width="160" height="20" rx="3" class="rob-bar"/>
+<text x="470" y="203" class="rob-val">16.0 % (13/81)</text>
+<text x="288" y="236" class="rob-label" text-anchor="end">уменьшение ×0,8 с пересчётом шага</text>
+<rect x="300" y="222" width="198" height="20" rx="3" class="rob-bar"/>
+<text x="508" y="237" class="rob-val">19.8 % (16/81)</text>
+<text x="288" y="270" class="rob-label" text-anchor="end">увеличение ×1,25 с пересчётом шага</text>
+<rect x="300" y="256" width="86" height="20" rx="3" class="rob-bar"/>
+<text x="396" y="271" class="rob-val">8.6 % (7/81)</text>
+<text x="288" y="304" class="rob-label" text-anchor="end">шум 3 %</text>
+<rect x="300" y="290" width="272" height="20" rx="3" class="rob-bar"/>
+<text x="582" y="305" class="rob-val">27.2 % (22/81)</text>
+<text x="288" y="338" class="rob-label" text-anchor="end">ярче (гамма 0,7)</text>
+<rect x="300" y="324" width="185" height="20" rx="3" class="rob-bar"/>
+<text x="495" y="339" class="rob-val">18.5 % (15/81)</text>
+<text x="288" y="372" class="rob-label" text-anchor="end">темнее (гамма 1,4)</text>
+<rect x="300" y="358" width="173" height="20" rx="3" class="rob-bar"/>
+<text x="483" y="373" class="rob-val">17.3 % (14/81)</text>
+<text x="300.0" y="410" class="rob-tick" text-anchor="middle">0 %</text>
+<text x="400.0" y="410" class="rob-tick" text-anchor="middle">10 %</text>
+<text x="500.0" y="410" class="rob-tick" text-anchor="middle">20 %</text>
+<text x="600.0" y="410" class="rob-tick" text-anchor="middle">30 %</text>
+</svg>
+<div class="rob-legend"><span><i class="sw fmt"></i>формат файла и теги</span><span><i class="sw"></i>пиксели: яркость, шум, масштаб, обрезка</span></div>
+<p class="rob-note">Выборка: 81 снимков разметки (27 позвоночник, 54 бедро), из них с нарушениями 40. Каждый снимок пересохранён с одним искажением и прогнан повторно; показана доля снимков, у которых изменился класс качества. Ошибок обработки (Failure) ни в одном варианте не было (максимум 0.0 %), область снимка не менялась ни разу (максимум 0.0 %). Время на снимок в исходном прогоне: медиана 0.05 с, 95-й перцентиль 0.09 с.</p>
+<p class="rob-note">На реальном потоке одного аппарата GE Lunar с фиксированным экспортом искажений яркости, шума и масштаба нет: все снимки приходят в одном формате. Изменения формата и тегов на потоке возможны, и к ним система устойчива полностью. Перевороты при изменении экспозиции сосредоточены у порога решения (медианный запас 0,09–0,11), то есть касаются спорных снимков.</p>
+<p class="rob-src">Источник: docs/qa/robustness_results.json (2026-09-20), docs/ROBUSTNESS_REPORT.md; скрипт tests/robustness_suite.py.</p>
+</div>
+<!-- ROBUSTNESS:END -->
+  </div>
+</section>
+
+<section class="section" id="verify">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Как проверить</div>
+      <h2>Как проверить результат</h2>
+      <p class="lead">Техническая группа может развернуть сервис на своих данных без нашего участия. Сервис не делает ни одного внешнего вызова: кабинет, API и модели лежат внутри образа, и самопроверка из 12 пунктов прогоняется в контейнере с полностью отключённой сетью (<code>--network none</code>).</p>
+    </div>
+    <details class="more" open>
+      <summary>Команды запуска, список документов и состав контейнера <small>— для тех, кто будет разворачивать</small></summary>
+      <div class="more-body">
+    <div class="verify">
+      <div>
+        <div class="card">
+          <h3>Docker: сборка, пакетный прогон, API</h3>
+          <pre><span class="c"># сборка образа и самопроверка</span>
+./build_and_run.sh build
+<span class="c"># пакетная обработка папки с DICOM или zip -&gt; outputs/results.csv (+ .xlsx)</span>
+./build_and_run.sh run /path/to/dicom_folder ./outputs
+<span class="c"># HTTP API на порту 8000, Swagger: http://localhost:8000/docs</span>
+./build_and_run.sh api 8000 /path/to/dicom_folder ./outputs
+<span class="c"># тесты формата и изоляции запросов</span>
+./build_and_run.sh test</pre>
+        </div>
+        <div class="card">
+          <h3>Без Docker</h3>
+          <pre>pip install -r requirements.txt
+python src/inference.py --input /path/to/dicom --output outputs/results.csv --xlsx
+python tests/test_inference_format.py      <span class="c"># формат, битые входы, детерминизм</span>
+python tests/test_api_isolation.py         <span class="c"># изоляция файлов между запросами</span>
+python src/eval_oof_metrics.py             <span class="c"># метрики с ДИ -> docs/metrics_oof_full.md</span></pre>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <h3>Код и документы</h3>
+          <ul class="doclist">
+            <li><code>git clone https://neuropeople.pro/git/densitoai.git</code><span>публичный репозиторий</span></li>
+            <li><code>/docs</code><span>Swagger UI работающего API: <a href="/docs">открыть</a></span></li>
+            <li><code>README.md</code><span>назначение, запуск, API, формат данных, ограничения</span></li>
+            <li><code>docs/METRICS_REPORT.md</code><span>метрики по ТЗ §8.4 с 95 % ДИ</span></li>
+            <li><code>docs/ROBUSTNESS_REPORT.md</code><span>устойчивость к нестандартному входу</span></li>
+            <li><code>docs/PREPROC_GATE_REPORT.md</code><span>инвариантная предобработка и выбор варианта внутри nested</span></li>
+            <li><code>docs/EVIDENCE.md</code><span>данные, лицензии, отвергнутые гипотезы, ограничения</span></li>
+            <li><code>models/MODEL_CONTRACT.md</code><span>формат моделей и порогов</span></li>
+            <li><code>config.yaml</code><span>все строки, пороги и веса в одном файле</span></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Что внутри контейнера</h3>
+          <p>Python 3.12, PyTorch CPU, scikit-learn, pydicom. Модели — файлы pkl с зафиксированным контрактом, бэкбон EfficientNet-B0 и этот самый кабинет лежат в образе — интерфейс открывается на корне того же порта, что и API. Ошибки отдельных файлов не роняют запрос: строка получает статус Failure и вероятность 0.5.</p>
+        </div>
+      </div>
+    </div>
+      </div>
+    </details>
+  </div>
+</section>
+
+<section class="section alt" id="example">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Пример вывода</div>
+      <h2>Пример вывода</h2>
+    </div>
+    <div class="grid c2">
+      <figure class="hero-visual" style="background:var(--surface);border-color:var(--border);box-shadow:var(--shadow)">
+      <div class="frame"><img src="assets/demo/03_poz.png" alt="Визуализация сервиса: снимок поясничного отдела с найденной осью, контуром кости и плотными посторонними объектами" data-zoom></div>
+      <figcaption><span class="tag">Решение: проверить и при подтверждении переснять</span><br>Реальный вывод сервиса на снимке из выборки заказчика. Оранжевая линия — измеренная ось (наклон 3.1° к вертикали), зелёный контур — костная область, красные рамки — плотные объекты (188 мм², контраст к кости 4.2 сигмы). Порог превысил один критерий — посторонние предметы 0.964 при 0.602; ось 0.651 при 0.777 и укладка 0.226 при 0.822 — в норме. Эксперт на этом снимке отметил ровно посторонние предметы: совпадение полное. Версия 2.2.0 на этом же снимке дополнительно поднимала флаг по оси (0.864 при 0.756) — ложное срабатывание, которое убрал новый бэкбон контура B (К13).</figcaption>
+    </figure>
+      <div class="card">
+        <h3>Выборка и режим работы</h3>
+        <ul>
+          <li>499 снимков из 100 исследований в обучающей выборке, разметка одного эксперта.</li>
+          <li>Две области: поясничный отдел позвоночника и проксимальный отдел бедра.</li>
+          <li>Пять критериев: укладка, ось, посторонние предметы, укладка бедра, область интереса.</li>
+          <li>~0,06 с на снимок в пакетном режиме на CPU; с визуализацией через API 1–2 с.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>DensitoAI · ООО «НЕЙРОПИПЛ» · версия сервиса 2.3.2 · хэш конфигурации 5ac94710a6cd</div>
+    <div><a href="index.html">Назад на главную</a> · <a href="index.html#app">Кабинет</a></div>
+    <div class="disclaimer">Программа не является медицинским изделием и не предназначена для диагностики, профилактики, лечения или мониторинга заболеваний. Сервис оценивает техническое качество укладки и области интереса исследования и не формирует медицинское заключение. Решение по исследованию принимает врач. Область применения: денситометрия (DXA) поясничного отдела позвоночника и проксимального отдела бедра, оборудование GE Lunar Prodigy.</div>
+  </div>
+</footer>
+
+<div class="lightbox" id="lightbox" role="dialog" aria-label="Увеличенное изображение"><img alt=""></div>
+<script>
+'use strict';
+const lightbox = document.getElementById('lightbox');
+function openLightbox(src) { lightbox.querySelector('img').src = src; lightbox.classList.add('open'); }
+lightbox.addEventListener('click', () => lightbox.classList.remove('open'));
+document.querySelectorAll('img[data-zoom]').forEach(img => img.addEventListener('click', () => openLightbox(img.getAttribute('src'))));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') lightbox.classList.remove('open'); });
+</script>
+</body>
+</html>

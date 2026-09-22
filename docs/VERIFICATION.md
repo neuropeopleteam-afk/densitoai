@@ -1,4 +1,4 @@
-# Проверка поставки DensitoAI 2.3.1 (инструкция для технической группы заказчика)
+# Проверка поставки DensitoAI 2.3.2 (инструкция для технической группы заказчика)
 
 > **Назначение и ограничения.** Программа не является медицинским изделием и не предназначена
 > для диагностики, профилактики, лечения или мониторинга заболеваний. Сервис оценивает
@@ -17,14 +17,14 @@
 1. Проверить контрольные суммы и загрузить образ.
 
         cd dist && sha256sum -c SHA256SUMS && cd ..
-        docker load -i dist/densitoai-2.3.1-image.tar.gz
+        docker load -i dist/densitoai-2.3.2-image.tar.gz
 
 2. Самопроверка образа без сети (фантомные DICOM внутри образа, два прогона, сравнение с эталоном, sha256 весов).
 
         mkdir -p outputs
         docker run --rm --network none --cpus=2 --memory=3g --user "$(id -u):$(id -g)" \
-          -v "$PWD/outputs:/data/output" densitoai:2.3.1 verify
-        # то же одной строкой: bash tools/offline_check.sh densitoai:2.3.1 ./outputs
+          -v "$PWD/outputs:/data/output" densitoai:2.3.2 verify
+        # то же одной строкой: bash tools/offline_check.sh densitoai:2.3.2 ./outputs
 
    Код возврата 0 — все проверки пройдены; 1 — есть расхождение. Отчёт: `outputs/verify/verification_report.html`
    (таблица проверок зелёным/красным, версии пакетов, sha256 весов, время), машинно — `outputs/verify/verify_results.json`.
@@ -32,7 +32,7 @@
 3. Пакетная обработка собственных DICOM (папка монтируется только на чтение; сеть не нужна).
 
         docker run --rm --network none --cpus=2 --memory=3g --user "$(id -u):$(id -g)" \
-          -v /path/to/dicoms:/data/input:ro -v "$PWD/outputs:/data/output" densitoai:2.3.1 batch
+          -v /path/to/dicoms:/data/input:ro -v "$PWD/outputs:/data/output" densitoai:2.3.2 batch
 
    Результат: `outputs/results.csv` (9 столбцов: study_uid, image_uid, anatomical_region, quality_class, quality_prob,
    violation_list, processing_status, time_of_processing, error_message), `outputs/results.xlsx`, журнал `outputs/inference.log`.
@@ -42,14 +42,14 @@
    кодом 0 только при точном совпадении предсказаний.
 
         docker run --rm --network none -v /path/to/dicoms:/data/input:ro -v "$PWD/outputs:/data/output" \
-          densitoai:2.3.1 verify --data /data/input
+          densitoai:2.3.2 verify --data /data/input
         docker run --rm --network none -v /path/to/dicoms:/data/input:ro -v "$PWD/outputs:/data/output" \
-          densitoai:2.3.1 verify --data /data/input --expected-sha <sha из предыдущего вывода>
+          densitoai:2.3.2 verify --data /data/input --expected-sha <sha из предыдущего вывода>
 
 5. Проверить, что веса модели в образе — те, что заявлены в поставке (`models/WEIGHTS_SHA256.txt`).
 
-        docker run --rm --network none densitoai:2.3.1 bash -c "cd /app && sha256sum -c models/WEIGHTS_SHA256.txt"
-        docker run --rm --network none densitoai:2.3.1 bash -c "cd /app && python tools/hash_weights.py --check"
+        docker run --rm --network none densitoai:2.3.2 bash -c "cd /app && sha256sum -c models/WEIGHTS_SHA256.txt"
+        docker run --rm --network none densitoai:2.3.2 bash -c "cd /app && python tools/hash_weights.py --check"
 
 ## Что именно проверяет `verify`
 
@@ -80,7 +80,7 @@ JPEG 2000 Lossless (при установленных кодеках), 8 и 16 �
 
 ### Инвариантность к форме подачи данных и сверка с истиной фантомов
 
-`verify` (и `docker run --rm --network none densitoai:2.3.1 verify`) дополнительно доказывает две вещи.
+`verify` (и `docker run --rm --network none densitoai:2.3.2 verify`) дополнительно доказывает две вещи.
 
 1. **Независимость от имён файлов, порядка и упаковки.** `tools/transfer_check.py` делает копию
    фантомов со случайными именами файлов и каталогов (`f0000.dcm`, `s000/`), перемешивает порядок,

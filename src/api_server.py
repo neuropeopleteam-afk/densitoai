@@ -54,9 +54,10 @@ from inference import (  # noqa: E402
     write_results, validate_output_csv, config_hash as _cfg_hash, __version__ as PIPELINE_VERSION,
     unique_path,
 )
+from region_support import check_file as _region_check  # noqa: E402
 
 try:
-    from fastapi import FastAPI, File, Header, HTTPException, UploadFile
+    from fastapi import FastAPI, File, Header, HTTPException, Request, UploadFile
     from fastapi.responses import FileResponse, JSONResponse
     from starlette.concurrency import run_in_threadpool
     from pydantic import BaseModel
@@ -72,6 +73,8 @@ MAX_UPLOAD_MB = float(os.environ.get("DENSITO_MAX_UPLOAD_MB", "512"))
 MAX_FILES_PER_REQUEST = int(os.environ.get("DENSITO_MAX_FILES", "500"))
 JOBS_DIR = OUTPUT_DIR / "jobs"           # результаты каждого запроса — в отдельной папке
 JOBS_DIR.mkdir(parents=True, exist_ok=True)
+REVIEW_DIR = OUTPUT_DIR / "review"       # ответы слепой ревизии рентгенолога
+MAX_REVIEW_BYTES = 2 * 1024 * 1024
 JOB_RE = re.compile(r"^[0-9]{8}_[0-9]{6}_[0-9a-f]{6}$")
 # Результаты запроса принадлежат тому, кто его загрузил: при загрузке выдаётся одноразовый
 # код доступа (job_token). Без него карточка и файлы запроса не отдаются, даже если код
@@ -223,6 +226,34 @@ def _collect_bonus(job_dir: Path, debug_rows: List[Dict[str, Any]]) -> None:
                 shutil.move(str(src), str(dst / f"{bonus_row_prefix(i)}{suf}"))
             except Exception:  # noqa: BLE001
                 pass
+
+
+def _region_support(row: Dict[str, Any], dbg: Dict[str, Any], tmp: Path) -> tuple:
+    """Поддерживается ли область исследования. Только для слоя API: пакетный путь не вызывает.
+    Любая ошибка проверки трактуется как «поддерживается» — отказ выдумывать нельзя."""
+    try:
+        rel = str(row.get("path_to_study") or "")
+        cand = [Path(tmp) / rel, Path(rel)]
+        src = next((c for c in cand if c.exists()), None)
+        rr = int((dbg or {}).get("rows") or 0)
+        cc = int((dbg or {}).get("cols") or 0)
+        if src is None:
+            from region_support import check_tags as _rt
+            return _rt({}, cols=cc, rows=rr)
+        return _region_check(src, rows=rr, cols=cc)
+    except Exception as e:  # noqa: BLE001
+        LOG.warning("проверка области не выполнена: %s", e)
+        return True, ""
+
+
+def _mark_unsupported(row: Dict[str, Any], cfg: Dict[str, Any]) -> None:
+    """Официальные поля переводятся в ту же конвенцию, что и при сбое обработки: класс 0,
+    тип нарушения пустой, статус — отказ. Порядок и состав колонок не меняются."""
+    out = cfg["output"]
+    row["quality_class"] = 0
+    row["violation_type"] = ""
+    row["quality_prob"] = float(out["fallback_quality_prob"])
+    row["processing_status"] = out["status_failure"]
 
 
 def _attach_bonus(row: Dict[str, Any], job: str, idx: int) -> Dict[str, Any]:
@@ -480,11 +511,26 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
         study_sr = _study_sr_urls(eng, job)
         extras_rows = list(getattr(eng, "last_extras_rows", []) or [])
         rows_out = []
+        n_unsupported = 0
         for i, r in enumerate(rows):
+            dbg = debug_rows[i] if i < len(debug_rows) else {}
+            reg_ok, reg_reason = _region_support(r, dbg, tmp)
+            if not reg_ok:
+                n_unsupported += 1
+                _mark_unsupported(r, eng.cfg)
+                if isinstance(dbg, dict):
+                    dbg["region_supported"] = 0
+                    dbg["region_support_reason"] = reg_reason
+                LOG.info("область не поддерживается: %s -> %s", r.get("path_to_study"), reg_reason)
             rb = _attach_bonus(r, job, i)
+            rb["region_supported"] = bool(reg_ok)
+            rb["region_support_reason"] = reg_reason
+            if not reg_ok:
+                # ни оверлея, ни отчётов: они описывали бы геометрию там, где оценка не выполняется
+                for k in [k for k in list(rb) if str(k).startswith("bonus_")]:
+                    rb.pop(k, None)
             if str(r.get("study_uid") or "") in study_sr:
                 rb["study_sr_download"] = study_sr[str(r.get("study_uid"))]
-            dbg = debug_rows[i] if i < len(debug_rows) else {}
             try:
                 rb["details"] = _details(r, dbg, eng.cfg)
                 if i < len(extras_rows) and isinstance(extras_rows[i], dict):
@@ -494,6 +540,10 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
             rows_out.append(rb)
         xlsx_path = out_csv.with_suffix(".xlsx")
         has_xlsx = bool(xlsx and xlsx_path.exists())
+        if n_unsupported:
+            # отчёт этого запроса приводим в соответствие с карточкой; пакетный путь не затронут
+            write_results(rows, out_csv, eng.cfg, xlsx=has_xlsx)
+            problems = validate_output_csv(out_csv, eng.cfg)
         job_token = _issue_job_token(job_dir)
         resp = {
             "job_id": job,
@@ -709,6 +759,28 @@ def download(name: str):
 # Каталог переопределяется DENSITO_WEB_DIR; если его нет — API работает как раньше, без UI.
 # --------------------------------------------------------------------------- #
 WEB_DIR = Path(os.environ.get("DENSITO_WEB_DIR", PROJECT_ROOT / "web")).resolve()
+
+
+@app.post("/api/review")
+async def submit_review(request: Request):
+    """Приём результатов слепой ревизии рентгенолога одним JSON. Страница ревизии лежит под
+    тем же basic auth, отдельного кода доступа нет: эндпоинт только принимает и складывает файл,
+    ничего не отдаёт и на пайплайн не влияет."""
+    raw = await request.body()
+    if len(raw) > MAX_REVIEW_BYTES:
+        raise HTTPException(413, f"Объём ответа превышает {MAX_REVIEW_BYTES // (1024 * 1024)} МБ")
+    try:
+        data = json.loads(raw.decode("utf-8"))
+    except Exception:  # noqa: BLE001
+        raise HTTPException(400, "Ожидается JSON")
+    if not isinstance(data, dict):
+        raise HTTPException(400, "Ожидается объект JSON")
+    REVIEW_DIR.mkdir(parents=True, exist_ok=True)
+    name = f"{time.strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(3)}.json"
+    (REVIEW_DIR / name).write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    LOG.info("ревизия сохранена: %s (%d байт, ответов %d)", name, len(raw),
+             len(data.get("answers") or []) if isinstance(data.get("answers"), list) else 0)
+    return {"ok": True, "saved": name}
 
 
 @app.get("/", include_in_schema=False)

@@ -8,7 +8,7 @@
 Работает **полностью локально** (CPU, без внешних сервисов), обрабатывает каждый файл
 независимо и **никогда не прерывает пакет** из-за одного плохого файла.
 
-Версия **2.3.1**. Демо: [neuropeople.pro](https://neuropeople.pro) (логин `demo` / `Hakaton`),
+Версия **2.3.2**. Демо: [neuropeople.pro](https://neuropeople.pro) (логин `demo` / `Hakaton`),
 публичный репозиторий: `git clone https://neuropeople.pro/git/densitoai.git`
 
 > **Назначение и ограничения.** Программа не является медицинским изделием и не предназначена
@@ -193,7 +193,7 @@ fastapi 0.141.1, uvicorn 0.53.0. **Версию scikit-learn менять нел
 Требуется Docker (BuildKit). Всё выполняется из корня проекта.
 
 ```bash
-# 1) Собрать образ densitoai:2.3.1 (внутри сборки запускается самопроверка на образце)
+# 1) Собрать образ densitoai:2.3.2 (внутри сборки запускается самопроверка на образце)
 ./build_and_run.sh build
 
 # 2) Пакетная обработка: входная папка (или zip) → выходная папка
@@ -210,14 +210,14 @@ fastapi 0.141.1, uvicorn 0.53.0. **Версию scikit-learn менять нел
 Эквивалент «руками»:
 
 ```bash
-docker build -t densitoai:2.3.1 .
-docker run --rm -v /path/to/input:/data/input:ro -v $(pwd)/outputs:/data/output densitoai:2.3.1 batch
-docker run --rm -p 8000:8000 -v $(pwd)/outputs:/data/output densitoai:2.3.1 api
+docker build -t densitoai:2.3.2 .
+docker run --rm -v /path/to/input:/data/input:ro -v $(pwd)/outputs:/data/output densitoai:2.3.2 batch
+docker run --rm -p 8000:8000 -v $(pwd)/outputs:/data/output densitoai:2.3.2 api
 # после этого http://localhost:8000/ — рабочий кабинет (загрузка снимков, карточки решений,
 # история запросов), http://localhost:8000/docs — Swagger. Интерфейс лежит внутри образа,
 # ничего не тянет из интернета: ни одного внешнего src/href, шрифты и изображения локальные.
 # любые аргументы inference.py можно передать после batch:
-docker run --rm -v ...:/data/input:ro -v ...:/data/output densitoai:2.3.1 batch --no-embeddings --limit 50
+docker run --rm -v ...:/data/input:ro -v ...:/data/output densitoai:2.3.2 batch --no-embeddings --limit 50
 ```
 
 Через docker compose:
@@ -249,8 +249,8 @@ docker compose up densito-api
 Образ содержит средства самопроверки без сети. Полная инструкция для технической группы — `docs/VERIFICATION.md`.
 
 ```bash
-docker build --platform linux/amd64 -t densitoai:2.3.1 .        # базовый образ закреплён по digest
-bash tools/offline_check.sh densitoai:2.3.1 ./outputs            # = docker run --rm --network none ... verify
+docker build --platform linux/amd64 -t densitoai:2.3.2 .        # базовый образ закреплён по digest
+bash tools/offline_check.sh densitoai:2.3.2 ./outputs            # = docker run --rm --network none ... verify
 # отчёт: outputs/verify/verification_report.html, код возврата 0/1
 ```
 
@@ -269,8 +269,8 @@ bash tools/offline_check.sh densitoai:2.3.1 ./outputs            # = docker run 
 Ресурсы: стенд 2 CPU / 3 ГБ (`docker-compose.yml`: `mem_limit: 3g`, `cpus: 2`; пик памяти инференса около 0,6 ГБ).
 Потоки BLAS задаются переменными `OMP_NUM_THREADS`/`MKL_NUM_THREADS` (по умолчанию 2, переопределяются `-e`).
 
-Релиз: `bash tools/make_release.sh 2.3.1` создаёт `dist/densitoai-2.3.1-src.tar.gz` (без outputs/, data-выгрузок и конкурсных
-DICOM), `WITH_IMAGE=1` добавляет `dist/densitoai-2.3.1-image.tar.gz` (`docker save | gzip`); контрольные суммы — `dist/SHA256SUMS`.
+Релиз: `bash tools/make_release.sh 2.3.2` создаёт `dist/densitoai-2.3.2-src.tar.gz` (без outputs/, data-выгрузок и конкурсных
+DICOM), `WITH_IMAGE=1` добавляет `dist/densitoai-2.3.2-image.tar.gz` (`docker save | gzip`); контрольные суммы — `dist/SHA256SUMS`.
 Матрица форматов DICOM (измерено): `docs/TRANSFER_SYNTAX_MATRIX.md`; лицензии и аудит данных: `docs/LICENSES_AND_DATA_AUDIT.md`.
 
 ---
@@ -645,7 +645,7 @@ lh_pos, lh_roi`) и повторить шаги 2–5. Случайные зёр
    `download.pytorch.org` **только на этапе сборки** (в работе сеть не нужна).
 2. `git clone … && cd densito_rebuild && ./build_and_run.sh build`.
    Офлайн-стенд: соберите образ на машине с интернетом и перенесите
-   `docker save densitoai:2.3.1 | gzip > densitoai.tar.gz` → `docker load`.
+   `docker save densitoai:2.3.2 | gzip > densitoai.tar.gz` → `docker load`.
 3. Пакетный режим: `./build_and_run.sh run <input> <output>`; сервисный режим:
    `docker compose up -d densito-api` (порт 8000, `restart: unless-stopped`, healthcheck на
    `/api/health`).

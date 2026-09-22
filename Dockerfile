@@ -5,8 +5,8 @@
 # сервисов и загрузок во время работы нет. Версии базового образа и пакетов
 # зафиксированы (ТЗ п.3.2).
 #
-# Сборка:   docker build --platform linux/amd64 -t densitoai:2.3.1 .
-# Проверка: docker run --rm --network none densitoai:2.3.1 verify   (tools/offline_check.sh)
+# Сборка:   docker build --platform linux/amd64 -t densitoai:2.3.2 .
+# Проверка: docker run --rm --network none densitoai:2.3.2 verify   (tools/offline_check.sh)
 # =============================================================================
 # Базовый образ закреплён по digest (multi-arch index python:3.12.8-slim-bookworm,
 # получен 2026-09-19 запросом к registry-1.docker.io; для linux/amd64 внутри индекса —

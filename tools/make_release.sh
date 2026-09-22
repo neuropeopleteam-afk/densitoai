@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # make_release.sh — релиз-архив исходников и (по запросу) образа с контрольными суммами.
 #   bash tools/make_release.sh [version]            # dist/densitoai-<version>-src.tar.gz + SHA256SUMS
-#   WITH_IMAGE=1 bash tools/make_release.sh 2.3.1   # + docker save densitoai:2.3.1 | gzip -> dist/...-image.tar.gz
+#   WITH_IMAGE=1 bash tools/make_release.sh 2.3.2   # + docker save densitoai:2.3.2 | gzip -> dist/...-image.tar.gz
 # В архив исходников НЕ входят: outputs/, data/ (кроме geometry_features.csv), gpu/, external_datasets,
 # *.pyc, .git, dist/. Конкурсные DICOM в архив не попадают (в репозитории их нет, см. docs/LICENSES_AND_DATA_AUDIT.md);
 # tests/sample_test_zip/ (образец организаторов «Для теста») включается только при WITH_SAMPLE=1.
@@ -9,13 +9,22 @@ set -eu
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
 cd "$ROOT"
-VERSION=${1:-${VERSION:-2.3.1}}
+VERSION=${1:-${VERSION:-2.3.2}}
 IMAGE=${IMAGE:-densitoai:$VERSION}
 DIST="$ROOT/dist"; mkdir -p "$DIST"
 NAME="densitoai-$VERSION"
 SRC_TGZ="$DIST/$NAME-src.tar.gz"
 
 if command -v sha256sum >/dev/null 2>&1; then SHA=sha256sum; else SHA="shasum -a 256"; fi
+
+# --- согласованность версии: сборка падает, если номер расходится хоть в одном месте ---
+echo ">>> проверка согласованности версии и config_hash"
+CHECK_ARGS="--expect-version $VERSION --manifest $DIST/VERSION_MANIFEST.txt"
+if command -v docker >/dev/null 2>&1 && docker image inspect "$IMAGE" >/dev/null 2>&1; then
+  CHECK_ARGS="$CHECK_ARGS --image $IMAGE --require-hash"
+fi
+# shellcheck disable=SC2086
+python3 "$ROOT/tools/check_version_consistency.py" $CHECK_ARGS
 
 # --- исходники --------------------------------------------------------------
 EXCLUDES="--exclude=./outputs --exclude=./dist --exclude=./gpu --exclude=./.git --exclude=./external_datasets \

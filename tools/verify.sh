@@ -8,7 +8,7 @@
 #                                                         #   печать sha256 предсказаний
 #   bash tools/verify.sh --data DIR --expected-sha <sha>  # + сверка sha256 с заданным
 #   bash tools/verify.sh --update-expected                # перезаписать эталон (только разработчику)
-#   docker run --rm --network none densitoai:2.3.1 verify # то же внутри образа
+#   docker run --rm --network none densitoai:2.3.2 verify # то же внутри образа
 #
 # Переменные: VERIFY_OUT (каталог результатов; по умолчанию $DENSITO_OUTPUT_DIR/verify или outputs/verify),
 #             PYTHON (интерпретатор), OMP_NUM_THREADS (по умолчанию 2), TORCH_HOME (models/torch_home).

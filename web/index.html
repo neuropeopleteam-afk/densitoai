@@ -488,6 +488,30 @@ table.crit tr.flag td { background: var(--error-soft); }
   .metrics-legend-note { margin-left: 0; }
   .hist { grid-template-columns: 1fr; }
 }
+
+/* ---------- облегчённая главная ---------- */
+.hero .wrap.hero-lite { grid-template-columns: minmax(0, 1fr); max-width: 900px; }
+.hero-disclaimer { color: var(--ink-muted); font-size: 13.5px; line-height: 1.55; margin-top: 30px; max-width: 760px; }
+.numbers { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.numbers .n { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 20px 22px; }
+.numbers .n .v { font-family: var(--font-display); font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums lining-nums; line-height: 1.1; }
+.numbers .n .ci { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums lining-nums; margin-top: 4px; }
+.numbers .n .l { font-size: 13.5px; color: var(--muted); margin-top: 8px; }
+.bounds { list-style: none; margin: 26px 0 0; padding: 0; display: grid; gap: 12px; max-width: 900px; }
+.bounds li { font-size: 14.5px; color: var(--muted); border-left: 3px solid var(--warning); padding-left: 14px; }
+@media (max-width: 1100px) { .numbers { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .numbers { grid-template-columns: minmax(0, 1fr); } }
+
+/* плашка отказа по неподдерживаемой области (карточка решения и режим лаборанта) */
+.dc-unsupported { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+.dc-unsupported .t { font-family: var(--font-display); font-weight: 700; font-size: 18px; line-height: 1.25; }
+.dc-unsupported .r { color: var(--muted); font-size: 14.5px; margin-top: 8px; }
+.lab .dc-unsupported .t { font-size: clamp(22px, 2.4vw, 30px); }
+.lab .dc-unsupported .r { font-size: 17px; }
+/* одна ссылка в шапке остаётся доступной на планшете и телефоне */
+body:not(.view-app) .topbar .topnav { display: flex; }
+@media (max-width: 560px) { body:not(.view-app) .topbar .topnav { display: none; } }
+
 </style>
 </head>
 <body>
@@ -496,14 +520,7 @@ table.crit tr.flag td { background: var(--error-soft); }
   <div class="wrap">
     <a class="brand" href="#top" data-nav="home"><span class="mark"><img src="assets/neuropeople_logo.png" alt="NEUROPEOPLE"></span>DensitoAI</a>
     <nav class="topnav" aria-label="Разделы">
-      <a href="#about">Для кого</a>
-      <a href="#how">Как работает</a>
-      <a href="#criteria">Критерии</a>
-      <a href="#metrics">Метрики</a>
-      <a href="#limits">Ограничения</a>
-      <a href="#robustness">Устойчивость</a>
-      <a href="#cases">Кейсы</a>
-      <a href="#verify">Как проверить</a>
+      <a href="docs.html">Документы и проверка</a>
     </nav>
     <span class="sp"></span>
     <a class="btn ghost sm topbar-back" href="#top">На главную</a>
@@ -515,95 +532,17 @@ table.crit tr.flag td { background: var(--error-soft); }
 <main id="landing">
 <a id="top"></a>
 <section class="hero">
-  <div class="wrap">
+  <div class="wrap hero-lite">
     <div>
       <div class="logo-tile"><img src="assets/neuropeople_logo.png" alt="Логотип NEUROPEOPLE">NEUROPEOPLE <span>· Лидеры цифровой трансформации 2026 · задача 4, ДЗМ</span></div>
       <h1>DensitoAI</h1>
       <p class="tagline">Автоматический контроль качества DXA-снимков денситометра GE Lunar Prodigy</p>
-      <p class="lead">Сервис читает DICOM-изображения поясничного отдела позвоночника и проксимального отдела бедра, проверяет пять критериев качества укладки и области интереса и выдаёт отчёт строго в формате технического задания. Работает полностью локально, на CPU, в контейнере.</p>
       <div class="cta">
-        <a class="btn lg on-dark" href="#app">Открыть кабинет <span class="arrow">→</span></a>
+        <a class="btn lg on-dark" href="#app">Открыть кабинет <span class="arrow">&rarr;</span></a>
         <a class="btn lg ghost on-dark" href="#app/demo">Посмотреть демо-пример</a>
       </div>
+      <p class="hero-disclaimer">Программа не является медицинским изделием и не предназначена для диагностики, профилактики, лечения или мониторинга заболеваний. Сервис оценивает техническое качество укладки и области интереса исследования и не формирует медицинское заключение. Решение по исследованию принимает врач. Область применения: денситометрия (DXA) поясничного отдела позвоночника и проксимального отдела бедра, оборудование GE Lunar Prodigy.</p>
     </div>
-    <figure class="hero-visual">
-      <div class="frame"><img src="assets/demo/03_poz.png" alt="Визуализация сервиса: снимок поясничного отдела с найденной осью, контуром кости и плотными посторонними объектами" data-zoom></div>
-      <figcaption><span class="tag">Решение: проверить и при подтверждении переснять</span><br>Реальный вывод сервиса 2.3.1 на снимке из выборки заказчика. Оранжевая линия — измеренная ось (наклон 3.1° к вертикали), зелёный контур — костная область, красные рамки — плотные объекты (188 мм², контраст к кости 4.2 сигмы). Порог превысил один критерий — посторонние предметы 0.964 при 0.602; ось 0.651 при 0.777 и укладка 0.226 при 0.822 — в норме. Эксперт на этом снимке отметил ровно посторонние предметы: совпадение полное. Версия 2.2.0 на этом же снимке дополнительно поднимала флаг по оси (0.864 при 0.756) — ложное срабатывание, которое убрал новый бэкбон контура B (К13).</figcaption>
-    </figure>
-  </div>
-  <div class="facts">
-    <div><div class="v">499<small>снимков</small></div><div class="l">из 100 исследований в обучающей выборке, разметка одного эксперта</div></div>
-    <div><div class="v">2 <small>области</small></div><div class="l">поясничный отдел позвоночника и проксимальный отдел бедра</div></div>
-    <div><div class="v">5 <small>критериев</small></div><div class="l">укладка, ось, посторонние предметы, укладка бедра, область интереса</div></div>
-    <div><div class="v">~0,06 <small>с</small></div><div class="l">на снимок в пакетном режиме на CPU; с визуализацией через API 1–2 с</div></div>
-  </div>
-</section>
-
-<section class="section" id="about">
-  <div class="wrap">
-    <div class="sec-head">
-      <div class="eyebrow">Что это и для кого</div>
-      <h2>Второй взгляд на снимок до того, как пациент ушёл</h2>
-      <p class="lead">Некачественная укладка или неправильно выставленная область интереса обесценивают денситометрию: измеренная плотность не соответствует реальной, а пациента приходится вызывать повторно. DensitoAI автоматизирует первичный контроль качества.</p>
-    </div>
-    <div class="grid c3">
-      <div class="card">
-        <div class="who">Лаборант</div>
-        <h3>Сразу после сканирования</h3>
-        <p>Загружает снимки исследования и через несколько секунд видит, какой из них нужно переснять и почему: измеренный угол, расстояние до края поля, найденные предметы.</p>
-      </div>
-      <div class="card">
-        <div class="who">Рентгенолог</div>
-        <h3>Очередь по риску и карточка решения</h3>
-        <p>Партия снимков отсортирована по вероятности нарушения. По каждому снимку — критерии со скорами и порогами, измерения в миллиметрах и градусах, визуализация, рекомендуемое действие.</p>
-      </div>
-      <div class="card">
-        <div class="who">ДЗМ и организаторы</div>
-        <h3>Отчёт строго по ТЗ</h3>
-        <p>CSV с девятью колонками в заданном порядке, закрытый перечень формулировок нарушений, XLSX-сводка, HTTP API, Docker-образ и воспроизводимые метрики без утечек между обучением и проверкой.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="section alt" id="how">
-  <div class="wrap">
-    <div class="sec-head">
-      <div class="eyebrow">Как работает</div>
-      <h2>Два независимых контура и честный порог</h2>
-      <p class="lead">Один контур измеряет геометрию, второй смотрит на снимок целиком. Решение по критерию — их согласование, порог зафиксирован на out-of-fold.</p>
-    </div>
-    <div class="steps">
-      <div class="step"><h3>DICOM на входе</h3><p>Папка, zip или файл. Сбой одного снимка не останавливает партию.</p></div>
-      <div class="step"><h3>Область</h3><p>Позвоночник или бедро — по размеру кадра и тегам, для нестандартных — по содержимому.</p></div>
-      <div class="step"><h3>Два контура</h3><p>A — измерения, B — эмбеддинги EfficientNet-B0. Обучены отдельно на каждый критерий.</p></div>
-      <div class="step"><h3>Ранговый стэкинг</h3><p>Скор — среднее рангов двух контуров. Порог взят на OOF, не на обучении.</p></div>
-      <div class="step"><h3>Отчёт</h3><p>CSV по ТЗ, XLSX по исследованиям, технический CSV, PNG и карточка решения.</p></div>
-    </div>
-    <details class="more">
-      <summary>Как устроены оба контура и откуда берётся порог <small>— признаки, модели, стэкинг</small></summary>
-      <div class="more-body">
-    <div class="twoloop">
-      <div class="loop a">
-        <h3>Контур A — геометрия</h3>
-        <p>Сегментация кости, измерение наклона оси, смещения от центра кадра, ширины костной области, угла диафиза бедра, расстояния до бокового края, площади плотных включений. Логистическая регрессия на 1–5 признаках.</p>
-        <div class="f">axis_angle_deg, center_offset_ratio, shaft_angle_deg, edge_distance_ratio, metal_area_mm2</div>
-      </div>
-      <div class="plus">+</div>
-      <div class="loop b">
-        <h3>Контур B — эмбеддинги</h3>
-        <p>EfficientNet-B0 даёт вектор 1280 признаков, затем стандартизация, PCA до 32 компонент и логистическая регрессия с сильной регуляризацией. Для укладки позвоночника используется дообученный на наших данных бэкбон.</p>
-        <div class="f">1280-d → StandardScaler → PCA32 → LogReg C=0.1</div>
-      </div>
-      <div class="plus">=</div>
-      <div class="loop s">
-        <h3>Стэкинг и порог</h3>
-        <p>score = 0.5·rank(геометрия) + 0.5·rank(эмбеддинги). Пороги для каждого критерия зафиксированы по out-of-fold предсказаниям с группировкой по исследованию; для редкого критерия укладки позвоночника порог взят по доле позитивов, чтобы не подстраиваться под шум.</p>
-        <div class="f">config.yaml · models/metrics_summary.json</div>
-      </div>
-    </div>
-      </div>
-    </details>
   </div>
 </section>
 
@@ -612,229 +551,43 @@ table.crit tr.flag td { background: var(--error-soft); }
     <div class="sec-head">
       <div class="eyebrow">Пять критериев</div>
       <h2>Что именно проверяется</h2>
-      <p class="lead">Формулировки нарушений — из закрытого перечня технического задания. Ниже — что они значат для лаборанта и какие измерения стоят за решением.</p>
+      <p class="lead">Формулировки нарушений — из закрытого перечня технического задания.</p>
     </div>
     <div class="crit-grid">
-      <div class="crit"><div class="reg">Позвоночник</div><h3>Укладка пациента</h3><div class="off">«Некорректная укладка»</div><p>Нарушение укладки: позвоночник смещён или поясничный отдел не полностью в кадре или костная область занимает неправильную долю ширины: пациент лежит не по центру стола.</p><div class="sig"><b>Измеряем:</b> смещение от центра кадра, ширина костной области</div></div>
-      <div class="crit"><div class="reg">Позвоночник</div><h3>Ось позвоночника</h3><div class="off">«Не выравнена ось позвоночника»</div><p>Ось позвоночника наклонена относительно вертикали кадра. Мы прослеживаем центр кости по строкам и измеряем глобальный угол наклона.</p><div class="sig"><b>Измеряем:</b> угол оси к вертикали, градусы</div></div>
-      <div class="crit"><div class="reg">Позвоночник</div><h3>Посторонние предметы</h3><div class="off">«Присутствуют посторонние предметы»</div><p>В поле сканирования попали пуговицы, молнии, элементы одежды или другие объекты. Плотные предметы находит геометрия, менее плотные — эмбеддинги.</p><div class="sig"><b>Измеряем:</b> площадь плотных включений, контраст к кости</div></div>
-      <div class="crit"><div class="reg">Бедро</div><h3>Укладка пациента</h3><div class="off">«Некорректная укладка»</div><p>Бедро недостаточно ротировано или отведено: диафиз наклонён, малый вертел выступает. Правое и левое бедро оцениваются единой моделью с зеркалированием.</p><div class="sig"><b>Измеряем:</b> угол диафиза, признаки ротации</div></div>
-      <div class="crit"><div class="reg">Бедро</div><h3>Область интереса</h3><div class="off">«Некорректная область интереса»</div><p>Поле сканирования не захватывает нужную часть кости: кость упирается в край кадра или ниже вертела слишком мало диафиза. Для бедра сервис дополнительно формирует предложение исправленной области интереса.</p><div class="sig"><b>Измеряем:</b> расстояние от кости до края, длина диафиза ниже вертела, мм</div></div>
+      <div class="crit"><div class="reg">Позвоночник</div><h3>Укладка пациента</h3><div class="off">«Некорректная укладка»</div><p>Позвоночник смещён, поясничный отдел не полностью в кадре или костная область занимает неправильную долю ширины.</p><div class="sig"><b>Измеряем:</b> смещение от центра кадра, ширина костной области</div></div>
+      <div class="crit"><div class="reg">Позвоночник</div><h3>Ось позвоночника</h3><div class="off">«Не выравнена ось позвоночника»</div><p>Ось позвоночника наклонена относительно вертикали кадра.</p><div class="sig"><b>Измеряем:</b> угол оси к вертикали, градусы</div></div>
+      <div class="crit"><div class="reg">Позвоночник</div><h3>Посторонние предметы</h3><div class="off">«Присутствуют посторонние предметы»</div><p>В поле сканирования попали пуговицы, молнии, элементы одежды или другие объекты.</p><div class="sig"><b>Измеряем:</b> площадь плотных включений, контраст к кости</div></div>
+      <div class="crit"><div class="reg">Бедро</div><h3>Укладка пациента</h3><div class="off">«Некорректная укладка»</div><p>Бедро недостаточно ротировано или отведено: диафиз наклонён, малый вертел выступает.</p><div class="sig"><b>Измеряем:</b> угол диафиза, признаки ротации</div></div>
+      <div class="crit"><div class="reg">Бедро</div><h3>Область интереса</h3><div class="off">«Некорректная область интереса»</div><p>Поле сканирования не захватывает нужную часть кости: кость упирается в край кадра или ниже вертела слишком мало диафиза.</p><div class="sig"><b>Измеряем:</b> расстояние от кости до края, длина диафиза ниже вертела, мм</div></div>
     </div>
   </div>
 </section>
 
-<section class="section alt" id="metrics">
+<section class="section alt" id="numbers">
   <div class="wrap">
     <div class="sec-head">
-      <div class="eyebrow">Метрики</div>
-      <h2>Числа, которые мы готовы защищать</h2>
-      <p class="lead">Все оценки — out-of-fold с группировкой по исследованию: модель никогда не видела снимки того исследования, на котором проверяется. Рядом с каждым критерием — ориентир заказчика: приемлемо AUC выше 0.81, высоко — выше 0.9. Мы честно показываем, где мы уже там, а где нет.</p>
+      <div class="eyebrow">Числа и границы</div>
+      <h2>Оценки out-of-fold и границы применимости</h2>
     </div>
-    <!-- METRICS:BEGIN -->
-<div class="metrics-legend"><span><i class="lg below"></i>ниже 0.81</span><span><i class="lg ok"></i>приемлемо: AUC &gt; 0.81</span><span><i class="lg high"></i>высоко: AUC &gt; 0.9</span><span class="metrics-legend-note">шкала 0.5–1.0, метка — AUC стека на OOF</span></div>
-<div class="table-wrap"><table class="metrics main">
-<colgroup><col style="width:18%"><col style="width:10%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:7%"><col style="width:15%"><col style="width:11%"><col style="width:15%"></colgroup>
-<thead><tr><th>Критерий</th><th>Область</th><th class="num">n / позит.</th><th class="num">AUC геом.</th><th class="num">AUC эмб.</th><th class="num">AUC стек</th><th>Где мы относительно ориентира</th><th class="num">F1 OOF [95 % ДИ]</th><th>Надёжность</th></tr></thead><tbody>
-<tr><td><div class="crit-title">Укладка пациента</div><div class="crit-sub">sp_pos · порог по доле позитивов, порог 0.822</div></td><td>позвоночник</td><td class="num">166 / 10</td><td class="num">0.681</td><td class="num">0.790</td><td class="num strong">0.734</td><td><div class="aucbar" role="img" aria-label="AUC 0.734, ниже ориентира"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark below" style="left:46.8%"></span></div><div class="zone-txt below">ниже ориентира</div></td><td class="num">0.48 [0.11; 0.82]</td><td>мало позитивов (10): результат ненадёжен, читать по AUC</td></tr>
-<tr><td><div class="crit-title">Ось позвоночника</div><div class="crit-sub">sp_axis · prevalence_x1.4, порог 0.777</div></td><td>позвоночник</td><td class="num">166 / 17</td><td class="num">0.839</td><td class="num">0.797</td><td class="num strong">0.889</td><td><div class="aucbar" role="img" aria-label="AUC 0.889, приемлемо"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark ok" style="left:77.8%"></span></div><div class="zone-txt ok">приемлемо</div></td><td class="num">0.60 [0.29; 0.82]</td><td>приемлемая, работает геометрия</td></tr>
-<tr><td><div class="crit-title">Посторонние предметы</div><div class="crit-sub">sp_art · prevalence_x1.4, порог 0.602</div></td><td>позвоночник</td><td class="num">166 / 35</td><td class="num">0.560</td><td class="num">0.897</td><td class="num strong">0.823</td><td><div class="aucbar" role="img" aria-label="AUC 0.823, приемлемо"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark ok" style="left:64.5%"></span></div><div class="zone-txt ok">приемлемо</div></td><td class="num">0.53 [0.24; 0.74]</td><td>приемлемая, работает контур B (эмбеддинги)</td></tr>
-<tr><td><div class="crit-title">Укладка пациента</div><div class="crit-sub">hip_pos · порог по доле позитивов, порог 0.658</div></td><td>бедро, обе стороны</td><td class="num">329 / 79</td><td class="num">0.710</td><td class="num">0.635</td><td class="num strong">0.725</td><td><div class="aucbar" role="img" aria-label="AUC 0.725, ниже ориентира"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark below" style="left:45.1%"></span></div><div class="zone-txt below">ниже ориентира</div></td><td class="num">0.43 [0.22; 0.60]</td><td>умеренная: сильнее геометрия</td></tr>
-<tr><td><div class="crit-title">Область интереса</div><div class="crit-sub">hip_roi · порог по доле позитивов, порог 0.918</div></td><td>бедро, обе стороны</td><td class="num">329 / 16</td><td class="num">0.902</td><td class="num">0.877</td><td class="num strong">0.917</td><td><div class="aucbar" role="img" aria-label="AUC 0.917, высоко"><span class="aucbar-zone ok" style="left:62.0%;width:18.0%"></span><span class="aucbar-zone high" style="left:80.0%;width:20.0%"></span><span class="aucbar-mark high" style="left:83.5%"></span></div><div class="zone-txt high">высоко</div></td><td class="num">0.51 [0.00; 0.91]</td><td>приемлемая, работает геометрия</td></tr>
-</tbody></table></div>
-<p class="metrics-summary">Из пяти критериев 3 достигают ориентира «приемлемо» (AUC &gt; 0.81) и 1 — ориентира «высоко» (AUC &gt; 0.9). Остальные ниже ориентира, и мы это показываем, а не скрываем. Источник: <code>models/metrics_summary.json</code> (OOF, группировка по исследованию), ДИ по F1 — бутстрап по исследованиям.</p>
-<h3 class="metrics-h3">Бинарная задача «есть нарушение» по областям, OOF</h3>
-<div class="table-wrap"><table class="metrics compact"><thead><tr><th>Область</th><th class="num">ROC-AUC [95 % ДИ]</th><th class="num">F1 [95 % ДИ]</th><th class="num">Macro-F1 по типам нарушений [95 % ДИ]</th></tr></thead><tbody>
-<tr><td>Поясничный отдел позвоночника</td><td class="num strong">0.773 [0.65; 0.88]</td><td class="num">0.623 [0.45; 0.77]</td><td class="num">0.539 [0.36; 0.69]</td></tr>
-<tr><td>Проксимальный отдел бедра</td><td class="num strong">0.760 [0.63; 0.86]</td><td class="num">0.516 [0.31; 0.68]</td><td class="num">0.473 [0.20; 0.68]</td></tr>
-</tbody></table></div>
-<p class="metrics-src">Источник: <code>docs/METRICS_REPORT.md</code>, таблица «Итого» (<code>python src/eval_oof_metrics.py</code>, 95 % ДИ — бутстрап по исследованиям, 2000 повторов).</p>
-<!-- METRICS:END -->
-  </div>
-</section>
-
-<section class="section" id="limits">
-  <div class="wrap">
-    <div class="sec-head">
-      <div class="eyebrow">Честные ограничения</div>
-      <h2>О чём нужно знать до внедрения</h2>
+    <div class="numbers">
+      <div class="n"><div class="v">0.889</div><div class="ci">F1 0.60 [0.29; 0.82]</div><div class="l">AUC стека, ось позвоночника</div></div>
+      <div class="n"><div class="v">0.917</div><div class="ci">F1 0.51 [0.00; 0.91]</div><div class="l">AUC стека, область интереса бедра</div></div>
+      <div class="n"><div class="v">0.773 [0.65; 0.88]</div><div class="ci">F1 0.623 [0.45; 0.77]</div><div class="l">ROC-AUC, «есть нарушение», поясничный отдел позвоночника</div></div>
+      <div class="n"><div class="v">0.760 [0.63; 0.86]</div><div class="ci">F1 0.516 [0.31; 0.68]</div><div class="l">ROC-AUC, «есть нарушение», проксимальный отдел бедра</div></div>
     </div>
-    <div class="limits">
-      <div class="limit"><h3>Десять позитивов на укладку позвоночника</h3><p>В обучающей выборке нарушение укладки позвоночника встретилось 10 раз из 166. Любая модель на таких данных ненадёжна: порог взят по доле позитивов, доверительный интервал F1 — от 0.00 до 0.72. На закрытом тесте по этому критерию следует ожидать результат, близкий к случайному.</p></div>
-      <div class="limit"><h3>Один аппарат, одна клиника, один разметчик</h3><p>Все 499 снимков получены на одном GE Lunar Prodigy и размечены одним экспертом. Перенос на другие денситометры не проверен. Часть меток опирается на признаки, которые наши измерения ловят частично: например, у эксперта ось позвоночника оценивается шире, чем глобальный наклон.</p></div>
-      <div class="limit"><h3>Финальная проверка — у организатора</h3><p>Метрики технического задания считаются организаторами на закрытом тесте. Наши OOF-оценки — честный ориентир без утечек, но не гарантия. Поэтому вместе с сервисом мы отдаём воспроизводимый протокол обучения, тесты и код подсчёта метрик.</p></div>
-    </div>
-  </div>
-</section>
-
-<section class="section alt" id="robustness">
-  <div class="wrap">
-    <div class="sec-head">
-      <div class="eyebrow">Устойчивость к искажениям</div>
-      <h2>Что происходит с решением, если снимок испортить</h2>
-      <p class="lead">Измеренные заранее кривые, а не живые ползунки: каждый вид искажения прогнан на выборке размеченных снимков, показана доля снимков, у которых изменился класс качества.</p>
-    </div>
-<!-- ROBUSTNESS:BEGIN -->
-<div class="rob-wrap">
-<svg class="rob-svg" viewBox="0 0 720 416" role="img" aria-label="Доля снимков, у которых изменился класс качества, по видам искажений">
-<line x1="300" y1="8" x2="300" y2="394" class="rob-axis"/>
-<text x="288" y="32" class="rob-label" text-anchor="end">пересохранение файла</text>
-<rect x="300" y="18" width="2" height="20" rx="3" class="rob-bar fmt"/>
-<text x="312" y="33" class="rob-val">0.0 % (0/81)</text>
-<text x="288" y="66" class="rob-label" text-anchor="end">удалены теги (шаг пикселя, описание)</text>
-<rect x="300" y="52" width="2" height="20" rx="3" class="rob-bar fmt"/>
-<text x="312" y="67" class="rob-val">0.0 % (0/81)</text>
-<text x="288" y="100" class="rob-label" text-anchor="end">нет UID исследования и снимка</text>
-<rect x="300" y="86" width="2" height="20" rx="3" class="rob-bar fmt"/>
-<text x="312" y="101" class="rob-val">0.0 % (0/81)</text>
-<text x="288" y="134" class="rob-label" text-anchor="end">инвертированная шкала (MONOCHROME1)</text>
-<rect x="300" y="120" width="2" height="20" rx="3" class="rob-bar fmt"/>
-<text x="312" y="135" class="rob-val">0.0 % (0/81)</text>
-<text x="288" y="168" class="rob-label" text-anchor="end">16-битный контейнер</text>
-<rect x="300" y="154" width="2" height="20" rx="3" class="rob-bar fmt"/>
-<text x="312" y="169" class="rob-val">0.0 % (0/81)</text>
-<text x="288" y="202" class="rob-label" text-anchor="end">обрезка 4 % по краям</text>
-<rect x="300" y="188" width="160" height="20" rx="3" class="rob-bar"/>
-<text x="470" y="203" class="rob-val">16.0 % (13/81)</text>
-<text x="288" y="236" class="rob-label" text-anchor="end">уменьшение ×0,8 с пересчётом шага</text>
-<rect x="300" y="222" width="198" height="20" rx="3" class="rob-bar"/>
-<text x="508" y="237" class="rob-val">19.8 % (16/81)</text>
-<text x="288" y="270" class="rob-label" text-anchor="end">увеличение ×1,25 с пересчётом шага</text>
-<rect x="300" y="256" width="86" height="20" rx="3" class="rob-bar"/>
-<text x="396" y="271" class="rob-val">8.6 % (7/81)</text>
-<text x="288" y="304" class="rob-label" text-anchor="end">шум 3 %</text>
-<rect x="300" y="290" width="272" height="20" rx="3" class="rob-bar"/>
-<text x="582" y="305" class="rob-val">27.2 % (22/81)</text>
-<text x="288" y="338" class="rob-label" text-anchor="end">ярче (гамма 0,7)</text>
-<rect x="300" y="324" width="185" height="20" rx="3" class="rob-bar"/>
-<text x="495" y="339" class="rob-val">18.5 % (15/81)</text>
-<text x="288" y="372" class="rob-label" text-anchor="end">темнее (гамма 1,4)</text>
-<rect x="300" y="358" width="173" height="20" rx="3" class="rob-bar"/>
-<text x="483" y="373" class="rob-val">17.3 % (14/81)</text>
-<text x="300.0" y="410" class="rob-tick" text-anchor="middle">0 %</text>
-<text x="400.0" y="410" class="rob-tick" text-anchor="middle">10 %</text>
-<text x="500.0" y="410" class="rob-tick" text-anchor="middle">20 %</text>
-<text x="600.0" y="410" class="rob-tick" text-anchor="middle">30 %</text>
-</svg>
-<div class="rob-legend"><span><i class="sw fmt"></i>формат файла и теги</span><span><i class="sw"></i>пиксели: яркость, шум, масштаб, обрезка</span></div>
-<p class="rob-note">Выборка: 81 снимков разметки (27 позвоночник, 54 бедро), из них с нарушениями 40. Каждый снимок пересохранён с одним искажением и прогнан повторно; показана доля снимков, у которых изменился класс качества. Ошибок обработки (Failure) ни в одном варианте не было (максимум 0.0 %), область снимка не менялась ни разу (максимум 0.0 %). Время на снимок в исходном прогоне: медиана 0.05 с, 95-й перцентиль 0.09 с.</p>
-<p class="rob-note">На реальном потоке одного аппарата GE Lunar с фиксированным экспортом искажений яркости, шума и масштаба нет: все снимки приходят в одном формате. Изменения формата и тегов на потоке возможны, и к ним система устойчива полностью. Перевороты при изменении экспозиции сосредоточены у порога решения (медианный запас 0,09–0,11), то есть касаются спорных снимков.</p>
-<p class="rob-src">Источник: docs/qa/robustness_results.json (2026-09-20), docs/ROBUSTNESS_REPORT.md; скрипт tests/robustness_suite.py.</p>
-</div>
-<!-- ROBUSTNESS:END -->
-  </div>
-</section>
-
-<section class="section" id="cases">
-  <div class="wrap">
-    <div class="sec-head">
-      <div class="eyebrow">Кейсы</div>
-      <h2>Почему нужны оба контура</h2>
-      <p class="lead">Два критерия, на которых видно разделение труда между контурами. Разбор каждого снимка партии со скорами, порогами и измерениями — в кабинете: там демо-партия из 10 снимков, где у каждого кадра подписано, что отметил эксперт и что ответил сервис.</p>
-    </div>
-    <div class="cases">
-      <div class="case">
-        <div class="img pair"><img src="assets/cases/sample_axis_violation.png" alt="Снимок с нарушением оси позвоночника" data-zoom><img src="assets/cases/sample_axis_ok.png" alt="Снимок без нарушения оси" data-zoom></div>
-        <div class="body">
-          <span class="badge neutral">Критерий: ось позвоночника</span>
-          <h3>Слева метка эксперта «не выравнена ось», справа норма</h3>
-          <p>Геометрия измеряет глобальный наклон оси и отдельно даёт AUC 0.84. Эксперт учитывает и локальные изгибы, поэтому часть меток геометрия не объясняет — её добирает второй контур.</p>
-        </div>
-      </div>
-      <div class="case">
-        <div class="img pair"><img src="assets/cases/sample_art_pos.png" alt="Снимок с посторонними предметами" data-zoom><img src="assets/cases/sample_art_neg.png" alt="Снимок без посторонних предметов" data-zoom></div>
-        <div class="body">
-          <span class="badge neutral">Критерий: посторонние предметы</span>
-          <h3>Слева предметы в поле сканирования, справа чистый снимок</h3>
-          <p>Большинство «посторонних предметов» в разметке — не металл, а одежда и объекты низкой плотности. Их ловят эмбеддинги (AUC 0.90), детектор плотных включений здесь слаб (AUC 0.56). Поэтому контуры и объединены.</p>
-        </div>
-      </div>
-      <div class="case">
-        <div class="body" style="padding-top:26px">
-          <span class="badge neutral">В кабинете</span>
-          <h3>Каждый снимок — с карточкой решения</h3>
-          <p>Критерии со скорами, порогами и вкладом каждого контура, измерения в мм и градусах, визуализация, рекомендуемое действие: принять, проверить и при подтверждении переснять, либо проверить вручную, если файл не обработан.</p>
-          <div class="links"><a class="btn" href="#app/demo">Открыть демо-партию из 10 снимков</a></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="section" id="verify">
-  <div class="wrap">
-    <div class="sec-head">
-      <div class="eyebrow">Как проверить</div>
-      <h2>Всё воспроизводится за несколько команд</h2>
-      <p class="lead">Техническая группа может развернуть сервис на своих данных без нашего участия. Сервис не делает ни одного внешнего вызова: кабинет, API и модели лежат внутри образа, и самопроверка из 12 пунктов прогоняется в контейнере с полностью отключённой сетью (<code>--network none</code>).</p>
-    </div>
-    <details class="more">
-      <summary>Команды запуска, список документов и состав контейнера <small>— для тех, кто будет разворачивать</small></summary>
-      <div class="more-body">
-    <div class="verify">
-      <div>
-        <div class="card">
-          <h3>Docker: сборка, пакетный прогон, API</h3>
-          <pre><span class="c"># сборка образа и самопроверка</span>
-./build_and_run.sh build
-<span class="c"># пакетная обработка папки с DICOM или zip -&gt; outputs/results.csv (+ .xlsx)</span>
-./build_and_run.sh run /path/to/dicom_folder ./outputs
-<span class="c"># HTTP API на порту 8000, Swagger: http://localhost:8000/docs</span>
-./build_and_run.sh api 8000 /path/to/dicom_folder ./outputs
-<span class="c"># тесты формата и изоляции запросов</span>
-./build_and_run.sh test</pre>
-        </div>
-        <div class="card">
-          <h3>Без Docker</h3>
-          <pre>pip install -r requirements.txt
-python src/inference.py --input /path/to/dicom --output outputs/results.csv --xlsx
-python tests/test_inference_format.py      <span class="c"># формат, битые входы, детерминизм</span>
-python tests/test_api_isolation.py         <span class="c"># изоляция файлов между запросами</span>
-python src/eval_oof_metrics.py             <span class="c"># метрики с ДИ -> docs/metrics_oof_full.md</span></pre>
-        </div>
-      </div>
-      <div>
-        <div class="card">
-          <h3>Код и документы</h3>
-          <ul class="doclist">
-            <li><code>git clone https://neuropeople.pro/git/densitoai.git</code><span>публичный репозиторий</span></li>
-            <li><code>/docs</code><span>Swagger UI работающего API: <a href="/docs">открыть</a></span></li>
-            <li><code>README.md</code><span>назначение, запуск, API, формат данных, ограничения</span></li>
-            <li><code>docs/METRICS_REPORT.md</code><span>метрики по ТЗ §8.4 с 95 % ДИ</span></li>
-            <li><code>docs/ROBUSTNESS_REPORT.md</code><span>устойчивость к нестандартному входу</span></li>
-            <li><code>docs/PREPROC_GATE_REPORT.md</code><span>инвариантная предобработка и выбор варианта внутри nested</span></li>
-            <li><code>docs/EVIDENCE.md</code><span>данные, лицензии, отвергнутые гипотезы, ограничения</span></li>
-            <li><code>models/MODEL_CONTRACT.md</code><span>формат моделей и порогов</span></li>
-            <li><code>config.yaml</code><span>все строки, пороги и веса в одном файле</span></li>
-          </ul>
-        </div>
-        <div class="card">
-          <h3>Что внутри контейнера</h3>
-          <p>Python 3.12, PyTorch CPU, scikit-learn, pydicom. Модели — файлы pkl с зафиксированным контрактом, бэкбон EfficientNet-B0 и этот самый кабинет лежат в образе — интерфейс открывается на корне того же порта, что и API. Ошибки отдельных файлов не роняют запрос: строка получает статус Failure и вероятность 0.5.</p>
-        </div>
-      </div>
-    </div>
-      </div>
-    </details>
-  </div>
-</section>
-
-<section class="cta-band">
-  <div class="wrap">
-    <h2>Откройте кабинет</h2>
-    <p>Загрузите DICOM-файлы или zip-архив исследования и получите очередь по риску, карточку решения и отчёт в формате ТЗ. Без пароля доступен демо-пример на тестовых файлах организаторов.</p>
-    <div class="cta">
-      <a class="btn lg on-dark" href="#app">Открыть кабинет <span class="arrow">→</span></a>
-      <a class="btn lg ghost on-dark" href="#app/demo">Посмотреть демо-пример</a>
-    </div>
+    <p class="metrics-src">Оценки out-of-fold с группировкой по исследованию, 95 % ДИ — бутстрап по исследованиям. Полные таблицы — в <a href="docs.html">документах и проверке</a>.</p>
+    <ul class="bounds">
+      <li>Укладка позвоночника: 10 позитивов из 166, по этому критерию результат ненадёжен.</li>
+      <li>Все 499 снимков — один GE Lunar Prodigy, один разметчик; перенос на другие денситометры не проверен.</li>
+      <li>Метрики технического задания считают организаторы на закрытом тесте; оценки OOF — ориентир, не гарантия.</li>
+    </ul>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
-    <div>DensitoAI · ООО «НЕЙРОПИПЛ» · хакатон «Лидеры цифровой трансформации 2026», задача 4</div>
-    <div>Версия сервиса 2.3.1 · EfficientNet-B0 + геометрия · OOF с группировкой по исследованию</div>
-    <div class="disclaimer">Программа не является медицинским изделием и не предназначена для диагностики, профилактики, лечения или мониторинга заболеваний. Сервис оценивает техническое качество укладки и области интереса исследования и не формирует медицинское заключение. Решение по исследованию принимает врач. Область применения: денситометрия (DXA) поясничного отдела позвоночника и проксимального отдела бедра, оборудование GE Lunar Prodigy.</div>
+    <div>DensitoAI · ООО «НЕЙРОПИПЛ» · версия сервиса 2.3.2 · хэш конфигурации 5ac94710a6cd</div>
+    <div><a href="docs.html">Документы и проверка</a></div>
   </div>
 </footer>
 </main>
@@ -892,6 +645,7 @@ python src/eval_oof_metrics.py             <span class="c"># метрики с �
 </main>
 
 <div class="lightbox" id="lightbox" role="dialog" aria-label="Увеличенное изображение"><img alt=""></div>
+
 
 <script>
 'use strict';
@@ -1010,6 +764,7 @@ function needsDoctor(d) {
 function decision(r) {
   const d = r.details || {};
   const acts = CARD_TEXT.actions || {};
+  if (regionUnsupported(r)) return { code: 'fail', label: 'Область не поддерживается', group: 'fail', reason: 'Область исследования вне применения сервиса', hint: String(r.region_support_reason || ''), crit: null, margin: null, doctor: false };
   if (r.processing_status !== 'Success') return { code: 'fail', label: VERDICT.fail, group: 'fail', reason: acts.fail?.reason || 'Файл не обработан', hint: acts.fail?.hint || '', crit: null, margin: null, doctor: false };
   const crits = Array.isArray(d.criteria) ? d.criteria : [];
   const withMargin = crits.filter(c => Number.isFinite(Number(c.score)) && Number.isFinite(Number(c.threshold))).map(c => Object.assign({ margin: Number(c.score) - Number(c.threshold) }, c));
@@ -1176,10 +931,22 @@ function vizBlock(r, dec, zoom) {
   show((roi && (roiFlagged(r) || (dec && dec.group === 'hip_roi'))) ? 'roi' : 'ov');
   return box;
 }
+// Отказ по неподдерживаемой области. Поля region_supported / region_support_reason приходят из API;
+// в статичном демо и в старых ответах их нет — тогда ветка не срабатывает и карточка строится как раньше.
+function regionUnsupported(r) { return !!r && r.region_supported === false; }
+const REGION_UNSUPPORTED_TEXT = 'Область не поддерживается — оценка не выполняется';
+function unsupportedBlock(r) {
+  const reason = String((r && r.region_support_reason) || '').trim();
+  return el('div', { class: 'dc-unsupported' }, [
+    el('div', { class: 't', text: REGION_UNSUPPORTED_TEXT }),
+    reason ? el('div', { class: 'r', text: reason }) : null,
+  ]);
+}
 // Карточка решения для врача
 function decisionCard(r, opts) {
   opts = opts || {};
   const d = r.details || {};
+  if (regionUnsupported(r)) return el('div', { class: 'dcard' }, [unsupportedBlock(r)]);
   const dec = decision(r);
   const rows = measuredRows(r);
   const card = el('div', { class: 'dcard' });
@@ -1455,7 +1222,7 @@ function renderResults(data) {
 
   // панель фильтров
   const tb = el('div', { class: 'toolbar' });
-  const nu = state.rows.filter(r => needsDoctor(r.details || {})).length;
+  const nu = state.rows.filter(r => needsDoctor(r.details || {}) && !regionUnsupported(r)).length;
   const chipsDef = [['all', 'Все', n], ['violation', 'Нарушения', nv], ['uncertain', 'Не уверен', nu], ['ok', 'Норма', n - nv - nf], ['fail', 'Ошибки', nf]];
   chipsDef.forEach(([k, t, c]) => tb.appendChild(el('button', { type: 'button', class: 'fchip' + (state.filter === k ? ' active' : ''), 'data-f': k, onclick: () => { state.filter = k; refresh(); } }, [t, el('span', { class: 'n', text: String(c) })])));
   const regSel = el('select', { 'aria-label': 'Область', onchange: e => { state.region = e.target.value; refresh(); } }, [
@@ -1486,7 +1253,7 @@ function plural(n, one, few, many) { const m10 = n % 10, m100 = n % 100; const w
 
 function visibleRows() {
   let rows = state.rows.filter(r => state.filter === 'all' ? true
-    : state.filter === 'uncertain' ? needsDoctor(r.details || {}) : r._state === state.filter);
+    : state.filter === 'uncertain' ? (needsDoctor(r.details || {}) && !regionUnsupported(r)) : r._state === state.filter);
   if (state.region !== 'all') rows = rows.filter(r => r.anatomical_region === state.region);
   if (state.q) rows = rows.filter(r => [r.path_to_study, r.study_uid, r.image_uid, r.violation_type, r.anatomical_region].join(' ').toLowerCase().includes(state.q));
   const key = { risk: r => -(Number(r.quality_prob) || 0) - (r._state === 'fail' ? 2 : 0), name: r => String(r.path_to_study || ''), time: r => -(Number(r.time_of_processing) || 0) }[state.sort];
@@ -1534,11 +1301,11 @@ function queueRow(r) {
       // в демо-партии каждый кадр подписан: что он иллюстрирует и что сказал эксперт
       r.demo_role ? el('div', { class: 'demo-role' + (r.demo_miss ? ' miss' : '') , text: r.demo_role }) : null]),
     el('div', { text: (REGION_SHORT[r.anatomical_region] || r.anatomical_region || '—') + side }),
-    el('div', {}, viol.length ? viol.map(v => el('div', { text: v })) : [el('span', { class: 'sub', text: r._state === 'fail' ? String(d.error || 'файл не обработан') : '—' })]),
+    el('div', {}, viol.length ? viol.map(v => el('div', { text: v })) : [el('span', { class: 'sub', text: regionUnsupported(r) ? 'область не поддерживается' : (r._state === 'fail' ? String(d.error || 'файл не обработан') : '—') })]),
     el('div', { class: 'risk' + (p >= 0.5 ? ' hot' : '') }, [el('span', { class: 'bar' }, [el('i', { style: `width:${Math.round(p * 100)}%` }), el('b')]), el('span', { text: fmt(p) })]),
     // зона «не уверен»: решение взято, но запас до порога мал — в очереди видно сразу
-    el('div', {}, [el('span', { class: 'badge ' + r._state, text: STATE_TEXT[r._state] }),
-      needsDoctor(d) ? el('span', { class: 'badge uncertain', text: 'Не уверен' , title: 'Запас до порога мал' + (Array.isArray(d.uncertain_criteria) && d.uncertain_criteria.length ? ' (' + d.uncertain_criteria.join(', ') + ')' : '') + ' — посмотреть глазами' }) : null]),
+    el('div', {}, [el('span', { class: 'badge ' + r._state, text: regionUnsupported(r) ? 'Вне применения' : STATE_TEXT[r._state] }),
+      (needsDoctor(d) && !regionUnsupported(r)) ? el('span', { class: 'badge uncertain', text: 'Не уверен' , title: 'Запас до порога мал' + (Array.isArray(d.uncertain_criteria) && d.uncertain_criteria.length ? ' (' + d.uncertain_criteria.join(', ') + ')' : '') + ' — посмотреть глазами' }) : null]),
   ]);
   if (state.selected === r._i) row.appendChild(detailPanel(r));
   return row;
@@ -1553,6 +1320,7 @@ function detailPanel(r) {
   right.appendChild(el('h3', { text: 'Карточка решения' }));
   right.appendChild(decisionCard(r));
   const links = el('div', { class: 'links' });
+  if (regionUnsupported(r)) return el('div', { class: 'detail' }, [left, right]); // выгрузки по неподдерживаемой области не предлагаются
   const sr = safeApiUrl(r.bonus_sr_dcm_download);
   const study_sr = safeApiUrl(r.study_sr_download);
   const sc = safeApiUrl(r.bonus_overlay_dcm_download);
@@ -1614,17 +1382,19 @@ function labScreen() {
     imgCol.appendChild(el('div', { class: 'imgcap', text: showRoi ? 'Рекомендуемое положение области интереса (пунктир) — переснять, переставив поле сканирования. Сплошная рамка — текущий контур кости.' : 'Снимок с отметками измерений. Клик — увеличить.' }));
   } else imgCol.appendChild(el('div', { class: 'empty', text: 'Изображение недоступно' }));
   const txt = el('div');
-  txt.appendChild(el('div', { class: 'lab-verdict ' + dec.code, text: VERDICT_LAB[dec.code] }));
-  txt.appendChild(el('div', { class: 'lab-reason', text: dec.reason }));
-  if (dec.hint) txt.appendChild(el('div', { class: 'lab-hint', text: dec.hint }));
+  const unsup = regionUnsupported(r);
+  if (unsup) txt.appendChild(unsupportedBlock(r));
+  if (!unsup) txt.appendChild(el('div', { class: 'lab-verdict ' + dec.code, text: VERDICT_LAB[dec.code] }));
+  if (!unsup) txt.appendChild(el('div', { class: 'lab-reason', text: dec.reason }));
+  if (!unsup && dec.hint) txt.appendChild(el('div', { class: 'lab-hint', text: dec.hint }));
   const roiTxt = roiHintText(d);
-  if (roiTxt && showRoi) txt.appendChild(el('div', { class: 'lab-hint', text: roiTxt }));
+  if (!unsup && roiTxt && showRoi) txt.appendChild(el('div', { class: 'lab-hint', text: roiTxt }));
   const rowsM = measuredRows(r);
   const cen = centeringHint(r, rowsM);
-  if (cen && dec.group === 'sp_pos') txt.appendChild(el('div', { class: 'lab-hint', text: cen }));
-  const bad = rowsM.filter(m => m.status === 'bad' || m.status === 'hi');
+  if (!unsup && cen && dec.group === 'sp_pos') txt.appendChild(el('div', { class: 'lab-hint', text: cen }));
+  const bad = unsup ? [] : rowsM.filter(m => m.status === 'bad' || m.status === 'hi');
   if (bad.length) txt.appendChild(el('div', { class: 'lab-meas' }, bad.map(m => el('div', {}, [el('span', { text: m.label }), el('b', { text: `${m.valueText} · норма ${m.normText}` })]))));
-  const badges = extrasBadges(r);
+  const badges = unsup ? [] : extrasBadges(r);
   if (badges.length) txt.appendChild(el('div', { class: 'badges', style: 'margin-top:14px' }, badges.map(b => el('span', { class: 'wbadge ' + (b.cls || ''), text: b.text }))));
   const go = k => { lab.idx = Math.max(0, Math.min(rows.length - 1, lab.idx + k)); renderMode(); };
   txt.appendChild(el('div', { class: 'lab-btns' }, [

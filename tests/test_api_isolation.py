@@ -205,5 +205,74 @@ def test_bonus_isolation():
 
 test_bonus_isolation()
 
+
+# ---------------------------------------------------------------------------
+# Отказ по неподдерживаемой области (слой API; пакетный путь не затронут)
+# ---------------------------------------------------------------------------
+import pydicom  # noqa: E402
+
+def _with_tag(src_path, **tags):
+    ds = pydicom.dcmread(str(src_path), force=True)
+    for k, v in tags.items():
+        setattr(ds, k, v)
+    out = Path(tempfile.mkdtemp(prefix="densito_region_")) / src_path.name
+    try:
+        ds.save_as(str(out))
+    except Exception:  # разные версии pydicom требуют разных флагов записи
+        try:
+            ds.save_as(str(out), enforce_file_format=False)
+        except TypeError:
+            ds.save_as(str(out), write_like_original=True)
+    return out
+
+try:
+    fake = _with_tag(SAMPLES[0], BodyPartExamined="FOREARM")
+    rr = upload([fake])
+    check(rr.status_code == 200, f"снимок предплечья принят без ошибки ({rr.status_code})")
+    jr = rr.json()
+    rowf = jr["rows"][0]
+    check(rowf.get("region_supported") is False, "region_supported=false для предплечья")
+    check("сервис оценивает только" in str(rowf.get("region_support_reason", "")),
+          "причина отказа названа человеческим текстом")
+    check(int(rowf.get("quality_class", -1)) == 0, "класс качества обнулён при отказе")
+    check(str(rowf.get("violation_type", "x")) == "", "тип нарушения пуст при отказе")
+    check(not [k for k in rowf if str(k).startswith("bonus_")],
+          "бонус-файлы не прикладываются при отказе")
+    csv_text = jr["csv"]
+    check("Failure" in csv_text, "в отчёте этого запроса стоит статус отказа")
+    dl = client.get(jr["result_csv_url"])
+    check(dl.status_code == 200 and "Failure" in dl.text,
+          "скачиваемый отчёт согласован с карточкой")
+    check(len(dl.text.strip().splitlines()[0].split(",")) == 9,
+          "в отчёте по-прежнему 9 колонок")
+except Exception as e:  # noqa: BLE001
+    check(False, f"проверка отказа по области не выполнена: {e}")
+
+# нормальный снимок из выборки — поддерживается
+rn = upload([SAMPLES[0]])
+check(rn.status_code == 200, "обычный снимок принят")
+check(rn.json()["rows"][0].get("region_supported") is True,
+      "region_supported=true для снимка из выборки")
+
+# ---------------------------------------------------------------------------
+# Приём результатов слепой ревизии
+# ---------------------------------------------------------------------------
+payload = {"reviewer": "тест", "kit_sha256": "0" * 64,
+           "answers": [{"idx": 1, "file": "a.png", "verdict": "ok", "ms": 1200}],
+           "phrases": [{"id": "p1", "text": "фраза", "acceptable": True}],
+           "free_text": {"unclear": "нет"}}
+rv = client.post("/api/review", json=payload)
+check(rv.status_code == 200 and rv.json().get("ok") is True, f"ревизия принята ({rv.status_code})")
+saved = OUT / "review" / rv.json().get("saved", "нет")
+check(saved.exists(), "файл ревизии сохранён на диск")
+check(json.loads(saved.read_text(encoding="utf-8"))["reviewer"] == "тест",
+      "содержимое ревизии сохранено без потерь")
+rv2 = client.post("/api/review", content="не json".encode("utf-8"))
+check(rv2.status_code == 400, f"мусор вместо JSON → 400 ({rv2.status_code})")
+rv3 = client.post("/api/review", content=b'{"a":"' + b"x" * (2 * 1024 * 1024 + 10) + b'"}')
+check(rv3.status_code == 413, f"слишком большой ответ → 413 ({rv3.status_code})")
+rv4 = client.post("/api/review", json=[1, 2, 3])
+check(rv4.status_code == 400, f"массив вместо объекта → 400 ({rv4.status_code})")
+
 print("\nИТОГ:", "все проверки пройдены" if not fails else f"{len(fails)} провалов: {fails}")
 sys.exit(1 if fails else 0)
