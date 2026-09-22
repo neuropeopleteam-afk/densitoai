@@ -63,13 +63,13 @@ button.sel{background:#111827;border-color:#111827;color:#fff}
     <h1>Слепая ревизия снимков DXA</h1>
     <ol class="lines">
       <li>Мы просим вас оценить снимки денситометрии до того, как вы увидите вывод сервиса DensitoAI.</li>
-      <li>Полный набор — 44 показа, короткий набор — 24 показа.</li>
+      <li>В наборе 44 показа.</li>
       <li>По каждому снимку один вопрос: исследование выполнено правильно или нет, и если нет, то что именно не так.</li>
       <li>Сразу после вашего ответа мы показываем, что о том же снимке сказал сервис, и спрашиваем только о формулировке.</li>
-      <li>Мы не просим разметку для обучения модели и не просим оценивать, согласны ли вы с моделью.</li>
+      <li>Согласие с сервисом мы посчитаем сами, сравнив ваши ответы с его выводом: отдельно оценивать модель и рисовать контуры не нужно.</li>
       <li>Ответы сохраняются в браузере по ходу работы, поэтому закрытая вкладка ничего не потеряет.</li>
     </ol>
-    <p class="muted">Версия сервиса <span id="w-ver"></span>. Идентификатор набора (sha256): <span id="w-sha"></span>. Режим: <span id="w-mode"></span>.</p>
+    <p class="muted">Версия сервиса <span id="w-ver"></span>. Идентификатор набора (sha256): <span id="w-sha"></span>.</p>
     <p id="resume" class="note hidden"></p>
     <div class="row" style="margin-top:14px">
       <button class="primary" id="btn-start">Начать</button>
@@ -157,14 +157,13 @@ const FREE_Q = [
   { id: "excess", text: "Что здесь лишнее" }
 ];
 
-const SHORT = new URLSearchParams(location.search).get("short") === "1";
-const SHOWS = SHORT ? DATA.shows_short : DATA.shows;
+const SHOWS = DATA.shows;
 const TOTAL = SHOWS.length;
-const LS_KEY = "densito_review_light_" + (SHORT ? "short" : "full");
+const LS_KEY = "densito_review_light_full";
 
 const S = {
   reviewer: "",
-  mode: SHORT ? "short" : "full",
+  mode: "full",
   kit_sha256: DATA.kit_sha256,
   started_at: null,
   finished_at: null,
@@ -210,7 +209,6 @@ function load() {
 // ---------- экран приветствия ----------
 $("w-ver").textContent = DATA.service_version;
 $("w-sha").textContent = String(DATA.kit_sha256).slice(0, 12);
-$("w-mode").textContent = SHORT ? "короткий, 24 показа" : "полный, 44 показа";
 
 const saved = load();
 if (saved && Array.isArray(saved.answers) && saved.answers.length > 0 && saved.pos < TOTAL) {
