@@ -15,6 +15,20 @@ import numpy as np
 import pandas as pd
 
 HERE = Path(__file__).resolve().parent
+
+
+def service_build():
+    """Версия сервиса и дата сборки набора — печатаются в шапке и попадают в выгрузку,
+    чтобы ответы врача были привязаны к конкретной сборке модели."""
+    import datetime, os, re as _re
+    root = Path(os.environ.get("DENSITO_ROOT", HERE.parents[1]))
+    ver = "неизвестна"
+    cfg = root / "config.yaml"
+    if cfg.exists():
+        m = _re.search(r"^version:\s*['\"]?([0-9][^'\"\s]*)", cfg.read_text(encoding="utf-8"), _re.M)
+        if m:
+            ver = m.group(1)
+    return {"service_version": ver, "built_at": datetime.date.today().isoformat()}
 OUT = HERE / "out"
 
 CRIT_QUESTIONS = {
@@ -75,7 +89,7 @@ def build_gallery(key: pd.DataFrame, imgs):
             "png": png_b64(imgs[r.file_path]),
             "m": b64json(model),   # предсказание модели, раскрывается после фиксации ответа
         })
-    payload = json.dumps({"frames": frames, "questions": CRIT_QUESTIONS}, ensure_ascii=False)
+    payload = json.dumps({"frames": frames, "questions": CRIT_QUESTIONS, "build": service_build()}, ensure_ascii=False)
     html = GALLERY_TEMPLATE.replace("__PAYLOAD__", payload).replace("__N__", str(len(frames)))
     (OUT / "review_gallery.html").write_text(html, encoding="utf-8")
     return len(frames)
@@ -89,7 +103,7 @@ def build_landmarks(key: pd.DataFrame, imgs):
             "rows": int(r.img_rows), "cols": int(r.img_cols),
             "png": png_b64(imgs[r.file_path]),
         })
-    payload = json.dumps({"frames": frames, "landmarks": LANDMARKS}, ensure_ascii=False)
+    payload = json.dumps({"frames": frames, "landmarks": LANDMARKS, "build": service_build()}, ensure_ascii=False)
     html = LANDMARKS_TEMPLATE.replace("__PAYLOAD__", payload).replace("__N__", str(len(frames)))
     (OUT / "landmarks_form.html").write_text(html, encoding="utf-8")
     return len(frames)
@@ -150,6 +164,7 @@ GALLERY_TEMPLATE = """<!DOCTYPE html>
 6. Сторона бедра видна на снимке, подсказка её не содержит. Кадры могут повторяться — это часть протокола, оценивайте каждый независимо.<br>
 7. По окончании нажмите «Экспорт ответов (JSON)» и «Экспорт ответов (CSV)» и передайте оба файла. Ориентировочное время — 2–3 часа, можно делать в несколько подходов.
 </div>
+<div class="small" id="buildline"></div>
 <div class="bar">
   <div class="progress"><div id="pbar"></div></div>
   <div id="ptext" class="small"></div>
@@ -164,12 +179,29 @@ GALLERY_TEMPLATE = """<!DOCTYPE html>
 <script>
 (function(){
 const P = JSON.parse(document.getElementById('payload').textContent);
+if (P.build && document.getElementById('buildline')) document.getElementById('buildline').textContent =
+  'Набор собран ' + P.build.built_at + ' для сервиса DensitoAI ' + P.build.service_version + '. Программа не является медицинским изделием: оценивается техническое качество укладки, не диагноз.';
 const KEY = 'densito_review_v1';
 const ANS = {yes:'да', no:'нет', unsure:'не уверен'};
 const AGREE = {yes:'да', no:'нет', partial:'частично'};
 let S = {};
-try { S = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e) { S = {}; }
-const save = () => localStorage.setItem(KEY, JSON.stringify(S));
+let STORAGE_OK = true;
+try { S = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e) { S = {}; STORAGE_OK = false; }
+// Если браузер запрещает сохранение (приватный режим, запрет данных сайтов), страница
+// обязана продолжать работать: ответы держим в памяти и предупреждаем врача, что
+// закрывать страницу до выгрузки нельзя. Без try/catch любой щелчок ломал бы отрисовку.
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) { STORAGE_OK = false; storageWarn(); } };
+function storageWarn() {
+  let w = document.getElementById('storagewarn');
+  if (!w) {
+    w = document.createElement('div');
+    w.id = 'storagewarn';
+    w.style.cssText = 'background:#fef3c7;border:1px solid #f59e0b;color:#92400e;padding:8px 12px;margin:8px 0;border-radius:6px;font-size:13px';
+    w.textContent = 'Браузер запретил сохранение на этой странице: ответы держатся только в памяти. Не закрывайте и не перезагружайте страницу, пока не нажмёте кнопки экспорта.';
+    const h = document.querySelector('header'); if (h) h.appendChild(w);
+  }
+}
+if (!STORAGE_OK) setTimeout(storageWarn, 0);
 const nowIso = () => new Date().toISOString();
 const dec = b => JSON.parse(decodeURIComponent(escape(atob(b))));
 let zoom = {}, inv = {};
@@ -264,7 +296,7 @@ function rows(){
     fixed_at: s.fixed_at, agree_model: s.agree_model, comment_model: s.comment_model || '', opened_at: s.opened_at }; });
 }
 document.getElementById('expJson').onclick = () => download('review_answers.json',
-  JSON.stringify({exported_at: nowIso(), n_frames: P.frames.length, answers: rows()}, null, 1), 'application/json');
+  JSON.stringify({exported_at: nowIso(), build: P.build || null, n_frames: P.frames.length, answers: rows()}, null, 1), 'application/json');
 document.getElementById('expCsv').onclick = () => {
   const cols = ['display_id','area','sp_pos','sp_axis','sp_art','hip_pos','hip_roi','comment','fixed_at','agree_model','comment_model'];
   const q = v => '"' + String(v === null || v === undefined ? '' : v).replace(/"/g,'""') + '"';
@@ -301,6 +333,7 @@ LANDMARKS_TEMPLATE = """<!DOCTYPE html>
 5. Для точности увеличьте масштаб (+) и при необходимости включите инверсию. Снимок показан в анатомических пропорциях (пиксель 1,05 × 0,6 мм). Точки сохраняются в браузере автоматически.<br>
 6. По окончании нажмите «Экспорт (JSON)» и «Экспорт (CSV)» и передайте оба файла. Ориентировочное время — около часа.
 </div>
+<div class="small" id="buildline"></div>
 <div class="bar">
   <div class="progress"><div id="pbar"></div></div>
   <div id="ptext" class="small"></div>
@@ -315,11 +348,28 @@ LANDMARKS_TEMPLATE = """<!DOCTYPE html>
 <script>
 (function(){
 const P = JSON.parse(document.getElementById('payload').textContent);
+if (P.build && document.getElementById('buildline')) document.getElementById('buildline').textContent =
+  'Набор собран ' + P.build.built_at + ' для сервиса DensitoAI ' + P.build.service_version + '. Программа не является медицинским изделием: оценивается техническое качество укладки, не диагноз.';
 const KEY = 'densito_landmarks_v1';
 const COLORS = ['#ef4444','#f59e0b','#22c55e','#3b82f6'];
 let S = {};
-try { S = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e) { S = {}; }
-const save = () => localStorage.setItem(KEY, JSON.stringify(S));
+let STORAGE_OK = true;
+try { S = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e) { S = {}; STORAGE_OK = false; }
+// Если браузер запрещает сохранение (приватный режим, запрет данных сайтов), страница
+// обязана продолжать работать: ответы держим в памяти и предупреждаем врача, что
+// закрывать страницу до выгрузки нельзя. Без try/catch любой щелчок ломал бы отрисовку.
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) { STORAGE_OK = false; storageWarn(); } };
+function storageWarn() {
+  let w = document.getElementById('storagewarn');
+  if (!w) {
+    w = document.createElement('div');
+    w.id = 'storagewarn';
+    w.style.cssText = 'background:#fef3c7;border:1px solid #f59e0b;color:#92400e;padding:8px 12px;margin:8px 0;border-radius:6px;font-size:13px';
+    w.textContent = 'Браузер запретил сохранение на этой странице: ответы держатся только в памяти. Не закрывайте и не перезагружайте страницу, пока не нажмёте кнопки экспорта.';
+    const h = document.querySelector('header'); if (h) h.appendChild(w);
+  }
+}
+if (!STORAGE_OK) setTimeout(storageWarn, 0);
 const nowIso = () => new Date().toISOString();
 let zoom = {}, inv = {};
 const st = id => (S[id] = S[id] || {points:{}, order:[], skipped:false, comment:'', updated_at:null});
@@ -415,7 +465,7 @@ function rows(){
     skipped: s.skipped, points: s.points, comment: s.comment || '', updated_at: s.updated_at}; });
 }
 document.getElementById('expJson').onclick = () => download('landmarks.json',
-  JSON.stringify({exported_at: nowIso(), coordinate_note: 'x, y — пиксели исходного изображения, начало (0,0) — центр левого верхнего пикселя, y растёт вниз', frames: rows()}, null, 1), 'application/json');
+  JSON.stringify({exported_at: nowIso(), build: P.build || null, coordinate_note: 'x, y — пиксели исходного изображения, начало (0,0) — центр левого верхнего пикселя, y растёт вниз', frames: rows()}, null, 1), 'application/json');
 document.getElementById('expCsv').onclick = () => {
   const q = v => '"' + String(v === null || v === undefined ? '' : v).replace(/"/g,'""') + '"';
   const lines = ['display_id,area,landmark,x,y,skipped,comment'];
