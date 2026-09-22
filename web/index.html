@@ -528,7 +528,7 @@ table.crit tr.flag td { background: var(--error-soft); }
     </div>
     <figure class="hero-visual">
       <div class="frame"><img src="assets/demo/03_poz.png" alt="Визуализация сервиса: снимок поясничного отдела с найденной осью, контуром кости и плотными посторонними объектами" data-zoom></div>
-      <figcaption><span class="tag">Решение: проверить и при подтверждении переснять</span><br>Реальный вывод сервиса 2.3.0 на снимке из выборки заказчика. Оранжевая линия — измеренная ось (наклон 3.1° к вертикали), зелёный контур — костная область, красные рамки — плотные объекты (188 мм², контраст к кости 4.2 сигмы). Порог превысил один критерий — посторонние предметы 0.964 при 0.602; ось 0.651 при 0.777 и укладка 0.226 при 0.822 — в норме. Эксперт на этом снимке отметил ровно посторонние предметы: совпадение полное. Версия 2.2.0 на этом же снимке дополнительно поднимала флаг по оси (0.864 при 0.756) — ложное срабатывание, которое убрал новый бэкбон контура B (К13).</figcaption>
+      <figcaption><span class="tag">Решение: проверить и при подтверждении переснять</span><br>Реальный вывод сервиса 2.3.1 на снимке из выборки заказчика. Оранжевая линия — измеренная ось (наклон 3.1° к вертикали), зелёный контур — костная область, красные рамки — плотные объекты (188 мм², контраст к кости 4.2 сигмы). Порог превысил один критерий — посторонние предметы 0.964 при 0.602; ось 0.651 при 0.777 и укладка 0.226 при 0.822 — в норме. Эксперт на этом снимке отметил ровно посторонние предметы: совпадение полное. Версия 2.2.0 на этом же снимке дополнительно поднимала флаг по оси (0.864 при 0.756) — ложное срабатывание, которое убрал новый бэкбон контура B (К13).</figcaption>
     </figure>
   </div>
   <div class="facts">
@@ -1072,11 +1072,22 @@ function measuredRows(r) {
       valueText = `${fmtNum(mm, 0)} мм · ${fmtNum(absv, 1)} % ширины ${v > 0 ? '(вправо по снимку)' : v < 0 ? '(влево по снимку)' : ''}`.trim();
     }
     let normText = '—', status = 'ref', statusText = 'справочно';
+    // Если после округления измерение выглядит равным норме, а по сырому значению оно её не
+    // выполняет (19.8 мм при норме 20 мм округлялось в «20 мм» и рядом стояло «меньше допуска»),
+    // показываем на один знак точнее — подпись и оценка перестают противоречить друг другу.
+    const refineValue = (nv, ok) => {
+      if (ok || key === 'center_offset_ratio' || !Number.isFinite(nv)) return;
+      if (fmtNum(absv, dec) === fmtNum(nv, dec) && Math.abs(absv - nv) > 1e-9) {
+        valueText = `${fmtNum(absv, Math.max(dec, 1))} ${n.unit || m.unit || ''}`.trim();
+      }
+    };
     if (n.tz_max !== undefined && n.tz_max !== null) {
       normText = `до ${fmtNum(n.tz_max, 0)} ${n.unit || ''} (ТЗ)`; const ok = absv <= Number(n.tz_max);
+      refineValue(Number(n.tz_max), ok);
       status = ok ? 'ok' : 'bad'; statusText = ok ? 'в допуске' : 'выше допуска';
     } else if (n.tz_min !== undefined && n.tz_min !== null) {
       normText = `не менее ${fmtNum(n.tz_min, 0)} ${n.unit || ''} (ТЗ)`; const ok = absv >= Number(n.tz_min);
+      refineValue(Number(n.tz_min), ok);
       status = ok ? 'ok' : 'bad'; statusText = ok ? 'в допуске' : 'меньше допуска';
     } else {
       const ref = n.ref_q95 ?? (hip ? n.ref_q95_hip : n.ref_q95_spine);
@@ -1084,6 +1095,8 @@ function measuredRows(r) {
         const low = n.ref_kind === 'q05_normal';
         normText = `${low ? 'обычно не менее' : 'обычно до'} ${fmtNum(ref, dec)} ${n.unit || ''}`;
         const typical = low ? absv >= Number(ref) : absv <= Number(ref);
+        refineValue(Number(ref), typical);
+        normText = `${low ? 'обычно не менее' : 'обычно до'} ${fmtNum(ref, dec)} ${n.unit || ''}`;
         status = typical ? 'ok' : 'hi'; statusText = typical ? 'в обычном диапазоне' : (low ? 'меньше обычного' : 'больше обычного');
       }
     }
@@ -1541,8 +1554,12 @@ function detailPanel(r) {
   right.appendChild(decisionCard(r));
   const links = el('div', { class: 'links' });
   const sr = safeApiUrl(r.bonus_sr_dcm_download);
+  const study_sr = safeApiUrl(r.study_sr_download);
+  const sc = safeApiUrl(r.bonus_overlay_dcm_download);
   const ov = overlaySrc(r);
   if (sr) links.appendChild(el('a', { class: 'btn sm ghost', href: sr, target: '_blank', rel: 'noopener', text: 'Скачать DICOM SR' }));
+  if (study_sr) links.appendChild(el('a', { class: 'btn sm ghost', href: study_sr, target: '_blank', rel: 'noopener', text: 'DICOM SR исследования' }));
+  if (sc) links.appendChild(el('a', { class: 'btn sm ghost', href: sc, target: '_blank', rel: 'noopener', text: 'Серия визуализации (DICOM)' }));
   if (ov) links.appendChild(el('a', { class: 'btn sm ghost', href: ov, download: String(r.path_to_study || 'overlay').replace(/[^\w.\-а-яА-ЯёЁ]+/g, '_') + '_overlay.png', text: 'Сохранить визуализацию PNG' }));
   if (links.childNodes.length) right.appendChild(links);
   return el('div', { class: 'detail' }, [left, right]);

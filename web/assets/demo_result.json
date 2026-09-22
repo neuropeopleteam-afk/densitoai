@@ -1,16 +1,16 @@
 {
  "demo": true,
- "demo_note": "Партия из 10 снимков обучающей выборки заказчика, обработана сервисом DensitoAI 2.3.0 без изменений: 5 с нарушениями по всем пяти критериям ТЗ, остальные — норма. Каждый кадр подписан: что отметил эксперт и что сказал сервис. Пропусков в партии: 1 — показаны намеренно, чтобы была видна граница возможностей. Личных данных в файлах нет.",
+ "demo_note": "Партия из 10 снимков обучающей выборки заказчика, обработана сервисом DensitoAI 2.3.1 без изменений: 5 с нарушениями по всем пяти критериям ТЗ, остальные — норма. Каждый кадр подписан: что отметил эксперт и что сказал сервис. Пропусков в партии: 1 — показаны намеренно, чтобы была видна граница возможностей. Личных данных в файлах нет.",
  "job_id": "demo",
  "request_id": "demo",
- "model_version": "2.3.0",
- "config_hash": "62cbe30c011f",
+ "model_version": "2.3.1",
+ "config_hash": "1c7f1fac70c1",
  "summary": {
   "n_files": 10,
   "n_failures": 0,
   "n_violations": 5,
-  "total_processing_time_s": 28.251,
-  "wall_time_s": 28.969,
+  "total_processing_time_s": 30.438,
+  "wall_time_s": 31.363,
   "n_studies": 10,
   "n_files_uploaded": 10,
   "bytes_uploaded": 826834
@@ -32,7 +32,8 @@
    "violation_type": "Некорректная укладка;Присутствуют посторонние предметы",
    "quality_prob": 0.93633,
    "processing_status": "Success",
-   "time_of_processing": 4.3646,
+   "time_of_processing": 4.8198,
+   "bonus_overlay_dcm_download": "/api/results/20260922_131157_d86b47/row0000_overlay.dcm?t=6pW4jds2SIEgNek75wUKlpnd2weF-soy",
    "details": {
     "internal_region": "spine",
     "region_source": "dims",
@@ -192,7 +193,8 @@
    "violation_type": "Не выравнена ось позвоночника",
    "quality_prob": 0.93884,
    "processing_status": "Success",
-   "time_of_processing": 4.0584,
+   "time_of_processing": 4.4842,
+   "bonus_overlay_dcm_download": "/api/results/20260922_131157_d86b47/row0001_overlay.dcm?t=6pW4jds2SIEgNek75wUKlpnd2weF-soy",
    "details": {
     "internal_region": "spine",
     "region_source": "dims",
@@ -352,7 +354,8 @@
    "violation_type": "Присутствуют посторонние предметы",
    "quality_prob": 0.942169,
    "processing_status": "Success",
-   "time_of_processing": 3.9258,
+   "time_of_processing": 4.4015,
+   "bonus_overlay_dcm_download": "/api/results/20260922_131157_d86b47/row0002_overlay.dcm?t=6pW4jds2SIEgNek75wUKlpnd2weF-soy",
    "details": {
     "internal_region": "spine",
     "region_source": "dims",
@@ -512,7 +515,8 @@
    "violation_type": "Некорректная укладка",
    "quality_prob": 0.990019,
    "processing_status": "Success",
-   "time_of_processing": 1.4745,
+   "time_of_processing": 1.7376,
+   "bonus_overlay_dcm_download": "/api/results/20260922_131157_d86b47/row0003_overlay.dcm?t=6pW4jds2SIEgNek75wUKlpnd2weF-soy",
    "details": {
     "internal_region": "left_hip",
     "region_source": "dims+anatomy",
@@ -652,7 +656,8 @@
    "violation_type": "Некорректная укладка;Некорректная область интереса",
    "quality_prob": 0.981872,
    "processing_status": "Success",
-   "time_of_processing": 1.5346,
+   "time_of_processing": 1.4924,
+   "bonus_overlay_dcm_download": "/api/results/20260922_131157_d86b47/row0004_overlay.dcm?t=6pW4jds2SIEgNek75wUKlpnd2weF-soy",
    "details": {
     "internal_region": "right_hip",
     "region_source": "dims+anatomy",
@@ -798,7 +803,8 @@
    "violation_type": "",
    "quality_prob": 0.042674,
    "processing_status": "Success",
-   "time_of_processing": 1.5057,
+   "time_of_processing": 1.6215,
+   "bonus_overlay_dcm_download": "/api/results/20260922_131157_d86b47/row0005_overlay.dcm?t=6pW4jds2SIEgNek75wUKlpnd2weF-soy",
    "details": {
     "internal_region": "right_hip",
     "region_source": "dims+anatomy",
@@ -938,7 +944,8 @@
    "violation_type": "",
    "quality_prob": 0.069782,
    "processing_status": "Success",
-   "time_of_processing": 1.5553,
+   "time_of_processing": 1.6968,
+   "bonus_overlay_dcm_download": "/api/results/20260922_131157_d86b47/row0006_overlay.dcm?t=6pW4jds2SIEgNek75wUKlpnd2weF-soy",
    "details": {
     "internal_region": "right_hip",
     "region_source": "dims+anatomy",
@@ -1078,7 +1085,8 @@
    "violation_type": "",
    "quality_prob": 0.12513,
    "processing_status": "Success",
-   "time_of_processing": 4.2991,
+   "time_of_processing": 4.252,
+   "bonus_overlay_dcm_download": "/api/results/20260922_131157_d86b47/row0007_overlay.dcm?t=6pW4jds2SIEgNek75wUKlpnd2weF-soy",
    "details": {
     "internal_region": "spine",
     "region_source": "dims",
@@ -1238,7 +1246,8 @@
    "violation_type": "",
    "quality_prob": 0.164376,
    "processing_status": "Success",
-   "time_of_processing": 4.0684,
+   "time_of_processing": 4.2379,
+   "bonus_overlay_dcm_download": "/api/results/20260922_131157_d86b47/row0008_overlay.dcm?t=6pW4jds2SIEgNek75wUKlpnd2weF-soy",
    "details": {
     "internal_region": "spine",
     "region_source": "dims",
@@ -1398,7 +1407,8 @@
    "violation_type": "",
    "quality_prob": 0.452654,
    "processing_status": "Success",
-   "time_of_processing": 1.4649,
+   "time_of_processing": 1.6944,
+   "bonus_overlay_dcm_download": "/api/results/20260922_131157_d86b47/row0009_overlay.dcm?t=6pW4jds2SIEgNek75wUKlpnd2weF-soy",
    "details": {
     "internal_region": "left_hip",
     "region_source": "dims+anatomy",
