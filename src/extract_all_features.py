@@ -29,9 +29,10 @@ VARIANT_FILES = {
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--variant", default="baseline", choices=list(VARIANTS))
+    ap.add_argument("--out", default="", help="путь к CSV (по умолчанию data/<файл варианта>)")
     a = ap.parse_args()
     preprocess.set_variant(a.variant)
-    OUT_CSV = ROOT / "data" / VARIANT_FILES[a.variant]
+    OUT_CSV = Path(a.out) if a.out else ROOT / "data" / VARIANT_FILES[a.variant]
     print(f"вариант предобработки: {a.variant} -> {OUT_CSV.name}; флаги {preprocess.flags()}")
 
     df = pd.read_csv(DATA_CSV)

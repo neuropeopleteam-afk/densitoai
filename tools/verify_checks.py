@@ -356,10 +356,10 @@ def phantom_ground_truth_check(phantoms: Path, debug_csv: Path) -> tuple[str, bo
             if group_true != group_meas:
                 problems.append(f"{key}: область {region_true} против {region_meas}")
             elif group_true == "hip" and region_true != region_meas:
-                if variant == "cropped_field":
-                    notes.append(f"{key}: сторона {region_true}->{region_meas} (обрезанное поле)")
-                else:
-                    problems.append(f"{key}: сторона {region_true} против {region_meas}")
+                # сторона проверяется строго, включая обрезанное поле: с версии фантомов 1.1
+                # и правила crop_aware (src/hip_features.py) детектор даёт 8/8 верных сторон
+                problems.append(f"{key}: сторона {region_true} против {region_meas}"
+                                + (" (обрезанное поле)" if variant == "cropped_field" else ""))
             if region_true == "spine":
                 ang = num(r, "feat_axis_angle_deg")
                 off = num(r, "feat_center_offset_ratio")
@@ -371,10 +371,10 @@ def phantom_ground_truth_check(phantoms: Path, debug_csv: Path) -> tuple[str, bo
                         problems.append(f"{key}: знак наклона {ang:.1f} против истины {tilt:.1f}")
                     elif abs(abs(ang) - abs(tilt)) > 6.0:
                         problems.append(f"{key}: наклон {ang:.1f} против истины {tilt:.1f} (>6°)")
-                elif variant == "shifted":
-                    # чисто боковой сдвиг даёт паразитный наклон измеряемой оси (край маски обрезан):
-                    # это известное свойство признака, опубликовано в ограничениях методики
-                    notes.append(f"{key}: боковой сдвиг даёт наклон оси {ang:.1f}° при истине 0°")
+                elif variant == "shifted" and abs(ang) > 3.0:
+                    # до версии фантомов 1.1 здесь было известное отклонение 5.7°: генератор
+                    # сдвигал позвоночник, но не силуэт тела. Теперь проверяется строго.
+                    problems.append(f"{key}: боковой сдвиг даёт наклон оси {ang:.1f}° при истине 0°")
                 elif abs(ang) > 3.0:
                     problems.append(f"{key}: наклон {ang:.1f} при истине {tilt:.1f}")
                 if off is not None:
@@ -384,9 +384,13 @@ def phantom_ground_truth_check(phantoms: Path, debug_csv: Path) -> tuple[str, bo
                         problems.append(f"{key}: сдвиг центра {off:.3f} > 0.03 при истине «normal»")
             else:
                 if variant == "cropped_field":
+                    # Вариант «обрезанное поле» с версии фантомов 1.1 моделирует латерально
+                    # сдвинутое поле сканирования: силуэт тела упирается в край кадра, кость
+                    # подходит к краю поля (в среднем 3–5 мм), но таз остаётся со своей стороны —
+                    # иначе сторону нельзя определить в принципе (см. METRICS_REPORT, п.8).
                     edge = num(r, "feat_edge_distance_mm")
-                    if edge is None or edge > 1.0:
-                        problems.append(f"{key}: обрезанное поле, край {edge} мм > 1.0")
+                    if edge is None or edge > 6.0:
+                        problems.append(f"{key}: обрезанное поле, край {edge} мм > 6.0")
         if n == 0:
             return name, False, "ни один фантом не сопоставлен с MANIFEST.json"
         det = f"сверено {n} фантомов по истинной геометрии"
@@ -395,6 +399,49 @@ def phantom_ground_truth_check(phantoms: Path, debug_csv: Path) -> tuple[str, bo
         return name, not problems, det if not problems else "; ".join(problems[:6])
     except Exception as e:  # noqa: BLE001
         return name, False, f"проверка не выполнена: {e}"
+
+def sc_series_check(phantoms) -> tuple:
+    """Бонус ТЗ 2.6 «серия с визуализацией»: DICOM Secondary Capture с оверлеем должен быть
+    производным изображением со ссылкой на исходный снимок, с предупреждающей надписью в
+    пикселях и с детерминированными UID (повторный прогон не создаёт новую серию в PACS)."""
+    name = "Серия с визуализацией (DICOM SC): производное изображение, ссылка на источник, детерминированные UID"
+    try:
+        from geometry_features import read_dicom_normalized, extract_all_features
+        from visualize_report import render_overlay, overlay_to_dicom_sc, DISCLAIMER_TEXT
+        src = sorted(Path(phantoms).glob("study_01/CR000000.dcm"))
+        if not src:
+            src = sorted(Path(phantoms).rglob("CR*.dcm"))[:1]
+        if not src:
+            return name, False, "нет фантомов для проверки"
+        fp = str(src[0])
+        img_u8, ref = read_dicom_normalized(fp)
+        feats = extract_all_features(fp, "spine")
+        ov = render_overlay(img_u8, "spine", feats, None, 1, "Нарушение оси позвоночника (отклонение более 5 градусов)")
+        d1 = overlay_to_dicom_sc(ov, ref, model_version="test", config_hash="deadbeef")
+        d2 = overlay_to_dicom_sc(ov, ref, model_version="test", config_hash="deadbeef")
+        it = list(getattr(d1, "ImageType", []))
+        seq = getattr(d1, "SourceImageSequence", None)
+        problems = []
+        if it[:2] != ["DERIVED", "SECONDARY"]:
+            problems.append(f"ImageType={it}")
+        if getattr(d1, "BurnedInAnnotation", "") != "YES":
+            problems.append("нет BurnedInAnnotation=YES")
+        if not DISCLAIMER_TEXT.strip():
+            problems.append("пустая предупреждающая надпись")
+        if ov.shape[0] <= img_u8.shape[0]:
+            problems.append("нет панели с подписями под снимком")
+        if not seq or str(seq[0].ReferencedSOPInstanceUID) != str(getattr(ref, "SOPInstanceUID", "")):
+            problems.append("нет ссылки на исходный SOP Instance UID")
+        if d1.SOPInstanceUID != d2.SOPInstanceUID or d1.SeriesInstanceUID != d2.SeriesInstanceUID:
+            problems.append("UID не детерминированы между прогонами")
+        if (getattr(d1, "SamplesPerPixel", 0), getattr(d1, "BitsAllocated", 0)) != (3, 8):
+            problems.append("не RGB 8 бит")
+        det = (f"SC {d1.Rows}x{d1.Columns}, ImageType={it}, ссылка на {str(getattr(ref, 'SOPInstanceUID', ''))[:24]}…, "
+               f"UID повторяем, надпись в пикселях есть")
+        return name, not problems, det if not problems else "; ".join(problems)
+    except Exception as e:  # noqa: BLE001
+        return name, False, f"проверка не выполнена: {e}"
+
 
 def run_checks(a) -> int:
     checks: list[dict] = []
@@ -555,6 +602,9 @@ def run_checks(a) -> int:
     # 16. истинная геометрия фантомов из MANIFEST.json
     dbg = Path(a.debug_csv) if getattr(a, "debug_csv", "") else Path(a.run1).parent / "results_debug.csv"
     add(*phantom_ground_truth_check(phantoms, dbg))
+
+    # 17. бонус ТЗ 2.6: серия с визуализацией как DICOM SC
+    add(*sc_series_check(phantoms))
 
     timings = {}
     if a.timings and Path(a.timings).exists():

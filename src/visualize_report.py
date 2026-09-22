@@ -233,6 +233,11 @@ def _render_hip_overlay(col: np.ndarray, img_u8: np.ndarray, feats: Dict[str, An
     return col, labels
 
 
+DISCLAIMER_TEXT = ("DensitoAI - вспомогательная оценка качества укладки. "
+                   "Не медицинское изделие, не диагноз.")
+COL_DISCLAIMER = (170, 170, 170)  # BGR, серый
+
+
 def render_overlay(img_u8: np.ndarray, region: str, feats: Dict[str, Any],
                     crit_results: Optional[Dict[str, Any]] = None,
                     quality_class: Optional[int] = None,
@@ -291,10 +296,14 @@ def render_overlay(img_u8: np.ndarray, region: str, feats: Dict[str, Any],
             color = COL_UNCERTAIN_TEXT if unc else (COL_VIOLATION_TEXT if flagged else COL_OK_TEXT)
             panel_lines.append((f"Модель · {name}: {r['score']:.2f} / порог {thr:.2f} → {mark}", color, 0.34))
 
+    # предупреждающая надпись в пикселях: результат ИИ вспомогательный, не диагноз.
+    # Требование к отображению результатов ИИ; дублируется в DICOM SR и в веб-кабинете.
+    panel_lines.append((DISCLAIMER_TEXT, COL_DISCLAIMER, 0.30))
+
     # --- вычисляем высоту панели с учётом переноса строк ---
     pad_x = 6
     max_text_w = w - 2 * pad_x
-    line_gap = 3
+    line_gap = 4
     total_lines = 0
     wrapped_lines = []  # (line_text, color, scale)
     for text, color, scale in panel_lines:
@@ -336,41 +345,92 @@ def save_overlay_png(path: str, img_u8: np.ndarray, region: str, feats: Dict[str
     return path
 
 
-def overlay_to_dicom_sc(overlay_bgr: np.ndarray, ref_ds, series_description: str = "DensitoAI QC Overlay"):
-    """Оборачивает цветную визуализацию в DICOM Secondary Capture (SC),
-    наследуя идентификаторы пациента/исследования из исходного DICOM —
-    так эксперт может открыть результат в обычном DICOM-вьюере рядом
-    с исходной серией (бонус ТЗ п.2.6: "серия с визуализацией")."""
+def overlay_to_dicom_sc(overlay_bgr: np.ndarray, ref_ds, series_description: str = "DensitoAI QC Overlay",
+                        model_version: str = "", config_hash: str = ""):
+    """Оборачивает цветную визуализацию в DICOM Secondary Capture (SC) — бонус ТЗ п.2.6
+    («серия с визуализацией»): эксперт открывает результат в обычном DICOM-вьюере рядом
+    с исходной серией.
+
+    Свойства файла, важные для приёмки:
+      * идентификаторы пациента/исследования наследуются из исходного DICOM;
+      * SOP Instance UID детерминирован от исходного SOP UID и sha256 пикселей оверлея,
+        Series UID — от исследования, версии модели и config_hash: повторный прогон даёт
+        тот же файл, а не новую серию (иначе PACS засоряется дублями);
+      * ImageType = DERIVED/SECONDARY/OTHER, SourceImageSequence ссылается на исходный снимок,
+        DerivationDescription описывает происхождение;
+      * BurnedInAnnotation = YES: в пикселях есть подписи и предупреждение о том, что это
+        вспомогательная оценка, а не диагноз.
+    """
+    import hashlib
     import pydicom
     from pydicom.dataset import Dataset, FileDataset, FileMetaDataset
     from pydicom.uid import SecondaryCaptureImageStorage, generate_uid
+    from pydicom.sequence import Sequence
 
     h, w = overlay_bgr.shape[:2]
     rgb = cv2.cvtColor(overlay_bgr, cv2.COLOR_BGR2RGB)
+    pix = rgb.tobytes()
+
+    def _det_uid(*parts):
+        return generate_uid(entropy_srcs=[str(x) for x in parts])
+
+    src_sop = str(getattr(ref_ds, "SOPInstanceUID", "") or "")
+    src_class = str(getattr(ref_ds, "SOPClassUID", "") or "")
+    study_uid = str(getattr(ref_ds, "StudyInstanceUID", "") or "")
+    pix_sha = hashlib.sha256(pix).hexdigest()
+
+    sop_uid = _det_uid("densito-sc-instance", src_sop or pix_sha, pix_sha)
+    series_uid = _det_uid("densito-sc-series", study_uid or src_sop or pix_sha, model_version, config_hash)
 
     file_meta = FileMetaDataset()
     file_meta.MediaStorageSOPClassUID = SecondaryCaptureImageStorage
-    file_meta.MediaStorageSOPInstanceUID = generate_uid()
+    file_meta.MediaStorageSOPInstanceUID = sop_uid
     file_meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian
 
     ds = FileDataset(None, {}, file_meta=file_meta, preamble=b"\x00" * 128)
     ds.SOPClassUID = SecondaryCaptureImageStorage
-    ds.SOPInstanceUID = file_meta.MediaStorageSOPInstanceUID
-    ds.SeriesInstanceUID = generate_uid()
-    now = datetime.datetime.now()
-    ds.StudyDate = now.strftime("%Y%m%d")
-    ds.StudyTime = now.strftime("%H%M%S")
+    ds.SOPInstanceUID = sop_uid
+    ds.SeriesInstanceUID = series_uid
     ds.Modality = "OT"
     ds.ConversionType = "WSD"
     ds.SeriesDescription = series_description
     ds.Manufacturer = "DensitoAI"
+    ds.ManufacturerModelName = "DensitoAI DXA QC"
+    if model_version:
+        ds.SoftwareVersions = str(model_version)
+    ds.ImageType = ["DERIVED", "SECONDARY", "OTHER"]
+    ds.DerivationDescription = ("DensitoAI QC overlay: geometricheskie primitivy i veroyatnosti "
+                               "kriteriev kachestva; ne meditsinskoe izdelie, ne diagnoz")
+    ds.BurnedInAnnotation = "YES"
+    ds.SeriesNumber = 9001
+    ds.InstanceNumber = int(getattr(ref_ds, "InstanceNumber", 1) or 1)
+
+    # даты — из исходного исследования: файл должен быть одинаковым при повторном прогоне
+    for attr, src in (("StudyDate", "StudyDate"), ("StudyTime", "StudyTime"),
+                      ("SeriesDate", "StudyDate"), ("SeriesTime", "StudyTime"),
+                      ("ContentDate", "StudyDate"), ("ContentTime", "StudyTime")):
+        v = getattr(ref_ds, src, None)
+        if v:
+            setattr(ds, attr, v)
+    if not getattr(ds, "StudyDate", None):
+        ds.StudyDate = "19000101"
+        ds.StudyTime = "000000"
+        ds.ContentDate = ds.StudyDate
+        ds.ContentTime = ds.StudyTime
 
     for attr in ("PatientName", "PatientID", "PatientBirthDate", "PatientSex",
-                 "StudyInstanceUID", "StudyID", "AccessionNumber"):
+                 "StudyInstanceUID", "StudyID", "AccessionNumber", "BodyPartExamined"):
         if hasattr(ref_ds, attr):
             setattr(ds, attr, getattr(ref_ds, attr))
-    if not hasattr(ds, "StudyInstanceUID"):
-        ds.StudyInstanceUID = generate_uid()
+    if not getattr(ds, "StudyInstanceUID", None):
+        ds.StudyInstanceUID = _det_uid("densito-sc-study", pix_sha)
+
+    if src_sop and src_class:
+        src_item = Dataset()
+        src_item.ReferencedSOPClassUID = src_class
+        src_item.ReferencedSOPInstanceUID = src_sop
+        ds.SourceImageSequence = Sequence([src_item])
+        ds.ReferencedImageSequence = Sequence([src_item])
 
     ds.SamplesPerPixel = 3
     ds.PhotometricInterpretation = "RGB"
@@ -380,10 +440,18 @@ def overlay_to_dicom_sc(overlay_bgr: np.ndarray, ref_ds, series_description: str
     ds.BitsStored = 8
     ds.HighBit = 7
     ds.PixelRepresentation = 0
-    ds.PixelData = rgb.tobytes()
+    ds.PixelData = pix
     ds.is_little_endian = True
     ds.is_implicit_VR = False
     return ds
+
+
+def save_overlay_sc(path: str, overlay_bgr: np.ndarray, ref_ds, model_version: str = "",
+                    config_hash: str = "") -> str:
+    """Пишет DICOM SC с визуализацией на диск (см. overlay_to_dicom_sc)."""
+    ds = overlay_to_dicom_sc(overlay_bgr, ref_ds, model_version=model_version, config_hash=config_hash)
+    ds.save_as(path, enforce_file_format=True)
+    return path
 
 
 if __name__ == "__main__":

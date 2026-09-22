@@ -32,7 +32,7 @@ from pydicom.uid import (ExplicitVRLittleEndian, ImplicitVRLittleEndian,
                          generate_uid)
 from scipy import ndimage
 
-PHANTOM_VERSION = "1.0"
+PHANTOM_VERSION = "1.1"
 UID_ROOT = "2.25."          # UUID-производный корень (ISO/IEC 9834-8), не требует регистрации
 CR_IMAGE_STORAGE = "1.2.840.10008.5.1.4.1.1.1"
 
@@ -79,16 +79,18 @@ def thick_line(h, w, p0, p1, thickness):
 def spine_phantom(rng: np.random.RandomState, variant: str, h: int = 317, w: int = 300):
     """Позвоночник AP: тёмный «столб» мягких тканей, столбик позвонков, рёбра сверху, таз снизу."""
     img = np.zeros((h, w), np.float64)
-    body = ellipse(h, w, h / 2, w / 2, h * 0.75, w * 0.42)
-    img[body] = 55 + 25 * rng.rand(int(body.sum()))
-    img = ndimage.gaussian_filter(img, 2.0)
-
     tilt = 0.0
     cx = w / 2 + rng.uniform(-6, 6)
     if variant == "axis_tilt":
         tilt = rng.choice([-1, 1]) * rng.uniform(9, 13)
     if variant == "shifted":
-        cx = w / 2 + rng.choice([-1, 1]) * rng.uniform(45, 60)
+        # укладка со смещением: пациент лежит не по центру стола, поэтому вместе со
+        # позвоночником смещается и силуэт тела (иначе крыло таза обрезается краем
+        # силуэта и измеряемая ось получает паразитный наклон — артефакт фантома)
+        cx = w / 2 + rng.choice([-1, 1]) * rng.uniform(30, 42)
+    body = ellipse(h, w, h / 2, cx, h * 0.75, w * 0.42)
+    img[body] = 55 + 25 * rng.rand(int(body.sum()))
+    img = ndimage.gaussian_filter(img, 2.0)
 
     # столбик из 6 позвонков с межпозвонковыми промежутками
     n_vert, vh, gap = 6, 30, 10
@@ -135,7 +137,10 @@ def hip_phantom(rng: np.random.RandomState, side: str, variant: str, h: int = 29
     # базовая геометрия для правого бедра (диафиз слева), затем зеркалим при необходимости
     shift_x = 0.0
     if variant == "cropped_field":
-        shift_x = -rng.uniform(70, 95)      # диафиз уходит за край кадра
+        # обрезка поля: FOV сдвинут латерально, диафиз частично уходит за край кадра,
+        # но таз остаётся со своей (медиальной) стороны — иначе сторону нельзя определить
+        # ни детектором, ни человеком, и фантом проверял бы не то
+        shift_x = -rng.uniform(38, 52)
     head_c = (95.0, 135.0 + shift_x)         # головка бедра
     neck_end = (125.0, 95.0 + shift_x)       # шейка -> большой вертел
     shaft_top = (140.0, 85.0 + shift_x)

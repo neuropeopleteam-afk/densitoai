@@ -78,7 +78,7 @@ from hip_features import hip_all_features  # noqa: E402
 from calibration_utils import risk_level  # noqa: E402  (К3: правило уровня риска)
 import preprocess  # noqa: E402  (инвариантная предобработка: маска тела, канонизация экспозиции)
 
-__version__ = "2.3.0"
+__version__ = "2.3.1"
 LOG = logging.getLogger("densito.inference")
 # pydicom шумит предупреждениями о нестандартных UID в анонимизированных файлах — не ошибка
 logging.getLogger("pydicom").setLevel(logging.ERROR)
@@ -87,7 +87,7 @@ logging.getLogger("pydicom").setLevel(logging.ERROR)
 # Конфиг (с жёстко зашитыми значениями по умолчанию на случай отсутствия yaml)
 # --------------------------------------------------------------------------- #
 DEFAULT_CONFIG: Dict[str, Any] = {
-    "version": "2.3.0",
+    "version": "2.3.1",
     "output": {
         "columns": ["path_to_study", "study_uid", "image_uid", "anatomical_region",
                     "quality_class", "violation_type", "quality_prob",
@@ -1055,7 +1055,8 @@ class DensitoInference:
     def __init__(self, cfg: Optional[Dict[str, Any]] = None, models_dir: Optional[Path] = None,
                  use_embeddings: bool = True, visualize_dir: Optional[Path] = None,
                  sr_dir: Optional[Path] = None, roi_autocorrect_dir: Optional[Path] = None,
-                 sr_study: bool = False, sr_study_dir: Optional[Path] = None, extras: bool = False):
+                 sr_study: bool = False, sr_study_dir: Optional[Path] = None, extras: bool = False,
+                 sr_per_image: bool = False, sc_dir: Optional[Path] = None):
         self.cfg = cfg or load_config()
         # [EXTRAS] экспериментальные флаги (work/D): белые линии, OOD-gate, эндопротез, когерентность исследования.
         # Не влияют на 9 колонок; пишутся в <output>_extras.csv и в self.last_extras_rows (API: details.extras).
@@ -1090,6 +1091,12 @@ class DensitoInference:
         # (или в sr_study_dir). Хэши оригинала (sha256 файла и пикселей) считаются всегда — они
         # попадают в debug-CSV и в SR; на официальный CSV режим не влияет.
         self.sr_study = bool(sr_study or sr_study_dir)
+        # SR на снимок пишем только если его попросили явно ИЛИ если SR на исследование выключен:
+        # иначе на одно исследование получается два набора SR (методика ЦДиТ ожидает один на исследование)
+        self.sr_per_image = bool(sr_per_image)
+        self.sc_dir = Path(sc_dir) if sc_dir else None
+        if self.sc_dir:
+            self.sc_dir.mkdir(parents=True, exist_ok=True)
         self.sr_study_dir = Path(sr_study_dir) if sr_study_dir else None
         self._study_headers: Dict[str, Dict[str, Any]] = {}
         self.last_study_sr: Dict[str, str] = {}
@@ -1380,19 +1387,27 @@ class DensitoInference:
         stem = self._bonus_stem(path)
         violation_type_str = self.cfg["output"]["violation_separator"].join(violations)
 
-        if self.visualize_dir:
+        if self.visualize_dir or self.sc_dir:
             try:
-                from visualize_report import save_overlay_png
-                out_png = self.visualize_dir / f"{stem}_overlay.png"
-                save_overlay_png(str(out_png), info.img_u8, region, feats,
-                                  crit_results=crit_results, quality_class=quality_class,
-                                  violation_type=violation_type_str)
-                debug["bonus_overlay_png"] = str(out_png)
+                import cv2 as _cv2
+                from visualize_report import render_overlay, save_overlay_sc
+                overlay = render_overlay(info.img_u8, region, feats, crit_results,
+                                         quality_class, violation_type_str)
+                if self.visualize_dir:
+                    out_png = self.visualize_dir / f"{stem}_overlay.png"
+                    _cv2.imwrite(str(out_png), overlay)
+                    debug["bonus_overlay_png"] = str(out_png)
+                if self.sc_dir:
+                    # бонус ТЗ 2.6: та же картинка как DICOM Secondary Capture рядом с исходной серией
+                    out_sc = self.sc_dir / f"{stem}_overlay.dcm"
+                    save_overlay_sc(str(out_sc), overlay, info.ds,
+                                    model_version=__version__, config_hash=config_hash(self.cfg))
+                    debug["bonus_overlay_dcm"] = str(out_sc)
             except Exception as e:  # noqa: BLE001
                 LOG.warning("visualize_report failed for %s: %s", path.name, e)
                 debug["bonus_overlay_error"] = str(e)
 
-        if self.sr_dir:
+        if self.sr_dir and (self.sr_per_image or not self.sr_study):
             try:
                 from dicom_sr import save_sr
                 out_sr = self.sr_dir / f"{stem}_sr.dcm"
@@ -1822,6 +1837,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--sr-study", action="store_true",
                     help="[BONUS] Один DICOM SR на исследование (включая норму) в <каталог CSV>/sr/<study_uid>_SR.dcm")
     ap.add_argument("--sr-study-dir", default=None, help="[BONUS] Каталог для SR на исследование (включает --sr-study)")
+    ap.add_argument("--sr-per-image", action="store_true",
+                    help="[BONUS] Писать также SR на каждый снимок (по умолчанию только SR на исследование)")
+    ap.add_argument("--sc-dir", default=None,
+                    help="[BONUS] Каталог для DICOM Secondary Capture с визуализацией (серия с визуализацией, ТЗ 2.6)")
     ap.add_argument("--extras", action="store_true",
                     help="[EXTRAS] Дополнительно записать <output>_extras.csv (белые линии, OOD-gate, эндопротез, когерентность)")
     args = ap.parse_args(argv)
@@ -1846,7 +1865,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         engine = DensitoInference(cfg=cfg, models_dir=args.models_dir, use_embeddings=not args.no_embeddings,
                                    visualize_dir=args.visualize_dir, sr_dir=args.sr_dir,
                                    roi_autocorrect_dir=args.roi_autocorrect_dir,
-                                   sr_study=args.sr_study, sr_study_dir=args.sr_study_dir, extras=args.extras)
+                                   sr_study=args.sr_study, sr_study_dir=args.sr_study_dir, extras=args.extras,
+                                   sr_per_image=args.sr_per_image, sc_dir=args.sc_dir)
         debug_csv = None
         if args.debug_csv:
             debug_csv = (output_csv.with_name(output_csv.stem + "_debug.csv") if args.debug_csv == "auto"

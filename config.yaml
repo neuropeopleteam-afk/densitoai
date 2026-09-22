@@ -3,7 +3,7 @@
 # порог берётся из models/metrics_summary.json (поле "threshold"), а если и там
 # нет — из fallback_threshold.
 
-version: "2.3.0"
+version: "2.3.1"
 
 # Маркировка назначения. Одна строка — один источник: её показывает веб, отдаёт /api/health,
 # она же стоит в README, docs/VERIFICATION.md и docs/DZM_CONFORMANCE.md. Не редактировать

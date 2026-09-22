@@ -19,6 +19,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import os
 import numpy as np
 import cv2
 import pydicom
@@ -82,20 +83,91 @@ def segment_bone(img_u8):
     return largest_mask
 
 
-def spine_axis_features(img_u8, mask):
+def _row_runs(row, min_px=4):
+    """Связные отрезки [l, r] ненулевых пикселей длиной >= min_px."""
+    nz = np.nonzero(row)[0]
+    if len(nz) == 0:
+        return []
+    breaks = np.nonzero(np.diff(nz) > 1)[0]
+    starts = np.concatenate([[nz[0]], nz[breaks + 1]])
+    ends = np.concatenate([nz[breaks], [nz[-1]]])
+    return [(int(a), int(b)) for a, b in zip(starts, ends) if b - a + 1 >= min_px]
+
+
+def _tracked_centerline(mask):
+    """Центральная линия ТОЛЬКО по столбику позвонков: отслеживаем связный отрезок вверх и вниз
+    от самой надёжной строки (самый широкий отрезок в средней трети кадра). Возвращает (ys, xs)."""
+    h, w = mask.shape
+    runs_by_row = {}
+    for y in range(h):
+        rs = _row_runs(mask[y, :])
+        if rs:
+            runs_by_row[y] = rs
+    if not runs_by_row:
+        return None, None
+    mid_lo, mid_hi = h // 3, 2 * h // 3
+    cand = [(y, r) for y, rs in runs_by_row.items() if mid_lo <= y <= mid_hi for r in rs]
+    if not cand:
+        cand = [(y, r) for y, rs in runs_by_row.items() for r in rs]
+    y_start, run_start = max(cand, key=lambda t: t[1][1] - t[1][0])
+
+    def overlap(a, b):
+        return min(a[1], b[1]) - max(a[0], b[0]) + 1
+
+    picked = {y_start: run_start}
+    for direction in (-1, 1):
+        cur = run_start
+        y = y_start + direction
+        while 0 <= y < h:
+            rs = runs_by_row.get(y)
+            if not rs:
+                break
+            best = max(rs, key=lambda r: overlap(r, cur))
+            if overlap(best, cur) <= 0:
+                break
+            picked[y] = best
+            cur = best
+            y += direction
+    ys = np.array(sorted(picked), dtype=np.float64)
+    xs = np.array([0.5 * (picked[int(y)][0] + picked[int(y)][1]) for y in ys], dtype=np.float64)
+    return ys, xs
+
+
+def _fit_angle_trimmed(ys_arr, xs_arr, trim=0.10):
+    """Линейная аппроксимация x = a*y + b с отбрасыванием trim худших остатков. -> (a, b)."""
+    a, b = np.polyfit(ys_arr, xs_arr, deg=1)
+    if trim > 0 and len(ys_arr) >= 20:
+        res = np.abs(xs_arr - (a * ys_arr + b))
+        keep = res <= np.quantile(res, 1.0 - trim)
+        if keep.sum() >= 10:
+            a, b = np.polyfit(ys_arr[keep], xs_arr[keep], deg=1)
+    return float(a), float(b)
+
+
+def spine_axis_features(img_u8, mask, mode=None):
     """
-    Центральная линия по центру масс маски в каждой строке.
-    Линейная аппроксимация -> угол к вертикали кадра.
+    Центральная линия и угол к вертикали кадра. Два режима:
+      baseline (по умолчанию, продакшен 2.3.1) — центр масс ВСЕХ пикселей маски в строке;
+      tracked  — только связный отрезок позвоночного столба (см. _tracked_centerline) и
+                 аппроксимация с отбрасыванием 10 % худших остатков. Включается параметром
+                 mode="tracked" или переменной окружения DENSITO_AXIS_MODE=tracked.
     Квадратичная аппроксимация -> кривизна (анатомическое искривление, НЕ штрафуется по оси).
     """
+    if mode is None:
+        mode = os.environ.get("DENSITO_AXIS_MODE", "baseline")
     h, w = mask.shape
-    ys, xs_centroid = [], []
-    for y in range(h):
-        row = mask[y, :]
-        xs_nonzero = np.nonzero(row)[0]
-        if len(xs_nonzero) > 3:  # минимум пикселей, чтобы считать строку валидной
-            xs_centroid.append(xs_nonzero.mean())
-            ys.append(y)
+    if mode == "tracked":
+        ys_t, xs_t = _tracked_centerline(mask)
+        ys = [] if ys_t is None else list(ys_t)
+        xs_centroid = [] if xs_t is None else list(xs_t)
+    else:
+        ys, xs_centroid = [], []
+        for y in range(h):
+            row = mask[y, :]
+            xs_nonzero = np.nonzero(row)[0]
+            if len(xs_nonzero) > 3:  # минимум пикселей, чтобы считать строку валидной
+                xs_centroid.append(xs_nonzero.mean())
+                ys.append(y)
 
     if len(ys) < 10:
         return {
@@ -107,7 +179,10 @@ def spine_axis_features(img_u8, mask):
     xs_arr = np.array(xs_centroid, dtype=np.float64)
 
     # линейная аппроксимация x = a*y + b -> угол к вертикали
-    a, b = np.polyfit(ys_arr, xs_arr, deg=1)
+    if mode == "tracked":
+        a, b = _fit_angle_trimmed(ys_arr, xs_arr)
+    else:
+        a, b = np.polyfit(ys_arr, xs_arr, deg=1)
     # угол между линией и вертикалью (ось Y). dx/dy = a (в пикселях), с учётом
     # анизотропного пикселя переводим в физические мм перед вычислением угла.
     dx_mm_per_row = a * PIXEL_SPACING_X_MM

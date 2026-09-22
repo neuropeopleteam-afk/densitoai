@@ -1,5 +1,5 @@
 {
-  "phantom_version": "1.0",
+  "phantom_version": "1.1",
   "seed": 20260919,
   "generator": "tools/make_phantoms.py",
   "pydicom": "3.0.2",
@@ -21,10 +21,10 @@
       "geometry": {
         "variant": "normal",
         "axis_tilt_deg": 0.0,
-        "center_x": 155.0072445356998
+        "center_x": 148.29016119872068
       },
-      "sha256": "eb02e88b417f8d6e55b8bc65497563290d939c0edfbcf7f89e4db825d41b5091",
-      "size_bytes": 96172
+      "sha256": "e7edf412cd53e3459de1b138287a74c24143350fdc6d922d2a5181458913720f",
+      "size_bytes": 96170
     },
     {
       "path": "study_01/CR000001.dcm",
@@ -44,8 +44,8 @@
         "side": "right_hip",
         "shift_x": 0.0
       },
-      "sha256": "a21c1a9079e74b609a9dd268df3b558e1e58ab41468b1b04f72543697831a463",
-      "size_bytes": 82552
+      "sha256": "907d7dcf806042d2ac46f11104b48237b41f1d225fef563a66f7ca8a50d66615",
+      "size_bytes": 82550
     },
     {
       "path": "study_01/CR000002.dcm",
@@ -65,8 +65,8 @@
         "side": "left_hip",
         "shift_x": 0.0
       },
-      "sha256": "74b65f51035aa711584f0958912fc0c9c7c2ac5f8251b1195d0dd178b581e91d",
-      "size_bytes": 82552
+      "sha256": "271f45ee88ea42f735720d0a422b6bddfc415c7d7a7da974d5ab861584b438e1",
+      "size_bytes": 82550
     },
     {
       "path": "study_02/CR000000.dcm",
@@ -83,11 +83,11 @@
       "expected_status": "Success",
       "geometry": {
         "variant": "axis_tilt",
-        "axis_tilt_deg": 10.907649403751293,
-        "center_x": 155.98251826656443
+        "axis_tilt_deg": 11.5598687838471,
+        "center_x": 151.5423834252121
       },
-      "sha256": "f443d29f8f38e79fc13b31a2acbe066d4cc3880646bd7346080e8ab7b55a0dbe",
-      "size_bytes": 96188
+      "sha256": "e7167c69650e22d598b734bf31a6cef0e6954e1c32328f24e26a4e1bbe3be6bc",
+      "size_bytes": 96186
     },
     {
       "path": "study_02/CR000001.dcm",
@@ -105,10 +105,10 @@
       "geometry": {
         "variant": "cropped_field",
         "side": "right_hip",
-        "shift_x": -77.66073156037135
+        "shift_x": -42.20903044799944
       },
-      "sha256": "50b5cd2f8914c18f3106cb40f11400ce90fe956ef029dd0d5130ccf9fe9c755c",
-      "size_bytes": 82568
+      "sha256": "25638dd075b752e3ce264b9bda52a216f9fafc0915d885db363bfe1ff5374f40",
+      "size_bytes": 82566
     },
     {
       "path": "study_02/CR000002.dcm",
@@ -128,8 +128,8 @@
         "side": "left_hip",
         "shift_x": 0.0
       },
-      "sha256": "422cd693ba7f0c275c4a96f2a79c66708cc0ae93da28381a6043cda18a2a718b",
-      "size_bytes": 82568
+      "sha256": "ad8a5ac5ad121d10b0fe01858784c7b186c2c92aeda17095c55ec41e5fe14fcd",
+      "size_bytes": 82566
     },
     {
       "path": "study_03/CR000000.dcm",
@@ -147,10 +147,10 @@
       "geometry": {
         "variant": "metal",
         "axis_tilt_deg": 0.0,
-        "center_x": 147.7353145289869
+        "center_x": 154.00612690379722
       },
-      "sha256": "c9ae3861f63721fb54f40a9958ddc5fe1468e75e0ee55fa587edef7804d9f609",
-      "size_bytes": 96194
+      "sha256": "73b3fe1809865c513bf0095510cd1af97f483215317a4dc638ad552fde2657d7",
+      "size_bytes": 96192
     },
     {
       "path": "study_03/CR000001.dcm",
@@ -170,8 +170,8 @@
         "side": "right_hip",
         "shift_x": 0.0
       },
-      "sha256": "760f657829eb3dabb92316f2f3b533973aaedfcd17de3961cc198fe64298220a",
-      "size_bytes": 73262
+      "sha256": "984c9fdbfb893df68650fb39c2f2fc1cc484021c35aeffce9fad3ef47ac563b7",
+      "size_bytes": 73260
     },
     {
       "path": "study_03/CR000002.dcm",
@@ -191,8 +191,8 @@
         "side": "left_hip",
         "shift_x": 0.0
       },
-      "sha256": "45714f8f4467442bef944fc9b507e87d285115819607227661e49cee43494536",
-      "size_bytes": 73262
+      "sha256": "a0771d36bfd81f0cfb8e7a20ecec2812196711bde8d21ca6176560455b6753f4",
+      "size_bytes": 73260
     },
     {
       "path": "study_04/CR000000.dcm",
@@ -210,10 +210,10 @@
       "geometry": {
         "variant": "shifted",
         "axis_tilt_deg": 0.0,
-        "center_x": 199.12470986584142
+        "center_x": 115.62324271631161
       },
-      "sha256": "258859015fd8394707a83b5a70a70885bbcb9f44f04784d530a47fc7bcd8aa3c",
-      "size_bytes": 191294
+      "sha256": "1afc66fbc31204a18bbac5be1f6a8c22d6e3394b502f8b79f9e1bcff70987cff",
+      "size_bytes": 191292
     },
     {
       "path": "study_04/CR000001.dcm",
@@ -233,8 +233,8 @@
         "side": "right_hip",
         "shift_x": 0.0
       },
-      "sha256": "d24185098ccdc5a91b1e40a3fec259d7330c896e9c4f17b4261e7b8d5c4f450c",
-      "size_bytes": 164054
+      "sha256": "3b26e2adc3f0064c39ee2f90737df22f893e0ed25ba2d50aa8eb9868985446a8",
+      "size_bytes": 164052
     },
     {
       "path": "study_04/CR000002.dcm",
@@ -252,10 +252,10 @@
       "geometry": {
         "variant": "cropped_field",
         "side": "left_hip",
-        "shift_x": -90.98018335859763
+        "shift_x": -40.282798156847
       },
-      "sha256": "0e93120d477a774a23252f2fa944b02ad8fdb5ecf0e62a42534a54158bc07bea",
-      "size_bytes": 164054
+      "sha256": "dcc2ab5241f96464afa5d5b37127f515a6b0e9dc98c96c16ec63d295b764b8ff",
+      "size_bytes": 164052
     },
     {
       "path": "broken/truncated_pixels.dcm",
@@ -264,8 +264,8 @@
       "study_uid": "2.25.428665833866573087734191701844800992",
       "image_uid": "2.25.1208392236888161026053755709765104340",
       "expected_status": "Failure",
-      "sha256": "ebb85d8cefd99b5d6c38a89fd18c2e749711707edc7a379e79250177dc7a2110",
-      "size_bytes": 39116
+      "sha256": "ea3aefe506b50c6e6942188bde741dc6213843466618de095521238b4660a31a",
+      "size_bytes": 39114
     },
     {
       "path": "broken/no_pixel_data.dcm",
@@ -274,8 +274,8 @@
       "study_uid": "2.25.428665833866573087734191701844800992",
       "image_uid": "2.25.959396449282429554401418757454961009",
       "expected_status": "Failure",
-      "sha256": "2333c2f7e1498624bb543173e392a2191fc321bca09d34ca0a3ed28c06bd9ac8",
-      "size_bytes": 1064
+      "sha256": "59ad26b3f6de1ee1f0258e98c8381cce80ea3f7b25b36d94a5b02ac126d4094d",
+      "size_bytes": 1062
     },
     {
       "path": "broken/not_a_dicom.dcm",

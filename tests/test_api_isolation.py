@@ -17,6 +17,7 @@ OUT = Path(tempfile.mkdtemp(prefix="densito_api_test_"))
 os.environ["DENSITO_OUTPUT_DIR"] = str(OUT)
 os.environ["DENSITO_MAX_FILES"] = "3"
 os.environ["DENSITO_MAX_UPLOAD_MB"] = "1"
+os.environ["DENSITO_ADMIN_KEY"] = ADMIN_KEY = "test-admin-key"
 sys.path.insert(0, str(ROOT / "src"))
 
 from fastapi.testclient import TestClient  # noqa: E402
@@ -58,19 +59,38 @@ if "bonus_sr_dcm_download" in row:
     # чужой job не видит файл
     other = row["bonus_sr_dcm_download"].replace(j1["job_id"], "20000101_000000_ffffff")
     check(client.get(other).status_code == 404, "несуществующий job → 404")
+if "study_sr_download" in row:
+    check(client.get(row["study_sr_download"]).status_code == 200, "SR исследования скачивается по ссылке")
+if "bonus_overlay_dcm_download" in row:
+    check(client.get(row["bonus_overlay_dcm_download"]).status_code == 200,
+          "серия с визуализацией (DICOM SC) скачивается по ссылке")
 b1 = OUT / "jobs" / j1["job_id"] / "bonus"
 check(b1.exists() and any(b1.iterdir()), "бонус-файлы перенесены в папку запроса")
 check(not any((OUT / "bonus" / "viz").iterdir()), "общая папка viz пуста после запроса (нет гонок)")
 
-# 2. скачивание файлов запроса
+# 2. скачивание файлов запроса — только по коду доступа (job_token)
+TOK1 = j1["job_token"]
 for name in ("results.csv", "results_debug.csv", "summary.json"):
-    check(client.get(f"/api/results/{j1['job_id']}/{name}").status_code == 200, f"скачивание {name}")
-check(client.get(f"/api/results/{j1['job_id']}/nope.csv").status_code == 404, "неизвестное имя → 404")
+    check(client.get(f"/api/results/{j1['job_id']}/{name}", params={"t": TOK1}).status_code == 200,
+          f"скачивание {name} по коду доступа")
+    check(client.get(f"/api/results/{j1['job_id']}/{name}",
+                     headers={"X-Job-Token": TOK1}).status_code == 200, f"скачивание {name} по заголовку")
+    check(client.get(f"/api/results/{j1['job_id']}/{name}").status_code == 403,
+          f"{name} без кода доступа → 403")
+check(client.get(f"/api/results/{j1['job_id']}/results.csv", params={"t": "wrong"}).status_code == 403,
+      "неверный код доступа → 403")
+check(client.get(f"/api/results/{j1['job_id']}/results.csv",
+                 params={"t": j2["job_token"]}).status_code == 403, "код другого запроса не подходит")
+check(client.get(f"/api/results/{j1['job_id']}/nope.csv", params={"t": TOK1}).status_code == 404,
+      "неизвестное имя → 404")
 
 # 3. обход путей
-for bad in ("../../etc/passwd", "..%2F..%2Fetc%2Fpasswd", "%2e%2e/api_server.log", ".hidden"):
+for bad in ("../../etc/passwd", "..%2F..%2Fetc%2Fpasswd", "%2e%2e/api_server.log", ".hidden",
+            ".job_token"):
+    rr = client.get(f"/api/results/{j1['job_id']}/{bad}", params={"t": TOK1})
+    check(rr.status_code in (404, 400, 422), f"traversal '{bad}' отклонён с кодом доступа ({rr.status_code})")
     rr = client.get(f"/api/results/{j1['job_id']}/{bad}")
-    check(rr.status_code in (404, 400, 422), f"traversal '{bad}' отклонён ({rr.status_code})")
+    check(rr.status_code in (403, 404, 400, 422), f"traversal '{bad}' отклонён и без кода ({rr.status_code})")
 check(client.get("/api/results/api_server.log").status_code == 404, "лог сервера не отдаётся через legacy-роут")
 check(client.get("/api/results/..%2Fconfig.yaml").status_code in (404, 400, 422), "legacy traversal отклонён")
 check(client.get("/api/results/bad-job/results.csv").status_code == 404, "job с неверным форматом → 404")
@@ -99,12 +119,23 @@ if r.status_code == 200:
     check(len(rows_bz) == 1 and rows_bz[0]["processing_status"] != "Success", "битый zip помечен как Failure")
     check("повреждён" in json.dumps(r.json(), ensure_ascii=False), "битый zip: понятное сообщение об ошибке")
 
-# 6. история
-h = client.get("/api/jobs").json()
-check(len(h["jobs"]) >= 3 and h["jobs"][0]["job_id"] >= h["jobs"][-1]["job_id"], "история: список, новые первыми")
-c = client.get(f"/api/jobs/{j1['job_id']}").json()
-check(c["job_id"] == j1["job_id"] and c["rows"] and "bonus_overlay_png_base64" not in c["rows"][0],
-      "карточка запроса без base64")
+# 6. история: общий список закрыт админским ключом, карточка — кодом доступа запроса
+check(client.get("/api/jobs").status_code == 403, "список запросов без ключа → 403")
+rl = client.get("/api/jobs", headers={"X-Admin-Key": ADMIN_KEY})
+check(rl.status_code == 200, f"список запросов по админскому ключу ({rl.status_code})")
+if rl.status_code == 200:
+    h = rl.json()
+    check(len(h["jobs"]) >= 3 and h["jobs"][0]["job_id"] >= h["jobs"][-1]["job_id"],
+          "история: список, новые первыми")
+check(client.get(f"/api/jobs/{j1['job_id']}").status_code == 403, "карточка без кода доступа → 403")
+rc = client.get(f"/api/jobs/{j1['job_id']}", params={"t": TOK1})
+check(rc.status_code == 200, f"карточка запроса по коду доступа ({rc.status_code})")
+if rc.status_code == 200:
+    c = rc.json()
+    check(c["job_id"] == j1["job_id"] and c["rows"] and "bonus_overlay_png_base64" not in c["rows"][0],
+          "карточка запроса без base64")
+    links = json.dumps(c, ensure_ascii=False)
+    check("?t=" in links, "ссылки в карточке уже с кодом доступа")
 
 # 7. параллельные запросы с одинаковыми именами файлов — ответы не перемешиваются
 res = {}
@@ -145,6 +176,34 @@ check(sum(1 for r in demo["rows"] if r.get("quality_class") == 1) >= 3,
 for bad in ("../config.yaml", "../../config.yaml", "%2e%2e%2fconfig.yaml", "/etc/passwd"):
     r = client.get(f"/assets/{bad}")
     check(r.status_code == 404, f"/assets/{bad} → 404 ({r.status_code})")
+
+# --- Бонус-файлы: только свои, без совпадений по имени входного файла -------------------------
+# Регрессия на дефект 2.3.1: файлы собирались по шаблону «<имя входного файла>_overlay.png», и в
+# папку запроса попадали одноимённые файлы ПРОШЛЫХ прогонов, а файлы текущего прогона оставались
+# в общей папке движка. Теперь пути берутся из debug-строк, а имена — по номеру строки.
+def test_bonus_isolation():
+    decoy_dir = api_server.SR_DIR
+    decoy_dir.mkdir(parents=True, exist_ok=True)
+    stem = SAMPLES[0].stem
+    decoy = decoy_dir / f"{stem}_sr.dcm"
+    decoy.write_bytes(b"DECOY-NOT-FOR-THIS-REQUEST")
+    r = upload(SAMPLES[:1])
+    check(r.status_code == 200, f"бонус-изоляция: запрос принят (код {r.status_code})")
+    if r.status_code != 200:
+        return
+    job = r.json()["job_id"]
+    bdir = api_server.JOBS_DIR / job / "bonus"
+    names = sorted(x.name for x in bdir.glob("*")) if bdir.exists() else []
+    check(all(n.startswith("row") for n in names),
+          f"бонус-изоляция: в папке запроса только файлы этого запроса ({names})")
+    check(not (bdir / decoy.name).exists(), "бонус-изоляция: чужой одноимённый файл не перенесён")
+    check(decoy.exists(), "бонус-изоляция: приманка осталась в общей папке движка")
+    row = r.json()["rows"][0]
+    check(bool(row.get("bonus_overlay_png_base64")), "бонус-изоляция: оверлей строки приложен к ответу")
+    decoy.unlink(missing_ok=True)
+
+
+test_bonus_isolation()
 
 print("\nИТОГ:", "все проверки пройдены" if not fails else f"{len(fails)} провалов: {fails}")
 sys.exit(1 if fails else 0)

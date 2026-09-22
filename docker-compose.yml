@@ -23,7 +23,7 @@ services:
   densito-verify:
     <<: *limits
     build: { context: ., dockerfile: Dockerfile }
-    image: densitoai:2.3.0
+    image: densitoai:2.3.1
     container_name: densito-verify
     command: ["verify"]
     network_mode: none
@@ -34,7 +34,7 @@ services:
   densito-batch:
     <<: *limits
     build: { context: ., dockerfile: Dockerfile }
-    image: densitoai:2.3.0
+    image: densitoai:2.3.1
     container_name: densito-batch
     command: ["batch"]
     network_mode: none
@@ -46,7 +46,7 @@ services:
   densito-api:
     <<: *limits
     build: { context: ., dockerfile: Dockerfile }
-    image: densitoai:2.3.0
+    image: densitoai:2.3.1
     container_name: densito-api
     command: ["api"]
     user: "${UID:-1000}:${GID:-1000}"

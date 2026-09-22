@@ -1,4 +1,4 @@
-# Проверка поставки DensitoAI 2.3.0 (инструкция для технической группы заказчика)
+# Проверка поставки DensitoAI 2.3.1 (инструкция для технической группы заказчика)
 
 > **Назначение и ограничения.** Программа не является медицинским изделием и не предназначена
 > для диагностики, профилактики, лечения или мониторинга заболеваний. Сервис оценивает
@@ -17,14 +17,14 @@
 1. Проверить контрольные суммы и загрузить образ.
 
         cd dist && sha256sum -c SHA256SUMS && cd ..
-        docker load -i dist/densitoai-2.3.0-image.tar.gz
+        docker load -i dist/densitoai-2.3.1-image.tar.gz
 
 2. Самопроверка образа без сети (фантомные DICOM внутри образа, два прогона, сравнение с эталоном, sha256 весов).
 
         mkdir -p outputs
         docker run --rm --network none --cpus=2 --memory=3g --user "$(id -u):$(id -g)" \
-          -v "$PWD/outputs:/data/output" densitoai:2.3.0 verify
-        # то же одной строкой: bash tools/offline_check.sh densitoai:2.3.0 ./outputs
+          -v "$PWD/outputs:/data/output" densitoai:2.3.1 verify
+        # то же одной строкой: bash tools/offline_check.sh densitoai:2.3.1 ./outputs
 
    Код возврата 0 — все проверки пройдены; 1 — есть расхождение. Отчёт: `outputs/verify/verification_report.html`
    (таблица проверок зелёным/красным, версии пакетов, sha256 весов, время), машинно — `outputs/verify/verify_results.json`.
@@ -32,7 +32,7 @@
 3. Пакетная обработка собственных DICOM (папка монтируется только на чтение; сеть не нужна).
 
         docker run --rm --network none --cpus=2 --memory=3g --user "$(id -u):$(id -g)" \
-          -v /path/to/dicoms:/data/input:ro -v "$PWD/outputs:/data/output" densitoai:2.3.0 batch
+          -v /path/to/dicoms:/data/input:ro -v "$PWD/outputs:/data/output" densitoai:2.3.1 batch
 
    Результат: `outputs/results.csv` (9 столбцов: study_uid, image_uid, anatomical_region, quality_class, quality_prob,
    violation_list, processing_status, time_of_processing, error_message), `outputs/results.xlsx`, журнал `outputs/inference.log`.
@@ -42,14 +42,14 @@
    кодом 0 только при точном совпадении предсказаний.
 
         docker run --rm --network none -v /path/to/dicoms:/data/input:ro -v "$PWD/outputs:/data/output" \
-          densitoai:2.3.0 verify --data /data/input
+          densitoai:2.3.1 verify --data /data/input
         docker run --rm --network none -v /path/to/dicoms:/data/input:ro -v "$PWD/outputs:/data/output" \
-          densitoai:2.3.0 verify --data /data/input --expected-sha <sha из предыдущего вывода>
+          densitoai:2.3.1 verify --data /data/input --expected-sha <sha из предыдущего вывода>
 
 5. Проверить, что веса модели в образе — те, что заявлены в поставке (`models/WEIGHTS_SHA256.txt`).
 
-        docker run --rm --network none densitoai:2.3.0 bash -c "cd /app && sha256sum -c models/WEIGHTS_SHA256.txt"
-        docker run --rm --network none densitoai:2.3.0 bash -c "cd /app && python tools/hash_weights.py --check"
+        docker run --rm --network none densitoai:2.3.1 bash -c "cd /app && sha256sum -c models/WEIGHTS_SHA256.txt"
+        docker run --rm --network none densitoai:2.3.1 bash -c "cd /app && python tools/hash_weights.py --check"
 
 ## Что именно проверяет `verify`
 
@@ -65,7 +65,7 @@
 | Данные пользователя (`--data`) | строки = файлы, детерминизм, sha256 предсказаний (+ сверка с `--expected-sha`) |
 
 Эталонные значения поставки: sha256 предсказаний на фантомах
-`31273378c11027ea275805cdd98f8622cb92c44f95c93f0b94ca5d5c150b4cdb`; sha256 предсказаний на образце организаторов
+`39608a83a85839214b5d94bb7f575d558f7d5694261c4123a074c2ededefb0a7`; sha256 предсказаний на образце организаторов
 (`tests/sample_test_zip`, 3 файла) `df0d9a94731d2589924170f06a6267caf0250507adfd60ce20da5de6aac93bec`.
 Эти значения получены в стенде разработки (CPU x86-64, OMP_NUM_THREADS 1 и 2 дают одинаковый результат); на другом
 процессоре возможны отличия quality_prob в последних знаках — тогда проверка эталона проходит по допуску ±0,001,
@@ -80,7 +80,7 @@ JPEG 2000 Lossless (при установленных кодеках), 8 и 16 �
 
 ### Инвариантность к форме подачи данных и сверка с истиной фантомов
 
-`verify` (и `docker run --rm --network none densitoai:2.3.0 verify`) дополнительно доказывает две вещи.
+`verify` (и `docker run --rm --network none densitoai:2.3.1 verify`) дополнительно доказывает две вещи.
 
 1. **Независимость от имён файлов, порядка и упаковки.** `tools/transfer_check.py` делает копию
    фантомов со случайными именами файлов и каталогов (`f0000.dcm`, `s000/`), перемешивает порядок,
@@ -93,8 +93,15 @@ JPEG 2000 Lossless (при установленных кодеках), 8 и 16 �
    поэтому переименование не меняет и их. Пропустить проверку: `VERIFY_SKIP_TRANSFER=1`.
 2. **Сверка с истинной геометрией.** `tests/phantoms/MANIFEST.json` хранит истинные параметры каждого
    фантома (наклон оси, положение центра, вариант дефекта, область). Проверка сравнивает с ними
-   измеренные признаки: знак и величину наклона (допуск 6°), сдвиг центра, обрезку поля (край ≤ 1 мм),
+   измеренные признаки: знак и величину наклона (допуск 6°), сдвиг центра, обрезку поля (кость у края поля, ≤ 6 мм),
    область «позвоночник/бедро» и сторону бедра. Металл на синтетических фантомах не проверяется:
-   их «кость» сама яркая, порог по интенсивности на таких картинках срабатывает ложно. Два известных
-   отклонения (паразитный наклон при боковом сдвиге, сторона при обрезанном поле) печатаются в отчёте
-   как примечания и описаны в «Ограничениях методологии» отчёта по метрикам.
+   их «кость» сама яркая, порог по интенсивности на таких картинках срабатывает ложно. С версии
+   фантомов 1.1 и правила `crop_aware` (`src/hip_features.py`) сторона и наклон проверяются строго,
+   без известных отклонений: наклон при чисто боковом сдвиге 0.0° при истине 0°, сторона бедра
+   верна на всех 8 фантомах, включая два с обрезанным полем (разбор — «Ограничения методологии»
+   отчёта по метрикам, пункты 7 и 8).
+3. **Серия с визуализацией (бонус ТЗ 2.6).** Проверка строит оверлей на фантоме и оборачивает его в
+   DICOM Secondary Capture: требуются `ImageType = DERIVED/SECONDARY`, `SourceImageSequence` со ссылкой на
+   исходный SOP Instance UID, `BurnedInAnnotation = YES`, панель с подписями под снимком и совпадение
+   SOP/Series UID при повторном построении (детерминированность — иначе каждый прогон плодил бы новую
+   серию в архиве). Файлы серии пишутся флагом `--sc-dir` (в API — каталог `sc/` папки запроса).

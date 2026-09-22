@@ -4,7 +4,7 @@
 # Запускает `verify` внутри контейнера с --network none, лимитами 2 CPU / 3 ГБ и
 # сохраняет отчёт в <output_dir>/verify/verification_report.html. Код возврата = код verify.
 set -eu
-IMAGE=${1:-${IMAGE:-densitoai:2.3.0}}
+IMAGE=${1:-${IMAGE:-densitoai:2.3.1}}
 OUT=${2:-${OUT:-./outputs}}
 CPUS=${CPUS:-2}; MEM=${MEM:-3g}
 mkdir -p "$OUT"

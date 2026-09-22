@@ -1,0 +1,20 @@
+{
+  "n_hip_frames": 333,
+  "n_errors": 0,
+  "n_with_reference": 0,
+  "n_agree": 0,
+  "accuracy_vs_reference": null,
+  "reference_sources": {},
+  "n_studies": 79,
+  "studies_unbalanced": [
+    {
+      "study": "1.2.643.5.1.13.13.12.2.77.8252.03010905090814080711141406121501",
+      "n": 8,
+      "right": 3
+    }
+  ],
+  "n_studies_unbalanced": 1,
+  "n_cropped_with_ref": 0,
+  "n_cropped_wrong": 0,
+  "examples_wrong": []
+}

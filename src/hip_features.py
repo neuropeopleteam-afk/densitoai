@@ -61,6 +61,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import os as _os
 import numpy as np
 import cv2
 from scipy.signal import find_peaks
@@ -162,6 +163,15 @@ def hip_side_score(img_u8, mask=None):
     k = max(1, int(0.12 * w))
     body = preprocess.body_mask(img_u8)
     edge_cue = float(body[:, w - k:].mean() - body[:, :k].mean())
+    if _os.environ.get("DENSITO_SIDE_MODE", "crop_aware") == "crop_aware":
+        # Подсказка по краям кадра (воздух латерально, мягкие ткани медиально) неверна,
+        # когда поле сканирования обрезано: силуэт тела упирается в край кадра и «воздуха»
+        # с латеральной стороны просто нет. В этом случае оставляем только анатомическую
+        # подсказку по положению таза в верхней трети кадра.
+        touch_left = float(body[:, 0].mean())
+        touch_right = float(body[:, w - 1].mean())
+        if max(touch_left, touch_right) > 0.5:
+            return float(2.0 * top_cue)
     return float(2.0 * top_cue + edge_cue)
 
 

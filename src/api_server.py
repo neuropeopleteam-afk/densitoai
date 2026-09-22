@@ -95,7 +95,8 @@ BONUS_DIR = OUTPUT_DIR / "bonus"
 VIZ_DIR = BONUS_DIR / "viz"
 SR_DIR = BONUS_DIR / "sr"
 ROI_DIR = BONUS_DIR / "roi"
-for _d in (VIZ_DIR, SR_DIR, ROI_DIR):
+SC_DIR = BONUS_DIR / "sc"
+for _d in (VIZ_DIR, SR_DIR, ROI_DIR, SC_DIR):
     _d.mkdir(parents=True, exist_ok=True)
 
 
@@ -113,6 +114,10 @@ def engine() -> DensitoInference:
             visualize_dir=VIZ_DIR if enable_bonus else None,
             sr_dir=SR_DIR if enable_bonus else None,
             roi_autocorrect_dir=ROI_DIR if enable_bonus else None,
+            # серия с визуализацией как DICOM SC (бонус ТЗ 2.6) -> <папка запроса>/sc/*.dcm
+            sc_dir=SC_DIR if enable_bonus else None,
+            # SR на каждый снимок выключен: на исследование пишется один SR (см. inference.sr_per_image)
+            sr_per_image=os.environ.get("DENSITO_SR_PER_IMAGE", "0") == "1",
             # один DICOM SR на исследование (включая норму) -> <папка запроса>/sr/<study_uid>_SR.dcm
             sr_study=enable_bonus and os.environ.get("DENSITO_SR_STUDY", "1") != "0",
             # extras (предупреждения): белые линии, OOD-gate, эндопротез, когерентность исследования
@@ -182,40 +187,66 @@ def health():
         return JSONResponse(status_code=500, content={"status": "error", "detail": str(e)})
 
 
-def _collect_bonus(job_dir: Path, stems: List[str]) -> None:
-    """Переносит бонус-файлы (overlay/SR/ROI) текущего прогона из общих папок движка в
-    папку запроса. Вызывается под _RUN_LOCK, поэтому файлы принадлежат именно этому прогону."""
+# Бонус-файлы запроса: (ключ в debug-строке движка, суффикс имени в папке запроса)
+BONUS_KINDS = (("bonus_overlay_png", "_overlay.png"),
+               ("bonus_sr_dcm", "_sr.dcm"),
+               ("bonus_roi_png", "_roi_correction.png"),
+               ("bonus_overlay_dcm", "_overlay.dcm"))
+
+
+def bonus_row_prefix(i: int) -> str:
+    """Имя бонус-файла в папке запроса — по номеру строки результата, а не по имени входного файла."""
+    return f"row{i:04d}"
+
+
+def _collect_bonus(job_dir: Path, debug_rows: List[Dict[str, Any]]) -> None:
+    """Переносит бонус-файлы (overlay PNG, SC, SR, ROI) текущего прогона в папку запроса.
+
+    Пути берутся из debug-строк движка (он же их и создал), а НЕ угадываются по имени
+    загруженного файла: иначе в папку запроса попадали одноимённые файлы прошлых прогонов
+    (утечка между запросами), а файлы текущего прогона оставались в общей папке.
+    Имя в папке запроса — по номеру строки результата, поэтому совпадения имён невозможны.
+    """
     dst = job_dir / "bonus"
     dst.mkdir(parents=True, exist_ok=True)
-    for stem in set(stems):
-        for d, suf in ((VIZ_DIR, "_overlay.png"), (SR_DIR, "_sr.dcm"), (ROI_DIR, "_roi_correction.png")):
-            src = d / f"{stem}{suf}"
-            if src.exists():
-                try:
-                    shutil.move(str(src), str(dst / src.name))
-                except Exception:  # noqa: BLE001
-                    pass
+    for i, dbg in enumerate(debug_rows or []):
+        if not isinstance(dbg, dict):
+            continue
+        for key, suf in BONUS_KINDS:
+            src_path = str(dbg.get(key) or "").strip()
+            if not src_path:
+                continue
+            src = Path(src_path)
+            if not src.is_file():
+                continue
+            try:
+                shutil.move(str(src), str(dst / f"{bonus_row_prefix(i)}{suf}"))
+            except Exception:  # noqa: BLE001
+                pass
 
 
-def _attach_bonus(row: Dict[str, Any], job: str) -> Dict[str, Any]:
+def _attach_bonus(row: Dict[str, Any], job: str, idx: int) -> Dict[str, Any]:
     """Добавляет в строку бонус-выходы для UI/экспертного просмотра: overlay PNG (base64,
-    чтобы сразу отрисовать в браузере), ссылку на SR .dcm и ROI-коррекцию PNG. Ссылки ведут
-    только в папку этого запроса (/api/results/{job}/{name}). Официальные поля не меняются."""
-    stem = Path(str(row.get("path_to_study", ""))).stem
-    if not stem:
-        return row
+    чтобы сразу отрисовать в браузере), ссылки на DICOM SC и SR, ROI-диагностику. Файлы ищутся
+    по номеру строки (см. _collect_bonus), поэтому строка не может получить файл другого
+    запроса или другого снимка. Ссылки ведут только в папку этого запроса. Официальные поля
+    не меняются."""
     out = dict(row)
     bdir = JOBS_DIR / job / "bonus"
-    viz = bdir / f"{stem}_overlay.png"
+    pref = bonus_row_prefix(idx)
+    viz = bdir / f"{pref}_overlay.png"
     if viz.exists():
         try:
             out["bonus_overlay_png_base64"] = base64.b64encode(viz.read_bytes()).decode("ascii")
         except Exception:  # noqa: BLE001
             pass
-    sr = bdir / f"{stem}_sr.dcm"
+    sr = bdir / f"{pref}_sr.dcm"
     if sr.exists():
         out["bonus_sr_dcm_download"] = f"/api/results/{job}/{sr.name}"
-    roi = bdir / f"{stem}_roi_correction.png"
+    sc = bdir / f"{pref}_overlay.dcm"
+    if sc.exists():
+        out["bonus_overlay_dcm_download"] = f"/api/results/{job}/{sc.name}"
+    roi = bdir / f"{pref}_roi_correction.png"
     if roi.exists():
         try:
             out["bonus_roi_png_base64"] = base64.b64encode(roi.read_bytes()).decode("ascii")
@@ -399,7 +430,7 @@ def _run_job(job: str, tmp: Path, job_dir: Path, xlsx: bool):
     with _RUN_LOCK:
         rows = eng.run(tmp, out_csv, debug_csv=job_dir / "results_debug.csv", xlsx=xlsx)
         debug_rows = list(getattr(eng, "last_debug_rows", []) or [])
-        _collect_bonus(job_dir, [Path(str(r.get("path_to_study", ""))).stem for r in rows])
+        _collect_bonus(job_dir, debug_rows)
     return eng, out_csv, rows, debug_rows
 
 
@@ -450,7 +481,7 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
         extras_rows = list(getattr(eng, "last_extras_rows", []) or [])
         rows_out = []
         for i, r in enumerate(rows):
-            rb = _attach_bonus(r, job)
+            rb = _attach_bonus(r, job, i)
             if str(r.get("study_uid") or "") in study_sr:
                 rb["study_sr_download"] = study_sr[str(r.get("study_uid"))]
             dbg = debug_rows[i] if i < len(debug_rows) else {}

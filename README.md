@@ -8,7 +8,7 @@
 Работает **полностью локально** (CPU, без внешних сервисов), обрабатывает каждый файл
 независимо и **никогда не прерывает пакет** из-за одного плохого файла.
 
-Версия **2.3.0**. Демо: [neuropeople.pro](https://neuropeople.pro) (логин `demo` / `Hakaton`),
+Версия **2.3.1**. Демо: [neuropeople.pro](https://neuropeople.pro) (логин `demo` / `Hakaton`),
 публичный репозиторий: `git clone https://neuropeople.pro/git/densitoai.git`
 
 > **Назначение и ограничения.** Программа не является медицинским изделием и не предназначена
@@ -134,7 +134,7 @@ densito_rebuild/
 │   └── index.html               ← [бонус] веб-интерфейс (загрузка DICOM, таблица, оверлеи, SR, CSV)
 ├── tests/
 │   ├── test_inference_format.py ← smoke-тест: реальные + битые входы, формат, детерминизм
-│   ├── test_api_isolation.py    ← 36 проверок API (изоляция jobs, traversal, лимиты, битый zip)
+│   ├── test_api_isolation.py    ← 71 проверка API (изоляция jobs и бонус-файлов, код доступа, traversal, лимиты, битый zip)
 │   ├── test_schema.py           ← JSON Schema результата и ответа API (37 проверок)
 │   ├── test_transfer_syntax.py  ← матрица transfer syntax / битности / MONOCHROME1 → docs/TRANSFER_SYNTAX_MATRIX.md
 │   ├── phantoms/                ← 15 синтетических DICOM-фантомов + MANIFEST.json + expected_results.csv (эталон verify)
@@ -193,7 +193,7 @@ fastapi 0.141.1, uvicorn 0.53.0. **Версию scikit-learn менять нел
 Требуется Docker (BuildKit). Всё выполняется из корня проекта.
 
 ```bash
-# 1) Собрать образ densitoai:2.3.0 (внутри сборки запускается самопроверка на образце)
+# 1) Собрать образ densitoai:2.3.1 (внутри сборки запускается самопроверка на образце)
 ./build_and_run.sh build
 
 # 2) Пакетная обработка: входная папка (или zip) → выходная папка
@@ -210,14 +210,14 @@ fastapi 0.141.1, uvicorn 0.53.0. **Версию scikit-learn менять нел
 Эквивалент «руками»:
 
 ```bash
-docker build -t densitoai:2.3.0 .
-docker run --rm -v /path/to/input:/data/input:ro -v $(pwd)/outputs:/data/output densitoai:2.3.0 batch
-docker run --rm -p 8000:8000 -v $(pwd)/outputs:/data/output densitoai:2.3.0 api
+docker build -t densitoai:2.3.1 .
+docker run --rm -v /path/to/input:/data/input:ro -v $(pwd)/outputs:/data/output densitoai:2.3.1 batch
+docker run --rm -p 8000:8000 -v $(pwd)/outputs:/data/output densitoai:2.3.1 api
 # после этого http://localhost:8000/ — рабочий кабинет (загрузка снимков, карточки решений,
 # история запросов), http://localhost:8000/docs — Swagger. Интерфейс лежит внутри образа,
 # ничего не тянет из интернета: ни одного внешнего src/href, шрифты и изображения локальные.
 # любые аргументы inference.py можно передать после batch:
-docker run --rm -v ...:/data/input:ro -v ...:/data/output densitoai:2.3.0 batch --no-embeddings --limit 50
+docker run --rm -v ...:/data/input:ro -v ...:/data/output densitoai:2.3.1 batch --no-embeddings --limit 50
 ```
 
 Через docker compose:
@@ -249,8 +249,8 @@ docker compose up densito-api
 Образ содержит средства самопроверки без сети. Полная инструкция для технической группы — `docs/VERIFICATION.md`.
 
 ```bash
-docker build --platform linux/amd64 -t densitoai:2.3.0 .        # базовый образ закреплён по digest
-bash tools/offline_check.sh densitoai:2.3.0 ./outputs            # = docker run --rm --network none ... verify
+docker build --platform linux/amd64 -t densitoai:2.3.1 .        # базовый образ закреплён по digest
+bash tools/offline_check.sh densitoai:2.3.1 ./outputs            # = docker run --rm --network none ... verify
 # отчёт: outputs/verify/verification_report.html, код возврата 0/1
 ```
 
@@ -269,8 +269,8 @@ bash tools/offline_check.sh densitoai:2.3.0 ./outputs            # = docker run 
 Ресурсы: стенд 2 CPU / 3 ГБ (`docker-compose.yml`: `mem_limit: 3g`, `cpus: 2`; пик памяти инференса около 0,6 ГБ).
 Потоки BLAS задаются переменными `OMP_NUM_THREADS`/`MKL_NUM_THREADS` (по умолчанию 2, переопределяются `-e`).
 
-Релиз: `bash tools/make_release.sh 2.3.0` создаёт `dist/densitoai-2.3.0-src.tar.gz` (без outputs/, data-выгрузок и конкурсных
-DICOM), `WITH_IMAGE=1` добавляет `dist/densitoai-2.3.0-image.tar.gz` (`docker save | gzip`); контрольные суммы — `dist/SHA256SUMS`.
+Релиз: `bash tools/make_release.sh 2.3.1` создаёт `dist/densitoai-2.3.1-src.tar.gz` (без outputs/, data-выгрузок и конкурсных
+DICOM), `WITH_IMAGE=1` добавляет `dist/densitoai-2.3.1-image.tar.gz` (`docker save | gzip`); контрольные суммы — `dist/SHA256SUMS`.
 Матрица форматов DICOM (измерено): `docs/TRANSFER_SYNTAX_MATRIX.md`; лицензии и аудит данных: `docs/LICENSES_AND_DATA_AUDIT.md`.
 
 ---
@@ -645,7 +645,7 @@ lh_pos, lh_roi`) и повторить шаги 2–5. Случайные зёр
    `download.pytorch.org` **только на этапе сборки** (в работе сеть не нужна).
 2. `git clone … && cd densito_rebuild && ./build_and_run.sh build`.
    Офлайн-стенд: соберите образ на машине с интернетом и перенесите
-   `docker save densitoai:2.3.0 | gzip > densitoai.tar.gz` → `docker load`.
+   `docker save densitoai:2.3.1 | gzip > densitoai.tar.gz` → `docker load`.
 3. Пакетный режим: `./build_and_run.sh run <input> <output>`; сервисный режим:
    `docker compose up -d densito-api` (порт 8000, `restart: unless-stopped`, healthcheck на
    `/api/health`).
@@ -692,9 +692,18 @@ lh_pos, lh_roi`) и повторить шаги 2–5. Случайные зёр
       величиной (угол, мм) и оценкой модели «скор / порог → НАРУШЕНИЕ / норма». Это честный
       аналог карты внимания для архитектуры геометрия + эмбеддинги (свёрточных активаций для
       Grad-CAM здесь нет). Флаг `--visualize-dir`; в API — `bonus_overlay_png_base64`.
+- [x] **Серия с визуализацией в DICOM** — `src/visualize_report.py: overlay_to_dicom_sc`.
+      Тот же оверлей как Secondary Capture рядом с исходной серией: `ImageType = DERIVED/SECONDARY/OTHER`,
+      `SourceImageSequence` со ссылкой на исходный снимок, `BurnedInAnnotation = YES`, предупреждение
+      «не медицинское изделие, не диагноз» нанесено в пикселях, SOP/Series UID детерминированы от
+      исходного SOP и sha256 пикселей — повторный прогон не создаёт дубль серии в PACS.
+      Флаг `--sc-dir`; в API — каталог `sc/` в папке запроса. Проверяется 17-й проверкой `verify`.
 - [x] **DICOM SR** — `src/dicom_sr.py`. Comprehensive SR Storage с вердиктом, `quality_prob`,
       списком нарушений и измерениями (UCUM, кодировка `99DENSITO`, `ISO_IR 192`).
-      Флаг `--sr-dir`; в API — ссылка `bonus_sr_dcm_download`. Валидирован раунд-трипом pydicom.
+      По умолчанию пишется ОДИН SR на исследование (`--sr-study` / `--sr-study-dir`, в API включено);
+      SR на каждый снимок — только с `--sr-per-image` (в API `DENSITO_SR_PER_IMAGE=1`), иначе на одно
+      исследование получались два набора SR. Флаг `--sr-dir`; в API — `bonus_sr_dcm_download`.
+      Валидирован раунд-трипом pydicom и `tools/validate_sr.py`.
 - [x] **Автокоррекция ROI** (бедро) — `src/auto_roi.py`: диагностический оверлей с дефицитом
       скана в мм (кадр физически обрезан — система показывает технологу, сколько не хватило).
       Флаг `--roi-autocorrect-dir`; в API — `bonus_roi_png_base64`.
