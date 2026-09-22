@@ -291,6 +291,111 @@ def official_dictionary_check() -> tuple:
         return name, False, f"проверка не выполнена: {e}"
 
 
+def transfer_invariance_check(json_path: Path) -> tuple[str, bool, str]:
+    """Инвариантность предсказаний к именам файлов, порядку и упаковке (tools/transfer_check.py).
+    Закрытый набор приходит без суффиксов в именах и, возможно, одним архивом."""
+    name = "Инвариантность к именам файлов, порядку и упаковке (переименованная копия и zip)"
+    if not json_path or not Path(json_path).exists():
+        return name, False, "нет transfer_check.json (проверка не выполнялась)"
+    try:
+        d = json.loads(Path(json_path).read_text(encoding="utf-8"))
+        modes = d.get("modes", {})
+        if not modes:
+            return name, False, "в transfer_check.json нет режимов"
+        parts, ok_all = [], True
+        for mode, res in sorted(modes.items()):
+            ok = bool(res.get("ok"))
+            ok_all = ok_all and ok
+            det = (f"{mode}: сверено {res.get('n_compared')} строк, max|Δprob| {res.get('max_abs_dprob')}"
+                   if ok else f"{mode}: {'; '.join(res.get('problems', [])[:3])}")
+            parts.append(det)
+        return name, ok_all, "; ".join(parts)
+    except Exception as e:  # noqa: BLE001
+        return name, False, f"проверка не выполнена: {e}"
+
+
+def phantom_ground_truth_check(phantoms: Path, debug_csv: Path) -> tuple[str, bool, str]:
+    """Сверка измеренных признаков с истинной геометрией фантомов из MANIFEST.json:
+    наклон оси, сдвиг центра, обрезка поля, область (позвоночник/бедро).
+    Металл на синтетических фантомах не проверяется: их «кость» сама по себе яркая,
+    порог по интенсивности на таких картинках даёт ложное срабатывание (реальные данные
+    оцениваются метриками sp_art, а не фантомами)."""
+    name = "Истинная геометрия MANIFEST.json: наклон, сдвиг, обрезка поля, область"
+    try:
+        man = json.loads((Path(phantoms) / "MANIFEST.json").read_text(encoding="utf-8"))
+        truth = {f["path"]: f for f in man["files"] if f.get("kind") == "phantom"}
+        if not Path(debug_csv).exists():
+            return name, False, f"нет debug CSV {debug_csv}"
+        with open(debug_csv, newline="", encoding="utf-8") as f:
+            rows = list(csv.DictReader(f))
+        problems: list[str] = []
+        notes: list[str] = []
+        n = 0
+
+        def num(r, k):
+            v = (r.get(k) or "").strip()
+            try:
+                return float(v)
+            except ValueError:
+                return None
+
+        for r in rows:
+            fp = (r.get("file") or "").replace("\\\\", "/")
+            key = next((k for k in truth if fp.endswith(k)), None)
+            if key is None:
+                continue
+            t = truth[key]
+            g = t.get("geometry", {})
+            variant = g.get("variant", "")
+            region_true = t.get("region", "")
+            region_meas = (r.get("internal_region") or "").strip()
+            n += 1
+            # область: позвоночник против бедра — строго; сторона бедра — отдельно
+            group_true = "spine" if region_true == "spine" else "hip"
+            group_meas = "spine" if region_meas == "spine" else "hip"
+            if group_true != group_meas:
+                problems.append(f"{key}: область {region_true} против {region_meas}")
+            elif group_true == "hip" and region_true != region_meas:
+                if variant == "cropped_field":
+                    notes.append(f"{key}: сторона {region_true}->{region_meas} (обрезанное поле)")
+                else:
+                    problems.append(f"{key}: сторона {region_true} против {region_meas}")
+            if region_true == "spine":
+                ang = num(r, "feat_axis_angle_deg")
+                off = num(r, "feat_center_offset_ratio")
+                tilt = float(g.get("axis_tilt_deg", 0.0) or 0.0)
+                if ang is None:
+                    problems.append(f"{key}: нет feat_axis_angle_deg")
+                elif abs(tilt) >= 5.0:
+                    if ang * tilt <= 0:
+                        problems.append(f"{key}: знак наклона {ang:.1f} против истины {tilt:.1f}")
+                    elif abs(abs(ang) - abs(tilt)) > 6.0:
+                        problems.append(f"{key}: наклон {ang:.1f} против истины {tilt:.1f} (>6°)")
+                elif variant == "shifted":
+                    # чисто боковой сдвиг даёт паразитный наклон измеряемой оси (край маски обрезан):
+                    # это известное свойство признака, опубликовано в ограничениях методики
+                    notes.append(f"{key}: боковой сдвиг даёт наклон оси {ang:.1f}° при истине 0°")
+                elif abs(ang) > 3.0:
+                    problems.append(f"{key}: наклон {ang:.1f} при истине {tilt:.1f}")
+                if off is not None:
+                    if variant == "shifted" and abs(off) < 0.05:
+                        problems.append(f"{key}: сдвиг центра {off:.3f} < 0.05 при истине «shifted»")
+                    if variant == "normal" and abs(off) > 0.03:
+                        problems.append(f"{key}: сдвиг центра {off:.3f} > 0.03 при истине «normal»")
+            else:
+                if variant == "cropped_field":
+                    edge = num(r, "feat_edge_distance_mm")
+                    if edge is None or edge > 1.0:
+                        problems.append(f"{key}: обрезанное поле, край {edge} мм > 1.0")
+        if n == 0:
+            return name, False, "ни один фантом не сопоставлен с MANIFEST.json"
+        det = f"сверено {n} фантомов по истинной геометрии"
+        if notes:
+            det += "; известное отклонение — " + "; ".join(notes)
+        return name, not problems, det if not problems else "; ".join(problems[:6])
+    except Exception as e:  # noqa: BLE001
+        return name, False, f"проверка не выполнена: {e}"
+
 def run_checks(a) -> int:
     checks: list[dict] = []
 
@@ -441,6 +546,16 @@ def run_checks(a) -> int:
     ok_ver, det_ver = version_consistency()
     add("Версия и config_hash одинаковы во всех файлах поставки", ok_ver, det_ver)
 
+    # 11. изоляция запросов и пределы распаковки архива (негативные тесты)
+    add("Безопасность API: изоляция запросов по коду, закрытый список, пределы архива", *api_security_check())
+
+    # 15. инвариантность к форме подачи (переименование, порядок, zip)
+    add(*transfer_invariance_check(Path(a.transfer) if getattr(a, "transfer", "") else None))
+
+    # 16. истинная геометрия фантомов из MANIFEST.json
+    dbg = Path(a.debug_csv) if getattr(a, "debug_csv", "") else Path(a.run1).parent / "results_debug.csv"
+    add(*phantom_ground_truth_check(phantoms, dbg))
+
     timings = {}
     if a.timings and Path(a.timings).exists():
         timings = json.loads(Path(a.timings).read_text(encoding="utf-8"))
@@ -524,6 +639,30 @@ def version_consistency():
     return not bad, detail
 
 
+def api_security_check():
+    """Негативные тесты доступа: результаты одного запроса не видны другому, список всех
+    запросов закрыт, «zip-бомба» отклоняется. Запускается отдельным процессом, потому что
+    подменяет DENSITO_OUTPUT_DIR и импортирует api_server со своими настройками."""
+    import subprocess as _sp
+    import sys as _sys
+    test = ROOT / "tests" / "test_api_security.py"
+    if not test.exists():
+        return False, f"нет файла {test}"
+    env = dict(os.environ)
+    env.pop("DENSITO_ADMIN_KEY", None)
+    try:
+        r = _sp.run([_sys.executable, str(test)], capture_output=True, text=True, timeout=300,
+                    cwd=str(ROOT), env=env)
+    except Exception as e:  # noqa: BLE001
+        return False, f"{type(e).__name__}: {e}"
+    out = (r.stdout or "") + (r.stderr or "")
+    n_ok = out.count("  OK   ")
+    if r.returncode == 0 and "ALL API SECURITY CHECKS PASSED" in out:
+        return True, f"пройдено {n_ok} негативных проверок (доступ по коду запроса, закрытый список, пределы архива)"
+    bad = [ln.strip() for ln in out.splitlines() if ln.startswith("  FAIL")]
+    return False, "; ".join(bad)[:400] or out[-400:]
+
+
 def update_expected(a) -> int:
     header, rows = read_csv(Path(a.run1))
     out = Path(a.phantoms) / "expected_results.csv"
@@ -551,6 +690,8 @@ def main() -> int:
     c.add_argument("--data-dir", default=None)
     c.add_argument("--expected-sha", default=None)
     c.add_argument("--timings", default=None)
+    c.add_argument("--transfer", default="", help="JSON от tools/transfer_check.py")
+    c.add_argument("--debug-csv", dest="debug_csv", default="", help="debug CSV прогона 1")
     p = sub.add_parser("predsha")
     p.add_argument("csv")
     p.add_argument("--without-prob", action="store_true")

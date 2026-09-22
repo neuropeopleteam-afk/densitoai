@@ -226,6 +226,48 @@ def path_hash(path: Path) -> str:
     return hashlib.sha1(str(path).encode("utf-8", errors="ignore")).hexdigest()[:32]
 
 
+_CONTENT_HASH_CACHE: Dict[str, str] = {}
+_DIR_HASH_CACHE: Dict[str, str] = {}
+
+
+def content_hash(path: Path) -> str:
+    """sha256 байтов файла (первые 32 символа). Резервный идентификатор кадра не должен
+    зависеть от имени файла: закрытый набор приходит с другими именами."""
+    key = str(path)
+    cached = _CONTENT_HASH_CACHE.get(key)
+    if cached:
+        return cached
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    out = h.hexdigest()[:32]
+    _CONTENT_HASH_CACHE[key] = out
+    return out
+
+
+def dir_content_hash(directory: Path) -> str:
+    """Идентификатор папки по содержимому её файлов (для исследования без StudyInstanceUID):
+    sha1 отсортированных хэшей содержимого. Не зависит от имён файлов и папок.
+    Для очень больших папок (> 500 файлов или > 1 ГБ) берётся отсортированный список размеров."""
+    key = str(directory)
+    cached = _DIR_HASH_CACHE.get(key)
+    if cached:
+        return cached
+    try:
+        files = sorted((p for p in directory.iterdir() if p.is_file()), key=lambda p: p.name)
+        total = sum(p.stat().st_size for p in files)
+        if len(files) > 500 or total > (1 << 30):
+            parts = sorted(str(p.stat().st_size) for p in files)
+        else:
+            parts = sorted(content_hash(p) for p in files)
+        out = hashlib.sha1("|".join(parts).encode("utf-8")).hexdigest()[:32]
+    except Exception:  # noqa: BLE001
+        out = path_hash(directory)
+    _DIR_HASH_CACHE[key] = out
+    return out
+
+
 def config_hash(cfg: Dict[str, Any]) -> str:
     """Короткий sha256 конфигурации (та же формула, что в api_server._config_hash)."""
     return hashlib.sha256(json.dumps(cfg, sort_keys=True, ensure_ascii=False, default=str).encode()).hexdigest()[:12]
@@ -525,12 +567,13 @@ def read_and_validate(path: Path, cfg: Dict[str, Any]) -> DicomInfo:
     study_uid = _tag(ds, "StudyInstanceUID")
     image_uid = _tag(ds, "SOPInstanceUID")
     if not study_uid:
-        # fallback: хэш родительской папки (обычно = папка исследования)
-        study_uid = "hash-" + path_hash(path.parent)
-        warns.append("no StudyInstanceUID -> hash of parent folder")
+        # fallback: хэш СОДЕРЖИМОГО файлов родительской папки (обычно = папка исследования);
+        # не зависит от имён — закрытый набор приходит с другими именами файлов и папок
+        study_uid = "hash-" + dir_content_hash(path.parent)
+        warns.append("no StudyInstanceUID -> hash of parent folder content")
     if not image_uid:
-        image_uid = "hash-" + path_hash(path)
-        warns.append("no SOPInstanceUID -> hash of file path")
+        image_uid = "hash-" + content_hash(path)
+        warns.append("no SOPInstanceUID -> hash of file content")
 
     # PixelSpacing: читаем тег, иначе константа аппарата (с предупреждением)
     ps_y, ps_x = float(cfg["pixel_spacing_mm"]["y"]), float(cfg["pixel_spacing_mm"]["x"])
@@ -1406,15 +1449,21 @@ class DensitoInference:
 
     @staticmethod
     def _uids_without_pixels(path: Path, rel: Optional[str] = None) -> Tuple[str, str]:
-        """UID для строки Failure: из тегов, если читаются; иначе детерминированный хэш ОТНОСИТЕЛЬНОГО
-        пути (path_to_study), одинаковый на любой машине и в контейнере (нужно для verify.sh / эталона)."""
+        """UID для строки Failure: из тегов, если читаются; иначе детерминированный хэш
+        СОДЕРЖИМОГО файла и папки — одинаковый на любой машине, в контейнере и при переименовании
+        (закрытый набор приходит с другими именами файлов)."""
         try:
             ds = pydicom.dcmread(str(path), force=True, stop_before_pixels=True)
             s, i = _tag(ds, "StudyInstanceUID"), _tag(ds, "SOPInstanceUID")
         except Exception:  # noqa: BLE001
             s, i = "", ""
-        rel_p = Path(rel) if rel else path
-        return (s or "hash-" + path_hash(rel_p.parent)), (i or "hash-" + path_hash(rel_p))
+        try:
+            fallback_study = dir_content_hash(path.parent)
+            fallback_image = content_hash(path)
+        except Exception:  # noqa: BLE001
+            rel_p = Path(rel) if rel else path
+            fallback_study, fallback_image = path_hash(rel_p.parent), path_hash(rel_p)
+        return (s or "hash-" + fallback_study), (i or "hash-" + fallback_image)
 
     @staticmethod
     def _origin_hashes(path: Path, ds) -> Dict[str, str]:

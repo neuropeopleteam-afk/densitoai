@@ -66,6 +66,17 @@ if [ "$UPDATE_EXPECTED" = 1 ]; then
   "$PYTHON" "$ROOT/tools/verify_checks.py" update-expected --run1 "$OUT/run1/results.csv" --phantoms "$PHANTOMS"
 fi
 
+# --- 1б. инвариантность к форме подачи (имена, порядок, zip) -----------------
+TRANSFER_JSON=""
+if [ "${VERIFY_SKIP_TRANSFER:-0}" = "1" ]; then
+  printf -- '-- проверка инвариантности к именам/порядку/zip пропущена (VERIFY_SKIP_TRANSFER=1)\n'
+else
+  printf -- '-- проверка инвариантности: переименованная копия и zip\n'
+  TRANSFER_JSON="$OUT/transfer_check.json"
+  "$PYTHON" "$ROOT/tools/transfer_check.py" --input "$PHANTOMS" --baseline "$OUT/run1/results.csv" --out "$TRANSFER_JSON" --modes rename,zip --workdir "$OUT/transfer" --python "$PYTHON" >"$OUT/transfer_check.log" 2>&1 || printf 'verify.sh: transfer_check завершился с ошибкой, см. %s/transfer_check.log\n' "$OUT" >&2
+  rm -rf "$OUT/transfer/renamed" "$OUT/transfer/renamed_bundle.zip" "$OUT/transfer/var_rename" "$OUT/transfer/var_zip" 2>/dev/null || true
+fi
+
 # --- 2. sha256 весов ----------------------------------------------------------
 printf -- '-- sha256 весов моделей\n'
 "$PYTHON" "$ROOT/tools/hash_weights.py" --check --root "$ROOT" --json "$OUT/weights_check.json" >"$OUT/weights_check.log" 2>&1 || true
@@ -92,7 +103,8 @@ RC=0
 "$PYTHON" "$ROOT/tools/verify_checks.py" checks \
   --run1 "$OUT/run1/results.csv" --run2 "$OUT/run2/results.csv" --phantoms "$PHANTOMS" \
   --expected "$PHANTOMS/expected_results.csv" --weights-json "$OUT/weights_check.json" \
-  --timings "$OUT/timings.json" --out "$OUT/verify_results.json" $DATA_ARGS || RC=$?
+  --timings "$OUT/timings.json" --out "$OUT/verify_results.json" \
+  --transfer "$TRANSFER_JSON" --debug-csv "$OUT/run1/results_debug.csv" $DATA_ARGS || RC=$?
 
 "$PYTHON" "$ROOT/tools/verification_report.py" --json "$OUT/verify_results.json" --html "$OUT/verification_report.html" || RC=1
 printf 'Отчёт: %s/verification_report.html (JSON: %s/verify_results.json), всего %s с, код возврата %s\n' \
