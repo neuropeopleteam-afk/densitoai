@@ -1,6 +1,6 @@
 {
   "kit": "light",
-  "service_version": "2.3.2",
+  "service_version": "2.4.0",
   "seed": 20260922,
   "kit_sha256": "75474de0521c2a5f1118d946331f01432da11594d3875d682e0958f601bd593c",
   "kit_list_serialization": "json, sort_keys=True, separators=(',',':'), ensure_ascii=False",

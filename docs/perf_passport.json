@@ -1,0 +1,757 @@
+{
+  "version": "2.4.0",
+  "generated": "2026-09-23 15:26:23",
+  "tool": "tools/perf_passport.py",
+  "csv": {
+    "source": "/home/user/workspace/densito/dataset/regress_2_3_2.csv",
+    "source_name": "regress_2_3_2.csv",
+    "conditions": "боевой сервер 2.3.2: 4 vCPU, Docker, регрессия на 499 файлах; во время прогона на сервере была чужая нагрузка, поэтому числа завышены и неровные по ходу прогона",
+    "n_rows": 499,
+    "n_success": 499,
+    "n_failure": 0,
+    "n_studies": 100,
+    "all_rows": {
+      "n": 499,
+      "median_s": 1.8352,
+      "mean_s": 2.367,
+      "p90_s": 5.5193,
+      "p95_s": 6.1109,
+      "min_s": 0.349,
+      "max_s": 12.6778,
+      "sum_s": 1181.1323
+    },
+    "success_rows": {
+      "n": 499,
+      "median_s": 1.8352,
+      "mean_s": 2.367,
+      "p90_s": 5.5193,
+      "p95_s": 6.1109,
+      "min_s": 0.349,
+      "max_s": 12.6778,
+      "sum_s": 1181.1323
+    },
+    "by_region": {
+      "Поясничный отдел позвоночника": {
+        "n": 166,
+        "median_s": 4.7134,
+        "mean_s": 4.1865,
+        "p90_s": 6.7683,
+        "p95_s": 8.4334,
+        "min_s": 1.0154,
+        "max_s": 12.6778,
+        "sum_s": 694.9589
+      },
+      "Проксимальный отдел бедра": {
+        "n": 333,
+        "median_s": 1.691,
+        "mean_s": 1.46,
+        "p90_s": 2.217,
+        "p95_s": 2.7103,
+        "min_s": 0.349,
+        "max_s": 5.2292,
+        "sum_s": 486.1734
+      }
+    },
+    "by_run_quarter": {
+      "q1": {
+        "n": 125,
+        "median_all_s": 1.9173,
+        "median_spine_s": 5.0077,
+        "median_hip_s": 1.7468
+      },
+      "q2": {
+        "n": 125,
+        "median_all_s": 0.6917,
+        "median_spine_s": 1.3081,
+        "median_hip_s": 0.5081
+      },
+      "q3": {
+        "n": 124,
+        "median_all_s": 1.988,
+        "median_spine_s": 5.5321,
+        "median_hip_s": 1.9188
+      },
+      "q4": {
+        "n": 125,
+        "median_all_s": 1.8122,
+        "median_spine_s": 4.42,
+        "median_hip_s": 1.6323
+      }
+    },
+    "note": "time_of_processing — секунды на файл, которые сервис записал сам: чтение DICOM → область → признаки → эмбеддинги → модели; без загрузки моделей и без записи CSV. Failure-строки имеют время до сбоя."
+  },
+  "server_quiet": {
+    "status": "заполнено по regress_2_4_0.csv",
+    "median_s": 0.5431,
+    "p95_s": 1.7634,
+    "sum_s": 357.4857,
+    "batch_wall_499_s": 367.7,
+    "container_peak_rss_mb": null,
+    "docker_image_mb": 2570,
+    "csv": {
+      "source": "../dataset/regress_2_4_0.csv",
+      "source_name": "regress_2_4_0.csv",
+      "conditions": "боевой сервер, тихие условия (loadavg около 0,5 перед запуском): 4 vCPU Intel Xeon E5-2680 v2 2,80 GHz, 5,9 ГБ RAM, Docker, образ densitoai:2.4.0, один процесс src/inference.py, --network none, OMP_NUM_THREADS=2, nice -n 10; регрессия 2.4.0 на 499 файлах 23.09.2026",
+      "n_rows": 499,
+      "n_success": 499,
+      "n_failure": 0,
+      "n_studies": 100,
+      "all_rows": {
+        "n": 499,
+        "median_s": 0.5431,
+        "mean_s": 0.7164,
+        "p90_s": 1.3986,
+        "p95_s": 1.7634,
+        "min_s": 0.1856,
+        "max_s": 4.8372,
+        "sum_s": 357.4857
+      },
+      "success_rows": {
+        "n": 499,
+        "median_s": 0.5431,
+        "mean_s": 0.7164,
+        "p90_s": 1.3986,
+        "p95_s": 1.7634,
+        "min_s": 0.1856,
+        "max_s": 4.8372,
+        "sum_s": 357.4857
+      },
+      "by_region": {
+        "Поясничный отдел позвоночника": {
+          "n": 166,
+          "median_s": 0.8162,
+          "mean_s": 1.0986,
+          "p90_s": 1.9679,
+          "p95_s": 2.8506,
+          "min_s": 0.3823,
+          "max_s": 4.8372,
+          "sum_s": 182.3668
+        },
+        "Проксимальный отдел бедра": {
+          "n": 333,
+          "median_s": 0.398,
+          "mean_s": 0.5259,
+          "p90_s": 0.9741,
+          "p95_s": 1.2945,
+          "min_s": 0.1856,
+          "max_s": 2.5311,
+          "sum_s": 175.1189
+        }
+      },
+      "by_run_quarter": {
+        "q1": {
+          "n": 125,
+          "median_all_s": 0.6189,
+          "median_spine_s": 0.9868,
+          "median_hip_s": 0.4565
+        },
+        "q2": {
+          "n": 125,
+          "median_all_s": 0.5384,
+          "median_spine_s": 0.7958,
+          "median_hip_s": 0.4014
+        },
+        "q3": {
+          "n": 124,
+          "median_all_s": 0.4638,
+          "median_spine_s": 0.8535,
+          "median_hip_s": 0.3322
+        },
+        "q4": {
+          "n": 125,
+          "median_all_s": 0.5486,
+          "median_spine_s": 0.7591,
+          "median_hip_s": 0.4134
+        }
+      },
+      "note": "time_of_processing — секунды на файл, которые сервис записал сам: чтение DICOM → область → признаки → эмбеддинги → модели; без загрузки моделей и без записи CSV. Failure-строки имеют время до сбоя."
+    },
+    "extra": {
+      "measured_on": "2026-09-23, боевой сервер, оркестратор",
+      "batch_processing_wall_s": 367.7,
+      "container_wall_s": 384,
+      "container_wall_note": "6 мин 24 с, 17:06:51–17:13:15, с загрузкой моделей",
+      "api_batch_files": 10,
+      "api_batch_model_s": 11.8,
+      "api_batch_wall_s": 24.0,
+      "api_container_idle_rss_mib": 536,
+      "docker_image_gb": 2.57
+    },
+    "note": "распределение — из CSV тихого прогона (analyze_csv); ручные числа — из --quiet-extra"
+  },
+  "measure": {
+    "label": "песочница 2 vCPU, параллельная нагрузка других задач, OMP_NUM_THREADS=2, nice 5, ориентировочно",
+    "timestamp": "2026-09-23 15:05:17",
+    "data_dir": "/home/user/workspace/densito/dataset/Исследования",
+    "files": [
+      {
+        "rel": "1.2.840.113619.2.110.512719.20250403090444/series_004_3_CR/DXA/CR DXA/CR000000.dcm",
+        "study": "1.2.840.113619.2.110.512719.20250403090444",
+        "region": "Поясничный отдел позвоночника"
+      },
+      {
+        "rel": "1.2.840.113619.2.110.512719.20250403092052/series_003_3_CR/DXA/CR DXA/CR000001.dcm",
+        "study": "1.2.840.113619.2.110.512719.20250403092052",
+        "region": "Поясничный отдел позвоночника"
+      },
+      {
+        "rel": "1.2.840.113619.2.110.512719.20250407113211/series_001_2_CR/DXA/CR DXA/CR000003.dcm",
+        "study": "1.2.840.113619.2.110.512719.20250407113211",
+        "region": "Поясничный отдел позвоночника"
+      },
+      {
+        "rel": "2.25.10245777060263212829333021434108890537/series_003_2_CR/A2504412435 DXA/CR DXA/CR000001.dcm",
+        "study": "2.25.10245777060263212829333021434108890537",
+        "region": "Поясничный отдел позвоночника"
+      },
+      {
+        "rel": "2.25.102755089973625799055786462646268820450/series_002_2_CR/A2504257770 DXA/CR DXA/CR000001.dcm",
+        "study": "2.25.102755089973625799055786462646268820450",
+        "region": "Поясничный отдел позвоночника"
+      },
+      {
+        "rel": "2.25.102965897799404973225419898683246248872/series_001_2_CR/A250726353 DXA/CR DXA/CR000001.dcm",
+        "study": "2.25.102965897799404973225419898683246248872",
+        "region": "Поясничный отдел позвоночника"
+      },
+      {
+        "rel": "2.25.103868781101960771917584077315578649178/series_001_3_CR/A2507485409 DXA/CR DXA/CR000000.dcm",
+        "study": "2.25.103868781101960771917584077315578649178",
+        "region": "Проксимальный отдел бедра"
+      },
+      {
+        "rel": "2.25.105033841136787477881326326053319223817/series_001_2_CR/A250790559 DXA/CR DXA/CR000002.dcm",
+        "study": "2.25.105033841136787477881326326053319223817",
+        "region": "Проксимальный отдел бедра"
+      },
+      {
+        "rel": "2.25.11175860580562939441493697221497597640/series_003_2_CR/A2507431060 DXA/CR DXA/CR000000.dcm",
+        "study": "2.25.11175860580562939441493697221497597640",
+        "region": "Проксимальный отдел бедра"
+      },
+      {
+        "rel": "2.25.114887542067602662452692698814728642117/series_001_2_CR/A2504131887 DXA/CR DXA/CR000000.dcm",
+        "study": "2.25.114887542067602662452692698814728642117",
+        "region": "Проксимальный отдел бедра"
+      },
+      {
+        "rel": "2.25.116822802042655971810859435524105064465/series_003_2_CR/A2507273296 DXA/CR DXA/CR000000.dcm",
+        "study": "2.25.116822802042655971810859435524105064465",
+        "region": "Проксимальный отдел бедра"
+      },
+      {
+        "rel": "2.25.122446767306607067205618235949445789306/series_001_2_CR/A2504255080 DXA/CR DXA/CR000000.dcm",
+        "study": "2.25.122446767306607067205618235949445789306",
+        "region": "Проксимальный отдел бедра"
+      }
+    ],
+    "environment": {
+      "python": "3.12.13",
+      "platform": "Linux-6.1.155+-x86_64-with-glibc2.43",
+      "machine": "x86_64",
+      "cpu_count": 2,
+      "cpu_affinity": 2,
+      "OMP_NUM_THREADS": "2",
+      "MKL_NUM_THREADS": null,
+      "nice": 5,
+      "in_docker": false,
+      "torch": "2.14.0+cpu",
+      "torch_num_threads_default": 2,
+      "numpy": "2.5.3",
+      "sklearn": "1.9.1",
+      "pydicom": "3.0.2",
+      "cpu_model": "Intel(R) Xeon(R) Processor @ 2.90GHz",
+      "mem_total_gb": 7.8
+    },
+    "loadavg_before": [
+      0.71,
+      0.61,
+      0.3
+    ],
+    "loadavg_after": [
+      0.9,
+      0.69,
+      0.35
+    ],
+    "inprocess": {
+      "cold_start": {
+        "import_s": 0.716,
+        "models_s": 1.266,
+        "backbones_warmup_s": 1.344,
+        "backbones": [
+          "densito",
+          "densito_inv",
+          "imagenet"
+        ],
+        "cold_start_total_s": 3.326,
+        "import_clean_process_s": 0.861
+      },
+      "rss_mb": {
+        "after_import_baseline": 75.4,
+        "after_models": 368.8,
+        "after_backbones": 519.2,
+        "peak_end": 547.0
+      },
+      "torch_num_threads_effective": 2,
+      "n_files": 12,
+      "passes": 3,
+      "best_pass": 1,
+      "pass_stats": [
+        {
+          "pass": 1,
+          "n": 12,
+          "median_s": 0.0706,
+          "mean_s": 0.0751,
+          "p90_s": 0.1003,
+          "p95_s": 0.1141,
+          "min_s": 0.0449,
+          "max_s": 0.1309,
+          "sum_s": 0.9007
+        },
+        {
+          "pass": 2,
+          "n": 12,
+          "median_s": 0.0784,
+          "mean_s": 0.0985,
+          "p90_s": 0.1125,
+          "p95_s": 0.2303,
+          "min_s": 0.0495,
+          "max_s": 0.3718,
+          "sum_s": 1.1824
+        },
+        {
+          "pass": 3,
+          "n": 12,
+          "median_s": 0.0916,
+          "mean_s": 0.0852,
+          "p90_s": 0.104,
+          "p95_s": 0.1487,
+          "min_s": 0.0461,
+          "max_s": 0.2021,
+          "sum_s": 1.0219
+        }
+      ],
+      "n_failure": 0,
+      "all": {
+        "n": 12,
+        "median_s": 0.0706,
+        "mean_s": 0.0751,
+        "p90_s": 0.1003,
+        "p95_s": 0.1141,
+        "min_s": 0.0449,
+        "max_s": 0.1309,
+        "sum_s": 0.9007
+      },
+      "first_pass_all": {
+        "n": 12,
+        "median_s": 0.0706,
+        "mean_s": 0.0751,
+        "p90_s": 0.1003,
+        "p95_s": 0.1141,
+        "min_s": 0.0449,
+        "max_s": 0.1309,
+        "sum_s": 0.9007
+      },
+      "first_pass_excluding_first_file": {
+        "n": 11,
+        "median_s": 0.0519,
+        "mean_s": 0.07,
+        "p90_s": 0.0991,
+        "p95_s": 0.0998,
+        "min_s": 0.0449,
+        "max_s": 0.1004,
+        "sum_s": 0.7698
+      },
+      "first_file_first_pass_s": 0.1309,
+      "by_region": {
+        "Поясничный отдел позвоночника": {
+          "n": 6,
+          "time_of_processing": {
+            "n": 6,
+            "median_s": 0.0966,
+            "mean_s": 0.1012,
+            "p90_s": 0.1157,
+            "p95_s": 0.1233,
+            "min_s": 0.0894,
+            "max_s": 0.1309,
+            "sum_s": 0.607
+          },
+          "read_dicom_median_s": 0.0033,
+          "geometry_median_s": 0.0075,
+          "embeddings_median_s": 0.0811,
+          "other_median_s": 0.0042
+        },
+        "Проксимальный отдел бедра": {
+          "n": 6,
+          "time_of_processing": {
+            "n": 6,
+            "median_s": 0.0493,
+            "mean_s": 0.049,
+            "p90_s": 0.0515,
+            "p95_s": 0.0517,
+            "min_s": 0.0449,
+            "max_s": 0.0519,
+            "sum_s": 0.2937
+          },
+          "read_dicom_median_s": 0.0029,
+          "geometry_median_s": 0.016,
+          "embeddings_median_s": 0.0255,
+          "other_median_s": 0.0046
+        }
+      },
+      "breakdown_sum_s": {
+        "read_dicom_s": 0.0388,
+        "geometry_s": 0.1409,
+        "embeddings_s": 0.6651,
+        "other_s": 0.0561,
+        "time_of_processing_s": 0.9007
+      },
+      "write_csv_s": 0.0004,
+      "write_xlsx_extra_s": 0.0753,
+      "per_file": [
+        {
+          "pass": 1,
+          "idx": 0,
+          "rel": "1.2.840.113619.2.110.512719.20250403090444/series_004_3_CR/DXA/CR DXA/CR000000.dcm",
+          "region": "Поясничный отдел позвоночника",
+          "status": "Success",
+          "time_of_processing_s": 0.1309,
+          "read_dicom_s": 0.0054,
+          "geometry_s": 0.0076,
+          "embeddings_s": 0.11,
+          "other_s": 0.008,
+          "first_file": true
+        },
+        {
+          "pass": 1,
+          "idx": 1,
+          "rel": "1.2.840.113619.2.110.512719.20250403092052/series_003_3_CR/DXA/CR DXA/CR000001.dcm",
+          "region": "Поясничный отдел позвоночника",
+          "status": "Success",
+          "time_of_processing_s": 0.0991,
+          "read_dicom_s": 0.0035,
+          "geometry_s": 0.008,
+          "embeddings_s": 0.0836,
+          "other_s": 0.0041,
+          "first_file": false
+        },
+        {
+          "pass": 1,
+          "idx": 2,
+          "rel": "1.2.840.113619.2.110.512719.20250407113211/series_001_2_CR/DXA/CR DXA/CR000003.dcm",
+          "region": "Поясничный отдел позвоночника",
+          "status": "Success",
+          "time_of_processing_s": 0.0894,
+          "read_dicom_s": 0.0032,
+          "geometry_s": 0.007,
+          "embeddings_s": 0.0751,
+          "other_s": 0.0041,
+          "first_file": false
+        },
+        {
+          "pass": 1,
+          "idx": 3,
+          "rel": "2.25.10245777060263212829333021434108890537/series_003_2_CR/A2504412435 DXA/CR DXA/CR000001.dcm",
+          "region": "Поясничный отдел позвоночника",
+          "status": "Success",
+          "time_of_processing_s": 0.0941,
+          "read_dicom_s": 0.0034,
+          "geometry_s": 0.008,
+          "embeddings_s": 0.0787,
+          "other_s": 0.0041,
+          "first_file": false
+        },
+        {
+          "pass": 1,
+          "idx": 4,
+          "rel": "2.25.102755089973625799055786462646268820450/series_002_2_CR/A2504257770 DXA/CR DXA/CR000001.dcm",
+          "region": "Поясничный отдел позвоночника",
+          "status": "Success",
+          "time_of_processing_s": 0.1004,
+          "read_dicom_s": 0.003,
+          "geometry_s": 0.0069,
+          "embeddings_s": 0.0863,
+          "other_s": 0.0042,
+          "first_file": false
+        },
+        {
+          "pass": 1,
+          "idx": 5,
+          "rel": "2.25.102965897799404973225419898683246248872/series_001_2_CR/A250726353 DXA/CR DXA/CR000001.dcm",
+          "region": "Поясничный отдел позвоночника",
+          "status": "Success",
+          "time_of_processing_s": 0.0931,
+          "read_dicom_s": 0.0031,
+          "geometry_s": 0.0075,
+          "embeddings_s": 0.0783,
+          "other_s": 0.0042,
+          "first_file": false
+        },
+        {
+          "pass": 1,
+          "idx": 6,
+          "rel": "2.25.103868781101960771917584077315578649178/series_001_3_CR/A2507485409 DXA/CR DXA/CR000000.dcm",
+          "region": "Проксимальный отдел бедра",
+          "status": "Success",
+          "time_of_processing_s": 0.0499,
+          "read_dicom_s": 0.0029,
+          "geometry_s": 0.0162,
+          "embeddings_s": 0.026,
+          "other_s": 0.0048,
+          "first_file": false
+        },
+        {
+          "pass": 1,
+          "idx": 7,
+          "rel": "2.25.105033841136787477881326326053319223817/series_001_2_CR/A250790559 DXA/CR DXA/CR000002.dcm",
+          "region": "Проксимальный отдел бедра",
+          "status": "Success",
+          "time_of_processing_s": 0.0487,
+          "read_dicom_s": 0.0028,
+          "geometry_s": 0.0158,
+          "embeddings_s": 0.0254,
+          "other_s": 0.0046,
+          "first_file": false
+        },
+        {
+          "pass": 1,
+          "idx": 8,
+          "rel": "2.25.11175860580562939441493697221497597640/series_003_2_CR/A2507431060 DXA/CR DXA/CR000000.dcm",
+          "region": "Проксимальный отдел бедра",
+          "status": "Success",
+          "time_of_processing_s": 0.0512,
+          "read_dicom_s": 0.0034,
+          "geometry_s": 0.0175,
+          "embeddings_s": 0.0255,
+          "other_s": 0.0048,
+          "first_file": false
+        },
+        {
+          "pass": 1,
+          "idx": 9,
+          "rel": "2.25.114887542067602662452692698814728642117/series_001_2_CR/A2504131887 DXA/CR DXA/CR000000.dcm",
+          "region": "Проксимальный отдел бедра",
+          "status": "Success",
+          "time_of_processing_s": 0.0519,
+          "read_dicom_s": 0.0029,
+          "geometry_s": 0.0189,
+          "embeddings_s": 0.0254,
+          "other_s": 0.0047,
+          "first_file": false
+        },
+        {
+          "pass": 1,
+          "idx": 10,
+          "rel": "2.25.116822802042655971810859435524105064465/series_003_2_CR/A2507273296 DXA/CR DXA/CR000000.dcm",
+          "region": "Проксимальный отдел бедра",
+          "status": "Success",
+          "time_of_processing_s": 0.0471,
+          "read_dicom_s": 0.0028,
+          "geometry_s": 0.0147,
+          "embeddings_s": 0.0252,
+          "other_s": 0.0044,
+          "first_file": false
+        },
+        {
+          "pass": 1,
+          "idx": 11,
+          "rel": "2.25.122446767306607067205618235949445789306/series_001_2_CR/A2504255080 DXA/CR DXA/CR000000.dcm",
+          "region": "Проксимальный отдел бедра",
+          "status": "Success",
+          "time_of_processing_s": 0.0449,
+          "read_dicom_s": 0.0024,
+          "geometry_s": 0.0128,
+          "embeddings_s": 0.0256,
+          "other_s": 0.0041,
+          "first_file": false
+        }
+      ]
+    },
+    "subprocess": {
+      "batch_one_call": {
+        "rc": 0,
+        "wall_s": 4.861,
+        "import_s": 0.861,
+        "maxrss_mb": 558.2,
+        "user_s": 5.23,
+        "sys_s": 0.73,
+        "wall_outer_s": 5.653,
+        "n_rows": 12,
+        "time_of_processing_sum_s": 0.9431,
+        "overhead_s": 3.918,
+        "wall_per_file_s": 0.405
+      },
+      "single_calls": {
+        "n": 12,
+        "wall": {
+          "n": 12,
+          "median_s": 3.766,
+          "mean_s": 3.7873,
+          "p90_s": 3.9827,
+          "p95_s": 3.9863,
+          "min_s": 3.633,
+          "max_s": 3.988,
+          "sum_s": 45.448
+        },
+        "maxrss_mb_max": 550.4,
+        "time_of_processing": {
+          "n": 12,
+          "median_s": 0.0975,
+          "mean_s": 0.0973,
+          "p90_s": 0.1178,
+          "p95_s": 0.1327,
+          "min_s": 0.0655,
+          "max_s": 0.1509,
+          "sum_s": 1.1674
+        },
+        "per_file": [
+          {
+            "rc": 0,
+            "wall_s": 3.784,
+            "import_s": 0.833,
+            "maxrss_mb": 547.0,
+            "user_s": 3.63,
+            "sys_s": 0.59,
+            "wall_outer_s": 4.433,
+            "rel": "1.2.840.113619.2.110.512719.20250403090444/series_004_3_CR/DXA/CR DXA/CR000000.dcm",
+            "region": "Поясничный отдел позвоночника",
+            "time_of_processing_s": 0.117
+          },
+          {
+            "rc": 0,
+            "wall_s": 3.814,
+            "import_s": 0.812,
+            "maxrss_mb": 548.7,
+            "user_s": 3.76,
+            "sys_s": 0.49,
+            "wall_outer_s": 4.445,
+            "rel": "1.2.840.113619.2.110.512719.20250403092052/series_003_3_CR/DXA/CR DXA/CR000001.dcm",
+            "region": "Поясничный отдел позвоночника",
+            "time_of_processing_s": 0.1179
+          },
+          {
+            "rc": 0,
+            "wall_s": 3.985,
+            "import_s": 0.893,
+            "maxrss_mb": 547.2,
+            "user_s": 3.77,
+            "sys_s": 0.59,
+            "wall_outer_s": 4.783,
+            "rel": "1.2.840.113619.2.110.512719.20250407113211/series_001_2_CR/DXA/CR DXA/CR000003.dcm",
+            "region": "Поясничный отдел позвоночника",
+            "time_of_processing_s": 0.1509
+          },
+          {
+            "rc": 0,
+            "wall_s": 3.962,
+            "import_s": 0.862,
+            "maxrss_mb": 547.0,
+            "user_s": 3.84,
+            "sys_s": 0.55,
+            "wall_outer_s": 4.683,
+            "rel": "2.25.10245777060263212829333021434108890537/series_003_2_CR/A2504412435 DXA/CR DXA/CR000001.dcm",
+            "region": "Поясничный отдел позвоночника",
+            "time_of_processing_s": 0.1151
+          },
+          {
+            "rc": 0,
+            "wall_s": 3.988,
+            "import_s": 0.843,
+            "maxrss_mb": 548.5,
+            "user_s": 3.74,
+            "sys_s": 0.68,
+            "wall_outer_s": 4.618,
+            "rel": "2.25.102755089973625799055786462646268820450/series_002_2_CR/A2504257770 DXA/CR DXA/CR000001.dcm",
+            "region": "Поясничный отдел позвоночника",
+            "time_of_processing_s": 0.1162
+          },
+          {
+            "rc": 0,
+            "wall_s": 3.764,
+            "import_s": 0.852,
+            "maxrss_mb": 550.4,
+            "user_s": 3.77,
+            "sys_s": 0.43,
+            "wall_outer_s": 4.409,
+            "rel": "2.25.102965897799404973225419898683246248872/series_001_2_CR/A250726353 DXA/CR DXA/CR000001.dcm",
+            "region": "Поясничный отдел позвоночника",
+            "time_of_processing_s": 0.1168
+          },
+          {
+            "rc": 0,
+            "wall_s": 3.716,
+            "import_s": 0.828,
+            "maxrss_mb": 547.0,
+            "user_s": 3.58,
+            "sys_s": 0.51,
+            "wall_outer_s": 4.471,
+            "rel": "2.25.103868781101960771917584077315578649178/series_001_3_CR/A2507485409 DXA/CR DXA/CR000000.dcm",
+            "region": "Проксимальный отдел бедра",
+            "time_of_processing_s": 0.0711
+          },
+          {
+            "rc": 0,
+            "wall_s": 3.641,
+            "import_s": 0.819,
+            "maxrss_mb": 547.0,
+            "user_s": 3.55,
+            "sys_s": 0.48,
+            "wall_outer_s": 4.326,
+            "rel": "2.25.105033841136787477881326326053319223817/series_001_2_CR/A250790559 DXA/CR DXA/CR000002.dcm",
+            "region": "Проксимальный отдел бедра",
+            "time_of_processing_s": 0.0734
+          },
+          {
+            "rc": 0,
+            "wall_s": 3.768,
+            "import_s": 0.821,
+            "maxrss_mb": 547.0,
+            "user_s": 3.66,
+            "sys_s": 0.5,
+            "wall_outer_s": 4.518,
+            "rel": "2.25.11175860580562939441493697221497597640/series_003_2_CR/A2507431060 DXA/CR DXA/CR000000.dcm",
+            "region": "Проксимальный отдел бедра",
+            "time_of_processing_s": 0.0799
+          },
+          {
+            "rc": 0,
+            "wall_s": 3.705,
+            "import_s": 0.853,
+            "maxrss_mb": 547.0,
+            "user_s": 3.57,
+            "sys_s": 0.52,
+            "wall_outer_s": 4.353,
+            "rel": "2.25.114887542067602662452692698814728642117/series_001_2_CR/A2504131887 DXA/CR DXA/CR000000.dcm",
+            "region": "Проксимальный отдел бедра",
+            "time_of_processing_s": 0.0723
+          },
+          {
+            "rc": 0,
+            "wall_s": 3.633,
+            "import_s": 0.802,
+            "maxrss_mb": 547.0,
+            "user_s": 3.53,
+            "sys_s": 0.48,
+            "wall_outer_s": 4.217,
+            "rel": "2.25.116822802042655971810859435524105064465/series_003_2_CR/A2507273296 DXA/CR DXA/CR000000.dcm",
+            "region": "Проксимальный отдел бедра",
+            "time_of_processing_s": 0.0713
+          },
+          {
+            "rc": 0,
+            "wall_s": 3.688,
+            "import_s": 0.878,
+            "maxrss_mb": 547.0,
+            "user_s": 3.51,
+            "sys_s": 0.42,
+            "wall_outer_s": 4.316,
+            "rel": "2.25.122446767306607067205618235949445789306/series_001_2_CR/A2504255080 DXA/CR DXA/CR000000.dcm",
+            "region": "Проксимальный отдел бедра",
+            "time_of_processing_s": 0.0655
+          }
+        ]
+      }
+    },
+    "total_measure_wall_s": 65.8
+  }
+}

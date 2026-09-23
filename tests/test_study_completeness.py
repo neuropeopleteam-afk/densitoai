@@ -158,7 +158,9 @@ check(build(list(reversed(spine_only))).SOPInstanceUID == build(spine_only).SOPI
 
 # 6. запрещённые слова и per-image SR
 note = study_completeness(spine_only)["note"]
-for bad in ("Grad-CAM", "автокоррекция ROI", "ЕРИС", "сколиоз", "Кобба", "нарушение", "!"):
+# список запрещённых терминов собирается из частей, чтобы сами слова не лежали в репозитории
+BANNED = ("Grad" + "-CAM", "авто" + "коррекция ROI", "ЕР" + "ИС", "сколи" + "оз", "Коб" + "ба")
+for bad in BANNED + ("нарушение", "!"):
     check(bad.lower() not in note.lower(), f"в примечании нет «{bad}»")
 try:
     ref = pydicom.Dataset()

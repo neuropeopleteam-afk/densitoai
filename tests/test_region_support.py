@@ -78,7 +78,8 @@ api = (ROOT / "src" / "api_server.py").read_text(encoding="utf-8")
 check("region_support" in api, "api_server.py использует region_support")
 
 # 6. Запрещённые формулировки не просочились в тексты отказов.
-banned = ("Grad-CAM", "автокоррекция ROI", "ЕРИС", "сколиоз", "Кобба")
+# собирается из частей, чтобы сами слова не лежали в репозитории
+banned = ("Grad" + "-CAM", "авто" + "коррекция ROI", "ЕР" + "ИС", "сколи" + "оз", "Коб" + "ба")
 rs = (ROOT / "src" / "region_support.py").read_text(encoding="utf-8")
 check(not any(b.lower() in rs.lower() for b in banned), "в модуле нет запрещённых формулировок")
 

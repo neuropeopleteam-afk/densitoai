@@ -39,6 +39,7 @@ import csv
 import hashlib
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -46,6 +47,12 @@ import numpy as np
 
 B = Path(os.environ.get("DENSITO_ROOT", Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(B / "src"))
+
+
+def service_version() -> str:
+    """Версия сервиса из config.yaml — чтобы вердикты набора были привязаны к конкретной сборке."""
+    m = re.search(r"^version:\s*['\"]?([0-9][^'\"\s]*)", (B / "config.yaml").read_text(encoding="utf-8"), re.M)
+    return m.group(1) if m else "неизвестна"
 
 SEED = 20260922
 OUT = Path(__file__).resolve().parent / "out" / "light"
@@ -347,7 +354,7 @@ def main() -> None:
     }
     manifest = {
         "kit": "light",
-        "service_version": "2.3.2",
+        "service_version": service_version(),
         "seed": SEED,
         "kit_sha256": kit_sha,
         "kit_list_serialization": "json, sort_keys=True, separators=(',',':'), ensure_ascii=False",
@@ -374,7 +381,7 @@ def main() -> None:
     # ---- данные для страницы (вердикт сервиса раскрывается после ответа) --
     payload = {
         "kit_sha256": kit_sha,
-        "service_version": "2.3.2",
+        "service_version": service_version(),
         "shows": [{"idx": s["idx"], "file": s["file"]} for s in shows_full],
         "shows_short": [{"idx": s["idx"], "file": s["file"]} for s in shows_short],
         "service": {by_frame[fr]["frame"] + ".png": service(by_frame[fr]) for fr in unique_frames},

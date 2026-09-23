@@ -45,6 +45,8 @@ VERSION_PLACES = [
     ("models/MODEL_CARD.md", [r'version\):\s*\*\*(?P<v>[\d.]+)\*\*']),
     ("web/index.html", [r'версия сервиса (?P<v>[\d.]+)']),
     ("web/docs.html", [r'версия сервиса (?P<v>[\d.]+)']),
+    ("web/review/index.html", [r'"service_version":"(?P<v>[\d.]+)"']),
+    ("tools/review/kit_light_manifest.json", [r'"service_version": "(?P<v>[\d.]+)"']),
 ]
 
 # Где обязан стоять эталонный config_hash (12 знаков).
@@ -66,6 +68,12 @@ def canonical_version() -> str:
 
 def hash_from_local() -> str:
     """config_hash той же формулой, что в продакшене (нужны зависимости пайплайна)."""
+    import importlib.util
+
+    if importlib.util.find_spec("yaml") is None:
+        # без PyYAML load_config молча берёт встроенные значения по умолчанию —
+        # это был бы хэш не того конфига, а не эталон
+        raise RuntimeError("нет PyYAML: хэш рабочего дерева был бы посчитан от значений по умолчанию")
     sys.path.insert(0, str(ROOT / "src"))
     from inference import load_config, config_hash as _ch  # noqa: E402
 
@@ -168,7 +176,8 @@ def main() -> int:
             "проверено:           config.yaml, src/inference.py, Dockerfile, docker-compose.yml,",
             "                     README.md, docs/VERIFICATION.md, docs/METRICS_REPORT.md,",
             "                     docs/DZM_CONFORMANCE.md, docs/EVIDENCE.md, models/MODEL_CARD.md,",
-            "                     web/index.html, web/docs.html, tools/*.sh",
+            "                     web/index.html, web/docs.html, web/review/index.html,",
+            "                     tools/review/kit_light_manifest.json, tools/*.sh",
             "проверка получателем: docker run --rm --network none densitoai:"
             f"{version} verify",
         ]

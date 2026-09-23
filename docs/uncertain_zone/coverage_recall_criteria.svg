@@ -1,0 +1,495 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1870" height="445" viewBox="0 0 1870 445" font-family="DejaVu Sans, Arial, sans-serif" font-size="11">
+<rect x="0" y="0" width="1870" height="445" fill="white"/>
+<text x="10" y="20" font-size="14" font-weight="bold">Зона «не уверен» по критериям: покрытие → полнота (OOF)</text>
+<text x="72" y="40" font-size="12">sp_pos: Некорректная укладка (позвоночник)</text>
+<text x="72" y="55" font-size="10" fill="#444">n=166, положительных 10 (6 исследований)</text>
+<text x="72" y="68" font-size="10" fill="#444">текущий запас 0</text>
+<rect x="72" y="84" width="260" height="260" fill="none" stroke="#333"/>
+<line x1="124.0" y1="84" x2="124.0" y2="344" stroke="#eee"/>
+<line x1="72" y1="292.0" x2="332" y2="292.0" stroke="#eee"/>
+<text x="124.0" y="356" text-anchor="middle" font-size="9">20 %</text>
+<text x="68" y="295.0" text-anchor="end" font-size="9">0.2</text>
+<line x1="176.0" y1="84" x2="176.0" y2="344" stroke="#eee"/>
+<line x1="72" y1="240.0" x2="332" y2="240.0" stroke="#eee"/>
+<text x="176.0" y="356" text-anchor="middle" font-size="9">40 %</text>
+<text x="68" y="243.0" text-anchor="end" font-size="9">0.4</text>
+<line x1="228.0" y1="84" x2="228.0" y2="344" stroke="#eee"/>
+<line x1="72" y1="188.0" x2="332" y2="188.0" stroke="#eee"/>
+<text x="228.0" y="356" text-anchor="middle" font-size="9">60 %</text>
+<text x="68" y="191.0" text-anchor="end" font-size="9">0.6</text>
+<line x1="280.0" y1="84" x2="280.0" y2="344" stroke="#eee"/>
+<line x1="72" y1="136.0" x2="332" y2="136.0" stroke="#eee"/>
+<text x="280.0" y="356" text-anchor="middle" font-size="9">80 %</text>
+<text x="68" y="139.0" text-anchor="end" font-size="9">0.8</text>
+<text x="68" y="347.0" text-anchor="end" font-size="9">0.0</text>
+<text x="68" y="87.0" text-anchor="end" font-size="9">1.0</text>
+<line x1="124.0" y1="84" x2="124.0" y2="344" stroke="#999" stroke-dasharray="4 3"/>
+<polyline points="87.7,162.0 87.7,162.0 87.7,162.0 87.7,162.0 90.8,181.5 90.8,181.5 93.9,181.5 93.9,181.5 100.2,181.5 103.3,214.0 111.2,279.0 112.7,344.0 114.3,344.0 115.9,344.0 115.9,344.0 120.6,344.0 122.1,344.0 123.7,344.0 126.8,344.0 136.2,344.0 140.9,344.0 145.6,344.0 148.7,344.0 156.6,344.0 158.1,344.0 159.7,344.0 166.0,344.0" fill="none" stroke="#1f6fb2" stroke-width="1.6"/>
+<circle cx="87.7" cy="162.0" r="2" fill="#1f6fb2"/>
+<circle cx="87.7" cy="162.0" r="2" fill="#1f6fb2"/>
+<circle cx="87.7" cy="162.0" r="2" fill="#1f6fb2"/>
+<circle cx="87.7" cy="162.0" r="2" fill="#1f6fb2"/>
+<circle cx="90.8" cy="181.5" r="2" fill="#1f6fb2"/>
+<circle cx="90.8" cy="181.5" r="2" fill="#1f6fb2"/>
+<circle cx="93.9" cy="181.5" r="2" fill="#1f6fb2"/>
+<circle cx="93.9" cy="181.5" r="2" fill="#1f6fb2"/>
+<circle cx="100.2" cy="181.5" r="2" fill="#1f6fb2"/>
+<circle cx="103.3" cy="214.0" r="2" fill="#1f6fb2"/>
+<circle cx="111.2" cy="279.0" r="2" fill="#1f6fb2"/>
+<circle cx="112.7" cy="344.0" r="2" fill="#1f6fb2"/>
+<circle cx="114.3" cy="344.0" r="2" fill="#1f6fb2"/>
+<circle cx="115.9" cy="344.0" r="2" fill="#1f6fb2"/>
+<circle cx="115.9" cy="344.0" r="2" fill="#1f6fb2"/>
+<circle cx="120.6" cy="344.0" r="2" fill="#1f6fb2"/>
+<circle cx="122.1" cy="344.0" r="2" fill="#1f6fb2"/>
+<circle cx="123.7" cy="344.0" r="2" fill="#1f6fb2"/>
+<circle cx="126.8" cy="344.0" r="2" fill="#1f6fb2"/>
+<circle cx="136.2" cy="344.0" r="2" fill="#1f6fb2"/>
+<circle cx="140.9" cy="344.0" r="2" fill="#1f6fb2"/>
+<circle cx="145.6" cy="344.0" r="2" fill="#1f6fb2"/>
+<circle cx="148.7" cy="344.0" r="2" fill="#1f6fb2"/>
+<circle cx="156.6" cy="344.0" r="2" fill="#1f6fb2"/>
+<circle cx="158.1" cy="344.0" r="2" fill="#1f6fb2"/>
+<circle cx="159.7" cy="344.0" r="2" fill="#1f6fb2"/>
+<circle cx="166.0" cy="344.0" r="2" fill="#1f6fb2"/>
+<text x="94.8" y="177.5" font-size="8" fill="#1f6fb2">δ=0.05</text>
+<text x="115.2" y="275.0" font-size="8" fill="#1f6fb2">δ=0.10</text>
+<text x="144.9" y="340.0" font-size="8" fill="#1f6fb2">δ=0.20</text>
+<polyline points="87.7,158.3 87.7,158.3 87.7,158.3 87.7,158.3 90.8,158.3 90.8,158.3 93.9,139.7 93.9,139.7 100.2,139.7 103.3,139.7 111.2,139.7 112.7,139.7 114.3,139.7 115.9,139.7 115.9,139.7 120.6,139.7 122.1,139.7 123.7,139.7 126.8,139.7 136.2,139.7 140.9,139.7 145.6,139.7 148.7,139.7 156.6,139.7 158.1,139.7 159.7,139.7 166.0,139.7 175.4,84.0 183.2,84.0 183.2,84.0 183.2,84.0" fill="none" stroke="#555" stroke-width="1.6" stroke-dasharray="5 3"/>
+<circle cx="87.7" cy="158.3" r="2" fill="#555"/>
+<circle cx="87.7" cy="158.3" r="2" fill="#555"/>
+<circle cx="87.7" cy="158.3" r="2" fill="#555"/>
+<circle cx="87.7" cy="158.3" r="2" fill="#555"/>
+<circle cx="90.8" cy="158.3" r="2" fill="#555"/>
+<circle cx="90.8" cy="158.3" r="2" fill="#555"/>
+<circle cx="93.9" cy="139.7" r="2" fill="#555"/>
+<circle cx="93.9" cy="139.7" r="2" fill="#555"/>
+<circle cx="100.2" cy="139.7" r="2" fill="#555"/>
+<circle cx="103.3" cy="139.7" r="2" fill="#555"/>
+<circle cx="111.2" cy="139.7" r="2" fill="#555"/>
+<circle cx="112.7" cy="139.7" r="2" fill="#555"/>
+<circle cx="114.3" cy="139.7" r="2" fill="#555"/>
+<circle cx="115.9" cy="139.7" r="2" fill="#555"/>
+<circle cx="115.9" cy="139.7" r="2" fill="#555"/>
+<circle cx="120.6" cy="139.7" r="2" fill="#555"/>
+<circle cx="122.1" cy="139.7" r="2" fill="#555"/>
+<circle cx="123.7" cy="139.7" r="2" fill="#555"/>
+<circle cx="126.8" cy="139.7" r="2" fill="#555"/>
+<circle cx="136.2" cy="139.7" r="2" fill="#555"/>
+<circle cx="140.9" cy="139.7" r="2" fill="#555"/>
+<circle cx="145.6" cy="139.7" r="2" fill="#555"/>
+<circle cx="148.7" cy="139.7" r="2" fill="#555"/>
+<circle cx="156.6" cy="139.7" r="2" fill="#555"/>
+<circle cx="158.1" cy="139.7" r="2" fill="#555"/>
+<circle cx="159.7" cy="139.7" r="2" fill="#555"/>
+<circle cx="166.0" cy="139.7" r="2" fill="#555"/>
+<circle cx="175.4" cy="84.0" r="2" fill="#555"/>
+<circle cx="183.2" cy="84.0" r="2" fill="#555"/>
+<circle cx="183.2" cy="84.0" r="2" fill="#555"/>
+<circle cx="183.2" cy="84.0" r="2" fill="#555"/>
+<rect x="82.7" y="157.0" width="10" height="10" fill="none" stroke="#111" stroke-width="1.8"/>
+<text x="95.7" y="174.0" font-size="9" fill="#111">текущее правило</text>
+<text x="202.0" y="370" text-anchor="middle" font-size="10">доля строк в зоне «не уверен» (1 − покрытие)</text>
+<text transform="translate(28,214.0) rotate(-90)" text-anchor="middle" font-size="10">полнота среди уверенных строк</text>
+<line x1="72" y1="388" x2="88" y2="388" stroke="#1f6fb2" stroke-width="2"/>
+<text x="92" y="391" font-size="9">полнота среди уверенных</text>
+<line x1="234" y1="388" x2="250" y2="388" stroke="#555" stroke-width="2" stroke-dasharray="5 3"/>
+<text x="254" y="391" font-size="9">доля ошибок критерия в зоне</text>
+<text x="442" y="40" font-size="12">sp_axis: Не выравнена ось позвоночника</text>
+<text x="442" y="55" font-size="10" fill="#444">n=166, положительных 17 (10 исследований)</text>
+<text x="442" y="68" font-size="10" fill="#444">текущий запас 0.004518</text>
+<rect x="442" y="84" width="260" height="260" fill="none" stroke="#333"/>
+<line x1="494.0" y1="84" x2="494.0" y2="344" stroke="#eee"/>
+<line x1="442" y1="292.0" x2="702" y2="292.0" stroke="#eee"/>
+<text x="494.0" y="356" text-anchor="middle" font-size="9">20 %</text>
+<text x="438" y="295.0" text-anchor="end" font-size="9">0.2</text>
+<line x1="546.0" y1="84" x2="546.0" y2="344" stroke="#eee"/>
+<line x1="442" y1="240.0" x2="702" y2="240.0" stroke="#eee"/>
+<text x="546.0" y="356" text-anchor="middle" font-size="9">40 %</text>
+<text x="438" y="243.0" text-anchor="end" font-size="9">0.4</text>
+<line x1="598.0" y1="84" x2="598.0" y2="344" stroke="#eee"/>
+<line x1="442" y1="188.0" x2="702" y2="188.0" stroke="#eee"/>
+<text x="598.0" y="356" text-anchor="middle" font-size="9">60 %</text>
+<text x="438" y="191.0" text-anchor="end" font-size="9">0.6</text>
+<line x1="650.0" y1="84" x2="650.0" y2="344" stroke="#eee"/>
+<line x1="442" y1="136.0" x2="702" y2="136.0" stroke="#eee"/>
+<text x="650.0" y="356" text-anchor="middle" font-size="9">80 %</text>
+<text x="438" y="139.0" text-anchor="end" font-size="9">0.8</text>
+<text x="438" y="347.0" text-anchor="end" font-size="9">0.0</text>
+<text x="438" y="87.0" text-anchor="end" font-size="9">1.0</text>
+<line x1="494.0" y1="84" x2="494.0" y2="344" stroke="#999" stroke-dasharray="4 3"/>
+<polyline points="446.7,158.3 456.1,154.9 457.7,154.9 467.1,154.9 481.2,154.9 490.6,154.9 490.6,154.9 490.6,154.9 493.7,154.9 496.8,154.9 503.1,141.8 509.3,170.7 515.6,170.7 517.2,170.7 520.3,170.7 520.3,170.7 531.3,257.3 536.0,344.0 548.5,344.0 548.5,344.0 548.5,344.0 551.6,344.0 551.6,344.0 556.3,344.0 556.3,344.0 557.9,344.0 557.9,344.0 557.9,344.0 559.5,344.0 561.0,344.0 567.3,344.0" fill="none" stroke="#d9541e" stroke-width="1.6"/>
+<circle cx="446.7" cy="158.3" r="2" fill="#d9541e"/>
+<circle cx="456.1" cy="154.9" r="2" fill="#d9541e"/>
+<circle cx="457.7" cy="154.9" r="2" fill="#d9541e"/>
+<circle cx="467.1" cy="154.9" r="2" fill="#d9541e"/>
+<circle cx="481.2" cy="154.9" r="2" fill="#d9541e"/>
+<circle cx="490.6" cy="154.9" r="2" fill="#d9541e"/>
+<circle cx="490.6" cy="154.9" r="2" fill="#d9541e"/>
+<circle cx="490.6" cy="154.9" r="2" fill="#d9541e"/>
+<circle cx="493.7" cy="154.9" r="2" fill="#d9541e"/>
+<circle cx="496.8" cy="154.9" r="2" fill="#d9541e"/>
+<circle cx="503.1" cy="141.8" r="2" fill="#d9541e"/>
+<circle cx="509.3" cy="170.7" r="2" fill="#d9541e"/>
+<circle cx="515.6" cy="170.7" r="2" fill="#d9541e"/>
+<circle cx="517.2" cy="170.7" r="2" fill="#d9541e"/>
+<circle cx="520.3" cy="170.7" r="2" fill="#d9541e"/>
+<circle cx="520.3" cy="170.7" r="2" fill="#d9541e"/>
+<circle cx="531.3" cy="257.3" r="2" fill="#d9541e"/>
+<circle cx="536.0" cy="344.0" r="2" fill="#d9541e"/>
+<circle cx="548.5" cy="344.0" r="2" fill="#d9541e"/>
+<circle cx="548.5" cy="344.0" r="2" fill="#d9541e"/>
+<circle cx="548.5" cy="344.0" r="2" fill="#d9541e"/>
+<circle cx="551.6" cy="344.0" r="2" fill="#d9541e"/>
+<circle cx="551.6" cy="344.0" r="2" fill="#d9541e"/>
+<circle cx="556.3" cy="344.0" r="2" fill="#d9541e"/>
+<circle cx="556.3" cy="344.0" r="2" fill="#d9541e"/>
+<circle cx="557.9" cy="344.0" r="2" fill="#d9541e"/>
+<circle cx="557.9" cy="344.0" r="2" fill="#d9541e"/>
+<circle cx="557.9" cy="344.0" r="2" fill="#d9541e"/>
+<circle cx="559.5" cy="344.0" r="2" fill="#d9541e"/>
+<circle cx="561.0" cy="344.0" r="2" fill="#d9541e"/>
+<circle cx="567.3" cy="344.0" r="2" fill="#d9541e"/>
+<text x="494.6" y="150.9" font-size="8" fill="#d9541e">δ=0.05</text>
+<text x="507.1" y="137.8" font-size="8" fill="#d9541e">δ=0.10</text>
+<text x="552.5" y="340.0" font-size="8" fill="#d9541e">δ=0.20</text>
+<text x="571.3" y="340.0" font-size="8" fill="#d9541e">δ=0.30</text>
+<polyline points="446.7,344.0 456.1,298.1 457.7,298.1 467.1,267.5 481.2,267.5 490.6,221.6 490.6,221.6 490.6,221.6 493.7,221.6 496.8,191.1 503.1,160.5 509.3,160.5 515.6,145.2 517.2,129.9 520.3,129.9 520.3,129.9 531.3,114.6 536.0,114.6 548.5,114.6 548.5,114.6 548.5,114.6 551.6,114.6 551.6,114.6 556.3,114.6 556.3,114.6 557.9,114.6 557.9,114.6 557.9,114.6 559.5,114.6 561.0,114.6 567.3,114.6" fill="none" stroke="#555" stroke-width="1.6" stroke-dasharray="5 3"/>
+<circle cx="446.7" cy="344.0" r="2" fill="#555"/>
+<circle cx="456.1" cy="298.1" r="2" fill="#555"/>
+<circle cx="457.7" cy="298.1" r="2" fill="#555"/>
+<circle cx="467.1" cy="267.5" r="2" fill="#555"/>
+<circle cx="481.2" cy="267.5" r="2" fill="#555"/>
+<circle cx="490.6" cy="221.6" r="2" fill="#555"/>
+<circle cx="490.6" cy="221.6" r="2" fill="#555"/>
+<circle cx="490.6" cy="221.6" r="2" fill="#555"/>
+<circle cx="493.7" cy="221.6" r="2" fill="#555"/>
+<circle cx="496.8" cy="191.1" r="2" fill="#555"/>
+<circle cx="503.1" cy="160.5" r="2" fill="#555"/>
+<circle cx="509.3" cy="160.5" r="2" fill="#555"/>
+<circle cx="515.6" cy="145.2" r="2" fill="#555"/>
+<circle cx="517.2" cy="129.9" r="2" fill="#555"/>
+<circle cx="520.3" cy="129.9" r="2" fill="#555"/>
+<circle cx="520.3" cy="129.9" r="2" fill="#555"/>
+<circle cx="531.3" cy="114.6" r="2" fill="#555"/>
+<circle cx="536.0" cy="114.6" r="2" fill="#555"/>
+<circle cx="548.5" cy="114.6" r="2" fill="#555"/>
+<circle cx="548.5" cy="114.6" r="2" fill="#555"/>
+<circle cx="548.5" cy="114.6" r="2" fill="#555"/>
+<circle cx="551.6" cy="114.6" r="2" fill="#555"/>
+<circle cx="551.6" cy="114.6" r="2" fill="#555"/>
+<circle cx="556.3" cy="114.6" r="2" fill="#555"/>
+<circle cx="556.3" cy="114.6" r="2" fill="#555"/>
+<circle cx="557.9" cy="114.6" r="2" fill="#555"/>
+<circle cx="557.9" cy="114.6" r="2" fill="#555"/>
+<circle cx="557.9" cy="114.6" r="2" fill="#555"/>
+<circle cx="559.5" cy="114.6" r="2" fill="#555"/>
+<circle cx="561.0" cy="114.6" r="2" fill="#555"/>
+<circle cx="567.3" cy="114.6" r="2" fill="#555"/>
+<rect x="446.4" y="165.7" width="10" height="10" fill="none" stroke="#111" stroke-width="1.8"/>
+<text x="459.4" y="182.7" font-size="9" fill="#111">текущее правило</text>
+<text x="572.0" y="370" text-anchor="middle" font-size="10">доля строк в зоне «не уверен» (1 − покрытие)</text>
+<text transform="translate(398,214.0) rotate(-90)" text-anchor="middle" font-size="10">полнота среди уверенных строк</text>
+<line x1="442" y1="388" x2="458" y2="388" stroke="#d9541e" stroke-width="2"/>
+<text x="462" y="391" font-size="9">полнота среди уверенных</text>
+<line x1="604" y1="388" x2="620" y2="388" stroke="#555" stroke-width="2" stroke-dasharray="5 3"/>
+<text x="624" y="391" font-size="9">доля ошибок критерия в зоне</text>
+<text x="812" y="40" font-size="12">sp_art: Присутствуют посторонние предметы</text>
+<text x="812" y="55" font-size="10" fill="#444">n=166, положительных 35 (17 исследований)</text>
+<text x="812" y="68" font-size="10" fill="#444">текущий запас 0.01205</text>
+<rect x="812" y="84" width="260" height="260" fill="none" stroke="#333"/>
+<line x1="864.0" y1="84" x2="864.0" y2="344" stroke="#eee"/>
+<line x1="812" y1="292.0" x2="1072" y2="292.0" stroke="#eee"/>
+<text x="864.0" y="356" text-anchor="middle" font-size="9">20 %</text>
+<text x="808" y="295.0" text-anchor="end" font-size="9">0.2</text>
+<line x1="916.0" y1="84" x2="916.0" y2="344" stroke="#eee"/>
+<line x1="812" y1="240.0" x2="1072" y2="240.0" stroke="#eee"/>
+<text x="916.0" y="356" text-anchor="middle" font-size="9">40 %</text>
+<text x="808" y="243.0" text-anchor="end" font-size="9">0.4</text>
+<line x1="968.0" y1="84" x2="968.0" y2="344" stroke="#eee"/>
+<line x1="812" y1="188.0" x2="1072" y2="188.0" stroke="#eee"/>
+<text x="968.0" y="356" text-anchor="middle" font-size="9">60 %</text>
+<text x="808" y="191.0" text-anchor="end" font-size="9">0.6</text>
+<line x1="1020.0" y1="84" x2="1020.0" y2="344" stroke="#eee"/>
+<line x1="812" y1="136.0" x2="1072" y2="136.0" stroke="#eee"/>
+<text x="1020.0" y="356" text-anchor="middle" font-size="9">80 %</text>
+<text x="808" y="139.0" text-anchor="end" font-size="9">0.8</text>
+<text x="808" y="347.0" text-anchor="end" font-size="9">0.0</text>
+<text x="808" y="87.0" text-anchor="end" font-size="9">1.0</text>
+<line x1="864.0" y1="84" x2="864.0" y2="344" stroke="#999" stroke-dasharray="4 3"/>
+<polyline points="818.3,173.1 823.0,165.2 832.4,167.9 840.2,162.0 844.9,149.0 851.2,141.8 855.9,141.8 866.8,141.8 871.5,127.3 877.8,127.3 882.5,127.3 890.3,127.3 907.5,153.3 915.4,153.3 920.1,158.3 932.6,107.6 945.1,107.6 953.0,107.6 954.5,107.6 957.7,107.6 967.1,116.5 971.8,116.5 974.9,116.5 979.6,116.5 982.7,116.5 993.7,116.5 996.8,127.3 1000.0,127.3 1004.7,127.3 1012.5,136.0 1017.2,136.0" fill="none" stroke="#2a9d4b" stroke-width="1.6"/>
+<circle cx="818.3" cy="173.1" r="2" fill="#2a9d4b"/>
+<circle cx="823.0" cy="165.2" r="2" fill="#2a9d4b"/>
+<circle cx="832.4" cy="167.9" r="2" fill="#2a9d4b"/>
+<circle cx="840.2" cy="162.0" r="2" fill="#2a9d4b"/>
+<circle cx="844.9" cy="149.0" r="2" fill="#2a9d4b"/>
+<circle cx="851.2" cy="141.8" r="2" fill="#2a9d4b"/>
+<circle cx="855.9" cy="141.8" r="2" fill="#2a9d4b"/>
+<circle cx="866.8" cy="141.8" r="2" fill="#2a9d4b"/>
+<circle cx="871.5" cy="127.3" r="2" fill="#2a9d4b"/>
+<circle cx="877.8" cy="127.3" r="2" fill="#2a9d4b"/>
+<circle cx="882.5" cy="127.3" r="2" fill="#2a9d4b"/>
+<circle cx="890.3" cy="127.3" r="2" fill="#2a9d4b"/>
+<circle cx="907.5" cy="153.3" r="2" fill="#2a9d4b"/>
+<circle cx="915.4" cy="153.3" r="2" fill="#2a9d4b"/>
+<circle cx="920.1" cy="158.3" r="2" fill="#2a9d4b"/>
+<circle cx="932.6" cy="107.6" r="2" fill="#2a9d4b"/>
+<circle cx="945.1" cy="107.6" r="2" fill="#2a9d4b"/>
+<circle cx="953.0" cy="107.6" r="2" fill="#2a9d4b"/>
+<circle cx="954.5" cy="107.6" r="2" fill="#2a9d4b"/>
+<circle cx="957.7" cy="107.6" r="2" fill="#2a9d4b"/>
+<circle cx="967.1" cy="116.5" r="2" fill="#2a9d4b"/>
+<circle cx="971.8" cy="116.5" r="2" fill="#2a9d4b"/>
+<circle cx="974.9" cy="116.5" r="2" fill="#2a9d4b"/>
+<circle cx="979.6" cy="116.5" r="2" fill="#2a9d4b"/>
+<circle cx="982.7" cy="116.5" r="2" fill="#2a9d4b"/>
+<circle cx="993.7" cy="116.5" r="2" fill="#2a9d4b"/>
+<circle cx="996.8" cy="127.3" r="2" fill="#2a9d4b"/>
+<circle cx="1000.0" cy="127.3" r="2" fill="#2a9d4b"/>
+<circle cx="1004.7" cy="127.3" r="2" fill="#2a9d4b"/>
+<circle cx="1012.5" cy="136.0" r="2" fill="#2a9d4b"/>
+<circle cx="1017.2" cy="136.0" r="2" fill="#2a9d4b"/>
+<text x="855.2" y="137.8" font-size="8" fill="#2a9d4b">δ=0.05</text>
+<text x="886.5" y="123.3" font-size="8" fill="#2a9d4b">δ=0.10</text>
+<text x="971.1" y="112.5" font-size="8" fill="#2a9d4b">δ=0.20</text>
+<text x="1021.2" y="132.0" font-size="8" fill="#2a9d4b">δ=0.30</text>
+<polyline points="818.3,318.0 823.0,305.0 832.4,292.0 840.2,266.0 844.9,253.0 851.2,240.0 855.9,227.0 866.8,220.5 871.5,207.5 877.8,207.5 882.5,207.5 890.3,201.0 907.5,201.0 915.4,188.0 920.1,188.0 932.6,155.5 945.1,155.5 953.0,155.5 954.5,149.0 957.7,136.0 967.1,136.0 971.8,129.5 974.9,129.5 979.6,123.0 982.7,110.0 993.7,103.5 996.8,103.5 1000.0,103.5 1004.7,103.5 1012.5,97.0 1017.2,97.0" fill="none" stroke="#555" stroke-width="1.6" stroke-dasharray="5 3"/>
+<circle cx="818.3" cy="318.0" r="2" fill="#555"/>
+<circle cx="823.0" cy="305.0" r="2" fill="#555"/>
+<circle cx="832.4" cy="292.0" r="2" fill="#555"/>
+<circle cx="840.2" cy="266.0" r="2" fill="#555"/>
+<circle cx="844.9" cy="253.0" r="2" fill="#555"/>
+<circle cx="851.2" cy="240.0" r="2" fill="#555"/>
+<circle cx="855.9" cy="227.0" r="2" fill="#555"/>
+<circle cx="866.8" cy="220.5" r="2" fill="#555"/>
+<circle cx="871.5" cy="207.5" r="2" fill="#555"/>
+<circle cx="877.8" cy="207.5" r="2" fill="#555"/>
+<circle cx="882.5" cy="207.5" r="2" fill="#555"/>
+<circle cx="890.3" cy="201.0" r="2" fill="#555"/>
+<circle cx="907.5" cy="201.0" r="2" fill="#555"/>
+<circle cx="915.4" cy="188.0" r="2" fill="#555"/>
+<circle cx="920.1" cy="188.0" r="2" fill="#555"/>
+<circle cx="932.6" cy="155.5" r="2" fill="#555"/>
+<circle cx="945.1" cy="155.5" r="2" fill="#555"/>
+<circle cx="953.0" cy="155.5" r="2" fill="#555"/>
+<circle cx="954.5" cy="149.0" r="2" fill="#555"/>
+<circle cx="957.7" cy="136.0" r="2" fill="#555"/>
+<circle cx="967.1" cy="136.0" r="2" fill="#555"/>
+<circle cx="971.8" cy="129.5" r="2" fill="#555"/>
+<circle cx="974.9" cy="129.5" r="2" fill="#555"/>
+<circle cx="979.6" cy="123.0" r="2" fill="#555"/>
+<circle cx="982.7" cy="110.0" r="2" fill="#555"/>
+<circle cx="993.7" cy="103.5" r="2" fill="#555"/>
+<circle cx="996.8" cy="103.5" r="2" fill="#555"/>
+<circle cx="1000.0" cy="103.5" r="2" fill="#555"/>
+<circle cx="1004.7" cy="103.5" r="2" fill="#555"/>
+<circle cx="1012.5" cy="97.0" r="2" fill="#555"/>
+<circle cx="1017.2" cy="97.0" r="2" fill="#555"/>
+<rect x="819.5" y="162.9" width="10" height="10" fill="none" stroke="#111" stroke-width="1.8"/>
+<text x="832.5" y="179.9" font-size="9" fill="#111">текущее правило</text>
+<text x="942.0" y="370" text-anchor="middle" font-size="10">доля строк в зоне «не уверен» (1 − покрытие)</text>
+<text transform="translate(768,214.0) rotate(-90)" text-anchor="middle" font-size="10">полнота среди уверенных строк</text>
+<line x1="812" y1="388" x2="828" y2="388" stroke="#2a9d4b" stroke-width="2"/>
+<text x="832" y="391" font-size="9">полнота среди уверенных</text>
+<line x1="974" y1="388" x2="990" y2="388" stroke="#555" stroke-width="2" stroke-dasharray="5 3"/>
+<text x="994" y="391" font-size="9">доля ошибок критерия в зоне</text>
+<text x="1182" y="40" font-size="12">hip_pos: Некорректная укладка (бедро)</text>
+<text x="1182" y="55" font-size="10" fill="#444">n=329, положительных 79 (24 исследований)</text>
+<text x="1182" y="68" font-size="10" fill="#444">текущий запас 0.01064</text>
+<rect x="1182" y="84" width="260" height="260" fill="none" stroke="#333"/>
+<line x1="1234.0" y1="84" x2="1234.0" y2="344" stroke="#eee"/>
+<line x1="1182" y1="292.0" x2="1442" y2="292.0" stroke="#eee"/>
+<text x="1234.0" y="356" text-anchor="middle" font-size="9">20 %</text>
+<text x="1178" y="295.0" text-anchor="end" font-size="9">0.2</text>
+<line x1="1286.0" y1="84" x2="1286.0" y2="344" stroke="#eee"/>
+<line x1="1182" y1="240.0" x2="1442" y2="240.0" stroke="#eee"/>
+<text x="1286.0" y="356" text-anchor="middle" font-size="9">40 %</text>
+<text x="1178" y="243.0" text-anchor="end" font-size="9">0.4</text>
+<line x1="1338.0" y1="84" x2="1338.0" y2="344" stroke="#eee"/>
+<line x1="1182" y1="188.0" x2="1442" y2="188.0" stroke="#eee"/>
+<text x="1338.0" y="356" text-anchor="middle" font-size="9">60 %</text>
+<text x="1178" y="191.0" text-anchor="end" font-size="9">0.6</text>
+<line x1="1390.0" y1="84" x2="1390.0" y2="344" stroke="#eee"/>
+<line x1="1182" y1="136.0" x2="1442" y2="136.0" stroke="#eee"/>
+<text x="1390.0" y="356" text-anchor="middle" font-size="9">80 %</text>
+<text x="1178" y="139.0" text-anchor="end" font-size="9">0.8</text>
+<text x="1178" y="347.0" text-anchor="end" font-size="9">0.0</text>
+<text x="1178" y="87.0" text-anchor="end" font-size="9">1.0</text>
+<line x1="1234.0" y1="84" x2="1234.0" y2="344" stroke="#999" stroke-dasharray="4 3"/>
+<polyline points="1186.0,228.8 1189.9,229.6 1198.6,237.8 1208.1,234.7 1219.1,236.9 1221.5,235.3 1225.5,232.0 1233.4,224.7 1243.6,221.1 1249.2,221.1 1250.8,221.1 1259.4,221.1 1273.7,230.2 1274.5,230.2 1286.3,225.3 1296.6,235.7 1306.9,263.3 1317.9,249.5 1324.2,240.0 1331.4,240.0 1332.2,240.0 1340.1,240.0 1341.6,240.0 1343.2,240.0 1351.1,236.9 1351.9,246.5 1353.5,246.5 1353.5,246.5 1360.6,225.8 1363.8,225.8 1371.7,225.8" fill="none" stroke="#7b3fa0" stroke-width="1.6"/>
+<circle cx="1186.0" cy="228.8" r="2" fill="#7b3fa0"/>
+<circle cx="1189.9" cy="229.6" r="2" fill="#7b3fa0"/>
+<circle cx="1198.6" cy="237.8" r="2" fill="#7b3fa0"/>
+<circle cx="1208.1" cy="234.7" r="2" fill="#7b3fa0"/>
+<circle cx="1219.1" cy="236.9" r="2" fill="#7b3fa0"/>
+<circle cx="1221.5" cy="235.3" r="2" fill="#7b3fa0"/>
+<circle cx="1225.5" cy="232.0" r="2" fill="#7b3fa0"/>
+<circle cx="1233.4" cy="224.7" r="2" fill="#7b3fa0"/>
+<circle cx="1243.6" cy="221.1" r="2" fill="#7b3fa0"/>
+<circle cx="1249.2" cy="221.1" r="2" fill="#7b3fa0"/>
+<circle cx="1250.8" cy="221.1" r="2" fill="#7b3fa0"/>
+<circle cx="1259.4" cy="221.1" r="2" fill="#7b3fa0"/>
+<circle cx="1273.7" cy="230.2" r="2" fill="#7b3fa0"/>
+<circle cx="1274.5" cy="230.2" r="2" fill="#7b3fa0"/>
+<circle cx="1286.3" cy="225.3" r="2" fill="#7b3fa0"/>
+<circle cx="1296.6" cy="235.7" r="2" fill="#7b3fa0"/>
+<circle cx="1306.9" cy="263.3" r="2" fill="#7b3fa0"/>
+<circle cx="1317.9" cy="249.5" r="2" fill="#7b3fa0"/>
+<circle cx="1324.2" cy="240.0" r="2" fill="#7b3fa0"/>
+<circle cx="1331.4" cy="240.0" r="2" fill="#7b3fa0"/>
+<circle cx="1332.2" cy="240.0" r="2" fill="#7b3fa0"/>
+<circle cx="1340.1" cy="240.0" r="2" fill="#7b3fa0"/>
+<circle cx="1341.6" cy="240.0" r="2" fill="#7b3fa0"/>
+<circle cx="1343.2" cy="240.0" r="2" fill="#7b3fa0"/>
+<circle cx="1351.1" cy="236.9" r="2" fill="#7b3fa0"/>
+<circle cx="1351.9" cy="246.5" r="2" fill="#7b3fa0"/>
+<circle cx="1353.5" cy="246.5" r="2" fill="#7b3fa0"/>
+<circle cx="1353.5" cy="246.5" r="2" fill="#7b3fa0"/>
+<circle cx="1360.6" cy="225.8" r="2" fill="#7b3fa0"/>
+<circle cx="1363.8" cy="225.8" r="2" fill="#7b3fa0"/>
+<circle cx="1371.7" cy="225.8" r="2" fill="#7b3fa0"/>
+<text x="1225.5" y="231.3" font-size="8" fill="#7b3fa0">δ=0.05</text>
+<text x="1254.8" y="217.1" font-size="8" fill="#7b3fa0">δ=0.10</text>
+<text x="1336.2" y="236.0" font-size="8" fill="#7b3fa0">δ=0.20</text>
+<text x="1375.7" y="221.8" font-size="8" fill="#7b3fa0">δ=0.30</text>
+<polyline points="1186.0,329.9 1189.9,321.4 1198.6,301.6 1208.1,293.1 1219.1,281.8 1221.5,273.3 1225.5,259.2 1233.4,247.9 1243.6,222.5 1249.2,216.8 1250.8,211.2 1259.4,205.5 1273.7,194.2 1274.5,191.4 1286.3,185.7 1296.6,168.8 1306.9,166.0 1317.9,140.5 1324.2,134.9 1331.4,129.2 1332.2,126.4 1340.1,126.4 1341.6,123.6 1343.2,123.6 1351.1,117.9 1351.9,117.9 1353.5,117.9 1353.5,117.9 1360.6,106.6 1363.8,103.8 1371.7,103.8" fill="none" stroke="#555" stroke-width="1.6" stroke-dasharray="5 3"/>
+<circle cx="1186.0" cy="329.9" r="2" fill="#555"/>
+<circle cx="1189.9" cy="321.4" r="2" fill="#555"/>
+<circle cx="1198.6" cy="301.6" r="2" fill="#555"/>
+<circle cx="1208.1" cy="293.1" r="2" fill="#555"/>
+<circle cx="1219.1" cy="281.8" r="2" fill="#555"/>
+<circle cx="1221.5" cy="273.3" r="2" fill="#555"/>
+<circle cx="1225.5" cy="259.2" r="2" fill="#555"/>
+<circle cx="1233.4" cy="247.9" r="2" fill="#555"/>
+<circle cx="1243.6" cy="222.5" r="2" fill="#555"/>
+<circle cx="1249.2" cy="216.8" r="2" fill="#555"/>
+<circle cx="1250.8" cy="211.2" r="2" fill="#555"/>
+<circle cx="1259.4" cy="205.5" r="2" fill="#555"/>
+<circle cx="1273.7" cy="194.2" r="2" fill="#555"/>
+<circle cx="1274.5" cy="191.4" r="2" fill="#555"/>
+<circle cx="1286.3" cy="185.7" r="2" fill="#555"/>
+<circle cx="1296.6" cy="168.8" r="2" fill="#555"/>
+<circle cx="1306.9" cy="166.0" r="2" fill="#555"/>
+<circle cx="1317.9" cy="140.5" r="2" fill="#555"/>
+<circle cx="1324.2" cy="134.9" r="2" fill="#555"/>
+<circle cx="1331.4" cy="129.2" r="2" fill="#555"/>
+<circle cx="1332.2" cy="126.4" r="2" fill="#555"/>
+<circle cx="1340.1" cy="126.4" r="2" fill="#555"/>
+<circle cx="1341.6" cy="123.6" r="2" fill="#555"/>
+<circle cx="1343.2" cy="123.6" r="2" fill="#555"/>
+<circle cx="1351.1" cy="117.9" r="2" fill="#555"/>
+<circle cx="1351.9" cy="117.9" r="2" fill="#555"/>
+<circle cx="1353.5" cy="117.9" r="2" fill="#555"/>
+<circle cx="1353.5" cy="117.9" r="2" fill="#555"/>
+<circle cx="1360.6" cy="106.6" r="2" fill="#555"/>
+<circle cx="1363.8" cy="103.8" r="2" fill="#555"/>
+<circle cx="1371.7" cy="103.8" r="2" fill="#555"/>
+<rect x="1188.9" y="224.6" width="10" height="10" fill="none" stroke="#111" stroke-width="1.8"/>
+<text x="1201.9" y="241.6" font-size="9" fill="#111">текущее правило</text>
+<text x="1312.0" y="370" text-anchor="middle" font-size="10">доля строк в зоне «не уверен» (1 − покрытие)</text>
+<text transform="translate(1138,214.0) rotate(-90)" text-anchor="middle" font-size="10">полнота среди уверенных строк</text>
+<line x1="1182" y1="388" x2="1198" y2="388" stroke="#7b3fa0" stroke-width="2"/>
+<text x="1202" y="391" font-size="9">полнота среди уверенных</text>
+<line x1="1344" y1="388" x2="1360" y2="388" stroke="#555" stroke-width="2" stroke-dasharray="5 3"/>
+<text x="1364" y="391" font-size="9">доля ошибок критерия в зоне</text>
+<text x="1552" y="40" font-size="12">hip_roi: Некорректная область интереса</text>
+<text x="1552" y="55" font-size="10" fill="#444">n=329, положительных 16 (6 исследований)</text>
+<text x="1552" y="68" font-size="10" fill="#444">текущий запас 0.02584</text>
+<rect x="1552" y="84" width="260" height="260" fill="none" stroke="#333"/>
+<line x1="1604.0" y1="84" x2="1604.0" y2="344" stroke="#eee"/>
+<line x1="1552" y1="292.0" x2="1812" y2="292.0" stroke="#eee"/>
+<text x="1604.0" y="356" text-anchor="middle" font-size="9">20 %</text>
+<text x="1548" y="295.0" text-anchor="end" font-size="9">0.2</text>
+<line x1="1656.0" y1="84" x2="1656.0" y2="344" stroke="#eee"/>
+<line x1="1552" y1="240.0" x2="1812" y2="240.0" stroke="#eee"/>
+<text x="1656.0" y="356" text-anchor="middle" font-size="9">40 %</text>
+<text x="1548" y="243.0" text-anchor="end" font-size="9">0.4</text>
+<line x1="1708.0" y1="84" x2="1708.0" y2="344" stroke="#eee"/>
+<line x1="1552" y1="188.0" x2="1812" y2="188.0" stroke="#eee"/>
+<text x="1708.0" y="356" text-anchor="middle" font-size="9">60 %</text>
+<text x="1548" y="191.0" text-anchor="end" font-size="9">0.6</text>
+<line x1="1760.0" y1="84" x2="1760.0" y2="344" stroke="#eee"/>
+<line x1="1552" y1="136.0" x2="1812" y2="136.0" stroke="#eee"/>
+<text x="1760.0" y="356" text-anchor="middle" font-size="9">80 %</text>
+<text x="1548" y="139.0" text-anchor="end" font-size="9">0.8</text>
+<text x="1548" y="347.0" text-anchor="end" font-size="9">0.0</text>
+<text x="1548" y="87.0" text-anchor="end" font-size="9">1.0</text>
+<line x1="1604.0" y1="84" x2="1604.0" y2="344" stroke="#999" stroke-dasharray="4 3"/>
+<polyline points="1555.2,197.8 1559.1,249.5 1563.1,240.0 1567.8,170.7 1571.0,214.0 1572.5,257.3 1581.2,344.0 1585.2,344.0 1593.1,344.0 1598.6,344.0 1601.8,344.0 1607.3,344.0 1607.3,344.0 1608.1,344.0 1608.9,344.0 1608.9,344.0 1608.9,344.0 1612.1,344.0 1612.1,344.0 1616.8,344.0 1616.8,344.0 1619.2,344.0 1619.2,344.0 1622.3,344.0 1623.9,344.0 1627.1,344.0 1627.1,344.0 1635.8,344.0 1637.3,344.0 1638.1,344.0 1645.3,344.0" fill="none" stroke="#b8860b" stroke-width="1.6"/>
+<circle cx="1555.2" cy="197.8" r="2" fill="#b8860b"/>
+<circle cx="1559.1" cy="249.5" r="2" fill="#b8860b"/>
+<circle cx="1563.1" cy="240.0" r="2" fill="#b8860b"/>
+<circle cx="1567.8" cy="170.7" r="2" fill="#b8860b"/>
+<circle cx="1571.0" cy="214.0" r="2" fill="#b8860b"/>
+<circle cx="1572.5" cy="257.3" r="2" fill="#b8860b"/>
+<circle cx="1581.2" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1585.2" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1593.1" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1598.6" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1601.8" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1607.3" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1607.3" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1608.1" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1608.9" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1608.9" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1608.9" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1612.1" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1612.1" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1616.8" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1616.8" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1619.2" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1619.2" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1622.3" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1623.9" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1627.1" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1627.1" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1635.8" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1637.3" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1638.1" cy="344.0" r="2" fill="#b8860b"/>
+<circle cx="1645.3" cy="344.0" r="2" fill="#b8860b"/>
+<text x="1576.5" y="253.3" font-size="8" fill="#b8860b">δ=0.05</text>
+<text x="1605.8" y="340.0" font-size="8" fill="#b8860b">δ=0.10</text>
+<text x="1620.8" y="340.0" font-size="8" fill="#b8860b">δ=0.20</text>
+<text x="1649.3" y="340.0" font-size="8" fill="#b8860b">δ=0.30</text>
+<polyline points="1555.2,282.8 1559.1,282.8 1563.1,267.5 1567.8,175.8 1571.0,175.8 1572.5,175.8 1581.2,114.6 1585.2,114.6 1593.1,114.6 1598.6,114.6 1601.8,114.6 1607.3,114.6 1607.3,114.6 1608.1,114.6 1608.9,114.6 1608.9,114.6 1608.9,114.6 1612.1,114.6 1612.1,114.6 1616.8,114.6 1616.8,114.6 1619.2,114.6 1619.2,114.6 1622.3,114.6 1623.9,114.6 1627.1,114.6 1627.1,114.6 1635.8,114.6 1637.3,114.6 1638.1,114.6 1645.3,114.6" fill="none" stroke="#555" stroke-width="1.6" stroke-dasharray="5 3"/>
+<circle cx="1555.2" cy="282.8" r="2" fill="#555"/>
+<circle cx="1559.1" cy="282.8" r="2" fill="#555"/>
+<circle cx="1563.1" cy="267.5" r="2" fill="#555"/>
+<circle cx="1567.8" cy="175.8" r="2" fill="#555"/>
+<circle cx="1571.0" cy="175.8" r="2" fill="#555"/>
+<circle cx="1572.5" cy="175.8" r="2" fill="#555"/>
+<circle cx="1581.2" cy="114.6" r="2" fill="#555"/>
+<circle cx="1585.2" cy="114.6" r="2" fill="#555"/>
+<circle cx="1593.1" cy="114.6" r="2" fill="#555"/>
+<circle cx="1598.6" cy="114.6" r="2" fill="#555"/>
+<circle cx="1601.8" cy="114.6" r="2" fill="#555"/>
+<circle cx="1607.3" cy="114.6" r="2" fill="#555"/>
+<circle cx="1607.3" cy="114.6" r="2" fill="#555"/>
+<circle cx="1608.1" cy="114.6" r="2" fill="#555"/>
+<circle cx="1608.9" cy="114.6" r="2" fill="#555"/>
+<circle cx="1608.9" cy="114.6" r="2" fill="#555"/>
+<circle cx="1608.9" cy="114.6" r="2" fill="#555"/>
+<circle cx="1612.1" cy="114.6" r="2" fill="#555"/>
+<circle cx="1612.1" cy="114.6" r="2" fill="#555"/>
+<circle cx="1616.8" cy="114.6" r="2" fill="#555"/>
+<circle cx="1616.8" cy="114.6" r="2" fill="#555"/>
+<circle cx="1619.2" cy="114.6" r="2" fill="#555"/>
+<circle cx="1619.2" cy="114.6" r="2" fill="#555"/>
+<circle cx="1622.3" cy="114.6" r="2" fill="#555"/>
+<circle cx="1623.9" cy="114.6" r="2" fill="#555"/>
+<circle cx="1627.1" cy="114.6" r="2" fill="#555"/>
+<circle cx="1627.1" cy="114.6" r="2" fill="#555"/>
+<circle cx="1635.8" cy="114.6" r="2" fill="#555"/>
+<circle cx="1637.3" cy="114.6" r="2" fill="#555"/>
+<circle cx="1638.1" cy="114.6" r="2" fill="#555"/>
+<circle cx="1645.3" cy="114.6" r="2" fill="#555"/>
+<rect x="1559.6" y="235.0" width="10" height="10" fill="none" stroke="#111" stroke-width="1.8"/>
+<text x="1572.6" y="252.0" font-size="9" fill="#111">текущее правило</text>
+<text x="1682.0" y="370" text-anchor="middle" font-size="10">доля строк в зоне «не уверен» (1 − покрытие)</text>
+<text transform="translate(1508,214.0) rotate(-90)" text-anchor="middle" font-size="10">полнота среди уверенных строк</text>
+<line x1="1552" y1="388" x2="1568" y2="388" stroke="#b8860b" stroke-width="2"/>
+<text x="1572" y="391" font-size="9">полнота среди уверенных</text>
+<line x1="1714" y1="388" x2="1730" y2="388" stroke="#555" stroke-width="2" stroke-dasharray="5 3"/>
+<text x="1734" y="391" font-size="9">доля ошибок критерия в зоне</text>
+<text x="10" y="439" font-size="9" fill="#666">точки — δ от 0.00 до 0.30 шагом 0.01; квадрат — текущий запас критерия; только агрегаты, без кадров</text>
+</svg>
