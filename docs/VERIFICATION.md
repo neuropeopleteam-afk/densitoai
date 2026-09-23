@@ -164,3 +164,9 @@ JPEG 2000 Lossless (при установленных кодеках), 8 и 16 �
    исходный SOP Instance UID, `BurnedInAnnotation = YES`, панель с подписями под снимком и совпадение
    SOP/Series UID при повторном построении (детерминированность — иначе каждый прогон плодил бы новую
    серию в архиве). Файлы серии пишутся флагом `--sc-dir` (в API — каталог `sc/` папки запроса).
+4. **Экспорт сегментации (дополнительный функционал, вне `verify`).** `python tests/test_segmentation_export.py`:
+   файлы SEG/PNG/JSON для всех Success-фантомов и ни одного для Failure, `tools/validate_seg.py` PASS
+   (обязательные теги, размер маски = Rows×Columns, ссылка на исходный снимок, число сегментов),
+   детерминизм байт-в-байт при повторном прогоне, 9 колонок `results.csv` без изменений, мм = px × (0.6; 1.05).
+   Устойчивость масок — `python tools/seg_stability.py --dataset <каталог> --n-studies 10 --out outputs/seg_stability.json`
+   (Dice после сдвига яркости ±10 %, переворота и смены PhotometricInterpretation).

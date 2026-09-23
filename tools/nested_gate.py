@@ -14,7 +14,8 @@
   (F1-опт при >=15 позитивов в train, иначе prevalence — правило train_stacked);
   внешний test: модели, обученные на всём внешнем train; ранги относительно inner-OOF-референса
   (inference.percentile_rank: доля референса <= score); стэк = w*rank_g + (1-w)*rank_e.
-  Сравнение: база w=0.5 против вентиля. Метрики по повторам, парный прирост, macro-F1,
+  Сравнение: база w=0.5 против вентиля. Per-repeat скоры/предсказания экспортируются в
+  results/gate_input_<region>_<crit>.csv для калиброванного гейта tools/paired_gate.py (идея 11). Метрики по повторам, парный прирост, macro-F1,
   бутстрап-ДИ по исследованиям для усреднённого по повторам outer-OOF скора.
 Часть 2 (иерархия any -> типы): quality_prob региона = wb*any_model + (1-wb)*max(crit),
   any_model = среднее вероятностей geom/emb any-моделей (как inference.any_violation_prob);
@@ -35,6 +36,8 @@ from sklearn.preprocessing import StandardScaler
 ROOT = Path(os.environ.get('DENSITO_ROOT', Path(__file__).resolve().parents[1]))
 SRC = ROOT / 'src'
 sys.path.insert(0, str(SRC))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from paired_gate import write_gate_input  # noqa: E402  (идея 11: экспорт per-repeat скоров)
 from train_stacked import (DATA_DIR, REGION_CRITERIA, CRITERION_GEOMETRY_COLS, CRITERION_LABEL_COL,  # noqa: E402
                            REGION_ROWS, EMB_SOURCE_BY_CRITERION, load_embeddings_by_source, emb_source_for,
                            PCA_COMPONENTS, f1_optimal_threshold, prevalence_threshold)
@@ -201,6 +204,7 @@ def run_criterion(region, crit, geom, E, log):
     score_gate = np.full((N_REPEATS, n), np.nan)
     pred_base = np.full((N_REPEATS, n), np.nan)
     pred_gate = np.full((N_REPEATS, n), np.nan)
+    fold_id = np.full((N_REPEATS, n), np.nan)          # идея 11: номер внешнего фолда для экспорта в paired_gate
     # для части 2: сохраняем внешние предсказания geom/emb и inner-OOF референсы по фолдам
     fold_cache = {}
     n_degenerate_inner = [0]
@@ -237,6 +241,7 @@ def run_criterion(region, crit, geom, E, log):
             rg_te, re_te = ref_rank(pg, og), ref_rank(pe, oe)
             sb, sg = stack(rg_te, re_te, W_BASE), stack(rg_te, re_te, w_sel)
             score_base[r, te], score_gate[r, te] = sb, sg
+            fold_id[r, te] = k
             pred_base[r, te] = (sb >= thr[W_BASE][0]).astype(int)
             pred_gate[r, te] = (sg >= thr[w_sel][0]).astype(int)
             fold_rows.append({'region': region, 'criterion': crit, 'repeat': r, 'fold': k, 'n_train': len(tr),
@@ -292,6 +297,9 @@ def run_criterion(region, crit, geom, E, log):
     oof = pd.DataFrame({'study': studies, 'file_path': files, 'y_true': y, 'score_base_mean': sb_mean,
                         'score_gate_mean': sg_mean, 'pred_base_vote': pb_vote, 'pred_gate_vote': pg_vote})
     oof.to_csv(RES / f'nested_oof_{region}_{crit}.csv', index=False)
+    # идея 11: per-repeat вход для калиброванного гейта (tools/paired_gate.py)
+    write_gate_input(RES / f'gate_input_{region}_{crit}.csv', y, groups, score_base, score_gate,
+                     pred_base=pred_base, pred_cand=pred_gate, fold=fold_id, study=studies, file_path=files)
     return rep, folds, decision, dict(y=y, valid=valid, cache=fold_cache, studies=studies)
 
 

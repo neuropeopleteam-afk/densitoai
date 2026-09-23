@@ -1062,7 +1062,8 @@ class DensitoInference:
                  use_embeddings: bool = True, visualize_dir: Optional[Path] = None,
                  sr_dir: Optional[Path] = None, roi_autocorrect_dir: Optional[Path] = None,
                  sr_study: bool = False, sr_study_dir: Optional[Path] = None, extras: bool = False,
-                 sr_per_image: bool = False, sc_dir: Optional[Path] = None):
+                 sr_per_image: bool = False, sc_dir: Optional[Path] = None,
+                 seg_dir: Optional[Path] = None):
         self.cfg = cfg or load_config()
         # [EXTRAS] экспериментальные флаги (work/D): белые линии, OOD-gate, эндопротез, когерентность исследования.
         # Не влияют на 9 колонок; пишутся в <output>_extras.csv и в self.last_extras_rows (API: details.extras).
@@ -1103,6 +1104,12 @@ class DensitoInference:
         self.sc_dir = Path(sc_dir) if sc_dir else None
         if self.sc_dir:
             self.sc_dir.mkdir(parents=True, exist_ok=True)
+        # --- Бонус «сегментация» (дополнительный функционал): экспорт масок структур как DICOM SEG + PNG + JSON
+        # (src/segmentation_export.py). По умолчанию выключен; на 9 колонок и results.csv не влияет.
+        self.seg_dir = Path(seg_dir) if seg_dir else None
+        if self.seg_dir:
+            self.seg_dir.mkdir(parents=True, exist_ok=True)
+            LOG.info("Segmentation export enabled: seg_dir=%s", self.seg_dir)
         self.sr_study_dir = Path(sr_study_dir) if sr_study_dir else None
         self._study_headers: Dict[str, Dict[str, Any]] = {}
         self.last_study_sr: Dict[str, str] = {}
@@ -1391,7 +1398,7 @@ class DensitoInference:
     def _emit_bonus_outputs(self, path: Path, info, region: str, feats: Dict[str, Any],
                             crit_results: Dict[str, Dict[str, Any]], quality_class: int,
                             violations: List[str], quality_prob: float, debug: Dict[str, Any]) -> None:
-        if not (self.visualize_dir or self.sr_dir or self.roi_autocorrect_dir):
+        if not (self.visualize_dir or self.sr_dir or self.roi_autocorrect_dir or self.seg_dir):
             return
         stem = self._bonus_stem(path)
         violation_type_str = self.cfg["output"]["violation_separator"].join(violations)
@@ -1443,6 +1450,24 @@ class DensitoInference:
             except Exception as e:  # noqa: BLE001
                 LOG.warning("auto_roi failed for %s: %s", path.name, e)
                 debug["bonus_roi_error"] = str(e)
+
+        if self.seg_dir:
+            # бонус «сегментация»: маски структур (кость, посторонние предметы / поле сканирования, область
+            # интереса) как DICOM SEG + PNG + JSON; только для Success-строк (сюда Failure не доходит)
+            try:
+                from segmentation_export import export_segmentation
+                seg = export_segmentation(info.img_u8, region, info.ds, str(self.seg_dir), stem,
+                                          image_uid=info.image_uid, study_uid=info.study_uid,
+                                          model_version=__version__, config_hash=config_hash(self.cfg),
+                                          source_path=str(path))
+                debug["bonus_seg_dcm"] = seg["seg_dcm"]
+                debug["bonus_seg_png"] = seg["png"]
+                debug["bonus_seg_json"] = seg["json"]
+                debug["bonus_seg_n_segments"] = seg["n_segments"]
+                debug["bonus_seg_bone_area_px"] = seg["areas_px"].get("bone", 0)
+            except Exception as e:  # noqa: BLE001
+                LOG.warning("segmentation_export failed for %s: %s", path.name, e)
+                debug["bonus_seg_error"] = str(e)
 
     def _bonus_stem(self, path: Path) -> str:
         """Имя бонус-файла, уникальное в пределах прогона.
@@ -1872,6 +1897,9 @@ def main(argv: Optional[List[str]] = None) -> int:
                     help="[BONUS] Каталог для DICOM Secondary Capture с визуализацией (серия с визуализацией, ТЗ 2.6)")
     ap.add_argument("--extras", action="store_true",
                     help="[EXTRAS] Дополнительно записать <output>_extras.csv (белые линии, OOD-gate, эндопротез, когерентность)")
+    ap.add_argument("--seg-dir", default=None,
+                    help="[BONUS] Каталог для экспорта сегментации структур: DICOM SEG (.dcm) + PNG-маска + JSON с контурами "
+                         "на каждый Success-снимок (по умолчанию выключено, на results.csv не влияет)")
     args = ap.parse_args(argv)
 
     output_csv = Path(args.output)
@@ -1895,7 +1923,8 @@ def main(argv: Optional[List[str]] = None) -> int:
                                    visualize_dir=args.visualize_dir, sr_dir=args.sr_dir,
                                    roi_autocorrect_dir=args.roi_autocorrect_dir,
                                    sr_study=args.sr_study, sr_study_dir=args.sr_study_dir, extras=args.extras,
-                                   sr_per_image=args.sr_per_image, sc_dir=args.sc_dir)
+                                   sr_per_image=args.sr_per_image, sc_dir=args.sc_dir,
+                                   seg_dir=args.seg_dir)
         debug_csv = None
         if args.debug_csv:
             debug_csv = (output_csv.with_name(output_csv.stem + "_debug.csv") if args.debug_csv == "auto"

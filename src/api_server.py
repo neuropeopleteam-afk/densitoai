@@ -99,7 +99,8 @@ VIZ_DIR = BONUS_DIR / "viz"
 SR_DIR = BONUS_DIR / "sr"
 ROI_DIR = BONUS_DIR / "roi"
 SC_DIR = BONUS_DIR / "sc"
-for _d in (VIZ_DIR, SR_DIR, ROI_DIR, SC_DIR):
+SEG_DIR = BONUS_DIR / "seg"   # бонус «сегментация»: DICOM SEG + PNG-маска + JSON контуров (src/segmentation_export.py)
+for _d in (VIZ_DIR, SR_DIR, ROI_DIR, SC_DIR, SEG_DIR):
     _d.mkdir(parents=True, exist_ok=True)
 
 
@@ -126,6 +127,9 @@ def engine() -> DensitoInference:
             # extras (предупреждения): белые линии, OOD-gate, эндопротез, когерентность исследования
             # -> <job>/results_extras.csv и details.extras; 9 колонок не затрагивает
             extras=os.environ.get("DENSITO_EXTRAS", "1") != "0",
+            # экспорт сегментации структур (SEG/PNG/JSON) -> <папка запроса>/bonus/row####_seg.*;
+            # выключается DENSITO_SEG=0, на 9 колонок не влияет
+            seg_dir=SEG_DIR if (enable_bonus and os.environ.get("DENSITO_SEG", "1") != "0") else None,
         )
         LOG.info("Inference engine initialised (models: %d, bonus_outputs=%s)",
                  _ENGINE.registry.n_loaded, enable_bonus)
@@ -194,7 +198,12 @@ def health():
 BONUS_KINDS = (("bonus_overlay_png", "_overlay.png"),
                ("bonus_sr_dcm", "_sr.dcm"),
                ("bonus_roi_png", "_roi_correction.png"),
-               ("bonus_overlay_dcm", "_overlay.dcm"))
+               ("bonus_overlay_dcm", "_overlay.dcm"),
+               ("bonus_seg_dcm", "_seg.dcm"),
+               ("bonus_seg_png", "_seg.png"),
+               ("bonus_seg_json", "_seg.json"))
+# Ключи строки ответа с сегментацией (не начинаются с bonus_, поэтому снимаются отдельно при отказе по области)
+SEG_ROW_KEYS = ("seg_download", "seg_png", "seg_json_download")
 
 
 def bonus_row_prefix(i: int) -> str:
@@ -283,6 +292,17 @@ def _attach_bonus(row: Dict[str, Any], job: str, idx: int) -> Dict[str, Any]:
             out["bonus_roi_png_base64"] = base64.b64encode(roi.read_bytes()).decode("ascii")
         except Exception:  # noqa: BLE001
             pass
+    # сегментация структур: SEG (.dcm), PNG-маска для слоя в кабинете, JSON с контурами — только ссылки
+    # внутрь папки этого запроса (код доступа добавляет _with_token)
+    seg_dcm = bdir / f"{pref}_seg.dcm"
+    if seg_dcm.exists():
+        out["seg_download"] = f"/api/results/{job}/{seg_dcm.name}"
+    seg_png = bdir / f"{pref}_seg.png"
+    if seg_png.exists():
+        out["seg_png"] = f"/api/results/{job}/{seg_png.name}"
+    seg_json = bdir / f"{pref}_seg.json"
+    if seg_json.exists():
+        out["seg_json_download"] = f"/api/results/{job}/{seg_json.name}"
     return out
 
 
@@ -541,6 +561,8 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
             if not reg_ok:
                 # ни оверлея, ни отчётов: они описывали бы геометрию там, где оценка не выполняется
                 for k in [k for k in list(rb) if str(k).startswith("bonus_")]:
+                    rb.pop(k, None)
+                for k in SEG_ROW_KEYS:   # сегментация тоже описывала бы структуры вне зоны оценки
                     rb.pop(k, None)
             if str(r.get("study_uid") or "") in study_sr:
                 rb["study_sr_download"] = study_sr[str(r.get("study_uid"))]

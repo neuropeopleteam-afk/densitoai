@@ -89,6 +89,9 @@
         "bonus_sr_dcm_download": { "type": "string" },
         "bonus_roi_png_base64": { "type": "string" },
         "study_sr_download": { "type": "string", "pattern": "^/api/results/.+_SR\\.dcm(\\?t=[A-Za-z0-9_\\-]+)?$" },
+        "seg_download": { "type": "string", "pattern": "^/api/results/.+_seg\\.dcm(\\?t=[A-Za-z0-9_\\-]+)?$" },
+        "seg_png": { "type": "string", "pattern": "^/api/results/.+_seg\\.png(\\?t=[A-Za-z0-9_\\-]+)?$" },
+        "seg_json_download": { "type": "string", "pattern": "^/api/results/.+_seg\\.json(\\?t=[A-Za-z0-9_\\-]+)?$" },
         "details": {
           "type": "object",
           "required": ["internal_region", "criteria", "measurements", "action", "action_code"],

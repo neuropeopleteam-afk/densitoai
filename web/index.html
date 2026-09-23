@@ -408,6 +408,18 @@ table.crit tr.flag td { background: var(--error-soft); }
 .roi-legend i.dash { border-top-style: dashed; }
 .roi-legend i.cur { border-top: 2px solid #5ac8dc; }
 .roi-legend i.bar { border-top: 6px solid #d33; }
+/* слой «Сегментация»: полупрозрачная PNG-маска (RGBA, прозрачный фон) поверх снимка; ширина маски равна ширине
+   кадра, поэтому при масштабировании по ширине она совпадает с верхней (снимочной) частью визуализации */
+.viz-stack { position: relative; }
+.viz-stack .seg-layer { position: absolute; left: 0; top: 0; width: 100%; height: auto; opacity: .6; pointer-events: none; display: none; border-color: transparent; background: transparent; cursor: default; }
+.viz-stack.seg-on .seg-layer { display: block; }
+.seg-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text); border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; cursor: pointer; background: var(--surface); }
+.seg-toggle.active { border-color: var(--primary); color: var(--primary); }
+.seg-toggle input { margin: 0; }
+.seg-legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); margin: 6px 0 4px; }
+.seg-legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: middle; margin-right: 6px; }
+.seg-legend i.bone { background: rgba(255,196,0,.75); } .seg-legend i.foreign { background: rgba(255,40,40,.75); }
+.seg-legend i.field { background: rgba(60,150,255,.75); } .seg-legend i.roi { border: 2px solid rgb(80,220,120); width: 10px; height: 10px; }
 /* CARD:END */
 
 /* ---------- режим лаборанта ---------- */
@@ -703,6 +715,31 @@ function roiSrc(r) {
   if (r.bonus_roi_png_base64 && /^[A-Za-z0-9+/=]+$/.test(r.bonus_roi_png_base64)) return 'data:image/png;base64,' + r.bonus_roi_png_base64;
   return safeApiUrl(r.bonus_roi_png_url);
 }
+// Слой «Сегментация» (бонус ТЗ): PNG-маска структур из API (seg_png), только ссылка внутрь папки запроса.
+function segSrc(r) { return safeApiUrl(r.seg_png); }
+// Оборачивает снимок в контейнер с полупрозрачной маской и возвращает переключатель слоя.
+// Слой выключен по умолчанию; состояние хранится в самом контейнере (класс seg-on), внешних зависимостей нет.
+function segLayer(img, seg, isHip) {
+  const stack = el('div', { class: 'viz-stack' }, [img]);
+  if (!seg) return { stack, toggle: null, legend: null };
+  stack.appendChild(el('img', { class: 'seg-layer', src: seg, alt: '', 'aria-hidden': 'true' }));
+  const cb = el('input', { type: 'checkbox' });
+  const toggle = el('label', { class: 'seg-toggle', onclick: e => e.stopPropagation() }, [cb, 'Сегментация']);
+  const legend = el('div', { class: 'seg-legend', style: 'display:none' }, isHip ? [
+    el('span', {}, [el('i', { class: 'bone' }), 'кость']),
+    el('span', {}, [el('i', { class: 'field' }), 'поле сканирования (тело в кадре)']),
+    el('span', {}, [el('i', { class: 'roi' }), 'область интереса (контур кости)']),
+  ] : [
+    el('span', {}, [el('i', { class: 'bone' }), 'кость']),
+    el('span', {}, [el('i', { class: 'foreign' }), 'посторонние предметы']),
+  ]);
+  cb.addEventListener('change', () => {
+    stack.classList.toggle('seg-on', cb.checked);
+    toggle.classList.toggle('active', cb.checked);
+    legend.style.display = cb.checked ? '' : 'none';
+  });
+  return { stack, toggle, legend, setAvailable: on => { toggle.style.display = on ? '' : 'none'; if (!on) { cb.checked = false; cb.dispatchEvent(new Event('change')); } } };
+}
 // CARD-UTILS:END
 
 // CARD:BEGIN — карточка решения на клиническом языке (общая для кабинета и casebook.html)
@@ -906,10 +943,12 @@ function centeringHint(r, rows) {
 // Блок изображений: вкладки «Признаки» / «Рекомендуемое положение ROI» (вторая — только при наличии PNG)
 function vizBlock(r, dec, zoom) {
   const d = r.details || {};
-  const ov = overlaySrc(r), roi = roiSrc(r);
+  const ov = overlaySrc(r), roi = roiSrc(r), seg = segSrc(r);
   const box = el('div', { class: 'viz' });
   if (!ov && !roi) { box.appendChild(el('div', { class: 'empty', text: 'Визуализация недоступна' })); return box; }
   const img = el('img', { alt: 'снимок с визуализацией', onclick: e => { e.stopPropagation(); if (zoom) zoom(e.target.src); } });
+  // слой сегментации накладывается только на визуализацию измерений (её верхняя часть — кадр 1:1)
+  const sl = segLayer(img, ov ? seg : null, (d.internal_region || '') !== 'spine');
   const cap = el('div', { class: 'imgcap' });
   const legend = el('div', { class: 'roi-legend' }, [
     el('span', {}, [el('i', { class: 'dash' }), 'рекомендуемое положение области интереса']),
@@ -917,17 +956,20 @@ function vizBlock(r, dec, zoom) {
     el('span', {}, [el('i', { class: 'bar' }), 'недостающая длина скана']),
   ]);
   const show = which => {
-    if (which === 'roi' && roi) { img.src = roi; cap.textContent = 'Рекомендуемое положение области интереса бедра (подсказка для повторной укладки, не автоматическое исправление). Клик — увеличить.'; legend.style.display = ''; }
-    else { img.src = ov || roi; cap.textContent = 'Визуализация измерений: ось, контур кости, границы области интереса, плотные объекты. Клик — увеличить.'; legend.style.display = 'none'; }
+    if (which === 'roi' && roi) { img.src = roi; cap.textContent = 'Рекомендуемое положение области интереса бедра (подсказка для повторной укладки, не автоматическое исправление). Клик — увеличить.'; legend.style.display = ''; if (sl.setAvailable) sl.setAvailable(false); }
+    else { img.src = ov || roi; cap.textContent = 'Визуализация измерений: ось, контур кости, границы области интереса, плотные объекты. Клик — увеличить.'; legend.style.display = 'none'; if (sl.setAvailable) sl.setAvailable(!!ov); }
     box.querySelectorAll('.viz-tabs button').forEach(b => b.classList.toggle('active', b.dataset.v === which));
   };
-  if (ov && roi) {
-    box.appendChild(el('div', { class: 'viz-tabs' }, [
-      el('button', { type: 'button', 'data-v': 'ov', onclick: e => { e.stopPropagation(); show('ov'); } }, ['Измерения']),
-      el('button', { type: 'button', 'data-v': 'roi', onclick: e => { e.stopPropagation(); show('roi'); } }, ['Рекомендуемое положение ROI']),
-    ]));
+  if ((ov && roi) || sl.toggle) {
+    const tabs = el('div', { class: 'viz-tabs' });
+    if (ov && roi) {
+      tabs.appendChild(el('button', { type: 'button', 'data-v': 'ov', onclick: e => { e.stopPropagation(); show('ov'); } }, ['Измерения']));
+      tabs.appendChild(el('button', { type: 'button', 'data-v': 'roi', onclick: e => { e.stopPropagation(); show('roi'); } }, ['Рекомендуемое положение ROI']));
+    }
+    if (sl.toggle) tabs.appendChild(sl.toggle);
+    box.appendChild(tabs);
   }
-  box.appendChild(img); box.appendChild(legend); box.appendChild(cap);
+  box.appendChild(sl.stack); if (sl.legend) box.appendChild(sl.legend); box.appendChild(legend); box.appendChild(cap);
   show((roi && (roiFlagged(r) || (dec && dec.group === 'hip_roi'))) ? 'roi' : 'ov');
   return box;
 }
@@ -1328,6 +1370,9 @@ function detailPanel(r) {
   if (sr) links.appendChild(el('a', { class: 'btn sm ghost', href: sr, target: '_blank', rel: 'noopener', text: 'Скачать DICOM SR' }));
   if (study_sr) links.appendChild(el('a', { class: 'btn sm ghost', href: study_sr, target: '_blank', rel: 'noopener', text: 'DICOM SR исследования' }));
   if (sc) links.appendChild(el('a', { class: 'btn sm ghost', href: sc, target: '_blank', rel: 'noopener', text: 'Серия визуализации (DICOM)' }));
+  const segDcm = safeApiUrl(r.seg_download), segJson = safeApiUrl(r.seg_json_download);
+  if (segDcm) links.appendChild(el('a', { class: 'btn sm ghost', href: segDcm, target: '_blank', rel: 'noopener', text: 'Сегментация (DICOM SEG)' }));
+  if (segJson) links.appendChild(el('a', { class: 'btn sm ghost', href: segJson, target: '_blank', rel: 'noopener', text: 'Контуры сегментации (JSON)' }));
   if (ov) links.appendChild(el('a', { class: 'btn sm ghost', href: ov, download: String(r.path_to_study || 'overlay').replace(/[^\w.\-а-яА-ЯёЁ]+/g, '_') + '_overlay.png', text: 'Сохранить визуализацию PNG' }));
   if (links.childNodes.length) right.appendChild(links);
   return el('div', { class: 'detail' }, [left, right]);
