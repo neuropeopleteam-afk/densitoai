@@ -53,9 +53,15 @@ def pct(v):
     return (v - BAR_MIN) / (BAR_MAX - BAR_MIN) * 100.0
 
 
-def reliability(m):
+def reliability(m, extra_features=False):
     n_pos = int(m["n_pos"])
-    stronger = "сильнее контур B (эмбеддинги)" if float(m["auc_emb"]) > float(m["auc_geom"]) else "сильнее геометрия"
+    if float(m["auc_emb"]) > float(m["auc_geom"]):
+        stronger = "сильнее контур B (эмбеддинги)"
+    elif extra_features:
+        # H2 (2.4.0): контур A sp_pos — геометрия плюс признак головы укладки из эмбеддинга (models_manifest.json)
+        stronger = "сильнее контур A (геометрия + признак головы укладки)"
+    else:
+        stronger = "сильнее геометрия"
     if n_pos < N_POS_SMALL:
         return "мало позитивов (" + str(n_pos) + "): интервал широкий, читать по AUC; " + stronger
     return stronger
@@ -86,6 +92,8 @@ def parse_totals(md_text):
 
 def build(root: Path) -> str:
     ms = json.loads((root / "models" / "metrics_summary.json").read_text(encoding="utf-8"))
+    manifest_path = root / "models" / "models_manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else {}
     md = (root / "docs" / "METRICS_REPORT.md").read_text(encoding="utf-8")
     totals = parse_totals(md)
 
@@ -117,7 +125,7 @@ def build(root: Path) -> str:
             f'<td class="num strong">{f3(auc)}</td>'
             f'<td>{bar_html(auc)}</td>'
             f'<td class="num">{f2(m["f1_oof"])} [{f2(m["f1_ci_lo"])}; {f2(m["f1_ci_hi"])}]</td>'
-            f"<td>{html.escape(reliability(m))}</td>"
+            f"<td>{html.escape(reliability(m, bool(manifest.get(f'model_{region}_{key}_geom.pkl', {}).get('embedding_features'))))}</td>"
             "</tr>"
         )
     out.append("</tbody></table></div>")

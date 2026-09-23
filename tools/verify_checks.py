@@ -6,6 +6,7 @@ verify_checks.py — проверки результатов verify.sh (вызы
 Подкоманды:
   checks   --run1 CSV --run2 CSV --phantoms DIR --out JSON [--expected CSV] [--tol 1e-3]
            [--data-csv CSV --expected-sha SHA] [--data-dir DIR] [--timings JSON]
+           [--transfer JSON] [--debug-csv CSV] [--stress JSON]
   predsha  CSV            — sha256 колонок предсказаний (без time_of_processing), печать в stdout
   update-expected --run1 CSV --phantoms DIR — записать tests/phantoms/expected_results.csv из run1
 
@@ -447,6 +448,31 @@ def sc_series_check(phantoms) -> tuple:
         return name, False, f"проверка не выполнена: {e}"
 
 
+def stress_set_check(json_path) -> tuple[str, bool, str]:
+    """Стресс-набор устойчивости входа (tools/stress_set.py): битые и нестандартные файлы, собранные из
+    фантомов, дают контролируемую строку Failure или корректный Success, пакет «норма + битые»
+    обрабатывается до конца, а строки нормы в нём побитово равны одиночному прогону."""
+    name = "Стресс-набор: битые и нестандартные входы дают контролируемый Failure, норма в смешанном пакете побитово та же"
+    if not json_path or not Path(json_path).exists():
+        return name, False, "нет stress_check.json (проверка не выполнялась)"
+    try:
+        d = json.loads(Path(json_path).read_text(encoding="utf-8"))
+        if not d.get("cases"):
+            return name, False, "; ".join(d.get("problems", [])[:3]) or "в stress_check.json нет случаев"
+        ok = bool(d.get("ok"))
+        if ok:
+            det = (f"случаев {d.get('n_cases')} ({d.get('n_expected_failure')} Failure, {d.get('n_expected_success')} Success), "
+                   f"все {d.get('n_cases_ok')}/{d.get('n_cases')} по ожиданию; строк {d.get('n_rows')}/{d.get('n_expected_files')}; "
+                   f"норма в пакете побитово = одиночному прогону ({d.get('n_baseline_rows_bitwise')} строк); "
+                   f"max|Δprob| same_class {d.get('max_dprob_same_class', 0):.1e}; время {d.get('elapsed_s')} с; "
+                   f"JPEG-декодер: {(d.get('env') or {}).get('jpeg_decoder', '?')}")
+        else:
+            det = "; ".join(d.get("problems", [])[:4])
+        return name, ok, det
+    except Exception as e:  # noqa: BLE001
+        return name, False, f"проверка не выполнена: {e}"
+
+
 def run_checks(a) -> int:
     checks: list[dict] = []
 
@@ -610,6 +636,9 @@ def run_checks(a) -> int:
     # 17. бонус ТЗ 2.6: серия с визуализацией как DICOM SC
     add(*sc_series_check(phantoms))
 
+    # 18. стресс-набор устойчивости входа (битые и нестандартные файлы из фантомов, смешанный пакет)
+    add(*stress_set_check(Path(a.stress) if getattr(a, "stress", "") else None))
+
     timings = {}
     if a.timings and Path(a.timings).exists():
         timings = json.loads(Path(a.timings).read_text(encoding="utf-8"))
@@ -730,6 +759,7 @@ def main() -> int:
     c.add_argument("--timings", default=None)
     c.add_argument("--transfer", default="", help="JSON от tools/transfer_check.py")
     c.add_argument("--debug-csv", dest="debug_csv", default="", help="debug CSV прогона 1")
+    c.add_argument("--stress", default="", help="JSON от tools/stress_set.py")
     p = sub.add_parser("predsha")
     p.add_argument("csv")
     p.add_argument("--without-prob", action="store_true")

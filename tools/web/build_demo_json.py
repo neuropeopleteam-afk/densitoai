@@ -74,7 +74,8 @@ def main() -> int:
             return 1
         out = {k: v for k, v in r.items() if not str(k).endswith("_base64") and k != "bonus_sr_dcm_download"}
         out["path_to_study"] = name
-        out.pop("study_sr_download", None)      # ссылка на файл запроса, вне сервера бессмысленна
+        for k in ("study_sr_download", "seg_download", "seg_json_download"):
+            out.pop(k, None)                    # ссылки на файлы запроса, вне сервера бессмысленны
         # подмена по всей структуре строки, включая details/extras
         blob_row = json.dumps(out, ensure_ascii=False)
         for real, fake in list(uid_map.items()) + list(img_map.items()):
@@ -114,7 +115,8 @@ def main() -> int:
         "rows": rows,
     }
     blob = json.dumps(demo, ensure_ascii=False, indent=1)
-    leaked = re.findall(r"1\.2\.(?:840|643)[0-9.]{10,}", blob)
+    # публичные UID стандарта DICOM (1.2.840.10008.*: SOP Class, Transfer Syntax) — не идентификаторы пациента
+    leaked = [u for u in re.findall(r"1\.2\.(?:840|643)[0-9.]{10,}", blob) if not u.startswith("1.2.840.10008.")]
     if leaked:
         print(f"ОТКАЗ: в демо остались настоящие DICOM UID ({len(leaked)} шт., первый {leaked[0][:40]})", file=sys.stderr)
         return 1

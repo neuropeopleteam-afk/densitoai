@@ -2,6 +2,11 @@
 # Точка входа контейнера DensitoAI.
 #   batch [args...]  — пакетная обработка: /data/input -> /data/output/results.csv (по умолчанию)
 #   api   [args...]  — HTTP API на порту 8000
+#   receiver [args...] — приёмник DICOM (C-STORE/C-ECHO) на порту 11112, AE Title DENSITOAI;
+#                      принятые исследования уходят на анализ в API (DENSITO_API_URL,
+#                      по умолчанию http://127.0.0.1:8000; inproc — без сети, в этом процессе)
+#   api+receiver     — API и приёмник DICOM в одном контейнере (приёмник фоновым процессом,
+#                      healthcheck по-прежнему /api/health)
 #   verify [args...] — самопроверка без сети: фантомы, детерминизм, sha256 весов, отчёт
 #                      (/data/output/verify/verification_report.html); код 0/1.
 #                      verify --data /data/input --expected-sha <sha>  — сверка на данных пользователя
@@ -17,6 +22,13 @@ case "$cmd" in
       --xlsx --debug-csv "$@" ;;
   api)
     cd /app/src && exec python /app/src/api_server.py --host 0.0.0.0 --port "${DENSITO_PORT:-8000}" "$@" ;;
+  receiver)
+    exec python /app/src/dicom_receiver.py "$@" ;;
+  api+receiver)
+    # приёмник — фоном; API — основным процессом (PID 1), чтобы healthcheck и restart работали как в режиме api
+    export DENSITO_API_URL="${DENSITO_API_URL:-http://127.0.0.1:${DENSITO_PORT:-8000}}"
+    python /app/src/dicom_receiver.py "$@" &
+    cd /app/src && exec python /app/src/api_server.py --host 0.0.0.0 --port "${DENSITO_PORT:-8000}" ;;
   verify)
     exec bash /app/tools/verify.sh "$@" ;;
   test)

@@ -5,8 +5,8 @@
 # сервисов и загрузок во время работы нет. Версии базового образа и пакетов
 # зафиксированы (ТЗ п.3.2).
 #
-# Сборка:   docker build --platform linux/amd64 -t densitoai:2.3.2 .
-# Проверка: docker run --rm --network none densitoai:2.3.2 verify   (tools/offline_check.sh)
+# Сборка:   docker build --platform linux/amd64 -t densitoai:2.4.0 .
+# Проверка: docker run --rm --network none densitoai:2.4.0 verify   (tools/offline_check.sh)
 # =============================================================================
 # Базовый образ закреплён по digest (multi-arch index python:3.12.8-slim-bookworm,
 # получен 2026-09-19 запросом к registry-1.docker.io; для linux/amd64 внутри индекса —
@@ -72,6 +72,7 @@ USER densito
 
 VOLUME ["/data/input", "/data/output"]
 EXPOSE 8000
+EXPOSE 11112
 
 # Проверка при сборке: импорт модулей, sha256 весов, полная самопроверка на фантомах
 # (два прогона, детерминизм, эталон). Результат сборки не зависит от сети.
@@ -80,8 +81,8 @@ RUN python -c "import sys; sys.path.insert(0,'/app/src'); import inference, api_
  && VERIFY_OUT=/tmp/verify_build bash /app/tools/verify.sh \
  && rm -rf /tmp/verify_build
 
-HEALTHCHECK --interval=30s --timeout=15s --start-period=60s --retries=5 \
-  CMD python -c "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=12).status==200 else 1)"
+HEALTHCHECK --interval=30s --timeout=30s --start-period=60s --retries=5 \
+  CMD python -c "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=25).status==200 else 1)"
 
 # По умолчанию — пакетная обработка смонтированной папки.
 # Команды entrypoint: batch | api | verify [--data DIR --expected-sha SHA] | test | bash

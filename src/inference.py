@@ -78,7 +78,7 @@ from hip_features import hip_all_features  # noqa: E402
 from calibration_utils import risk_level  # noqa: E402  (К3: правило уровня риска)
 import preprocess  # noqa: E402  (инвариантная предобработка: маска тела, канонизация экспозиции)
 
-__version__ = "2.3.2"
+__version__ = "2.4.0"
 LOG = logging.getLogger("densito.inference")
 # pydicom шумит предупреждениями о нестандартных UID в анонимизированных файлах — не ошибка
 logging.getLogger("pydicom").setLevel(logging.ERROR)
@@ -87,7 +87,7 @@ logging.getLogger("pydicom").setLevel(logging.ERROR)
 # Конфиг (с жёстко зашитыми значениями по умолчанию на случай отсутствия yaml)
 # --------------------------------------------------------------------------- #
 DEFAULT_CONFIG: Dict[str, Any] = {
-    "version": "2.3.2",
+    "version": "2.4.0",
     "output": {
         "columns": ["path_to_study", "study_uid", "image_uid", "anatomical_region",
                     "quality_class", "violation_type", "quality_prob",
@@ -112,6 +112,8 @@ DEFAULT_CONFIG: Dict[str, Any] = {
                       "sp_art": ["metal_metal_area_mm2", "metal_metal_max_intensity_gap"],
                       "rh_pos": ["shaft_angle_deg"], "rh_roi": ["edge_distance_ratio", "bone_area_ratio"],
                       "lh_pos": ["shaft_angle_deg"], "lh_roi": ["edge_distance_ratio", "bone_area_ratio"]},
+    # H2 (2.4.0): признаки контура A из канонического эмбеддинга кадра (src/sppos_head.py); только позвоночник
+    "features": {"sp_pos": ["synth_pos_logit"]},
     "stacking": {"weight_geom": 0.5, "weight_emb": 0.5, "weights_by_criterion": {},
                  "any_violation_aggregation": "max",
                  "any_blend_weight_model": 0.5, "consistent_quality_prob": True},
@@ -1072,6 +1074,21 @@ class DensitoInference:
         self.last_extras_rows: List[Dict[str, Any]] = []
         self.registry = ModelRegistry(Path(models_dir) if models_dir else MODELS_DIR, self.cfg)
         self.embedder = EmbeddingExtractor(enabled=use_embeddings)
+        # H2 (2.4.0): голова «дефект укладки» для признака контура A sp_pos `synth_pos_logit`
+        # (src/sppos_head.py). Грузится при старте, если признак нужен модели sp_pos или указан в
+        # config.yaml → features; отсутствие файла — явная ошибка, а не молчаливый ноль.
+        # При --no-embeddings эмбеддинга нет, признак взять негде -> подставляется медиана обучения
+        # из pkl (в лог пишется предупреждение; режим без контура B и так деградированный).
+        self.sppos_head = None
+        self._sppos_head_warned = False
+        if self._embedding_feature_cols():
+            if use_embeddings:
+                from sppos_head import SynthPosHead  # noqa: E402
+                self.sppos_head = SynthPosHead(self.registry.models_dir / "head_densito_synth.pth")
+                LOG.info("Synth pos head loaded: %s", self.sppos_head.path.name)
+            else:
+                LOG.warning("--no-embeddings: признак synth_pos_logit (sp_pos) не считается, "
+                            "подставляется медиана обучения из pkl")
         # Резервный классификатор области (позвоночник/бедро) по эмбеддингам.
         # Используется ТОЛЬКО когда ширина снимка нестандартна (не 300/280/248 px),
         # т.е. правило организаторов по ширине неприменимо. OOF-точность 100 % (499 файлов).
@@ -1122,6 +1139,54 @@ class DensitoInference:
                     d.mkdir(parents=True, exist_ok=True)
             LOG.info("Bonus outputs enabled: visualize=%s sr=%s roi_autocorrect=%s",
                       self.visualize_dir, self.sr_dir, self.roi_autocorrect_dir)
+
+    # ---- H2 (2.4.0): признаки контура A из эмбеддинга кадра
+    def _embedding_feature_cols(self) -> Dict[str, List[str]]:
+        """{критерий: [признаки из эмбеддинга]} — объединение config.yaml → features и feature_cols
+        геометрических pkl (признак, который ждёт модель, считается обязательным)."""
+        from sppos_head import FEATURE_NAME, REGIONS  # noqa: E402
+        out: Dict[str, List[str]] = {}
+        cfg_feats = self.cfg.get("features") or {}
+        for region in REGIONS:
+            for crit in self.cfg["criteria_by_region"].get(region, []):
+                cols = set(cfg_feats.get(crit) or [])
+                mb = self.registry.geom.get((region, crit))
+                if mb is not None and FEATURE_NAME in (mb.meta.get("feature_cols") or []):
+                    cols.add(FEATURE_NAME)
+                if cols:
+                    out[crit] = sorted(cols)
+        return out
+
+    def _add_embedding_features(self, region: str, info, crit_preproc: Dict[str, Dict[str, str]],
+                                feats_by_variant: Dict[str, Dict[str, Any]],
+                                embs_by_variant: Dict[str, Dict[str, np.ndarray]], mirror: bool) -> None:
+        """Дописывает в признаки контура A критерия значения, посчитанные из эмбеддинга кадра.
+        sp_pos/synth_pos_logit: логит головы на эмбеддинге densito канонического кадра — тот же эмбеддинг,
+        что уже посчитан для контура B sp_pos (повторный проход бэкбона не нужен; если его нет —
+        считается один раз здесь). Ошибка головы не глушится: строка уйдёт в Failure с причиной."""
+        from sppos_head import FEATURE_NAME, EMB_SOURCE, EMB_VARIANT  # noqa: E402
+        need = self._embedding_feature_cols()
+        for crit in self.cfg["criteria_by_region"][region]:
+            cols = need.get(crit)
+            if not cols or FEATURE_NAME not in cols:
+                continue
+            geom_variant = crit_preproc[crit]["geom"]
+            target = feats_by_variant.setdefault(geom_variant, {})
+            if self.sppos_head is None:
+                if not self._sppos_head_warned:
+                    LOG.warning("%s: признак %s не посчитан (контур B выключен) -> медиана обучения", crit, FEATURE_NAME)
+                    self._sppos_head_warned = True
+                target[FEATURE_NAME] = None
+                continue
+            emb = (embs_by_variant.get(EMB_VARIANT) or {}).get(EMB_SOURCE)
+            if emb is None:
+                frame = info.img_canonical if (EMB_VARIANT == "canonical" and info.img_canonical is not None) else info.img_u8
+                emb = self.embedder.extract(frame, mirror=mirror, source=EMB_SOURCE)
+                if emb is None:
+                    raise RuntimeError(f"{crit}: не удалось получить эмбеддинг '{EMB_SOURCE}'/'{EMB_VARIANT}' "
+                                       f"для признака {FEATURE_NAME}")
+                embs_by_variant.setdefault(EMB_VARIANT, {})[EMB_SOURCE] = emb
+            target[FEATURE_NAME] = self.sppos_head.logit(emb)
 
     # ---- скоринг одного критерия
     def score_criterion(self, region: str, crit: str, feats: Dict[str, Any],
@@ -1305,6 +1370,8 @@ class DensitoInference:
                 for v, sources in need.items():
                     frame = info.img_u8 if (v == "baseline" or info.img_canonical is None) else info.img_canonical
                     embs_by_variant[v] = self.embedder.extract_many(frame, sources, mirror=mirror)
+            # H2 (2.4.0): признаки контура A из эмбеддинга (sp_pos: synth_pos_logit) — до скоринга критериев
+            self._add_embedding_features(region, info, crit_preproc, feats_by_variant, embs_by_variant, mirror)
             embs = embs_by_variant.get("baseline", {})
             emb = embs.get(EmbeddingExtractor.DEFAULT_SOURCE) if embs else None
             if self.extras:  # [EXTRAS] входы для extras (незеркалированный imagenet-эмбеддинг, как в data/embeddings.npy)
@@ -1352,6 +1419,10 @@ class DensitoInference:
                           "embedding_used": bool(embs), "embedding_sources": "+".join(sorted(embs)) if embs else "",
                           **{f"feat_{k}": v for k, v in feats.items()
                                                                   if not isinstance(v, np.ndarray)}})
+            # H2 (2.4.0): признак контура A из эмбеддинга лежит в варианте предобработки критерия (не baseline)
+            for v_feats in feats_by_variant.values():
+                if "synth_pos_logit" in v_feats:
+                    debug["feat_synth_pos_logit"] = v_feats["synth_pos_logit"]
             for c, r in crit_results.items():
                 for k in ("p_geom", "p_emb", "w_geom", "score", "threshold", "flag", "method", "margin", "uncertain", "p_cal"):
                     debug[f"{c}_{k}"] = r.get(k)

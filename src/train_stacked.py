@@ -184,6 +184,21 @@ CRITERION_GEOMETRY_COLS = {
     'hip_roi': ['scan_length_mm', 'shaft_len_below_troch_mm'],
 }
 
+# H2 (2.4.0): признаки контура A, считаемые не из геометрии, а из канонического эмбеддинга кадра.
+# sp_pos: synth_pos_logit — логит головы «дефект укладки» (models/head_densito_synth.pth, src/sppos_head.py),
+# обученной на синтетических смещениях кадра без меток; колонка добавляется в
+# data/geometry_features_canonical.csv скриптом tools/add_sppos_head_feature.py (из
+# data/embeddings_densito_canonical.npy — того же эмбеддинга, что использует контур B sp_pos).
+# Входит ТОЛЬКО в модель критерия (третий признак контура A); any-модель региона (OR критериев)
+# обучается на CRITERION_GEOMETRY_COLS и не меняется. Источник истины для инференса — config.yaml: features.
+# Принят по действующему правилу nested (>= 0.03 AUC в 20/20 повторов), см. docs/NESTED_GATE_REPORT.md, часть 5.
+CRITERION_EXTRA_COLS = {'sp_pos': ['synth_pos_logit']}
+
+
+def contour_a_cols(crit):
+    """Полный список признаков контура A критерия: геометрия + признаки из эмбеддинга (H2 — голова укладки)."""
+    return list(CRITERION_GEOMETRY_COLS[crit]) + list(CRITERION_EXTRA_COLS.get(crit, []))
+
 N_FOLDS = 5
 N_REPEATS = 5
 PCA_COMPONENTS = 32  # снижаем размерность эмбеддингов 1280 -> 32 для устойчивости на малых данных
@@ -260,9 +275,14 @@ def nested_decision_for(crit):
     try:
         with open(p, 'r', encoding='utf-8') as f:
             d = json.load(f)
-        for rec in d.get('criteria', []):
-            if rec.get('criterion') == crit:
+        recs = [rec for rec in d.get('criteria', []) if rec.get('criterion') == crit]
+        # H2 (2.4.0): если для критерия есть ПРИНЯТАЯ запись о признаке контура A (kind == 'feature'),
+        # она описывает текущий продакшен и имеет приоритет над записью о вентиле (kind отсутствует).
+        for rec in recs:
+            if rec.get('kind') == 'feature' and rec.get('accepted'):
                 return rec
+        if recs:
+            return recs[0]
     except Exception as e:  # noqa: BLE001
         print(f"  [warn] {p.name} не прочитан: {e}")
     return None
@@ -294,6 +314,18 @@ def nested_block_for(crit, emb_src, nested):
     """
     empty = {'protocol': None, 'mean': None, 'ci': None, 'base_mean': None, 'gain': None,
              'production': None, 'alternative': None, 'alternative_what': None}
+    if nested is not None and nested.get('kind') == 'feature' and nested.get('accepted') \
+            and str(nested.get('emb_source') or 'imagenet') == emb_src:
+        # H2 (2.4.0), признак контура A принят: в продакшене стоит стэк С признаком (auc_cand_*),
+        # альтернатива — прежний контур A без него (auc_base_*). Числа — из nested-харнесса кандидата
+        # (work/gpu_sppos/tools/sppos_nested.py, 5 x 20 x 3), см. docs/NESTED_GATE_REPORT.md, часть 5.
+        return {'protocol': str(nested.get('protocol_id') or 'nested_feature_H2'),
+                'mean': nested.get('auc_cand_mean_over_repeats'),
+                'ci': nested.get('auc_cand_ci'), 'base_mean': nested.get('auc_base_mean_over_repeats'),
+                'gain': nested.get('n_repeats_gain_ge_0.03'),
+                'production': nested.get('auc_cand_mean_over_repeats'),
+                'alternative': nested.get('auc_base_mean_over_repeats'),
+                'alternative_what': str(nested.get('alternative_what') or 'контур A без synth_pos_logit (2.3.2)')}
     if nested is not None and str(nested.get('emb_source') or 'imagenet') == emb_src:
         # К2: в продакшене стоит базовый стэкинг 0.5/0.5 (вентиль не принят),
         # альтернатива — вес вентиля, выбранный внутри фолдов.
@@ -421,7 +453,10 @@ def train_region_stacked(region, criteria):
             print(f"  [warn] признаки варианта '{preproc['geom']}' не найдены — берётся baseline")
         geom_src_df = geom_by_variant[geom_variant]
 
-        geom_cols = CRITERION_GEOMETRY_COLS[crit]
+        geom_cols = contour_a_cols(crit)
+        missing_cols = [c for c in geom_cols if c not in geom_src_df.columns]
+        assert not missing_cols, (f"{crit}: в data/{GEOM_VARIANT_FILES[geom_variant]} нет колонок {missing_cols}; "
+                                  f"для synth_pos_logit запустите python tools/add_sppos_head_feature.py")
         X_geom_raw = geom_src_df[geom_cols].values.astype(np.float64)
         col_medians = np.nanmedian(X_geom_raw, axis=0)
         for j in range(X_geom_raw.shape[1]):
@@ -486,7 +521,10 @@ def train_region_stacked(region, criteria):
         w_geom = weight_geom_for(crit)
         nested = nested_decision_for(crit)
         nested_block = nested_block_for(crit, emb_src, nested)
-        gate_selected_by = 'nested' if (nested is not None and nested.get('accepted')) else 'default'
+        # 'nested' — только для принятого ВЕНТИЛЯ (вес контура A); принятый признак контура A (H2, kind == 'feature')
+        # вес не меняет, поэтому вес остаётся 'default'
+        gate_selected_by = 'nested' if (nested is not None and nested.get('accepted')
+                                        and nested.get('kind') != 'feature') else 'default'
         rank_geom = pd.Series(oof_geom).rank(pct=True).values
         rank_emb = pd.Series(oof_emb).rank(pct=True).values
         oof_stacked = w_geom * rank_geom + (1.0 - w_geom) * rank_emb

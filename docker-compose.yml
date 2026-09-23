@@ -2,6 +2,8 @@
 #   Самопроверка без сети: docker compose run --rm densito-verify
 #   Пакетная обработка:    INPUT_DIR=/path/to/dicoms OUTPUT_DIR=./outputs docker compose run --rm densito-batch
 #   API-сервис:            docker compose up densito-api      ->  http://localhost:8000/docs
+#   API + приёмник DICOM:  docker compose up densito-api densito-receiver
+#                          (C-STORE на порт 11112, AE Title DENSITOAI; результаты — в том же ./outputs/jobs)
 #
 # Лимиты стенда по умолчанию: 2 CPU, 3 ГБ памяти (пик RSS инференса ~0.6 ГБ, замер 19.09.2026,
 # tools/verify.sh на фантомах и 60 снимках). Переопределение: DOCKER_CPUS=4 DOCKER_MEM=6g.
@@ -23,7 +25,7 @@ services:
   densito-verify:
     <<: *limits
     build: { context: ., dockerfile: Dockerfile }
-    image: densitoai:2.3.2
+    image: densitoai:2.4.0
     container_name: densito-verify
     command: ["verify"]
     network_mode: none
@@ -34,7 +36,7 @@ services:
   densito-batch:
     <<: *limits
     build: { context: ., dockerfile: Dockerfile }
-    image: densitoai:2.3.2
+    image: densitoai:2.4.0
     container_name: densito-batch
     command: ["batch"]
     network_mode: none
@@ -46,7 +48,7 @@ services:
   densito-api:
     <<: *limits
     build: { context: ., dockerfile: Dockerfile }
-    image: densitoai:2.3.2
+    image: densitoai:2.4.0
     container_name: densito-api
     command: ["api"]
     user: "${UID:-1000}:${GID:-1000}"
@@ -54,5 +56,31 @@ services:
       - "${API_PORT:-8000}:8000"
     volumes:
       - ${INPUT_DIR:-./tests/sample_test_zip}:/data/input:ro
+      - ${OUTPUT_DIR:-./outputs}:/data/output
+    restart: unless-stopped
+
+  # Приёмник DICOM (Storage SCP): денситометр или PACS отправляет снимки по C-STORE, приёмник
+  # складывает их в /data/output/inbox/<study_uid>/ и передаёт исследование в API densito-api
+  # тем же маршрутом /api/analyze, что и кабинет. Общий том /data/output: результаты в ./outputs/jobs.
+  # Без TLS — только для внутренней сети отделения. Один контейнер вместо двух: command: ["api+receiver"]
+  # у densito-api и порт 11112 в его ports.
+  densito-receiver:
+    <<: *limits
+    build: { context: ., dockerfile: Dockerfile }
+    image: densitoai:2.4.0
+    container_name: densito-receiver
+    command: ["receiver"]
+    user: "${UID:-1000}:${GID:-1000}"
+    depends_on:
+      - densito-api
+    ports:
+      - "${DICOM_PORT:-11112}:11112"
+    environment:
+      - DENSITO_RECEIVER_PORT=11112
+      - DENSITO_RECEIVER_AET=${DENSITO_RECEIVER_AET:-DENSITOAI}
+      - DENSITO_INBOX=/data/output/inbox
+      - DENSITO_API_URL=http://densito-api:8000
+      - OMP_NUM_THREADS=1
+    volumes:
       - ${OUTPUT_DIR:-./outputs}:/data/output
     restart: unless-stopped

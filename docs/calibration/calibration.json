@@ -1,0 +1,3912 @@
+{
+ "criteria": {
+  "hip_pos": {
+   "name": "Некорректная укладка (бедро)",
+   "platt_crossfit_folds": [
+    {
+     "a": 3.773137,
+     "b": -3.174101,
+     "fold": 0,
+     "n_test_pos": 17,
+     "n_train_pos": 62,
+     "p_cal_at_threshold": 0.333773
+    },
+    {
+     "a": 6.318419,
+     "b": -4.671934,
+     "fold": 1,
+     "n_test_pos": 14,
+     "n_train_pos": 65,
+     "p_cal_at_threshold": 0.37424
+    },
+    {
+     "a": 3.992227,
+     "b": -3.341495,
+     "fold": 2,
+     "n_test_pos": 16,
+     "n_train_pos": 63,
+     "p_cal_at_threshold": 0.328629
+    },
+    {
+     "a": 3.848383,
+     "b": -3.1667,
+     "fold": 3,
+     "n_test_pos": 10,
+     "n_train_pos": 69,
+     "p_cal_at_threshold": 0.346547
+    },
+    {
+     "a": 4.680997,
+     "b": -3.881549,
+     "fold": 4,
+     "n_test_pos": 22,
+     "n_train_pos": 57,
+     "p_cal_at_threshold": 0.30977
+    }
+   ],
+   "region": "hip",
+   "threshold": 0.658055,
+   "variants": {
+    "p_cal": {
+     "bins_equal_10": [
+      {
+       "bin": 0,
+       "frac_pos": 0.061538,
+       "gap": 0.000161,
+       "hi": 0.1,
+       "lo": 0.0,
+       "mean_pred": 0.061377,
+       "n": 65,
+       "n_pos": 4
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.162791,
+       "gap": 0.012941,
+       "hi": 0.2,
+       "lo": 0.1,
+       "mean_pred": 0.149849,
+       "n": 86,
+       "n_pos": 14
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.30137,
+       "gap": 0.061767,
+       "hi": 0.3,
+       "lo": 0.2,
+       "mean_pred": 0.239603,
+       "n": 73,
+       "n_pos": 22
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.211538,
+       "gap": 0.127711,
+       "hi": 0.4,
+       "lo": 0.3,
+       "mean_pred": 0.33925,
+       "n": 52,
+       "n_pos": 11
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.448276,
+       "gap": 0.006175,
+       "hi": 0.5,
+       "lo": 0.4,
+       "mean_pred": 0.45445,
+       "n": 29,
+       "n_pos": 13
+      },
+      {
+       "bin": 5,
+       "frac_pos": 0.533333,
+       "gap": 0.009159,
+       "hi": 0.6,
+       "lo": 0.5,
+       "mean_pred": 0.524174,
+       "n": 15,
+       "n_pos": 8
+      },
+      {
+       "bin": 6,
+       "frac_pos": 0.777778,
+       "gap": 0.116879,
+       "hi": 0.7,
+       "lo": 0.6,
+       "mean_pred": 0.660899,
+       "n": 9,
+       "n_pos": 7
+      },
+      {
+       "bin": 7,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.8,
+       "lo": 0.7,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 8,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.9,
+       "lo": 0.8,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 9,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 1.0,
+       "lo": 0.9,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      }
+     ],
+     "bins_quantile_5": [
+      {
+       "bin": 0,
+       "frac_pos": 0.060606,
+       "gap": 0.001438,
+       "hi": 0.106129,
+       "lo": 0.0,
+       "mean_pred": 0.062044,
+       "n": 66,
+       "n_pos": 4
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.121212,
+       "gap": 0.017054,
+       "hi": 0.183481,
+       "lo": 0.106129,
+       "mean_pred": 0.138266,
+       "n": 66,
+       "n_pos": 8
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.288136,
+       "gap": 0.077328,
+       "hi": 0.240909,
+       "lo": 0.183481,
+       "mean_pred": 0.210808,
+       "n": 59,
+       "n_pos": 17
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.25,
+       "gap": 0.04506,
+       "hi": 0.354008,
+       "lo": 0.240909,
+       "mean_pred": 0.29506,
+       "n": 68,
+       "n_pos": 17
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.471429,
+       "gap": 0.003944,
+       "hi": 1.0,
+       "lo": 0.354008,
+       "mean_pred": 0.475373,
+       "n": 70,
+       "n_pos": 33
+      }
+     ],
+     "brier": 0.159397,
+     "brier_const": 0.182463,
+     "brier_skill": 0.126415,
+     "ci95": {
+      "brier": [
+       0.117833,
+       0.20782
+      ],
+      "ece_10": [
+       0.042346,
+       0.135822
+      ]
+     },
+     "ece_10": 0.041464,
+     "ece_q5": 0.027729,
+     "intercept": 0.000232,
+     "log_loss": 0.486689,
+     "log_loss_const": 0.55122,
+     "mce_10": 0.127711,
+     "mce_q5": 0.077328,
+     "mean_pred": 0.240117,
+     "n": 329,
+     "n_bins_q_effective": 5,
+     "n_pos": 79,
+     "n_pos_studies": 24,
+     "n_studies": 78,
+     "prevalence": 0.240122,
+     "roc_auc": 0.725418,
+     "slope": 1.000205
+    },
+    "p_cal_crossfit": {
+     "bins_equal_10": [
+      {
+       "bin": 0,
+       "frac_pos": 0.085714,
+       "gap": 0.023943,
+       "hi": 0.1,
+       "lo": 0.0,
+       "mean_pred": 0.061772,
+       "n": 70,
+       "n_pos": 6
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.197674,
+       "gap": 0.044741,
+       "hi": 0.2,
+       "lo": 0.1,
+       "mean_pred": 0.152933,
+       "n": 86,
+       "n_pos": 17
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.217949,
+       "gap": 0.029958,
+       "hi": 0.3,
+       "lo": 0.2,
+       "mean_pred": 0.247907,
+       "n": 78,
+       "n_pos": 17
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.261905,
+       "gap": 0.089776,
+       "hi": 0.4,
+       "lo": 0.3,
+       "mean_pred": 0.351681,
+       "n": 42,
+       "n_pos": 11
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.588235,
+       "gap": 0.139034,
+       "hi": 0.5,
+       "lo": 0.4,
+       "mean_pred": 0.449201,
+       "n": 34,
+       "n_pos": 20
+      },
+      {
+       "bin": 5,
+       "frac_pos": 0.4,
+       "gap": 0.142062,
+       "hi": 0.6,
+       "lo": 0.5,
+       "mean_pred": 0.542062,
+       "n": 5,
+       "n_pos": 2
+      },
+      {
+       "bin": 6,
+       "frac_pos": 0.5,
+       "gap": 0.12752,
+       "hi": 0.7,
+       "lo": 0.6,
+       "mean_pred": 0.62752,
+       "n": 12,
+       "n_pos": 6
+      },
+      {
+       "bin": 7,
+       "frac_pos": 0.0,
+       "gap": 0.781083,
+       "hi": 0.8,
+       "lo": 0.7,
+       "mean_pred": 0.781083,
+       "n": 1,
+       "n_pos": 0
+      },
+      {
+       "bin": 8,
+       "frac_pos": 0.0,
+       "gap": 0.803201,
+       "hi": 0.9,
+       "lo": 0.8,
+       "mean_pred": 0.803201,
+       "n": 1,
+       "n_pos": 0
+      },
+      {
+       "bin": 9,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 1.0,
+       "lo": 0.9,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      }
+     ],
+     "bins_quantile_5": [
+      {
+       "bin": 0,
+       "frac_pos": 0.095238,
+       "gap": 0.036487,
+       "hi": 0.086832,
+       "lo": 0.0,
+       "mean_pred": 0.058751,
+       "n": 63,
+       "n_pos": 6
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.176471,
+       "gap": 0.044095,
+       "hi": 0.175352,
+       "lo": 0.086832,
+       "mean_pred": 0.132375,
+       "n": 68,
+       "n_pos": 12
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.177419,
+       "gap": 0.031909,
+       "hi": 0.250058,
+       "lo": 0.175352,
+       "mean_pred": 0.209328,
+       "n": 62,
+       "n_pos": 11
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.3,
+       "gap": 0.002368,
+       "hi": 0.364869,
+       "lo": 0.250058,
+       "mean_pred": 0.297632,
+       "n": 70,
+       "n_pos": 21
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.439394,
+       "gap": 0.047968,
+       "hi": 1.0,
+       "lo": 0.364869,
+       "mean_pred": 0.487362,
+       "n": 66,
+       "n_pos": 29
+      }
+     ],
+     "brier": 0.167326,
+     "brier_const": 0.182463,
+     "brier_skill": 0.082961,
+     "ci95": {
+      "brier": [
+       0.124412,
+       0.2172
+      ],
+      "ece_10": [
+       0.041736,
+       0.155157
+      ]
+     },
+     "ece_10": 0.061347,
+     "ece_q5": 0.032241,
+     "intercept": -0.228512,
+     "log_loss": 0.510719,
+     "log_loss_const": 0.55122,
+     "mce_10": 0.803201,
+     "mce_q5": 0.047968,
+     "mean_pred": 0.239153,
+     "n": 329,
+     "n_bins_q_effective": 5,
+     "n_pos": 79,
+     "n_pos_studies": 24,
+     "n_studies": 78,
+     "prevalence": 0.240122,
+     "roc_auc": 0.700658,
+     "slope": 0.768555
+    },
+    "score": {
+     "bins_equal_10": [
+      {
+       "bin": 0,
+       "frac_pos": 0.0,
+       "gap": 0.072442,
+       "hi": 0.1,
+       "lo": 0.0,
+       "mean_pred": 0.072442,
+       "n": 6,
+       "n_pos": 0
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.0,
+       "gap": 0.142123,
+       "hi": 0.2,
+       "lo": 0.1,
+       "mean_pred": 0.142123,
+       "n": 29,
+       "n_pos": 0
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.148148,
+       "gap": 0.092818,
+       "hi": 0.3,
+       "lo": 0.2,
+       "mean_pred": 0.240966,
+       "n": 27,
+       "n_pos": 4
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.142857,
+       "gap": 0.209654,
+       "hi": 0.4,
+       "lo": 0.3,
+       "mean_pred": 0.352511,
+       "n": 42,
+       "n_pos": 6
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.188679,
+       "gap": 0.275305,
+       "hi": 0.5,
+       "lo": 0.4,
+       "mean_pred": 0.463985,
+       "n": 53,
+       "n_pos": 10
+      },
+      {
+       "bin": 5,
+       "frac_pos": 0.287879,
+       "gap": 0.262941,
+       "hi": 0.6,
+       "lo": 0.5,
+       "mean_pred": 0.55082,
+       "n": 66,
+       "n_pos": 19
+      },
+      {
+       "bin": 6,
+       "frac_pos": 0.25,
+       "gap": 0.402039,
+       "hi": 0.7,
+       "lo": 0.6,
+       "mean_pred": 0.652039,
+       "n": 48,
+       "n_pos": 12
+      },
+      {
+       "bin": 7,
+       "frac_pos": 0.269231,
+       "gap": 0.475392,
+       "hi": 0.8,
+       "lo": 0.7,
+       "mean_pred": 0.744622,
+       "n": 26,
+       "n_pos": 7
+      },
+      {
+       "bin": 8,
+       "frac_pos": 0.608696,
+       "gap": 0.2127,
+       "hi": 0.9,
+       "lo": 0.8,
+       "mean_pred": 0.821396,
+       "n": 23,
+       "n_pos": 14
+      },
+      {
+       "bin": 9,
+       "frac_pos": 0.777778,
+       "gap": 0.181864,
+       "hi": 1.0,
+       "lo": 0.9,
+       "mean_pred": 0.959642,
+       "n": 9,
+       "n_pos": 7
+      }
+     ],
+     "bins_quantile_5": [
+      {
+       "bin": 0,
+       "frac_pos": 0.060606,
+       "gap": 0.125956,
+       "hi": 0.328571,
+       "lo": 0.0,
+       "mean_pred": 0.186562,
+       "n": 66,
+       "n_pos": 4
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.121212,
+       "gap": 0.271714,
+       "hi": 0.47234,
+       "lo": 0.328571,
+       "mean_pred": 0.392926,
+       "n": 66,
+       "n_pos": 8
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.288136,
+       "gap": 0.222554,
+       "hi": 0.550152,
+       "lo": 0.47234,
+       "mean_pred": 0.51069,
+       "n": 59,
+       "n_pos": 17
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.25,
+       "gap": 0.361233,
+       "hi": 0.673252,
+       "lo": 0.550152,
+       "mean_pred": 0.611233,
+       "n": 68,
+       "n_pos": 17
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.471429,
+       "gap": 0.315132,
+       "hi": 1.0,
+       "lo": 0.673252,
+       "mean_pred": 0.786561,
+       "n": 70,
+       "n_pos": 33
+      }
+     ],
+     "brier": 0.233376,
+     "brier_const": 0.182463,
+     "brier_skill": -0.279031,
+     "ci95": {
+      "brier": [
+       0.201171,
+       0.267013
+      ],
+      "ece_10": [
+       0.18398,
+       0.338594
+      ]
+     },
+     "ece_10": 0.261398,
+     "ece_q5": 0.261398,
+     "intercept": -1.357721,
+     "log_loss": 0.658262,
+     "log_loss_const": 0.55122,
+     "mce_10": 0.475392,
+     "mce_q5": 0.361233,
+     "mean_pred": 0.50152,
+     "n": 329,
+     "n_bins_q_effective": 5,
+     "n_pos": 79,
+     "n_pos_studies": 24,
+     "n_studies": 78,
+     "prevalence": 0.240122,
+     "roc_auc": 0.725418,
+     "slope": 0.886532
+    }
+   }
+  },
+  "hip_roi": {
+   "name": "Некорректная область интереса",
+   "platt_crossfit_folds": [
+    {
+     "a": 7.513628,
+     "b": -8.669707,
+     "fold": 0,
+     "n_test_pos": 9,
+     "n_train_pos": 7,
+     "p_cal_at_threshold": 0.145207
+    },
+    {
+     "a": 10.404226,
+     "b": -10.495936,
+     "fold": 1,
+     "n_test_pos": 1,
+     "n_train_pos": 15,
+     "p_cal_at_threshold": 0.27978
+    },
+    {
+     "a": 9.326057,
+     "b": -9.631252,
+     "fold": 2,
+     "n_test_pos": 2,
+     "n_train_pos": 14,
+     "p_cal_at_threshold": 0.255297
+    },
+    {
+     "a": 28.881758,
+     "b": -27.22076,
+     "fold": 3,
+     "n_test_pos": 2,
+     "n_train_pos": 14,
+     "p_cal_at_threshold": 0.329767
+    },
+    {
+     "a": 11.851903,
+     "b": -11.446209,
+     "fold": 4,
+     "n_test_pos": 2,
+     "n_train_pos": 14,
+     "p_cal_at_threshold": 0.36194
+    }
+   ],
+   "region": "hip",
+   "threshold": 0.917933,
+   "variants": {
+    "p_cal": {
+     "bins_equal_10": [
+      {
+       "bin": 0,
+       "frac_pos": 0.007692,
+       "gap": 0.000368,
+       "hi": 0.1,
+       "lo": 0.0,
+       "mean_pred": 0.007325,
+       "n": 260,
+       "n_pos": 2
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.0,
+       "gap": 0.139914,
+       "hi": 0.2,
+       "lo": 0.1,
+       "mean_pred": 0.139914,
+       "n": 41,
+       "n_pos": 0
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.555556,
+       "gap": 0.301542,
+       "hi": 0.3,
+       "lo": 0.2,
+       "mean_pred": 0.254014,
+       "n": 18,
+       "n_pos": 10
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.6,
+       "gap": 0.245684,
+       "hi": 0.4,
+       "lo": 0.3,
+       "mean_pred": 0.354316,
+       "n": 5,
+       "n_pos": 3
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.2,
+       "gap": 0.203884,
+       "hi": 0.5,
+       "lo": 0.4,
+       "mean_pred": 0.403884,
+       "n": 5,
+       "n_pos": 1
+      },
+      {
+       "bin": 5,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.6,
+       "lo": 0.5,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 6,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.7,
+       "lo": 0.6,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 7,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.8,
+       "lo": 0.7,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 8,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.9,
+       "lo": 0.8,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 9,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 1.0,
+       "lo": 0.9,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      }
+     ],
+     "bins_quantile_5": [
+      {
+       "bin": 0,
+       "frac_pos": 0.0,
+       "gap": 7.5e-05,
+       "hi": 0.000147,
+       "lo": 0.0,
+       "mean_pred": 7.5e-05,
+       "n": 66,
+       "n_pos": 0
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.0,
+       "gap": 0.000492,
+       "hi": 0.001563,
+       "lo": 0.000147,
+       "mean_pred": 0.000492,
+       "n": 65,
+       "n_pos": 0
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.030769,
+       "gap": 0.027207,
+       "hi": 0.00902,
+       "lo": 0.001563,
+       "mean_pred": 0.003562,
+       "n": 65,
+       "n_pos": 2
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.0,
+       "gap": 0.025562,
+       "hi": 0.104058,
+       "lo": 0.00902,
+       "mean_pred": 0.025562,
+       "n": 64,
+       "n_pos": 0
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.202899,
+       "gap": 0.001445,
+       "hi": 1.0,
+       "lo": 0.104058,
+       "mean_pred": 0.204344,
+       "n": 69,
+       "n_pos": 14
+      }
+     ],
+     "brier": 0.034609,
+     "brier_const": 0.046267,
+     "brier_skill": 0.251978,
+     "ci95": {
+      "brier": [
+       0.013782,
+       0.059502
+      ],
+      "ece_10": [
+       0.021619,
+       0.086189
+      ]
+     },
+     "ece_10": 0.041057,
+     "ece_q5": 0.010763,
+     "intercept": 0.00096,
+     "log_loss": 0.128646,
+     "log_loss_const": 0.194468,
+     "mce_10": 0.301542,
+     "mce_q5": 0.027207,
+     "mean_pred": 0.048645,
+     "n": 329,
+     "n_bins_q_effective": 5,
+     "n_pos": 16,
+     "n_pos_studies": 6,
+     "n_studies": 78,
+     "prevalence": 0.048632,
+     "roc_auc": 0.917332,
+     "slope": 1.000784
+    },
+    "p_cal_crossfit": {
+     "bins_equal_10": [
+      {
+       "bin": 0,
+       "frac_pos": 0.007326,
+       "gap": 0.00483,
+       "hi": 0.1,
+       "lo": 0.0,
+       "mean_pred": 0.012156,
+       "n": 273,
+       "n_pos": 2
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.243243,
+       "gap": 0.091045,
+       "hi": 0.2,
+       "lo": 0.1,
+       "mean_pred": 0.152199,
+       "n": 37,
+       "n_pos": 9
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.142857,
+       "gap": 0.091484,
+       "hi": 0.3,
+       "lo": 0.2,
+       "mean_pred": 0.234341,
+       "n": 7,
+       "n_pos": 1
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.333333,
+       "gap": 0.025879,
+       "hi": 0.4,
+       "lo": 0.3,
+       "mean_pred": 0.359212,
+       "n": 6,
+       "n_pos": 2
+      },
+      {
+       "bin": 4,
+       "frac_pos": 1.0,
+       "gap": 0.52913,
+       "hi": 0.5,
+       "lo": 0.4,
+       "mean_pred": 0.47087,
+       "n": 2,
+       "n_pos": 2
+      },
+      {
+       "bin": 5,
+       "frac_pos": 0.0,
+       "gap": 0.515861,
+       "hi": 0.6,
+       "lo": 0.5,
+       "mean_pred": 0.515861,
+       "n": 4,
+       "n_pos": 0
+      },
+      {
+       "bin": 6,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.7,
+       "lo": 0.6,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 7,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.8,
+       "lo": 0.7,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 8,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.9,
+       "lo": 0.8,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 9,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 1.0,
+       "lo": 0.9,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      }
+     ],
+     "bins_quantile_5": [
+      {
+       "bin": 0,
+       "frac_pos": 0.030303,
+       "gap": 0.030278,
+       "hi": 0.000147,
+       "lo": 0.0,
+       "mean_pred": 2.5e-05,
+       "n": 66,
+       "n_pos": 2
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.0,
+       "gap": 0.000627,
+       "hi": 0.001715,
+       "lo": 0.000147,
+       "mean_pred": 0.000627,
+       "n": 63,
+       "n_pos": 0
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.0,
+       "gap": 0.004419,
+       "hi": 0.009411,
+       "lo": 0.001715,
+       "mean_pred": 0.004419,
+       "n": 66,
+       "n_pos": 0
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.0,
+       "gap": 0.030433,
+       "hi": 0.086876,
+       "lo": 0.009411,
+       "mean_pred": 0.030433,
+       "n": 68,
+       "n_pos": 0
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.212121,
+       "gap": 0.009873,
+       "hi": 1.0,
+       "lo": 0.086876,
+       "mean_pred": 0.202248,
+       "n": 66,
+       "n_pos": 14
+      }
+     ],
+     "brier": 0.040775,
+     "brier_const": 0.046267,
+     "brier_skill": 0.118713,
+     "ci95": {
+      "brier": [
+       0.015431,
+       0.071831
+      ],
+      "ece_10": [
+       0.013258,
+       0.075684
+      ]
+     },
+     "ece_10": 0.026154,
+     "ece_q5": 0.015351,
+     "intercept": -1.252943,
+     "log_loss": 0.190245,
+     "log_loss_const": 0.194468,
+     "mce_10": 0.52913,
+     "mce_q5": 0.030433,
+     "mean_pred": 0.047874,
+     "n": 329,
+     "n_bins_q_effective": 5,
+     "n_pos": 16,
+     "n_pos_studies": 6,
+     "n_studies": 78,
+     "prevalence": 0.048632,
+     "roc_auc": 0.822085,
+     "slope": 0.41425
+    },
+    "score": {
+     "bins_equal_10": [
+      {
+       "bin": 0,
+       "frac_pos": 0.0,
+       "gap": 0.06364,
+       "hi": 0.1,
+       "lo": 0.0,
+       "mean_pred": 0.06364,
+       "n": 16,
+       "n_pos": 0
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.0,
+       "gap": 0.151565,
+       "hi": 0.2,
+       "lo": 0.1,
+       "mean_pred": 0.151565,
+       "n": 37,
+       "n_pos": 0
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.0,
+       "gap": 0.238385,
+       "hi": 0.3,
+       "lo": 0.2,
+       "mean_pred": 0.238385,
+       "n": 35,
+       "n_pos": 0
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.0,
+       "gap": 0.331867,
+       "hi": 0.4,
+       "lo": 0.3,
+       "mean_pred": 0.331867,
+       "n": 38,
+       "n_pos": 0
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.0,
+       "gap": 0.450493,
+       "hi": 0.5,
+       "lo": 0.4,
+       "mean_pred": 0.450493,
+       "n": 33,
+       "n_pos": 0
+      },
+      {
+       "bin": 5,
+       "frac_pos": 0.043478,
+       "gap": 0.496911,
+       "hi": 0.6,
+       "lo": 0.5,
+       "mean_pred": 0.540389,
+       "n": 46,
+       "n_pos": 2
+      },
+      {
+       "bin": 6,
+       "frac_pos": 0.0,
+       "gap": 0.646423,
+       "hi": 0.7,
+       "lo": 0.6,
+       "mean_pred": 0.646423,
+       "n": 39,
+       "n_pos": 0
+      },
+      {
+       "bin": 7,
+       "frac_pos": 0.0,
+       "gap": 0.740527,
+       "hi": 0.8,
+       "lo": 0.7,
+       "mean_pred": 0.740527,
+       "n": 15,
+       "n_pos": 0
+      },
+      {
+       "bin": 8,
+       "frac_pos": 0.085106,
+       "gap": 0.762627,
+       "hi": 0.9,
+       "lo": 0.8,
+       "mean_pred": 0.847733,
+       "n": 47,
+       "n_pos": 4
+      },
+      {
+       "bin": 9,
+       "frac_pos": 0.434783,
+       "gap": 0.501454,
+       "hi": 1.0,
+       "lo": 0.9,
+       "mean_pred": 0.936236,
+       "n": 23,
+       "n_pos": 10
+      }
+     ],
+     "bins_quantile_5": [
+      {
+       "bin": 0,
+       "frac_pos": 0.0,
+       "gap": 0.143721,
+       "hi": 0.221277,
+       "lo": 0.0,
+       "mean_pred": 0.143721,
+       "n": 66,
+       "n_pos": 0
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.0,
+       "gap": 0.311188,
+       "hi": 0.431611,
+       "lo": 0.221277,
+       "mean_pred": 0.311188,
+       "n": 65,
+       "n_pos": 0
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.030769,
+       "gap": 0.465712,
+       "hi": 0.588146,
+       "lo": 0.431611,
+       "mean_pred": 0.496481,
+       "n": 65,
+       "n_pos": 2
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.0,
+       "gap": 0.663267,
+       "hi": 0.81459,
+       "lo": 0.588146,
+       "mean_pred": 0.663267,
+       "n": 64,
+       "n_pos": 0
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.202899,
+       "gap": 0.674882,
+       "hi": 1.0,
+       "lo": 0.81459,
+       "mean_pred": 0.877781,
+       "n": 69,
+       "n_pos": 14
+      }
+     ],
+     "brier": 0.285687,
+     "brier_const": 0.046267,
+     "brier_skill": -5.17473,
+     "ci95": {
+      "brier": [
+       0.232512,
+       0.35159
+      ],
+      "ece_10": [
+       0.396424,
+       0.516671
+      ]
+     },
+     "ece_10": 0.452888,
+     "ece_q5": 0.452888,
+     "intercept": -4.85501,
+     "log_loss": 0.811211,
+     "log_loss_const": 0.194468,
+     "mce_10": 0.762627,
+     "mce_q5": 0.674882,
+     "mean_pred": 0.50152,
+     "n": 329,
+     "n_bins_q_effective": 5,
+     "n_pos": 16,
+     "n_pos_studies": 6,
+     "n_studies": 78,
+     "prevalence": 0.048632,
+     "roc_auc": 0.917332,
+     "slope": 1.557414
+    }
+   }
+  },
+  "sp_art": {
+   "name": "Присутствуют посторонние предметы",
+   "platt_crossfit_folds": [
+    {
+     "a": 8.936372,
+     "b": -6.488705,
+     "fold": 0,
+     "n_test_pos": 6,
+     "n_train_pos": 29,
+     "p_cal_at_threshold": 0.248739
+    },
+    {
+     "a": 6.886897,
+     "b": -5.582301,
+     "fold": 1,
+     "n_test_pos": 14,
+     "n_train_pos": 21,
+     "p_cal_at_threshold": 0.192543
+    },
+    {
+     "a": 6.473876,
+     "b": -4.892523,
+     "fold": 2,
+     "n_test_pos": 5,
+     "n_train_pos": 30,
+     "p_cal_at_threshold": 0.270399
+    },
+    {
+     "a": 5.893539,
+     "b": -4.630787,
+     "fold": 3,
+     "n_test_pos": 5,
+     "n_train_pos": 30,
+     "p_cal_at_threshold": 0.253419
+    },
+    {
+     "a": 6.164328,
+     "b": -4.699336,
+     "fold": 4,
+     "n_test_pos": 5,
+     "n_train_pos": 30,
+     "p_cal_at_threshold": 0.271726
+    }
+   ],
+   "region": "spine",
+   "threshold": 0.60241,
+   "variants": {
+    "p_cal": {
+     "bins_equal_10": [
+      {
+       "bin": 0,
+       "frac_pos": 0.016393,
+       "gap": 0.029895,
+       "hi": 0.1,
+       "lo": 0.0,
+       "mean_pred": 0.046289,
+       "n": 61,
+       "n_pos": 1
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.136364,
+       "gap": 0.003665,
+       "hi": 0.2,
+       "lo": 0.1,
+       "mean_pred": 0.140029,
+       "n": 44,
+       "n_pos": 6
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.333333,
+       "gap": 0.088503,
+       "hi": 0.3,
+       "lo": 0.2,
+       "mean_pred": 0.244831,
+       "n": 21,
+       "n_pos": 7
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.166667,
+       "gap": 0.176436,
+       "hi": 0.4,
+       "lo": 0.3,
+       "mean_pred": 0.343103,
+       "n": 6,
+       "n_pos": 1
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.714286,
+       "gap": 0.280532,
+       "hi": 0.5,
+       "lo": 0.4,
+       "mean_pred": 0.433754,
+       "n": 14,
+       "n_pos": 10
+      },
+      {
+       "bin": 5,
+       "frac_pos": 0.375,
+       "gap": 0.175343,
+       "hi": 0.6,
+       "lo": 0.5,
+       "mean_pred": 0.550343,
+       "n": 8,
+       "n_pos": 3
+      },
+      {
+       "bin": 6,
+       "frac_pos": 0.428571,
+       "gap": 0.21872,
+       "hi": 0.7,
+       "lo": 0.6,
+       "mean_pred": 0.647291,
+       "n": 7,
+       "n_pos": 3
+      },
+      {
+       "bin": 7,
+       "frac_pos": 1.0,
+       "gap": 0.251592,
+       "hi": 0.8,
+       "lo": 0.7,
+       "mean_pred": 0.748408,
+       "n": 4,
+       "n_pos": 4
+      },
+      {
+       "bin": 8,
+       "frac_pos": 0.0,
+       "gap": 0.810792,
+       "hi": 0.9,
+       "lo": 0.8,
+       "mean_pred": 0.810792,
+       "n": 1,
+       "n_pos": 0
+      },
+      {
+       "bin": 9,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 1.0,
+       "lo": 0.9,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      }
+     ],
+     "bins_quantile_5": [
+      {
+       "bin": 0,
+       "frac_pos": 0.030303,
+       "gap": 0.002473,
+       "hi": 0.044907,
+       "lo": 0.0,
+       "mean_pred": 0.02783,
+       "n": 33,
+       "n_pos": 1
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.0,
+       "gap": 0.073332,
+       "hi": 0.10599,
+       "lo": 0.044907,
+       "mean_pred": 0.073332,
+       "n": 33,
+       "n_pos": 0
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.15625,
+       "gap": 0.020285,
+       "hi": 0.174641,
+       "lo": 0.10599,
+       "mean_pred": 0.135965,
+       "n": 32,
+       "n_pos": 5
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.264706,
+       "gap": 0.014832,
+       "hi": 0.424816,
+       "lo": 0.174641,
+       "mean_pred": 0.249874,
+       "n": 34,
+       "n_pos": 9
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.588235,
+       "gap": 0.034978,
+       "hi": 1.0,
+       "lo": 0.424816,
+       "mean_pred": 0.553258,
+       "n": 34,
+       "n_pos": 20
+      }
+     ],
+     "brier": 0.12885,
+     "brier_const": 0.166388,
+     "brier_skill": 0.225606,
+     "ci95": {
+      "brier": [
+       0.082043,
+       0.175767
+      ],
+      "ece_10": [
+       0.064053,
+       0.191233
+      ]
+     },
+     "ece_10": 0.08181,
+     "ece_q5": 0.029182,
+     "intercept": 0.000277,
+     "log_loss": 0.400673,
+     "log_loss_const": 0.515072,
+     "mce_10": 0.810792,
+     "mce_q5": 0.073332,
+     "mean_pred": 0.210818,
+     "n": 166,
+     "n_bins_q_effective": 5,
+     "n_pos": 35,
+     "n_pos_studies": 17,
+     "n_studies": 99,
+     "prevalence": 0.210843,
+     "roc_auc": 0.823664,
+     "slope": 1.000074
+    },
+    "p_cal_crossfit": {
+     "bins_equal_10": [
+      {
+       "bin": 0,
+       "frac_pos": 0.060606,
+       "gap": 0.012332,
+       "hi": 0.1,
+       "lo": 0.0,
+       "mean_pred": 0.048274,
+       "n": 66,
+       "n_pos": 4
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.075,
+       "gap": 0.07504,
+       "hi": 0.2,
+       "lo": 0.1,
+       "mean_pred": 0.15004,
+       "n": 40,
+       "n_pos": 3
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.35,
+       "gap": 0.109752,
+       "hi": 0.3,
+       "lo": 0.2,
+       "mean_pred": 0.240248,
+       "n": 20,
+       "n_pos": 7
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.733333,
+       "gap": 0.379055,
+       "hi": 0.4,
+       "lo": 0.3,
+       "mean_pred": 0.354278,
+       "n": 15,
+       "n_pos": 11
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.0,
+       "gap": 0.462161,
+       "hi": 0.5,
+       "lo": 0.4,
+       "mean_pred": 0.462161,
+       "n": 2,
+       "n_pos": 0
+      },
+      {
+       "bin": 5,
+       "frac_pos": 0.3,
+       "gap": 0.237425,
+       "hi": 0.6,
+       "lo": 0.5,
+       "mean_pred": 0.537425,
+       "n": 10,
+       "n_pos": 3
+      },
+      {
+       "bin": 6,
+       "frac_pos": 0.5,
+       "gap": 0.145937,
+       "hi": 0.7,
+       "lo": 0.6,
+       "mean_pred": 0.645937,
+       "n": 6,
+       "n_pos": 3
+      },
+      {
+       "bin": 7,
+       "frac_pos": 0.75,
+       "gap": 0.017079,
+       "hi": 0.8,
+       "lo": 0.7,
+       "mean_pred": 0.732921,
+       "n": 4,
+       "n_pos": 3
+      },
+      {
+       "bin": 8,
+       "frac_pos": 0.333333,
+       "gap": 0.47614,
+       "hi": 0.9,
+       "lo": 0.8,
+       "mean_pred": 0.809474,
+       "n": 3,
+       "n_pos": 1
+      },
+      {
+       "bin": 9,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 1.0,
+       "lo": 0.9,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      }
+     ],
+     "bins_quantile_5": [
+      {
+       "bin": 0,
+       "frac_pos": 0.03125,
+       "gap": 0.005442,
+       "hi": 0.052153,
+       "lo": 0.0,
+       "mean_pred": 0.025808,
+       "n": 32,
+       "n_pos": 1
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.088235,
+       "gap": 0.018817,
+       "hi": 0.111615,
+       "lo": 0.052153,
+       "mean_pred": 0.069419,
+       "n": 34,
+       "n_pos": 3
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.09375,
+       "gap": 0.045244,
+       "hi": 0.192543,
+       "lo": 0.111615,
+       "mean_pred": 0.138994,
+       "n": 32,
+       "n_pos": 3
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.225806,
+       "gap": 0.012343,
+       "hi": 0.351103,
+       "lo": 0.192543,
+       "mean_pred": 0.23815,
+       "n": 31,
+       "n_pos": 7
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.567568,
+       "gap": 0.031769,
+       "hi": 1.0,
+       "lo": 0.351103,
+       "mean_pred": 0.535799,
+       "n": 37,
+       "n_pos": 21
+      }
+     ],
+     "brier": 0.139547,
+     "brier_const": 0.166388,
+     "brier_skill": 0.161318,
+     "ci95": {
+      "brier": [
+       0.088443,
+       0.194508
+      ],
+      "ece_10": [
+       0.069893,
+       0.213427
+      ]
+     },
+     "ece_10": 0.104622,
+     "ece_q5": 0.023011,
+     "intercept": -0.188515,
+     "log_loss": 0.431574,
+     "log_loss_const": 0.515072,
+     "mce_10": 0.47614,
+     "mce_q5": 0.045244,
+     "mean_pred": 0.209886,
+     "n": 166,
+     "n_bins_q_effective": 5,
+     "n_pos": 35,
+     "n_pos_studies": 17,
+     "n_studies": 99,
+     "prevalence": 0.210843,
+     "roc_auc": 0.805671,
+     "slope": 0.81246
+    },
+    "score": {
+     "bins_equal_10": [
+      {
+       "bin": 0,
+       "frac_pos": 0.0,
+       "gap": 0.033133,
+       "hi": 0.1,
+       "lo": 0.0,
+       "mean_pred": 0.033133,
+       "n": 1,
+       "n_pos": 0
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.125,
+       "gap": 0.022026,
+       "hi": 0.2,
+       "lo": 0.1,
+       "mean_pred": 0.147026,
+       "n": 8,
+       "n_pos": 1
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.0,
+       "gap": 0.254733,
+       "hi": 0.3,
+       "lo": 0.2,
+       "mean_pred": 0.254733,
+       "n": 21,
+       "n_pos": 0
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.0,
+       "gap": 0.3456,
+       "hi": 0.4,
+       "lo": 0.3,
+       "mean_pred": 0.3456,
+       "n": 23,
+       "n_pos": 0
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.090909,
+       "gap": 0.366146,
+       "hi": 0.5,
+       "lo": 0.4,
+       "mean_pred": 0.457055,
+       "n": 33,
+       "n_pos": 3
+      },
+      {
+       "bin": 5,
+       "frac_pos": 0.222222,
+       "gap": 0.321954,
+       "hi": 0.6,
+       "lo": 0.5,
+       "mean_pred": 0.544177,
+       "n": 27,
+       "n_pos": 6
+      },
+      {
+       "bin": 6,
+       "frac_pos": 0.277778,
+       "gap": 0.348561,
+       "hi": 0.7,
+       "lo": 0.6,
+       "mean_pred": 0.626339,
+       "n": 18,
+       "n_pos": 5
+      },
+      {
+       "bin": 7,
+       "frac_pos": 0.619048,
+       "gap": 0.124498,
+       "hi": 0.8,
+       "lo": 0.7,
+       "mean_pred": 0.743546,
+       "n": 21,
+       "n_pos": 13
+      },
+      {
+       "bin": 8,
+       "frac_pos": 0.333333,
+       "gap": 0.514726,
+       "hi": 0.9,
+       "lo": 0.8,
+       "mean_pred": 0.848059,
+       "n": 9,
+       "n_pos": 3
+      },
+      {
+       "bin": 9,
+       "frac_pos": 0.8,
+       "gap": 0.139157,
+       "hi": 1.0,
+       "lo": 0.9,
+       "mean_pred": 0.939157,
+       "n": 5,
+       "n_pos": 4
+      }
+     ],
+     "bins_quantile_5": [
+      {
+       "bin": 0,
+       "frac_pos": 0.030303,
+       "gap": 0.196103,
+       "hi": 0.313253,
+       "lo": 0.0,
+       "mean_pred": 0.226406,
+       "n": 33,
+       "n_pos": 1
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.0,
+       "gap": 0.384356,
+       "hi": 0.450301,
+       "lo": 0.313253,
+       "mean_pred": 0.384356,
+       "n": 33,
+       "n_pos": 0
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.15625,
+       "gap": 0.334102,
+       "hi": 0.536145,
+       "lo": 0.450301,
+       "mean_pred": 0.490352,
+       "n": 32,
+       "n_pos": 5
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.264706,
+       "gap": 0.335755,
+       "hi": 0.721386,
+       "lo": 0.536145,
+       "mean_pred": 0.600461,
+       "n": 34,
+       "n_pos": 9
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.588235,
+       "gap": 0.212881,
+       "hi": 1.0,
+       "lo": 0.721386,
+       "mean_pred": 0.801116,
+       "n": 34,
+       "n_pos": 20
+      }
+     ],
+     "brier": 0.217015,
+     "brier_const": 0.166388,
+     "brier_skill": -0.304265,
+     "ci95": {
+      "brier": [
+       0.183607,
+       0.254848
+      ],
+      "ece_10": [
+       0.227472,
+       0.392977
+      ]
+     },
+     "ece_10": 0.292169,
+     "ece_q5": 0.292169,
+     "intercept": -1.704564,
+     "log_loss": 0.635552,
+     "log_loss_const": 0.515072,
+     "mce_10": 0.514726,
+     "mce_q5": 0.384356,
+     "mean_pred": 0.503012,
+     "n": 166,
+     "n_bins_q_effective": 5,
+     "n_pos": 35,
+     "n_pos_studies": 17,
+     "n_studies": 99,
+     "prevalence": 0.210843,
+     "roc_auc": 0.823664,
+     "slope": 1.235224
+    }
+   }
+  },
+  "sp_axis": {
+   "name": "Не выравнена ось позвоночника",
+   "platt_crossfit_folds": [
+    {
+     "a": 7.63444,
+     "b": -7.016968,
+     "fold": 0,
+     "n_test_pos": 3,
+     "n_train_pos": 14,
+     "p_cal_at_threshold": 0.252716
+    },
+    {
+     "a": 6.833388,
+     "b": -6.555711,
+     "fold": 1,
+     "n_test_pos": 5,
+     "n_train_pos": 12,
+     "p_cal_at_threshold": 0.223493
+    },
+    {
+     "a": 7.835812,
+     "b": -7.224871,
+     "fold": 2,
+     "n_test_pos": 2,
+     "n_train_pos": 15,
+     "p_cal_at_threshold": 0.24313
+    },
+    {
+     "a": 8.251443,
+     "b": -7.603551,
+     "fold": 3,
+     "n_test_pos": 4,
+     "n_train_pos": 13,
+     "p_cal_at_threshold": 0.233029
+    },
+    {
+     "a": 18.749947,
+     "b": -15.837448,
+     "fold": 4,
+     "n_test_pos": 3,
+     "n_train_pos": 14,
+     "p_cal_at_threshold": 0.219822
+    }
+   ],
+   "region": "spine",
+   "threshold": 0.777108,
+   "variants": {
+    "p_cal": {
+     "bins_equal_10": [
+      {
+       "bin": 0,
+       "frac_pos": 0.017699,
+       "gap": 0.001295,
+       "hi": 0.1,
+       "lo": 0.0,
+       "mean_pred": 0.018994,
+       "n": 113,
+       "n_pos": 2
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.05,
+       "gap": 0.111823,
+       "hi": 0.2,
+       "lo": 0.1,
+       "mean_pred": 0.161823,
+       "n": 20,
+       "n_pos": 1
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.375,
+       "gap": 0.135239,
+       "hi": 0.3,
+       "lo": 0.2,
+       "mean_pred": 0.239761,
+       "n": 16,
+       "n_pos": 6
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.0,
+       "gap": 0.352863,
+       "hi": 0.4,
+       "lo": 0.3,
+       "mean_pred": 0.352863,
+       "n": 5,
+       "n_pos": 0
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.666667,
+       "gap": 0.220079,
+       "hi": 0.5,
+       "lo": 0.4,
+       "mean_pred": 0.446588,
+       "n": 6,
+       "n_pos": 4
+      },
+      {
+       "bin": 5,
+       "frac_pos": 0.666667,
+       "gap": 0.110055,
+       "hi": 0.6,
+       "lo": 0.5,
+       "mean_pred": 0.556612,
+       "n": 6,
+       "n_pos": 4
+      },
+      {
+       "bin": 6,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.7,
+       "lo": 0.6,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 7,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.8,
+       "lo": 0.7,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 8,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.9,
+       "lo": 0.8,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 9,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 1.0,
+       "lo": 0.9,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      }
+     ],
+     "bins_quantile_5": [
+      {
+       "bin": 0,
+       "frac_pos": 0.0,
+       "gap": 0.002061,
+       "hi": 0.003684,
+       "lo": 0.0,
+       "mean_pred": 0.002061,
+       "n": 31,
+       "n_pos": 0
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.0,
+       "gap": 0.00676,
+       "hi": 0.009687,
+       "lo": 0.003684,
+       "mean_pred": 0.00676,
+       "n": 30,
+       "n_pos": 0
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.054054,
+       "gap": 0.032603,
+       "hi": 0.064061,
+       "lo": 0.009687,
+       "mean_pred": 0.021451,
+       "n": 37,
+       "n_pos": 2
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.034483,
+       "gap": 0.074283,
+       "hi": 0.194706,
+       "lo": 0.064061,
+       "mean_pred": 0.108765,
+       "n": 29,
+       "n_pos": 1
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.358974,
+       "gap": 0.031079,
+       "hi": 1.0,
+       "lo": 0.194706,
+       "mean_pred": 0.327895,
+       "n": 39,
+       "n_pos": 14
+      }
+     ],
+     "brier": 0.066032,
+     "brier_const": 0.091922,
+     "brier_skill": 0.281649,
+     "ci95": {
+      "brier": [
+       0.034467,
+       0.10976
+      ],
+      "ece_10": [
+       0.032317,
+       0.117711
+      ]
+     },
+     "ece_10": 0.04995,
+     "ece_q5": 0.029152,
+     "intercept": 0.000129,
+     "log_loss": 0.230589,
+     "log_loss_const": 0.330345,
+     "mce_10": 0.352863,
+     "mce_q5": 0.074283,
+     "mean_pred": 0.102425,
+     "n": 166,
+     "n_bins_q_effective": 5,
+     "n_pos": 17,
+     "n_pos_studies": 10,
+     "n_studies": 99,
+     "prevalence": 0.10241,
+     "roc_auc": 0.888867,
+     "slope": 1.000266
+    },
+    "p_cal_crossfit": {
+     "bins_equal_10": [
+      {
+       "bin": 0,
+       "frac_pos": 0.026316,
+       "gap": 0.005015,
+       "hi": 0.1,
+       "lo": 0.0,
+       "mean_pred": 0.021301,
+       "n": 114,
+       "n_pos": 3
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.0,
+       "gap": 0.159814,
+       "hi": 0.2,
+       "lo": 0.1,
+       "mean_pred": 0.159814,
+       "n": 23,
+       "n_pos": 0
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.5,
+       "gap": 0.265829,
+       "hi": 0.3,
+       "lo": 0.2,
+       "mean_pred": 0.234171,
+       "n": 12,
+       "n_pos": 6
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.0,
+       "gap": 0.388042,
+       "hi": 0.4,
+       "lo": 0.3,
+       "mean_pred": 0.388042,
+       "n": 4,
+       "n_pos": 0
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.636364,
+       "gap": 0.198153,
+       "hi": 0.5,
+       "lo": 0.4,
+       "mean_pred": 0.438211,
+       "n": 11,
+       "n_pos": 7
+      },
+      {
+       "bin": 5,
+       "frac_pos": 1.0,
+       "gap": 0.454982,
+       "hi": 0.6,
+       "lo": 0.5,
+       "mean_pred": 0.545018,
+       "n": 1,
+       "n_pos": 1
+      },
+      {
+       "bin": 6,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.7,
+       "lo": 0.6,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 7,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.8,
+       "lo": 0.7,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 8,
+       "frac_pos": 0.0,
+       "gap": 0.848965,
+       "hi": 0.9,
+       "lo": 0.8,
+       "mean_pred": 0.848965,
+       "n": 1,
+       "n_pos": 0
+      },
+      {
+       "bin": 9,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 1.0,
+       "lo": 0.9,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      }
+     ],
+     "bins_quantile_5": [
+      {
+       "bin": 0,
+       "frac_pos": 0.060606,
+       "gap": 0.059614,
+       "hi": 0.004302,
+       "lo": 0.0,
+       "mean_pred": 0.000992,
+       "n": 33,
+       "n_pos": 2
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.0,
+       "gap": 0.007156,
+       "hi": 0.012771,
+       "lo": 0.004302,
+       "mean_pred": 0.007156,
+       "n": 33,
+       "n_pos": 0
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.029412,
+       "gap": 0.000553,
+       "hi": 0.066121,
+       "lo": 0.012771,
+       "mean_pred": 0.029964,
+       "n": 34,
+       "n_pos": 1
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.0,
+       "gap": 0.119133,
+       "hi": 0.186664,
+       "lo": 0.066121,
+       "mean_pred": 0.119133,
+       "n": 31,
+       "n_pos": 0
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.4,
+       "gap": 0.065721,
+       "hi": 1.0,
+       "lo": 0.186664,
+       "mean_pred": 0.334279,
+       "n": 35,
+       "n_pos": 14
+      }
+     ],
+     "brier": 0.072584,
+     "brier_const": 0.091922,
+     "brier_skill": 0.21037,
+     "ci95": {
+      "brier": [
+       0.039466,
+       0.120086
+      ],
+      "ece_10": [
+       0.047716,
+       0.13916
+      ]
+     },
+     "ece_10": 0.07514,
+     "ece_q5": 0.049491,
+     "intercept": -0.699978,
+     "log_loss": 0.297943,
+     "log_loss_const": 0.330345,
+     "mce_10": 0.848965,
+     "mce_q5": 0.119133,
+     "mean_pred": 0.100485,
+     "n": 166,
+     "n_bins_q_effective": 5,
+     "n_pos": 17,
+     "n_pos_studies": 10,
+     "n_studies": 99,
+     "prevalence": 0.10241,
+     "roc_auc": 0.835768,
+     "slope": 0.542773
+    },
+    "score": {
+     "bins_equal_10": [
+      {
+       "bin": 0,
+       "frac_pos": 0.0,
+       "gap": 0.093373,
+       "hi": 0.1,
+       "lo": 0.0,
+       "mean_pred": 0.093373,
+       "n": 1,
+       "n_pos": 0
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.0,
+       "gap": 0.158044,
+       "hi": 0.2,
+       "lo": 0.1,
+       "mean_pred": 0.158044,
+       "n": 17,
+       "n_pos": 0
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.0,
+       "gap": 0.252295,
+       "hi": 0.3,
+       "lo": 0.2,
+       "mean_pred": 0.252295,
+       "n": 21,
+       "n_pos": 0
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.057143,
+       "gap": 0.304475,
+       "hi": 0.4,
+       "lo": 0.3,
+       "mean_pred": 0.361618,
+       "n": 35,
+       "n_pos": 2
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.0,
+       "gap": 0.469702,
+       "hi": 0.5,
+       "lo": 0.4,
+       "mean_pred": 0.469702,
+       "n": 17,
+       "n_pos": 0
+      },
+      {
+       "bin": 5,
+       "frac_pos": 0.0,
+       "gap": 0.561446,
+       "hi": 0.6,
+       "lo": 0.5,
+       "mean_pred": 0.561446,
+       "n": 10,
+       "n_pos": 0
+      },
+      {
+       "bin": 6,
+       "frac_pos": 0.055556,
+       "gap": 0.57915,
+       "hi": 0.7,
+       "lo": 0.6,
+       "mean_pred": 0.634705,
+       "n": 18,
+       "n_pos": 1
+      },
+      {
+       "bin": 7,
+       "frac_pos": 0.214286,
+       "gap": 0.538081,
+       "hi": 0.8,
+       "lo": 0.7,
+       "mean_pred": 0.752367,
+       "n": 28,
+       "n_pos": 6
+      },
+      {
+       "bin": 8,
+       "frac_pos": 0.307692,
+       "gap": 0.544486,
+       "hi": 0.9,
+       "lo": 0.8,
+       "mean_pred": 0.852178,
+       "n": 13,
+       "n_pos": 4
+      },
+      {
+       "bin": 9,
+       "frac_pos": 0.666667,
+       "gap": 0.266064,
+       "hi": 1.0,
+       "lo": 0.9,
+       "mean_pred": 0.932731,
+       "n": 6,
+       "n_pos": 4
+      }
+     ],
+     "bins_quantile_5": [
+      {
+       "bin": 0,
+       "frac_pos": 0.0,
+       "gap": 0.189079,
+       "hi": 0.26506,
+       "lo": 0.0,
+       "mean_pred": 0.189079,
+       "n": 31,
+       "n_pos": 0
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.0,
+       "gap": 0.330171,
+       "hi": 0.376506,
+       "lo": 0.26506,
+       "mean_pred": 0.330171,
+       "n": 30,
+       "n_pos": 0
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.054054,
+       "gap": 0.399178,
+       "hi": 0.599398,
+       "lo": 0.376506,
+       "mean_pred": 0.453232,
+       "n": 37,
+       "n_pos": 2
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.034483,
+       "gap": 0.622248,
+       "hi": 0.743976,
+       "lo": 0.599398,
+       "mean_pred": 0.65673,
+       "n": 29,
+       "n_pos": 1
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.358974,
+       "gap": 0.459453,
+       "hi": 1.0,
+       "lo": 0.743976,
+       "mean_pred": 0.818428,
+       "n": 39,
+       "n_pos": 14
+      }
+     ],
+     "brier": 0.248731,
+     "brier_const": 0.091922,
+     "brier_skill": -1.7059,
+     "ci95": {
+      "brier": [
+       0.202053,
+       0.29813
+      ],
+      "ece_10": [
+       0.337783,
+       0.468989
+      ]
+     },
+     "ece_10": 0.400602,
+     "ece_q5": 0.400602,
+     "intercept": -3.387897,
+     "log_loss": 0.701601,
+     "log_loss_const": 0.330345,
+     "mce_10": 0.57915,
+     "mce_q5": 0.622248,
+     "mean_pred": 0.503012,
+     "n": 166,
+     "n_bins_q_effective": 5,
+     "n_pos": 17,
+     "n_pos_studies": 10,
+     "n_studies": 99,
+     "prevalence": 0.10241,
+     "roc_auc": 0.888867,
+     "slope": 1.621923
+    }
+   }
+  },
+  "sp_pos": {
+   "name": "Некорректная укладка (позвоночник)",
+   "platt_crossfit_folds": [
+    {
+     "a": 8.234948,
+     "b": -8.375842,
+     "fold": 0,
+     "n_test_pos": 3,
+     "n_train_pos": 7,
+     "p_cal_at_threshold": 0.21723
+    },
+    {
+     "a": 9.747065,
+     "b": -9.273561,
+     "fold": 1,
+     "n_test_pos": 1,
+     "n_train_pos": 9,
+     "p_cal_at_threshold": 0.293801
+    },
+    {
+     "a": 9.730507,
+     "b": -9.305349,
+     "fold": 2,
+     "n_test_pos": 1,
+     "n_train_pos": 9,
+     "p_cal_at_threshold": 0.284338
+    },
+    {
+     "a": 8.994918,
+     "b": -8.854794,
+     "fold": 3,
+     "n_test_pos": 2,
+     "n_train_pos": 8,
+     "p_cal_at_threshold": 0.248588
+    },
+    {
+     "a": 44.843865,
+     "b": -39.462343,
+     "fold": 4,
+     "n_test_pos": 3,
+     "n_train_pos": 7,
+     "p_cal_at_threshold": 0.303268
+    }
+   ],
+   "region": "spine",
+   "threshold": 0.861446,
+   "variants": {
+    "p_cal": {
+     "bins_equal_10": [
+      {
+       "bin": 0,
+       "frac_pos": 0.021583,
+       "gap": 0.006766,
+       "hi": 0.1,
+       "lo": 0.0,
+       "mean_pred": 0.014817,
+       "n": 139,
+       "n_pos": 3
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.0,
+       "gap": 0.140814,
+       "hi": 0.2,
+       "lo": 0.1,
+       "mean_pred": 0.140814,
+       "n": 9,
+       "n_pos": 0
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.0,
+       "gap": 0.288804,
+       "hi": 0.3,
+       "lo": 0.2,
+       "mean_pred": 0.288804,
+       "n": 10,
+       "n_pos": 0
+      },
+      {
+       "bin": 3,
+       "frac_pos": 1.0,
+       "gap": 0.639257,
+       "hi": 0.4,
+       "lo": 0.3,
+       "mean_pred": 0.360743,
+       "n": 2,
+       "n_pos": 2
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.0,
+       "gap": 0.423385,
+       "hi": 0.5,
+       "lo": 0.4,
+       "mean_pred": 0.423385,
+       "n": 1,
+       "n_pos": 0
+      },
+      {
+       "bin": 5,
+       "frac_pos": 1.0,
+       "gap": 0.471985,
+       "hi": 0.6,
+       "lo": 0.5,
+       "mean_pred": 0.528015,
+       "n": 5,
+       "n_pos": 5
+      },
+      {
+       "bin": 6,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.7,
+       "lo": 0.6,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 7,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.8,
+       "lo": 0.7,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 8,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.9,
+       "lo": 0.8,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 9,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 1.0,
+       "lo": 0.9,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      }
+     ],
+     "bins_quantile_5": [
+      {
+       "bin": 0,
+       "frac_pos": 0.0,
+       "gap": 0.000264,
+       "hi": 0.000732,
+       "lo": 0.0,
+       "mean_pred": 0.000264,
+       "n": 33,
+       "n_pos": 0
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.0,
+       "gap": 0.002216,
+       "hi": 0.003908,
+       "lo": 0.000732,
+       "mean_pred": 0.002216,
+       "n": 33,
+       "n_pos": 0
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.0,
+       "gap": 0.008854,
+       "hi": 0.020578,
+       "lo": 0.003908,
+       "mean_pred": 0.008854,
+       "n": 34,
+       "n_pos": 0
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.096774,
+       "gap": 0.061187,
+       "hi": 0.055063,
+       "lo": 0.020578,
+       "mean_pred": 0.035587,
+       "n": 31,
+       "n_pos": 3
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.2,
+       "gap": 0.043253,
+       "hi": 1.0,
+       "lo": 0.055063,
+       "mean_pred": 0.243253,
+       "n": 35,
+       "n_pos": 7
+      }
+     ],
+     "brier": 0.036668,
+     "brier_const": 0.056612,
+     "brier_skill": 0.352288,
+     "ci95": {
+      "brier": [
+       0.008801,
+       0.077398
+      ],
+      "ece_10": [
+       0.027366,
+       0.106999
+      ]
+     },
+     "ece_10": 0.055166,
+     "ece_q5": 0.022852,
+     "intercept": 0.007066,
+     "log_loss": 0.144936,
+     "log_loss_const": 0.22763,
+     "mce_10": 0.639257,
+     "mce_q5": 0.061187,
+     "mean_pred": 0.06024,
+     "n": 166,
+     "n_bins_q_effective": 5,
+     "n_pos": 10,
+     "n_pos_studies": 6,
+     "n_studies": 99,
+     "prevalence": 0.060241,
+     "roc_auc": 0.892949,
+     "slope": 1.004677
+    },
+    "p_cal_crossfit": {
+     "bins_equal_10": [
+      {
+       "bin": 0,
+       "frac_pos": 0.020979,
+       "gap": 0.004656,
+       "hi": 0.1,
+       "lo": 0.0,
+       "mean_pred": 0.016323,
+       "n": 143,
+       "n_pos": 3
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.0,
+       "gap": 0.147628,
+       "hi": 0.2,
+       "lo": 0.1,
+       "mean_pred": 0.147628,
+       "n": 5,
+       "n_pos": 0
+      },
+      {
+       "bin": 2,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.3,
+       "lo": 0.2,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.333333,
+       "gap": 0.017067,
+       "hi": 0.4,
+       "lo": 0.3,
+       "mean_pred": 0.316267,
+       "n": 15,
+       "n_pos": 5
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.5,
+       "gap": 0.048603,
+       "hi": 0.5,
+       "lo": 0.4,
+       "mean_pred": 0.451397,
+       "n": 2,
+       "n_pos": 1
+      },
+      {
+       "bin": 5,
+       "frac_pos": 1.0,
+       "gap": 0.469737,
+       "hi": 0.6,
+       "lo": 0.5,
+       "mean_pred": 0.530263,
+       "n": 1,
+       "n_pos": 1
+      },
+      {
+       "bin": 6,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.7,
+       "lo": 0.6,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 7,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.8,
+       "lo": 0.7,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 8,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.9,
+       "lo": 0.8,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 9,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 1.0,
+       "lo": 0.9,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      }
+     ],
+     "bins_quantile_5": [
+      {
+       "bin": 0,
+       "frac_pos": 0.096774,
+       "gap": 0.096664,
+       "hi": 0.000614,
+       "lo": 0.0,
+       "mean_pred": 0.000111,
+       "n": 31,
+       "n_pos": 3
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.0,
+       "gap": 0.001844,
+       "hi": 0.004638,
+       "lo": 0.000614,
+       "mean_pred": 0.001844,
+       "n": 34,
+       "n_pos": 0
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.0,
+       "gap": 0.007777,
+       "hi": 0.014641,
+       "lo": 0.004638,
+       "mean_pred": 0.007777,
+       "n": 34,
+       "n_pos": 0
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.0,
+       "gap": 0.036018,
+       "hi": 0.060351,
+       "lo": 0.014641,
+       "mean_pred": 0.036018,
+       "n": 32,
+       "n_pos": 0
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.2,
+       "gap": 0.021894,
+       "hi": 1.0,
+       "lo": 0.060351,
+       "mean_pred": 0.221894,
+       "n": 35,
+       "n_pos": 7
+      }
+     ],
+     "brier": 0.041956,
+     "brier_const": 0.056612,
+     "brier_skill": 0.258876,
+     "ci95": {
+      "brier": [
+       0.010361,
+       0.083846
+      ],
+      "ece_10": [
+       0.01379,
+       0.083793
+      ]
+     },
+     "ece_10": 0.013415,
+     "ece_q5": 0.031582,
+     "intercept": -2.092598,
+     "log_loss": 0.314635,
+     "log_loss_const": 0.22763,
+     "mce_10": 0.469737,
+     "mce_q5": 0.096664,
+     "mean_pred": 0.055719,
+     "n": 166,
+     "n_bins_q_effective": 5,
+     "n_pos": 10,
+     "n_pos_studies": 6,
+     "n_studies": 99,
+     "prevalence": 0.060241,
+     "roc_auc": 0.71859,
+     "slope": 0.135804
+    },
+    "score": {
+     "bins_equal_10": [
+      {
+       "bin": 0,
+       "frac_pos": 0.0,
+       "gap": 0.071536,
+       "hi": 0.1,
+       "lo": 0.0,
+       "mean_pred": 0.071536,
+       "n": 8,
+       "n_pos": 0
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.0,
+       "gap": 0.178213,
+       "hi": 0.2,
+       "lo": 0.1,
+       "mean_pred": 0.178213,
+       "n": 12,
+       "n_pos": 0
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.0,
+       "gap": 0.235743,
+       "hi": 0.3,
+       "lo": 0.2,
+       "mean_pred": 0.235743,
+       "n": 15,
+       "n_pos": 0
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.0,
+       "gap": 0.34011,
+       "hi": 0.4,
+       "lo": 0.3,
+       "mean_pred": 0.34011,
+       "n": 12,
+       "n_pos": 0
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.0,
+       "gap": 0.431944,
+       "hi": 0.5,
+       "lo": 0.4,
+       "mean_pred": 0.431944,
+       "n": 37,
+       "n_pos": 0
+      },
+      {
+       "bin": 5,
+       "frac_pos": 0.142857,
+       "gap": 0.412651,
+       "hi": 0.6,
+       "lo": 0.5,
+       "mean_pred": 0.555508,
+       "n": 21,
+       "n_pos": 3
+      },
+      {
+       "bin": 6,
+       "frac_pos": 0.0,
+       "gap": 0.649771,
+       "hi": 0.7,
+       "lo": 0.6,
+       "mean_pred": 0.649771,
+       "n": 29,
+       "n_pos": 0
+      },
+      {
+       "bin": 7,
+       "frac_pos": 0.0,
+       "gap": 0.75278,
+       "hi": 0.8,
+       "lo": 0.7,
+       "mean_pred": 0.75278,
+       "n": 13,
+       "n_pos": 0
+      },
+      {
+       "bin": 8,
+       "frac_pos": 0.153846,
+       "gap": 0.708295,
+       "hi": 0.9,
+       "lo": 0.8,
+       "mean_pred": 0.862141,
+       "n": 13,
+       "n_pos": 2
+      },
+      {
+       "bin": 9,
+       "frac_pos": 0.833333,
+       "gap": 0.114458,
+       "hi": 1.0,
+       "lo": 0.9,
+       "mean_pred": 0.947791,
+       "n": 6,
+       "n_pos": 5
+      }
+     ],
+     "bins_quantile_5": [
+      {
+       "bin": 0,
+       "frac_pos": 0.0,
+       "gap": 0.171961,
+       "hi": 0.283133,
+       "lo": 0.0,
+       "mean_pred": 0.171961,
+       "n": 33,
+       "n_pos": 0
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.0,
+       "gap": 0.375593,
+       "hi": 0.436747,
+       "lo": 0.283133,
+       "mean_pred": 0.375593,
+       "n": 33,
+       "n_pos": 0
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.0,
+       "gap": 0.491999,
+       "hi": 0.590361,
+       "lo": 0.436747,
+       "mean_pred": 0.491999,
+       "n": 32,
+       "n_pos": 0
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.090909,
+       "gap": 0.543812,
+       "hi": 0.683735,
+       "lo": 0.590361,
+       "mean_pred": 0.634721,
+       "n": 33,
+       "n_pos": 3
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.2,
+       "gap": 0.62117,
+       "hi": 1.0,
+       "lo": 0.683735,
+       "mean_pred": 0.82117,
+       "n": 35,
+       "n_pos": 7
+      }
+     ],
+     "brier": 0.265849,
+     "brier_const": 0.056612,
+     "brier_skill": -3.695977,
+     "ci95": {
+      "brier": [
+       0.208282,
+       0.335217
+      ],
+      "ece_10": [
+       0.377141,
+       0.513811
+      ]
+     },
+     "ece_10": 0.442771,
+     "ece_q5": 0.442771,
+     "intercept": -4.680015,
+     "log_loss": 0.735129,
+     "log_loss_const": 0.22763,
+     "mce_10": 0.75278,
+     "mce_q5": 0.62117,
+     "mean_pred": 0.503012,
+     "n": 166,
+     "n_bins_q_effective": 5,
+     "n_pos": 10,
+     "n_pos_studies": 6,
+     "n_studies": 99,
+     "prevalence": 0.060241,
+     "roc_auc": 0.892949,
+     "slope": 1.930795
+    }
+   }
+  }
+ },
+ "inputs": {
+  "any_blend_weight_model": 0.5,
+  "consistent_quality_prob": true,
+  "margins": {
+   "hip_pos": 0.010638,
+   "hip_roi": 0.025836,
+   "sp_art": 0.012048,
+   "sp_axis": 0.004518,
+   "sp_pos": 0.0
+  },
+  "oof_files": [
+   "models/oof_stacked_spine_sp_pos.csv",
+   "models/oof_stacked_spine_sp_axis.csv",
+   "models/oof_stacked_spine_sp_art.csv",
+   "models/oof_stacked_hip_hip_pos.csv",
+   "models/oof_stacked_hip_hip_roi.csv"
+  ],
+  "platt": {
+   "hip_pos": {
+    "a": 4.437303,
+    "b": -3.588894
+   },
+   "hip_roi": {
+    "a": 11.244764,
+    "b": -11.312796
+   },
+   "sp_art": {
+    "a": 6.748231,
+    "b": -5.171112
+   },
+   "sp_axis": {
+    "a": 8.728776,
+    "b": -7.913717
+   },
+   "sp_pos": {
+    "a": 10.924764,
+    "b": -10.31229
+   }
+  },
+  "thresholds": {
+   "hip_pos": 0.658055,
+   "hip_roi": 0.917933,
+   "sp_art": 0.60241,
+   "sp_axis": 0.777108,
+   "sp_pos": 0.861446
+  }
+ },
+ "method": {
+  "ci": "percentile bootstrap по исследованиям, 500 повторов, зерно 0; для ece_10 и brier",
+  "ece": "10 бинов равной ширины (ece_10/mce_10) и 5 квантильных (ece_q5/mce_q5); последний бин включает 1.0",
+  "numbers_of_delivery_changed": false,
+  "oof": "models/oof_stacked_<region>_<crit>.csv + OOF any-модели (src/eval_oof_metrics.oof_any_model)",
+  "p_cal_crossfit": "Platt на скоре, GroupKFold(5) по исследованию, зерно 0",
+  "slope_intercept": "логистическая рекалибровка y ~ a + b*logit(p), p обрезан до [1e-6, 1-1e-6]; идеал b=1, a=0",
+  "uncertain": "|score - threshold| <= margin (config.yaml uncertainty.margin_by_criterion)"
+ },
+ "regions": {
+  "hip": {
+   "components_roc_auc": {
+    "any_model_only": 0.702027,
+    "max_criteria_only": 0.774812
+   },
+   "n_row_uncertain": 31,
+   "name": "Проксимальный отдел бедра",
+   "row_uncertain_share": 0.094225,
+   "share_class1": 0.285714,
+   "variants": {
+    "final": {
+     "bins_equal_10": [
+      {
+       "bin": 0,
+       "frac_pos": 0.0,
+       "gap": 0.079014,
+       "hi": 0.1,
+       "lo": 0.0,
+       "mean_pred": 0.079014,
+       "n": 15,
+       "n_pos": 0
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.12766,
+       "gap": 0.029347,
+       "hi": 0.2,
+       "lo": 0.1,
+       "mean_pred": 0.157006,
+       "n": 94,
+       "n_pos": 12
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.159574,
+       "gap": 0.077297,
+       "hi": 0.3,
+       "lo": 0.2,
+       "mean_pred": 0.236872,
+       "n": 94,
+       "n_pos": 15
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.566667,
+       "gap": 0.217253,
+       "hi": 0.4,
+       "lo": 0.3,
+       "mean_pred": 0.349413,
+       "n": 30,
+       "n_pos": 17
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.0,
+       "gap": 0.423975,
+       "hi": 0.5,
+       "lo": 0.4,
+       "mean_pred": 0.423975,
+       "n": 2,
+       "n_pos": 0
+      },
+      {
+       "bin": 5,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.6,
+       "lo": 0.5,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 6,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.7,
+       "lo": 0.6,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 7,
+       "frac_pos": 0.375,
+       "gap": 0.386331,
+       "hi": 0.8,
+       "lo": 0.7,
+       "mean_pred": 0.761331,
+       "n": 32,
+       "n_pos": 12
+      },
+      {
+       "bin": 8,
+       "frac_pos": 0.342105,
+       "gap": 0.510151,
+       "hi": 0.9,
+       "lo": 0.8,
+       "mean_pred": 0.852256,
+       "n": 38,
+       "n_pos": 13
+      },
+      {
+       "bin": 9,
+       "frac_pos": 0.958333,
+       "gap": 0.003697,
+       "hi": 1.0,
+       "lo": 0.9,
+       "mean_pred": 0.96203,
+       "n": 24,
+       "n_pos": 23
+      }
+     ],
+     "bins_quantile_5": [
+      {
+       "bin": 0,
+       "frac_pos": 0.140625,
+       "gap": 0.018524,
+       "hi": 0.166476,
+       "lo": 0.0,
+       "mean_pred": 0.122101,
+       "n": 64,
+       "n_pos": 9
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.102941,
+       "gap": 0.086527,
+       "hi": 0.209425,
+       "lo": 0.166476,
+       "mean_pred": 0.189468,
+       "n": 68,
+       "n_pos": 7
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.169231,
+       "gap": 0.072918,
+       "hi": 0.294165,
+       "lo": 0.209425,
+       "mean_pred": 0.242149,
+       "n": 65,
+       "n_pos": 11
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.439394,
+       "gap": 0.080224,
+       "hi": 0.790073,
+       "lo": 0.294165,
+       "mean_pred": 0.519618,
+       "n": 66,
+       "n_pos": 29
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.545455,
+       "gap": 0.343096,
+       "hi": 1.0,
+       "lo": 0.790073,
+       "mean_pred": 0.888551,
+       "n": 66,
+       "n_pos": 36
+      }
+     ],
+     "brier": 0.19784,
+     "brier_const": 0.201439,
+     "brier_skill": 0.017867,
+     "ci95": {
+      "brier": [
+       0.145256,
+       0.257704
+      ],
+      "ece_10": [
+       0.093122,
+       0.242769
+      ]
+     },
+     "ece_10": 0.153229,
+     "ece_q5": 0.120815,
+     "intercept": -0.849696,
+     "log_loss": 0.581712,
+     "log_loss_const": 0.592609,
+     "mce_10": 0.510151,
+     "mce_q5": 0.343096,
+     "mean_pred": 0.393244,
+     "n": 329,
+     "n_bins_q_effective": 5,
+     "n_pos": 92,
+     "n_pos_studies": 28,
+     "n_studies": 78,
+     "prevalence": 0.279635,
+     "roc_auc": 0.76009,
+     "slope": 0.579199
+    },
+    "raw_blend": {
+     "bins_equal_10": [
+      {
+       "bin": 0,
+       "frac_pos": 0.0,
+       "gap": 0.08791,
+       "hi": 0.1,
+       "lo": 0.0,
+       "mean_pred": 0.08791,
+       "n": 1,
+       "n_pos": 0
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.0,
+       "gap": 0.163037,
+       "hi": 0.2,
+       "lo": 0.1,
+       "mean_pred": 0.163037,
+       "n": 14,
+       "n_pos": 0
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.166667,
+       "gap": 0.086211,
+       "hi": 0.3,
+       "lo": 0.2,
+       "mean_pred": 0.252878,
+       "n": 36,
+       "n_pos": 6
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.103448,
+       "gap": 0.248509,
+       "hi": 0.4,
+       "lo": 0.3,
+       "mean_pred": 0.351958,
+       "n": 58,
+       "n_pos": 6
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.194805,
+       "gap": 0.247819,
+       "hi": 0.5,
+       "lo": 0.4,
+       "mean_pred": 0.442624,
+       "n": 77,
+       "n_pos": 15
+      },
+      {
+       "bin": 5,
+       "frac_pos": 0.244898,
+       "gap": 0.309694,
+       "hi": 0.6,
+       "lo": 0.5,
+       "mean_pred": 0.554592,
+       "n": 49,
+       "n_pos": 12
+      },
+      {
+       "bin": 6,
+       "frac_pos": 0.433333,
+       "gap": 0.212469,
+       "hi": 0.7,
+       "lo": 0.6,
+       "mean_pred": 0.645803,
+       "n": 30,
+       "n_pos": 13
+      },
+      {
+       "bin": 7,
+       "frac_pos": 0.447368,
+       "gap": 0.299005,
+       "hi": 0.8,
+       "lo": 0.7,
+       "mean_pred": 0.746374,
+       "n": 38,
+       "n_pos": 17
+      },
+      {
+       "bin": 8,
+       "frac_pos": 0.7,
+       "gap": 0.158686,
+       "hi": 0.9,
+       "lo": 0.8,
+       "mean_pred": 0.858686,
+       "n": 10,
+       "n_pos": 7
+      },
+      {
+       "bin": 9,
+       "frac_pos": 1.0,
+       "gap": 0.044594,
+       "hi": 1.0,
+       "lo": 0.9,
+       "mean_pred": 0.955406,
+       "n": 16,
+       "n_pos": 16
+      }
+     ],
+     "bins_quantile_5": [
+      {
+       "bin": 0,
+       "frac_pos": 0.140625,
+       "gap": 0.103576,
+       "hi": 0.332952,
+       "lo": 0.0,
+       "mean_pred": 0.244201,
+       "n": 64,
+       "n_pos": 9
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.102941,
+       "gap": 0.275996,
+       "hi": 0.418849,
+       "lo": 0.332952,
+       "mean_pred": 0.378937,
+       "n": 68,
+       "n_pos": 7
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.203125,
+       "gap": 0.260106,
+       "hi": 0.518144,
+       "lo": 0.418849,
+       "mean_pred": 0.463231,
+       "n": 64,
+       "n_pos": 13
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.348485,
+       "gap": 0.248176,
+       "hi": 0.698597,
+       "lo": 0.518144,
+       "mean_pred": 0.596661,
+       "n": 66,
+       "n_pos": 23
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.597015,
+       "gap": 0.213901,
+       "hi": 1.0,
+       "lo": 0.698597,
+       "mean_pred": 0.810916,
+       "n": 67,
+       "n_pos": 40
+      }
+     ],
+     "brier": 0.211166,
+     "brier_const": 0.201439,
+     "brier_skill": -0.048288,
+     "ci95": {
+      "brier": [
+       0.178166,
+       0.246321
+      ],
+      "ece_10": [
+       0.164769,
+       0.302947
+      ]
+     },
+     "ece_10": 0.225475,
+     "ece_q5": 0.221138,
+     "intercept": -1.190243,
+     "log_loss": 0.605535,
+     "log_loss_const": 0.592609,
+     "mce_10": 0.309694,
+     "mce_q5": 0.275996,
+     "mean_pred": 0.500773,
+     "n": 329,
+     "n_bins_q_effective": 5,
+     "n_pos": 92,
+     "n_pos_studies": 28,
+     "n_studies": 78,
+     "prevalence": 0.279635,
+     "roc_auc": 0.759218,
+     "slope": 1.133441
+    }
+   }
+  },
+  "spine": {
+   "components_roc_auc": {
+    "any_model_only": 0.765723,
+    "max_criteria_only": 0.771541
+   },
+   "n_row_uncertain": 24,
+   "name": "Поясничный отдел позвоночника",
+   "row_uncertain_share": 0.144578,
+   "share_class1": 0.457831,
+   "variants": {
+    "final": {
+     "bins_equal_10": [
+      {
+       "bin": 0,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.1,
+       "lo": 0.0,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.0,
+       "gap": 0.176621,
+       "hi": 0.2,
+       "lo": 0.1,
+       "mean_pred": 0.176621,
+       "n": 20,
+       "n_pos": 0
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.220588,
+       "gap": 0.021688,
+       "hi": 0.3,
+       "lo": 0.2,
+       "mean_pred": 0.242276,
+       "n": 68,
+       "n_pos": 15
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.0,
+       "gap": 0.321929,
+       "hi": 0.4,
+       "lo": 0.3,
+       "mean_pred": 0.321929,
+       "n": 2,
+       "n_pos": 0
+      },
+      {
+       "bin": 4,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.5,
+       "lo": 0.4,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 5,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.6,
+       "lo": 0.5,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 6,
+       "frac_pos": 0.0,
+       "gap": 0.694114,
+       "hi": 0.7,
+       "lo": 0.6,
+       "mean_pred": 0.694114,
+       "n": 4,
+       "n_pos": 0
+      },
+      {
+       "bin": 7,
+       "frac_pos": 0.333333,
+       "gap": 0.436598,
+       "hi": 0.8,
+       "lo": 0.7,
+       "mean_pred": 0.769931,
+       "n": 27,
+       "n_pos": 9
+      },
+      {
+       "bin": 8,
+       "frac_pos": 0.823529,
+       "gap": 0.022121,
+       "hi": 0.9,
+       "lo": 0.8,
+       "mean_pred": 0.84565,
+       "n": 34,
+       "n_pos": 28
+      },
+      {
+       "bin": 9,
+       "frac_pos": 0.727273,
+       "gap": 0.185827,
+       "hi": 1.0,
+       "lo": 0.9,
+       "mean_pred": 0.9131,
+       "n": 11,
+       "n_pos": 8
+      }
+     ],
+     "bins_quantile_5": [
+      {
+       "bin": 0,
+       "frac_pos": 0.090909,
+       "gap": 0.098114,
+       "hi": 0.214713,
+       "lo": 0.0,
+       "mean_pred": 0.189023,
+       "n": 33,
+       "n_pos": 3
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.242424,
+       "gap": 0.009323,
+       "hi": 0.260422,
+       "lo": 0.214713,
+       "mean_pred": 0.233101,
+       "n": 33,
+       "n_pos": 8
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.147059,
+       "gap": 0.261346,
+       "hi": 0.73385,
+       "lo": 0.260422,
+       "mean_pred": 0.408405,
+       "n": 34,
+       "n_pos": 5
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.5625,
+       "gap": 0.22974,
+       "hi": 0.827781,
+       "lo": 0.73385,
+       "mean_pred": 0.79224,
+       "n": 32,
+       "n_pos": 18
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.764706,
+       "gap": 0.113068,
+       "hi": 1.0,
+       "lo": 0.827781,
+       "mean_pred": 0.877774,
+       "n": 34,
+       "n_pos": 26
+      }
+     ],
+     "brier": 0.199066,
+     "brier_const": 0.230803,
+     "brier_skill": 0.137506,
+     "ci95": {
+      "brier": [
+       0.14658,
+       0.259254
+      ],
+      "ece_10": [
+       0.098709,
+       0.241473
+      ]
+     },
+     "ece_10": 0.138626,
+     "ece_q5": 0.142332,
+     "intercept": -0.785685,
+     "log_loss": 0.59042,
+     "log_loss_const": 0.654246,
+     "mce_10": 0.694114,
+     "mce_q5": 0.261346,
+     "mean_pred": 0.500071,
+     "n": 166,
+     "n_bins_q_effective": 5,
+     "n_pos": 60,
+     "n_pos_studies": 31,
+     "n_studies": 99,
+     "prevalence": 0.361446,
+     "roc_auc": 0.812736,
+     "slope": 0.80388
+    },
+    "raw_blend": {
+     "bins_equal_10": [
+      {
+       "bin": 0,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.1,
+       "lo": 0.0,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 1,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 0.2,
+       "lo": 0.1,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.0,
+       "gap": 0.237247,
+       "hi": 0.3,
+       "lo": 0.2,
+       "mean_pred": 0.237247,
+       "n": 2,
+       "n_pos": 0
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.0,
+       "gap": 0.370148,
+       "hi": 0.4,
+       "lo": 0.3,
+       "mean_pred": 0.370148,
+       "n": 22,
+       "n_pos": 0
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.229167,
+       "gap": 0.219387,
+       "hi": 0.5,
+       "lo": 0.4,
+       "mean_pred": 0.448554,
+       "n": 48,
+       "n_pos": 11
+      },
+      {
+       "bin": 5,
+       "frac_pos": 0.276596,
+       "gap": 0.276495,
+       "hi": 0.6,
+       "lo": 0.5,
+       "mean_pred": 0.55309,
+       "n": 47,
+       "n_pos": 13
+      },
+      {
+       "bin": 6,
+       "frac_pos": 0.764706,
+       "gap": 0.126698,
+       "hi": 0.7,
+       "lo": 0.6,
+       "mean_pred": 0.638008,
+       "n": 17,
+       "n_pos": 13
+      },
+      {
+       "bin": 7,
+       "frac_pos": 0.789474,
+       "gap": 0.055485,
+       "hi": 0.8,
+       "lo": 0.7,
+       "mean_pred": 0.733989,
+       "n": 19,
+       "n_pos": 15
+      },
+      {
+       "bin": 8,
+       "frac_pos": 0.727273,
+       "gap": 0.098927,
+       "hi": 0.9,
+       "lo": 0.8,
+       "mean_pred": 0.826199,
+       "n": 11,
+       "n_pos": 8
+      },
+      {
+       "bin": 9,
+       "frac_pos": null,
+       "gap": null,
+       "hi": 1.0,
+       "lo": 0.9,
+       "mean_pred": null,
+       "n": 0,
+       "n_pos": 0
+      }
+     ],
+     "bins_quantile_5": [
+      {
+       "bin": 0,
+       "frac_pos": 0.0,
+       "gap": 0.370322,
+       "hi": 0.423923,
+       "lo": 0.0,
+       "mean_pred": 0.370322,
+       "n": 31,
+       "n_pos": 0
+      },
+      {
+       "bin": 1,
+       "frac_pos": 0.235294,
+       "gap": 0.214146,
+       "hi": 0.471323,
+       "lo": 0.423923,
+       "mean_pred": 0.44944,
+       "n": 34,
+       "n_pos": 8
+      },
+      {
+       "bin": 2,
+       "frac_pos": 0.235294,
+       "gap": 0.289137,
+       "hi": 0.559684,
+       "lo": 0.471323,
+       "mean_pred": 0.524431,
+       "n": 34,
+       "n_pos": 8
+      },
+      {
+       "bin": 3,
+       "frac_pos": 0.545455,
+       "gap": 0.052812,
+       "hi": 0.656243,
+       "lo": 0.559684,
+       "mean_pred": 0.598267,
+       "n": 33,
+       "n_pos": 18
+      },
+      {
+       "bin": 4,
+       "frac_pos": 0.764706,
+       "gap": 0.009139,
+       "hi": 1.0,
+       "lo": 0.656243,
+       "mean_pred": 0.755567,
+       "n": 34,
+       "n_pos": 26
+      }
+     ],
+     "brier": 0.212832,
+     "brier_const": 0.230803,
+     "brier_skill": 0.077863,
+     "ci95": {
+      "brier": [
+       0.188827,
+       0.240298
+      ],
+      "ece_10": [
+       0.155288,
+       0.316509
+      ]
+     },
+     "ece_10": 0.219517,
+     "ece_q5": 0.184609,
+     "intercept": -1.125126,
+     "log_loss": 0.616951,
+     "log_loss_const": 0.654246,
+     "mce_10": 0.370148,
+     "mce_q5": 0.370322,
+     "mean_pred": 0.542311,
+     "n": 166,
+     "n_bins_q_effective": 5,
+     "n_pos": 60,
+     "n_pos_studies": 31,
+     "n_studies": 99,
+     "prevalence": 0.361446,
+     "roc_auc": 0.82327,
+     "slope": 2.225195
+    }
+   }
+  }
+ },
+ "svg_files": [
+  "docs/calibration/reliability_spine.svg",
+  "docs/calibration/reliability_hip.svg",
+  "docs/calibration/reliability_sp_pos.svg",
+  "docs/calibration/reliability_sp_axis.svg",
+  "docs/calibration/reliability_sp_art.svg",
+  "docs/calibration/reliability_hip_pos.svg",
+  "docs/calibration/reliability_hip_roi.svg"
+ ],
+ "uncertain_zone": {
+  "hip_pos": {
+   "margin": 0.010638,
+   "n": 329,
+   "n_errors_in_zone": 13,
+   "n_errors_total": 92,
+   "n_uncertain": 15,
+   "p_cal_at_threshold": 0.338742,
+   "share_errors_covered": 0.141304,
+   "share_uncertain": 0.045593,
+   "threshold": 0.658055
+  },
+  "hip_roi": {
+   "margin": 0.025836,
+   "n": 329,
+   "n_errors_in_zone": 7,
+   "n_errors_total": 17,
+   "n_uncertain": 16,
+   "p_cal_at_threshold": 0.270743,
+   "share_errors_covered": 0.411765,
+   "share_uncertain": 0.048632,
+   "threshold": 0.917933
+  },
+  "sp_art": {
+   "margin": 0.012048,
+   "n": 166,
+   "n_errors_in_zone": 6,
+   "n_errors_total": 40,
+   "n_uncertain": 8,
+   "p_cal_at_threshold": 0.248634,
+   "share_errors_covered": 0.15,
+   "share_uncertain": 0.048193,
+   "threshold": 0.60241
+  },
+  "sp_axis": {
+   "margin": 0.004518,
+   "n": 166,
+   "n_errors_in_zone": 0,
+   "n_errors_total": 17,
+   "n_uncertain": 6,
+   "p_cal_at_threshold": 0.244067,
+   "share_errors_covered": 0.0,
+   "share_uncertain": 0.036145,
+   "threshold": 0.777108
+  },
+  "sp_pos": {
+   "margin": 0.0,
+   "n": 166,
+   "n_errors_in_zone": 10,
+   "n_errors_total": 14,
+   "n_uncertain": 10,
+   "p_cal_at_threshold": 0.288804,
+   "share_errors_covered": 0.714286,
+   "share_uncertain": 0.060241,
+   "threshold": 0.861446
+  }
+ }
+}

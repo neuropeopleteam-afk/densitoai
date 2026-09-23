@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://densitoai.local/schema/department_summary.schema.json",
+  "title": "DensitoAI: сводка по отделению (партии) без персональных данных",
+  "description": "Ответ GET /api/results/{job}/summary и файл summary.json из tools/department_summary.py. Агрегаты по results.csv (9 колонок) и техническим CSV того же прогона: исследования и файлы, доли нарушений по области, типу нарушения, аппарату (хэш StationName/DeviceSerialNumber) и дате исследования; рядом с каждой долей — доверительный интервал Уилсона 95 % и пометка «мало данных» (low_data) при n < method.min_n. Персональных данных нет: только UID, хэши, производитель и модель аппарата, даты.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "kind",
+    "method",
+    "period",
+    "totals",
+    "violation_rate",
+    "violation_rate_studies",
+    "failure_rate",
+    "failure_reasons",
+    "by_region",
+    "by_violation_type",
+    "by_device",
+    "by_date",
+    "review_top",
+    "notes"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "kind": { "type": "string", "const": "department_summary" },
+    "job_id": { "type": "string", "description": "Код задачи API (в CLI-варианте отсутствует)" },
+    "pipeline_version": { "type": ["string", "null"] },
+    "config_hash": { "type": ["string", "null"] },
+    "inputs": {
+      "type": "object",
+      "properties": {
+        "results_csv": { "type": "array", "items": { "type": "string" } },
+        "debug_csv": { "type": "array", "items": { "type": "string" } },
+        "extras_csv": { "type": "array", "items": { "type": "string" } },
+        "device_source": { "type": ["string", "null"], "enum": ["device_tags.csv", "dicom", null] }
+      }
+    },
+    "method": {
+      "type": "object",
+      "required": ["ci", "min_n", "violation_denominator"],
+      "properties": {
+        "ci": { "type": "string" },
+        "min_n": { "type": "integer", "minimum": 1 },
+        "low_data_text": { "type": "string" },
+        "violation_denominator": { "type": "string" },
+        "uncertain_source": { "type": ["string", "null"] },
+        "device_id": { "type": "string" }
+      }
+    },
+    "period": {
+      "type": "object",
+      "required": ["date_min", "date_max", "n_files_without_date"],
+      "properties": {
+        "date_min": { "type": ["string", "null"], "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "date_max": { "type": ["string", "null"], "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "n_files_without_date": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "totals": {
+      "type": "object",
+      "required": ["n_files", "n_studies", "n_success", "n_failure", "n_violation", "n_norm",
+                   "n_studies_processed", "n_studies_with_violation", "processing_time_total_s"],
+      "properties": {
+        "n_files": { "type": "integer", "minimum": 0 },
+        "n_studies": { "type": "integer", "minimum": 0 },
+        "n_unique_images": { "type": "integer", "minimum": 0 },
+        "n_unique_pixel_hashes": { "type": ["integer", "null"], "minimum": 0 },
+        "n_success": { "type": "integer", "minimum": 0 },
+        "n_failure": { "type": "integer", "minimum": 0 },
+        "n_violation": { "type": "integer", "minimum": 0 },
+        "n_norm": { "type": "integer", "minimum": 0 },
+        "n_uncertain": { "type": ["integer", "null"], "minimum": 0 },
+        "n_studies_processed": { "type": "integer", "minimum": 0 },
+        "n_studies_with_violation": { "type": "integer", "minimum": 0 },
+        "n_studies_with_failure": { "type": "integer", "minimum": 0 },
+        "n_studies_uncertain": { "type": ["integer", "null"], "minimum": 0 },
+        "processing_time_total_s": { "type": "number", "minimum": 0 },
+        "processing_time_mean_s": { "type": ["number", "null"], "minimum": 0 }
+      }
+    },
+    "violation_rate": { "$ref": "#/$defs/rate" },
+    "violation_rate_studies": { "$ref": "#/$defs/rate" },
+    "failure_rate": { "$ref": "#/$defs/rate" },
+    "uncertain_rate": { "anyOf": [ { "$ref": "#/$defs/rate" }, { "type": "null" } ] },
+    "uncertain_by_criterion": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "required": ["criterion", "n_files"],
+        "properties": {
+          "criterion": { "type": "string", "pattern": "^(sp_pos|sp_axis|sp_art|rh_pos|rh_roi|lh_pos|lh_roi|hip_pos|hip_roi)$" },
+          "title": { "type": "string" },
+          "n_files": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "failure_reasons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["reason", "n_files", "share"],
+        "properties": {
+          "reason": { "type": "string", "maxLength": 160 },
+          "n_files": { "type": "integer", "minimum": 0 },
+          "share": { "$ref": "#/$defs/rate" }
+        }
+      }
+    },
+    "by_region": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["region", "n_files", "n_studies", "n_success", "n_failure", "n_violation", "n_norm",
+                     "violation_rate", "failure_rate", "studies_with_violation"],
+        "properties": {
+          "region": { "type": "string", "enum": ["Поясничный отдел позвоночника", "Проксимальный отдел бедра"] },
+          "n_files": { "type": "integer", "minimum": 0 },
+          "n_studies": { "type": "integer", "minimum": 0 },
+          "n_success": { "type": "integer", "minimum": 0 },
+          "n_failure": { "type": "integer", "minimum": 0 },
+          "n_violation": { "type": "integer", "minimum": 0 },
+          "n_norm": { "type": "integer", "minimum": 0 },
+          "violation_rate": { "$ref": "#/$defs/rate" },
+          "failure_rate": { "$ref": "#/$defs/rate" },
+          "studies_with_violation": { "$ref": "#/$defs/rate" }
+        }
+      }
+    },
+    "by_violation_type": {
+      "type": "array",
+      "minItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["region", "violation_type", "n_files", "n_studies", "rate_files", "rate_studies"],
+        "properties": {
+          "region": { "type": "string", "enum": ["Поясничный отдел позвоночника", "Проксимальный отдел бедра"] },
+          "violation_type": {
+            "type": "string",
+            "enum": ["Некорректная укладка", "Не выравнена ось позвоночника", "Присутствуют посторонние предметы", "Некорректная область интереса"]
+          },
+          "n_files": { "type": "integer", "minimum": 0 },
+          "n_studies": { "type": "integer", "minimum": 0 },
+          "rate_files": { "$ref": "#/$defs/rate" },
+          "rate_studies": { "$ref": "#/$defs/rate" }
+        }
+      }
+    },
+    "by_device": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["device", "manufacturer", "model_name", "device_hash", "n_files", "n_studies",
+                     "n_success", "n_failure", "n_violation", "violation_rate", "failure_rate"],
+        "properties": {
+          "device": { "type": "string" },
+          "manufacturer": { "type": "string" },
+          "model_name": { "type": "string" },
+          "device_hash": { "type": "string", "pattern": "^([0-9a-f]{12})?$", "description": "sha256 StationName (иначе DeviceSerialNumber), 12 символов; пусто — не указан" },
+          "n_files": { "type": "integer", "minimum": 0 },
+          "n_studies": { "type": "integer", "minimum": 0 },
+          "n_success": { "type": "integer", "minimum": 0 },
+          "n_failure": { "type": "integer", "minimum": 0 },
+          "n_violation": { "type": "integer", "minimum": 0 },
+          "violation_rate": { "$ref": "#/$defs/rate" },
+          "failure_rate": { "$ref": "#/$defs/rate" },
+          "uncertain_rate": { "anyOf": [ { "$ref": "#/$defs/rate" }, { "type": "null" } ] }
+        }
+      }
+    },
+    "by_date": {
+      "type": "object",
+      "required": ["day", "week", "n_files_without_date"],
+      "properties": {
+        "day": { "type": "array", "items": { "$ref": "#/$defs/period_item" } },
+        "week": { "type": "array", "items": { "$ref": "#/$defs/period_item" } },
+        "n_files_without_date": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "study_warnings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["warning", "n_files"],
+        "properties": { "warning": { "type": "string" }, "n_files": { "type": "integer", "minimum": 0 } }
+      }
+    },
+    "review_top": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["rank", "study_uid", "image_uid", "max_quality_prob", "n_files", "n_violation", "regions", "violation_types"],
+        "properties": {
+          "rank": { "type": "integer", "minimum": 1 },
+          "study_uid": { "type": "string", "pattern": "^[0-9.]+$" },
+          "image_uid": { "type": "string", "pattern": "^[0-9.]*$" },
+          "max_quality_prob": { "type": "number", "minimum": 0, "maximum": 1 },
+          "n_files": { "type": "integer", "minimum": 1 },
+          "n_violation": { "type": "integer", "minimum": 0 },
+          "n_uncertain": { "type": ["integer", "null"], "minimum": 0 },
+          "regions": { "type": "array", "items": { "type": "string" } },
+          "violation_types": { "type": "array", "items": { "type": "string" } },
+          "study_date": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "notes": { "type": "array", "items": { "type": "string" } }
+  },
+  "$defs": {
+    "rate": {
+      "type": "object",
+      "description": "Доля k/n с доверительным интервалом Уилсона 95 %; low_data = true при n < method.min_n",
+      "required": ["k", "n", "rate", "ci_low", "ci_high", "low_data"],
+      "additionalProperties": false,
+      "properties": {
+        "k": { "type": "integer", "minimum": 0 },
+        "n": { "type": "integer", "minimum": 0 },
+        "rate": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "ci_low": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "ci_high": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "low_data": { "type": "boolean" }
+      }
+    },
+    "period_item": {
+      "type": "object",
+      "required": ["period", "n_files", "n_studies", "n_success", "n_failure", "n_violation", "violation_rate"],
+      "properties": {
+        "period": { "type": "string", "pattern": "^[0-9]{4}-(W[0-9]{2}|[0-9]{2}-[0-9]{2})$" },
+        "n_files": { "type": "integer", "minimum": 0 },
+        "n_studies": { "type": "integer", "minimum": 0 },
+        "n_success": { "type": "integer", "minimum": 0 },
+        "n_failure": { "type": "integer", "minimum": 0 },
+        "n_violation": { "type": "integer", "minimum": 0 },
+        "violation_rate": { "$ref": "#/$defs/rate" }
+      }
+    }
+  }
+}

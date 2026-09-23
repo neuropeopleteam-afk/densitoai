@@ -1,0 +1,170 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="500" viewBox="0 0 1160 500" font-family="DejaVu Sans, Arial, sans-serif" font-size="11">
+<rect x="0" y="0" width="1160" height="500" fill="white"/>
+<text x="10" y="20" font-size="14" font-weight="bold">Надёжность скора критерия hip_roi (OOF) — Некорректная область интереса</text>
+<text x="70" y="40" font-size="12">ранговый скор (сравнивается с порогом)</text>
+<text x="70" y="56" font-size="10" fill="#444">n=329, положительных 16 (6 исследований)</text>
+<text x="70" y="69" font-size="10" fill="#444">ECE10 0.453 [0.40; 0.52]; Brier 0.286 [0.233; 0.352]</text>
+<rect x="70" y="84" width="250" height="250" fill="none" stroke="#333"/>
+<line x1="120.0" y1="84" x2="120.0" y2="334" stroke="#eee"/>
+<line x1="70" y1="284.0" x2="320" y2="284.0" stroke="#eee"/>
+<text x="120.0" y="346" text-anchor="middle" font-size="9">0.2</text>
+<text x="66" y="287.0" text-anchor="end" font-size="9">0.2</text>
+<line x1="170.0" y1="84" x2="170.0" y2="334" stroke="#eee"/>
+<line x1="70" y1="234.0" x2="320" y2="234.0" stroke="#eee"/>
+<text x="170.0" y="346" text-anchor="middle" font-size="9">0.4</text>
+<text x="66" y="237.0" text-anchor="end" font-size="9">0.4</text>
+<line x1="220.0" y1="84" x2="220.0" y2="334" stroke="#eee"/>
+<line x1="70" y1="184.0" x2="320" y2="184.0" stroke="#eee"/>
+<text x="220.0" y="346" text-anchor="middle" font-size="9">0.6</text>
+<text x="66" y="187.0" text-anchor="end" font-size="9">0.6</text>
+<line x1="270.0" y1="84" x2="270.0" y2="334" stroke="#eee"/>
+<line x1="70" y1="134.0" x2="320" y2="134.0" stroke="#eee"/>
+<text x="270.0" y="346" text-anchor="middle" font-size="9">0.8</text>
+<text x="66" y="137.0" text-anchor="end" font-size="9">0.8</text>
+<line x1="70" y1="334" x2="320" y2="84" stroke="#999" stroke-dasharray="4 3"/>
+<polyline points="105.9,334.0 147.8,334.0 194.1,326.3 235.8,334.0 289.4,283.3" fill="none" stroke="#d9541e" stroke-width="1.5"/>
+<rect x="101.9" y="330.0" width="8" height="8" fill="#d9541e" stroke="white"/>
+<rect x="143.8" y="330.0" width="8" height="8" fill="#d9541e" stroke="white"/>
+<rect x="190.1" y="322.3" width="8" height="8" fill="#d9541e" stroke="white"/>
+<rect x="231.8" y="330.0" width="8" height="8" fill="#d9541e" stroke="white"/>
+<rect x="285.4" y="279.3" width="8" height="8" fill="#d9541e" stroke="white"/>
+<circle cx="85.9" cy="334.0" r="9.4" fill="#1f6fb2" fill-opacity="0.55" stroke="#1f6fb2"/>
+<text x="97.3" y="337.0" font-size="8" fill="#1f6fb2">16</text>
+<circle cx="107.9" cy="334.0" r="12.8" fill="#1f6fb2" fill-opacity="0.55" stroke="#1f6fb2"/>
+<text x="122.7" y="337.0" font-size="8" fill="#1f6fb2">37</text>
+<circle cx="129.6" cy="334.0" r="12.5" fill="#1f6fb2" fill-opacity="0.55" stroke="#1f6fb2"/>
+<text x="144.1" y="337.0" font-size="8" fill="#1f6fb2">35</text>
+<circle cx="153.0" cy="334.0" r="12.9" fill="#1f6fb2" fill-opacity="0.55" stroke="#1f6fb2"/>
+<text x="167.9" y="337.0" font-size="8" fill="#1f6fb2">38</text>
+<circle cx="182.6" cy="334.0" r="12.2" fill="#1f6fb2" fill-opacity="0.55" stroke="#1f6fb2"/>
+<text x="196.8" y="337.0" font-size="8" fill="#1f6fb2">33</text>
+<circle cx="205.1" cy="323.1" r="13.9" fill="#1f6fb2" fill-opacity="0.55" stroke="#1f6fb2"/>
+<text x="221.0" y="326.1" font-size="8" fill="#1f6fb2">46</text>
+<circle cx="231.6" cy="334.0" r="13.0" fill="#1f6fb2" fill-opacity="0.55" stroke="#1f6fb2"/>
+<text x="246.6" y="337.0" font-size="8" fill="#1f6fb2">39</text>
+<circle cx="255.1" cy="334.0" r="9.2" fill="#1f6fb2" fill-opacity="0.55" stroke="#1f6fb2"/>
+<text x="266.3" y="337.0" font-size="8" fill="#1f6fb2">15</text>
+<circle cx="281.9" cy="312.7" r="14.0" fill="#1f6fb2" fill-opacity="0.55" stroke="#1f6fb2"/>
+<text x="297.9" y="315.7" font-size="8" fill="#1f6fb2">47</text>
+<circle cx="304.1" cy="225.3" r="10.7" fill="#1f6fb2" fill-opacity="0.55" stroke="#1f6fb2"/>
+<text x="316.8" y="228.3" font-size="8" fill="#1f6fb2">23</text>
+<text x="195.0" y="358" text-anchor="middle" font-size="10">средняя предсказанная вероятность</text>
+<text transform="translate(30,209.0) rotate(-90)" text-anchor="middle" font-size="10">доля положительных</text>
+<rect x="71.0" y="407.6" width="23.0" height="20.4" fill="#888"/>
+<rect x="96.0" y="380.8" width="23.0" height="47.2" fill="#888"/>
+<rect x="121.0" y="383.3" width="23.0" height="44.7" fill="#888"/>
+<rect x="146.0" y="379.5" width="23.0" height="48.5" fill="#888"/>
+<rect x="171.0" y="385.9" width="23.0" height="42.1" fill="#888"/>
+<rect x="196.0" y="369.3" width="23.0" height="58.7" fill="#888"/>
+<rect x="221.0" y="378.2" width="23.0" height="49.8" fill="#888"/>
+<rect x="246.0" y="408.9" width="23.0" height="19.1" fill="#888"/>
+<rect x="271.0" y="368.0" width="23.0" height="60.0" fill="#888"/>
+<rect x="296.0" y="398.6" width="23.0" height="29.4" fill="#888"/>
+<line x1="70" y1="428" x2="320" y2="428" stroke="#333"/>
+<text x="70" y="440" font-size="9" fill="#444">наклон 1.56, сдвиг -4.86; MCE10 0.763; лог-лосс 0.811; AUC 0.917</text>
+<text x="450" y="40" font-size="12">Platt из calibration.pkl (in-sample)</text>
+<text x="450" y="56" font-size="10" fill="#444">n=329, положительных 16 (6 исследований)</text>
+<text x="450" y="69" font-size="10" fill="#444">ECE10 0.041 [0.02; 0.09]; Brier 0.035 [0.014; 0.060]</text>
+<rect x="450" y="84" width="250" height="250" fill="none" stroke="#333"/>
+<line x1="500.0" y1="84" x2="500.0" y2="334" stroke="#eee"/>
+<line x1="450" y1="284.0" x2="700" y2="284.0" stroke="#eee"/>
+<text x="500.0" y="346" text-anchor="middle" font-size="9">0.2</text>
+<text x="446" y="287.0" text-anchor="end" font-size="9">0.2</text>
+<line x1="550.0" y1="84" x2="550.0" y2="334" stroke="#eee"/>
+<line x1="450" y1="234.0" x2="700" y2="234.0" stroke="#eee"/>
+<text x="550.0" y="346" text-anchor="middle" font-size="9">0.4</text>
+<text x="446" y="237.0" text-anchor="end" font-size="9">0.4</text>
+<line x1="600.0" y1="84" x2="600.0" y2="334" stroke="#eee"/>
+<line x1="450" y1="184.0" x2="700" y2="184.0" stroke="#eee"/>
+<text x="600.0" y="346" text-anchor="middle" font-size="9">0.6</text>
+<text x="446" y="187.0" text-anchor="end" font-size="9">0.6</text>
+<line x1="650.0" y1="84" x2="650.0" y2="334" stroke="#eee"/>
+<line x1="450" y1="134.0" x2="700" y2="134.0" stroke="#eee"/>
+<text x="650.0" y="346" text-anchor="middle" font-size="9">0.8</text>
+<text x="446" y="137.0" text-anchor="end" font-size="9">0.8</text>
+<line x1="450" y1="334" x2="700" y2="84" stroke="#999" stroke-dasharray="4 3"/>
+<polyline points="450.0,334.0 450.1,334.0 450.9,326.3 456.4,334.0 501.1,283.3" fill="none" stroke="#d9541e" stroke-width="1.5"/>
+<rect x="446.0" y="330.0" width="8" height="8" fill="#d9541e" stroke="white"/>
+<rect x="446.1" y="330.0" width="8" height="8" fill="#d9541e" stroke="white"/>
+<rect x="446.9" y="322.3" width="8" height="8" fill="#d9541e" stroke="white"/>
+<rect x="452.4" y="330.0" width="8" height="8" fill="#d9541e" stroke="white"/>
+<rect x="497.1" y="279.3" width="8" height="8" fill="#d9541e" stroke="white"/>
+<circle cx="451.8" cy="332.1" r="14.0" fill="#1f6fb2" fill-opacity="0.55" stroke="#1f6fb2"/>
+<text x="467.8" y="335.1" font-size="8" fill="#1f6fb2">260</text>
+<circle cx="485.0" cy="334.0" r="7.4" fill="#1f6fb2" fill-opacity="0.55" stroke="#1f6fb2"/>
+<text x="494.3" y="337.0" font-size="8" fill="#1f6fb2">41</text>
+<circle cx="513.5" cy="195.1" r="5.9" fill="#1f6fb2" fill-opacity="0.55" stroke="#1f6fb2"/>
+<text x="521.4" y="198.1" font-size="8" fill="#1f6fb2">18</text>
+<circle cx="538.6" cy="184.0" r="4.5" fill="#1f6fb2" fill-opacity="0.55" stroke="#1f6fb2"/>
+<text x="545.1" y="187.0" font-size="8" fill="#1f6fb2">5</text>
+<circle cx="551.0" cy="284.0" r="4.5" fill="#1f6fb2" fill-opacity="0.55" stroke="#1f6fb2"/>
+<text x="557.5" y="287.0" font-size="8" fill="#1f6fb2">5</text>
+<text x="575.0" y="358" text-anchor="middle" font-size="10">средняя предсказанная вероятность</text>
+<text transform="translate(410,209.0) rotate(-90)" text-anchor="middle" font-size="10">доля положительных</text>
+<rect x="451.0" y="368.0" width="23.0" height="60.0" fill="#888"/>
+<rect x="476.0" y="418.5" width="23.0" height="9.5" fill="#888"/>
+<rect x="501.0" y="423.8" width="23.0" height="4.2" fill="#888"/>
+<rect x="526.0" y="426.8" width="23.0" height="1.2" fill="#888"/>
+<rect x="551.0" y="426.8" width="23.0" height="1.2" fill="#888"/>
+<rect x="576.0" y="428.0" width="23.0" height="0.0" fill="#888"/>
+<rect x="601.0" y="428.0" width="23.0" height="0.0" fill="#888"/>
+<rect x="626.0" y="428.0" width="23.0" height="0.0" fill="#888"/>
+<rect x="651.0" y="428.0" width="23.0" height="0.0" fill="#888"/>
+<rect x="676.0" y="428.0" width="23.0" height="0.0" fill="#888"/>
+<line x1="450" y1="428" x2="700" y2="428" stroke="#333"/>
+<text x="450" y="440" font-size="9" fill="#444">наклон 1.00, сдвиг 0.00; MCE10 0.302; лог-лосс 0.129; AUC 0.917</text>
+<text x="830" y="40" font-size="12">Platt cross-fit (GroupKFold 5, зерно 0)</text>
+<text x="830" y="56" font-size="10" fill="#444">n=329, положительных 16 (6 исследований)</text>
+<text x="830" y="69" font-size="10" fill="#444">ECE10 0.026 [0.01; 0.08]; Brier 0.041 [0.015; 0.072]</text>
+<rect x="830" y="84" width="250" height="250" fill="none" stroke="#333"/>
+<line x1="880.0" y1="84" x2="880.0" y2="334" stroke="#eee"/>
+<line x1="830" y1="284.0" x2="1080" y2="284.0" stroke="#eee"/>
+<text x="880.0" y="346" text-anchor="middle" font-size="9">0.2</text>
+<text x="826" y="287.0" text-anchor="end" font-size="9">0.2</text>
+<line x1="930.0" y1="84" x2="930.0" y2="334" stroke="#eee"/>
+<line x1="830" y1="234.0" x2="1080" y2="234.0" stroke="#eee"/>
+<text x="930.0" y="346" text-anchor="middle" font-size="9">0.4</text>
+<text x="826" y="237.0" text-anchor="end" font-size="9">0.4</text>
+<line x1="980.0" y1="84" x2="980.0" y2="334" stroke="#eee"/>
+<line x1="830" y1="184.0" x2="1080" y2="184.0" stroke="#eee"/>
+<text x="980.0" y="346" text-anchor="middle" font-size="9">0.6</text>
+<text x="826" y="187.0" text-anchor="end" font-size="9">0.6</text>
+<line x1="1030.0" y1="84" x2="1030.0" y2="334" stroke="#eee"/>
+<line x1="830" y1="134.0" x2="1080" y2="134.0" stroke="#eee"/>
+<text x="1030.0" y="346" text-anchor="middle" font-size="9">0.8</text>
+<text x="826" y="137.0" text-anchor="end" font-size="9">0.8</text>
+<line x1="830" y1="334" x2="1080" y2="84" stroke="#999" stroke-dasharray="4 3"/>
+<polyline points="830.0,326.4 830.2,334.0 831.1,334.0 837.6,334.0 880.6,281.0" fill="none" stroke="#d9541e" stroke-width="1.5"/>
+<rect x="826.0" y="322.4" width="8" height="8" fill="#d9541e" stroke="white"/>
+<rect x="826.2" y="330.0" width="8" height="8" fill="#d9541e" stroke="white"/>
+<rect x="827.1" y="330.0" width="8" height="8" fill="#d9541e" stroke="white"/>
+<rect x="833.6" y="330.0" width="8" height="8" fill="#d9541e" stroke="white"/>
+<rect x="876.6" y="277.0" width="8" height="8" fill="#d9541e" stroke="white"/>
+<circle cx="833.0" cy="332.2" r="14.0" fill="#1f6fb2" fill-opacity="0.55" stroke="#1f6fb2"/>
+<text x="849.0" y="335.2" font-size="8" fill="#1f6fb2">273</text>
+<circle cx="868.0" cy="273.2" r="7.0" fill="#1f6fb2" fill-opacity="0.55" stroke="#1f6fb2"/>
+<text x="877.1" y="276.2" font-size="8" fill="#1f6fb2">37</text>
+<circle cx="888.6" cy="298.3" r="4.8" fill="#1f6fb2" fill-opacity="0.55" stroke="#1f6fb2"/>
+<text x="895.3" y="301.3" font-size="8" fill="#1f6fb2">7</text>
+<circle cx="919.8" cy="250.7" r="4.6" fill="#1f6fb2" fill-opacity="0.55" stroke="#1f6fb2"/>
+<text x="926.4" y="253.7" font-size="8" fill="#1f6fb2">6</text>
+<circle cx="947.7" cy="84.0" r="3.9" fill="#1f6fb2" fill-opacity="0.55" stroke="#1f6fb2"/>
+<text x="953.7" y="87.0" font-size="8" fill="#1f6fb2">2</text>
+<circle cx="959.0" cy="334.0" r="4.3" fill="#1f6fb2" fill-opacity="0.55" stroke="#1f6fb2"/>
+<text x="965.3" y="337.0" font-size="8" fill="#1f6fb2">4</text>
+<text x="955.0" y="358" text-anchor="middle" font-size="10">средняя предсказанная вероятность</text>
+<text transform="translate(790,209.0) rotate(-90)" text-anchor="middle" font-size="10">доля положительных</text>
+<rect x="831.0" y="368.0" width="23.0" height="60.0" fill="#888"/>
+<rect x="856.0" y="419.9" width="23.0" height="8.1" fill="#888"/>
+<rect x="881.0" y="426.5" width="23.0" height="1.5" fill="#888"/>
+<rect x="906.0" y="426.7" width="23.0" height="1.3" fill="#888"/>
+<rect x="931.0" y="427.6" width="23.0" height="0.4" fill="#888"/>
+<rect x="956.0" y="427.1" width="23.0" height="0.9" fill="#888"/>
+<rect x="981.0" y="428.0" width="23.0" height="0.0" fill="#888"/>
+<rect x="1006.0" y="428.0" width="23.0" height="0.0" fill="#888"/>
+<rect x="1031.0" y="428.0" width="23.0" height="0.0" fill="#888"/>
+<rect x="1056.0" y="428.0" width="23.0" height="0.0" fill="#888"/>
+<line x1="830" y1="428" x2="1080" y2="428" stroke="#333"/>
+<text x="830" y="440" font-size="9" fill="#444">наклон 0.41, сдвиг -1.25; MCE10 0.529; лог-лосс 0.190; AUC 0.822</text>
+<text x="10" y="494" font-size="9" fill="#666">круги — 10 бинов равной ширины (число = n в бине); квадраты — 5 квантильных бинов; пунктир — идеальная калибровка; внизу — распределение предсказаний</text>
+</svg>

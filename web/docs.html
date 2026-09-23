@@ -602,7 +602,7 @@ body:not(.view-app) .topbar .topnav { display: flex; }
 <div class="table-wrap"><table class="metrics main">
 <colgroup><col style="width:18%"><col style="width:10%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:7%"><col style="width:15%"><col style="width:11%"><col style="width:15%"></colgroup>
 <thead><tr><th>Критерий</th><th>Область</th><th class="num">n / позит.</th><th class="num">AUC геом.</th><th class="num">AUC эмб.</th><th class="num">AUC стек</th><th>AUC на шкале 0.5–1.0</th><th class="num">F1 OOF [95 % ДИ]</th><th>Надёжность</th></tr></thead><tbody>
-<tr><td><div class="crit-title">Укладка пациента</div><div class="crit-sub">sp_pos · порог по доле позитивов, порог 0.822</div></td><td>позвоночник</td><td class="num">166 / 10</td><td class="num">0.681</td><td class="num">0.790</td><td class="num strong">0.734</td><td><div class="aucbar" role="img" aria-label="AUC 0.734 на шкале 0.5–1.0"><span class="aucbar-mark ok" style="left:46.8%"></span></div></td><td class="num">0.48 [0.11; 0.82]</td><td>мало позитивов (10): интервал широкий, читать по AUC; сильнее контур B (эмбеддинги)</td></tr>
+<tr><td><div class="crit-title">Укладка пациента</div><div class="crit-sub">sp_pos · порог по доле позитивов, порог 0.861</div></td><td>позвоночник</td><td class="num">166 / 10</td><td class="num">0.915</td><td class="num">0.790</td><td class="num strong">0.893</td><td><div class="aucbar" role="img" aria-label="AUC 0.893 на шкале 0.5–1.0"><span class="aucbar-mark ok" style="left:78.6%"></span></div></td><td class="num">0.50 [0.12; 1.00]</td><td>мало позитивов (10): интервал широкий, читать по AUC; сильнее контур A (геометрия + признак головы укладки)</td></tr>
 <tr><td><div class="crit-title">Ось позвоночника</div><div class="crit-sub">sp_axis · prevalence_x1.4, порог 0.777</div></td><td>позвоночник</td><td class="num">166 / 17</td><td class="num">0.839</td><td class="num">0.797</td><td class="num strong">0.889</td><td><div class="aucbar" role="img" aria-label="AUC 0.889 на шкале 0.5–1.0"><span class="aucbar-mark ok" style="left:77.8%"></span></div></td><td class="num">0.60 [0.29; 0.82]</td><td>сильнее геометрия</td></tr>
 <tr><td><div class="crit-title">Посторонние предметы</div><div class="crit-sub">sp_art · prevalence_x1.4, порог 0.602</div></td><td>позвоночник</td><td class="num">166 / 35</td><td class="num">0.560</td><td class="num">0.897</td><td class="num strong">0.823</td><td><div class="aucbar" role="img" aria-label="AUC 0.823 на шкале 0.5–1.0"><span class="aucbar-mark ok" style="left:64.5%"></span></div></td><td class="num">0.53 [0.24; 0.74]</td><td>сильнее контур B (эмбеддинги)</td></tr>
 <tr><td><div class="crit-title">Укладка пациента</div><div class="crit-sub">hip_pos · порог по доле позитивов, порог 0.658</div></td><td>бедро, обе стороны</td><td class="num">329 / 79</td><td class="num">0.710</td><td class="num">0.635</td><td class="num strong">0.725</td><td><div class="aucbar" role="img" aria-label="AUC 0.725 на шкале 0.5–1.0"><span class="aucbar-mark ok" style="left:45.1%"></span></div></td><td class="num">0.43 [0.22; 0.60]</td><td>сильнее геометрия</td></tr>
@@ -611,11 +611,31 @@ body:not(.view-app) .topbar .topnav { display: flex; }
 <p class="metrics-summary">ROC-AUC стека по пяти критериям — от 0.725 до 0.917. У критериев с малым числом положительных исследований (sp_pos — 6, hip_roi — 6) интервалы широки: оценка описывает несколько конкретных исследований, а не устойчивую способность распознавать дефект (паспорт выборки — <code>docs/sample_passport.json</code>). Слабые места показываем, а не скрываем. Источник: <code>models/metrics_summary.json</code> (OOF, группировка по исследованию), ДИ по F1 — бутстрап по исследованиям.</p>
 <h3 class="metrics-h3">Бинарная задача «есть нарушение» по областям, OOF</h3>
 <div class="table-wrap"><table class="metrics compact"><thead><tr><th>Область</th><th class="num">ROC-AUC [95 % ДИ]</th><th class="num">F1 [95 % ДИ]</th><th class="num">Macro-F1 по типам нарушений [95 % ДИ]</th></tr></thead><tbody>
-<tr><td>Поясничный отдел позвоночника</td><td class="num strong">0.773 [0.65; 0.88]</td><td class="num">0.623 [0.45; 0.77]</td><td class="num">0.539 [0.36; 0.69]</td></tr>
+<tr><td>Поясничный отдел позвоночника</td><td class="num strong">0.813 [0.69; 0.91]</td><td class="num">0.662 [0.49; 0.80]</td><td class="num">0.547 [0.40; 0.70]</td></tr>
 <tr><td>Проксимальный отдел бедра</td><td class="num strong">0.760 [0.63; 0.86]</td><td class="num">0.516 [0.31; 0.68]</td><td class="num">0.473 [0.20; 0.68]</td></tr>
 </tbody></table></div>
 <p class="metrics-src">Источник: <code>docs/METRICS_REPORT.md</code>, таблица «Итого» (<code>python src/eval_oof_metrics.py</code>, 95 % ДИ — бутстрап по исследованиям, 2000 повторов).</p>
 <!-- METRICS:END -->
+<!-- BASELINES:BEGIN — сгенерировано из docs/baselines.json (python tools/baseline_table.py); числа не править руками -->
+<h3 class="metrics-h3">Бейзлайны на тех же OOF-строках: что даёт архитектура</h3>
+<p class="lead">Те же кадры и разбиение, что у метрик выше. ROC-AUC «всегда норма», «всегда нарушение» и случайного классификатора равен 0.5; F1 «всегда нарушение» — нижняя планка F1 при доле позитивов p, равная 2p/(1+p). Контуры A и B и простая логрегрессия на всех геометрических признаках без отбора (GroupKFold(5) по исследованию) оценены при том же правиле порога на собственных OOF-скорах. Интервалы ROC-AUC — бутстрап по исследованиям, 500 ресэмплов.</p>
+<div class="table-wrap"><table class="metrics compact"><thead><tr><th>Критерий</th><th class="num">n / позит.</th><th class="num">F1 «всегда нарушение»</th><th class="num">AUC контур A</th><th class="num">AUC контур B</th><th class="num">AUC все признаки без отбора</th><th class="num">AUC стек [95 % ДИ]</th><th class="num">F1 стек</th></tr></thead><tbody>
+<tr><td><div class="crit-title">Укладка пациента</div><div class="crit-sub">sp_pos · позвоночник</div></td><td class="num">166 / 10</td><td class="num">0.11</td><td class="num">0.915</td><td class="num">0.790</td><td class="num">0.837</td><td class="num strong">0.893 [0.70; 1.00]</td><td class="num">0.50</td></tr>
+<tr><td><div class="crit-title">Ось позвоночника</div><div class="crit-sub">sp_axis · позвоночник</div></td><td class="num">166 / 17</td><td class="num">0.19</td><td class="num">0.839</td><td class="num">0.797</td><td class="num">0.510</td><td class="num strong">0.889 [0.75; 0.98]</td><td class="num">0.60</td></tr>
+<tr><td><div class="crit-title">Посторонние предметы</div><div class="crit-sub">sp_art · позвоночник</div></td><td class="num">166 / 35</td><td class="num">0.35</td><td class="num">0.560</td><td class="num">0.897</td><td class="num">0.482</td><td class="num strong">0.823 [0.70; 0.92]</td><td class="num">0.53</td></tr>
+<tr><td><div class="crit-title">Укладка пациента</div><div class="crit-sub">hip_pos · бедро</div></td><td class="num">329 / 79</td><td class="num">0.39</td><td class="num">0.710</td><td class="num">0.635</td><td class="num">0.512</td><td class="num strong">0.725 [0.62; 0.82]</td><td class="num">0.43</td></tr>
+<tr><td><div class="crit-title">Область интереса</div><div class="crit-sub">hip_roi · бедро</div></td><td class="num">329 / 16</td><td class="num">0.09</td><td class="num">0.902</td><td class="num">0.877</td><td class="num">0.373</td><td class="num strong">0.917 [0.71; 1.00]</td><td class="num">0.51</td></tr>
+</tbody></table></div>
+<p class="metrics-src">Стек не везде выше сильнейшего контура по AUC (sp_pos, sp_art): его вес 0.5/0.5 зафиксирован заранее ради устойчивости, а не подобран под эту выборку. У sp_pos контур A при пороге по доле позитивов помечает 10 клонов одного отрицательного исследования и даёт F1 = 0 при AUC 0.915. Логрегрессия на всех признаках без отбора теряет сигнал сильных одиночных признаков при 10–35 позитивах. Таблица описывает различия внутри одной выборки и не доказывает перенос на другие аппараты и разметчиков. Источник: <code>docs/BASELINES.md</code>, <code>docs/baselines.json</code>.</p>
+<!-- BASELINES:END -->
+<h3 class="metrics-h3">Как читать quality_prob</h3>
+<p class="metrics-summary">quality_prob — грубая вероятность, не точная: на OOF ошибка калибровки ECE 0.14 (позвоночник)
+и 0.15 (бедро), Brier 0.199 / 0.198 против 0.231 / 0.201 у константы. Значение выше 0.5 означает «сервис поставил класс 1»:
+при 0.5–0.8 нарушение подтверждается у 29 % кадров позвоночника, при 0.8 и выше — у 80 %; для бедра при 0.5–0.9 — у 36 %,
+при 0.9 и выше — у 96 %. Внутри класса это ранг для сортировки очереди, а не процент. Скоры критериев — ранги по
+построению; калиброванная величина <code>p_cal</code> (debug-CSV, API) читается как вероятность только для посторонних
+предметов и укладки бедра, где положительных исследований 17 и 24. Разбор с диаграммами надёжности и интервалами —
+<code>docs/CALIBRATION.md</code>.</p>
   </div>
 </section>
 
@@ -626,7 +646,7 @@ body:not(.view-app) .topbar .topnav { display: flex; }
       <h2>Ограничения применимости</h2>
     </div>
     <div class="limits">
-      <div class="limit"><h3>Шесть исследований с нарушением укладки позвоночника</h3><p>В обучающей выборке нарушение укладки позвоночника встретилось в 6 исследованиях из 99 (10 кадров из 166; половину дают 2 исследования). Метка задана на исследование, поэтому единица счёта — исследование: 166 кадров позвоночника несут информацию 99 исследований, 329 кадров бедра — 78. Интервалы считаются по исследованиям и для редких критериев широки: F1 укладки позвоночника 0.48 [0.11; 0.82], области интереса бедра 0.51 [0.00; 0.89]. На закрытом тесте по укладке позвоночника следует ожидать результат, близкий к случайному. Источник: <code>docs/sample_passport.json</code>.</p></div>
+      <div class="limit"><h3>Шесть исследований с нарушением укладки позвоночника</h3><p>В обучающей выборке нарушение укладки позвоночника встретилось в 6 исследованиях из 99 (10 кадров из 166; половину дают 2 исследования). Метка задана на исследование, поэтому единица счёта — исследование: 166 кадров позвоночника несут информацию 99 исследований, 329 кадров бедра — 78. Интервалы считаются по исследованиям и для редких критериев широки: F1 укладки позвоночника 0.50 [0.12; 1.00], области интереса бедра 0.51 [0.00; 0.89]. Признак головы укладки (2.4.0) проверен nested только на этих же 6 исследованиях, поэтому на закрытом тесте по укладке позвоночника следует ожидать результат заметно слабее OOF-цифр. Источник: <code>docs/sample_passport.json</code>.</p></div>
       <div class="limit"><h3>Один аппарат, одна клиника, один разметчик</h3><p>Все 499 снимков получены на одном GE Lunar Prodigy и размечены одним экспертом. Перенос на другие денситометры не проверен. Часть меток опирается на признаки, которые наши измерения ловят частично: например, у эксперта ось позвоночника оценивается шире, чем глобальный наклон.</p></div>
       <div class="limit"><h3>Финальная проверка — у организатора</h3><p>Метрики технического задания считаются организаторами на закрытом тесте. Наши OOF-оценки — честный ориентир без утечек, но не гарантия. Поэтому вместе с сервисом мы отдаём воспроизводимый протокол обучения, тесты и код подсчёта метрик.</p></div>
     </div>
@@ -696,7 +716,7 @@ body:not(.view-app) .topbar .topnav { display: flex; }
     <div class="sec-head">
       <div class="eyebrow">Как проверить</div>
       <h2>Как проверить результат</h2>
-      <p class="lead">Техническая группа может развернуть сервис на своих данных без нашего участия. Сервис не делает ни одного внешнего вызова: кабинет, API и модели лежат внутри образа, и самопроверка из 12 пунктов прогоняется в контейнере с полностью отключённой сетью (<code>--network none</code>).</p>
+      <p class="lead">Техническая группа может развернуть сервис на своих данных без нашего участия. Сервис не делает ни одного внешнего вызова: кабинет, API и модели лежат внутри образа, и самопроверка из 18 пунктов прогоняется в контейнере с полностью отключённой сетью (<code>--network none</code>).</p>
     </div>
     <details class="more" open>
       <summary>Команды запуска, список документов и состав контейнера <small>— для тех, кто будет разворачивать</small></summary>
@@ -715,6 +735,10 @@ body:not(.view-app) .topbar .topnav { display: flex; }
 ./build_and_run.sh test</pre>
         </div>
         <div class="card">
+          <h3>Приём по DICOM</h3>
+          <p>Снимки можно не загружать вручную: контейнер принимает их с денситометра или из PACS по DICOM C-STORE (AE Title <code>DENSITOAI</code>, порт 11112; CR, DX, Secondary Capture; несжатые transfer syntax и RLE). Принятое исследование уходит в тот же <code>/api/analyze</code>, что и кабинет, результат появляется в <code>outputs/jobs/&lt;job_id&gt;/</code>, принятые файлы остаются в <code>outputs/inbox/</code>. Запуск: <code>docker compose up -d densito-api densito-receiver</code>; проверка: <code>python -m pynetdicom storescu &lt;ip&gt; 11112 tests/phantoms/study_01 -r -aec DENSITOAI</code>. Без TLS — только внутренняя сеть отделения. Подробнее — <code>docs/DICOM_RECEIVER.md</code>.</p>
+        </div>
+        <div class="card">
           <h3>Без Docker</h3>
           <pre>pip install -r requirements.txt
 python src/inference.py --input /path/to/dicom --output outputs/results.csv --xlsx
@@ -730,6 +754,8 @@ python src/eval_oof_metrics.py             <span class="c"># метрики с �
             <li><code>git clone https://neuropeople.pro/git/densitoai.git</code><span>публичный репозиторий</span></li>
             <li><code>/docs</code><span>Swagger UI работающего API: <a href="/docs">открыть</a></span></li>
             <li><code>README.md</code><span>назначение, запуск, API, формат данных, ограничения</span></li>
+            <li><code>tools/department_summary.py</code><span>сводка по партии для отделения: доли нарушений по области, типу, аппарату и дате с ДИ Уилсона 95 %, без персональных данных; в кабинете — блок «Сводка по партии», в API — <code>/api/results/{job}/summary</code></span></li>
+            <li><code>docs/VERIFICATION.md</code><span>самопроверка образа из 18 пунктов, в том числе стресс-набор: 24 битых и нестандартных файла из фантомов в одном пакете с нормой — битые дают строку Failure, норма совпадает с одиночным прогоном бит в бит</span></li>
             <li><code>docs/METRICS_REPORT.md</code><span>метрики по ТЗ §8.4 с 95 % ДИ</span></li>
             <li><code>docs/ROBUSTNESS_REPORT.md</code><span>устойчивость к нестандартному входу</span></li>
             <li><code>docs/PREPROC_GATE_REPORT.md</code><span>инвариантная предобработка и выбор варианта внутри nested</span></li>
@@ -767,6 +793,7 @@ python src/eval_oof_metrics.py             <span class="c"># метрики с �
           <li>Две области: поясничный отдел позвоночника и проксимальный отдел бедра.</li>
           <li>Пять критериев: укладка, ось, посторонние предметы, укладка бедра, область интереса.</li>
           <li>~0,06 с на снимок в пакетном режиме на CPU; с визуализацией через API 1–2 с.</li>
+          <li>При нескольких исследованиях в задаче кабинет показывает «Сводку по партии»: доли снимков и исследований с нарушением по области, типу и аппарату с доверительными интервалами Уилсона 95 %, зону «не уверен», причины Failure и UID для пересмотра. На обучающей выборке: файлов с нарушением 41,7 % [37,4; 46,1], исследований с нарушением 72,0 % [62,5; 79,9]. Персональных данных в сводке нет.</li>
         </ul>
       </div>
     </div>
@@ -775,7 +802,7 @@ python src/eval_oof_metrics.py             <span class="c"># метрики с �
 
 <footer>
   <div class="wrap">
-    <div>DensitoAI · ООО «НЕЙРОПИПЛ» · версия сервиса 2.3.2 · хэш конфигурации 5ac94710a6cd</div>
+    <div>DensitoAI · ООО «НЕЙРОПИПЛ» · версия сервиса 2.4.0 · хэш конфигурации 1f12392d7373</div>
     <div><a href="index.html">Назад на главную</a> · <a href="index.html#app">Кабинет</a></div>
     <div class="disclaimer">Программа не является медицинским изделием и не предназначена для диагностики, профилактики, лечения или мониторинга заболеваний. Сервис оценивает техническое качество укладки и области интереса исследования и не формирует медицинское заключение. Решение по исследованию принимает врач. Область применения: денситометрия (DXA) поясничного отдела позвоночника и проксимального отдела бедра, оборудование GE Lunar Prodigy.</div>
   </div>

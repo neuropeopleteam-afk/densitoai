@@ -8,7 +8,7 @@
 Работает **полностью локально** (CPU, без внешних сервисов), обрабатывает каждый файл
 независимо и **никогда не прерывает пакет** из-за одного плохого файла.
 
-Версия **2.3.2**. Демо: [neuropeople.pro](https://neuropeople.pro) (логин `demo` / `Hakaton`),
+Версия **2.4.0**. Демо: [neuropeople.pro](https://neuropeople.pro) (логин `demo` / `Hakaton`),
 публичный репозиторий: `git clone https://neuropeople.pro/git/densitoai.git`
 
 > **Назначение и ограничения.** Программа не является медицинским изделием и не предназначена
@@ -87,8 +87,8 @@ densito_rebuild/
 ├── config.yaml                  ← единый конфиг: строки формата, пороги, веса, fallback-правила
 ├── requirements.txt             ← зафиксированные версии (pip freeze)
 ├── Dockerfile                   ← python:3.12.8-slim-bookworm, CPU
-├── docker-entrypoint.sh         ← режимы контейнера: batch | api | verify | test
-├── docker-compose.yml           ← сервисы densito-verify, densito-batch, densito-api (лимиты 2 CPU / 3 ГБ)
+├── docker-entrypoint.sh         ← режимы контейнера: batch | api | verify | test | receiver | api+receiver
+├── docker-compose.yml           ← сервисы densito-verify, densito-batch, densito-api, densito-receiver (лимиты 2 CPU / 3 ГБ)
 ├── build_and_run.sh             ← сборка + запуск (Linux)
 ├── .dockerignore
 ├── src/
@@ -108,6 +108,7 @@ densito_rebuild/
 │   ├── extras.py                ← предупреждения вне 9 колонок: белые линии, OOD-gate (models/ood_gate.pkl), эндопротез, когерентность
 │   ├── auto_roi.py              ← [бонус] предложение исправленного ROI бедра (диагностический PNG)
 │   ├── segmentation_export.py   ← [бонус] сегментация структур: DICOM SEG + PNG-маска + JSON контуров (--seg-dir)
+│   ├── dicom_receiver.py        ← приёмник DICOM (C-STORE/C-ECHO, pynetdicom) → /api/analyze
 │   └── hip_features.py, hip_eval.py, train_multilabel.py ← исследовательские скрипты (бедро, старая CNN)
 ├── models/
 │   ├── MODEL_CONTRACT.md        ← формат .pkl, который ожидает инференс
@@ -122,7 +123,7 @@ densito_rebuild/
 │   ├── labels_full.csv          ← 499 строк: файл, регион, метки 7 критериев
 │   ├── geometry_features.csv    ← признаки контура A на трейне (медианы для импутации)
 │   └── embeddings.npy           ← эмбеддинги трейна (не входит в образ)
-├── schema/                      ← JSON Schema строки результата и ответа /api/analyze
+├── schema/                      ← JSON Schema строки результата, ответа /api/analyze и сводки по партии
 ├── tools/
 │   ├── verify.sh, verify_checks.py, verification_report.py ← самопроверка без сети (фантомы, детерминизм, sha256, эталон, словарь организаторов)
 │   ├── make_phantoms.py, hash_weights.py, pii_scan.py, make_release.sh, offline_check.sh
@@ -130,6 +131,10 @@ densito_rebuild/
 │   ├── make_model_card.py       ← генерирует models/MODEL_CARD.md из metrics_summary.json
 │   ├── nested_gate.py, pixel_hash.py ← nested repeated GroupKFold для выбора весов стэкинга (К2)
 │   ├── paired_gate.py           ← калиброванный гейт приёмки: парный кластерный бутстрап по исследованиям, sign-flip тест, поправка Холма (идея 11)
+│   ├── calibration_report.py    ← отчёт о калибровке quality_prob и скоров критериев (ECE/Brier/наклон, SVG)
+│   ├── baseline_table.py        ← таблица бейзлайнов на тех же OOF-строках → docs/BASELINES.md, docs/baselines.json
+│   ├── stress_set.py            ← стресс-набор битых и нестандартных входов (проверка 18 verify) → docs/STRESS_SET.md
+│   ├── department_summary.py    ← сводка по партии для отделения (JSON/Markdown/CSV, ДИ Уилсона 95 %)
 │   ├── extras/                  ← аудиты К8/К9 (белые линии, OOD-gate, эндопротез, когерентность) → docs/EXTRAS_STATUS.md
 │   └── review/                  ← инструмент слепой ревизии для рентгенолога (галерея, ориентиры, kappa/PCK)
 ├── web/
@@ -139,6 +144,10 @@ densito_rebuild/
 │   ├── test_api_isolation.py    ← 88 проверок API (изоляция jobs и бонус-файлов, код доступа, traversal, лимиты, битый zip, отказ по области)
 │   ├── test_schema.py           ← JSON Schema результата и ответа API (37 проверок)
 │   ├── test_transfer_syntax.py  ← матрица transfer syntax / битности / MONOCHROME1 → docs/TRANSFER_SYNTAX_MATRIX.md
+│   ├── test_calibration_report.py ← детерминизм, ECE идеального и константного предиктора, сверка с metrics_oof_full.json
+│   ├── test_dicom_receiver.py   ← SCP на свободном порту, C-ECHO/C-STORE фантомов, inbox, журнал, HTTP-путь
+│   ├── test_baseline_table.py, test_stress_set.py, test_department_summary.py ← бейзлайны, стресс-набор, сводка по партии
+│   ├── stress/                  ← ожидания стресс-набора (expected_stress.csv)
 │   ├── phantoms/                ← 15 синтетических DICOM-фантомов + MANIFEST.json + expected_results.csv (эталон verify)
 │   └── sample_test_zip/         ← распакованный образец организаторов «Для теста.zip»
 ├── docs/
@@ -148,6 +157,11 @@ densito_rebuild/
 │   ├── EVIDENCE.md              ← данные, лицензии, протокол валидации, отвергнутые гипотезы, ограничения
 │   ├── DZM_CONFORMANCE.md       ← соответствие ТЗ и желательным пунктам: сделано / частично / не делаем
 │   ├── VERIFICATION.md          ← инструкция технической группе: офлайн-проверка образа за 5 команд
+│   ├── CALIBRATION.md           ← можно ли читать quality_prob и p_cal как вероятность (OOF, ДИ по исследованиям)
+│   ├── calibration/             ← calibration.json + reliability_*.svg (агрегаты, без кадров)
+│   ├── DICOM_RECEIVER.md        ← подключение аппарата/PACS, SOP-классы, transfer syntax, ограничения
+│   ├── BASELINES.md, baselines.json ← бейзлайны на тех же OOF-строках (tools/baseline_table.py)
+│   ├── STRESS_SET.md            ← таблица случаев стресс-набора (tools/stress_set.py --md)
 │   ├── NESTED_GATE_REPORT.md    ← nested CV вентильного стэкинга (К2): полный отчёт по повторам
 │   ├── EXTRAS_STATUS.md, OOD_GATE_REPORT.md, WHITE_LINES_AUDIT.md ← аудит белых линий, OOD-gate, эндопротез, когерентность (К8/К9)
 │   ├── TRANSFER_SYNTAX_MATRIX.md, LICENSES_AND_DATA_AUDIT.md ← измеренная матрица форматов; лицензии и аудит ПДн
@@ -195,7 +209,7 @@ fastapi 0.141.1, uvicorn 0.53.0. **Версию scikit-learn менять нел
 Требуется Docker (BuildKit). Всё выполняется из корня проекта.
 
 ```bash
-# 1) Собрать образ densitoai:2.3.2 (внутри сборки запускается самопроверка на образце)
+# 1) Собрать образ densitoai:2.4.0 (внутри сборки запускается самопроверка на образце)
 ./build_and_run.sh build
 
 # 2) Пакетная обработка: входная папка (или zip) → выходная папка
@@ -212,14 +226,14 @@ fastapi 0.141.1, uvicorn 0.53.0. **Версию scikit-learn менять нел
 Эквивалент «руками»:
 
 ```bash
-docker build -t densitoai:2.3.2 .
-docker run --rm -v /path/to/input:/data/input:ro -v $(pwd)/outputs:/data/output densitoai:2.3.2 batch
-docker run --rm -p 8000:8000 -v $(pwd)/outputs:/data/output densitoai:2.3.2 api
+docker build -t densitoai:2.4.0 .
+docker run --rm -v /path/to/input:/data/input:ro -v $(pwd)/outputs:/data/output densitoai:2.4.0 batch
+docker run --rm -p 8000:8000 -v $(pwd)/outputs:/data/output densitoai:2.4.0 api
 # после этого http://localhost:8000/ — рабочий кабинет (загрузка снимков, карточки решений,
 # история запросов), http://localhost:8000/docs — Swagger. Интерфейс лежит внутри образа,
 # ничего не тянет из интернета: ни одного внешнего src/href, шрифты и изображения локальные.
 # любые аргументы inference.py можно передать после batch:
-docker run --rm -v ...:/data/input:ro -v ...:/data/output densitoai:2.3.2 batch --no-embeddings --limit 50
+docker run --rm -v ...:/data/input:ro -v ...:/data/output densitoai:2.4.0 batch --no-embeddings --limit 50
 ```
 
 Через docker compose:
@@ -228,6 +242,26 @@ docker run --rm -v ...:/data/input:ro -v ...:/data/output densitoai:2.3.2 batch 
 INPUT_DIR=/path/to/input OUTPUT_DIR=./outputs docker compose run --rm densito-batch
 docker compose up densito-api
 ```
+
+Приём снимков по DICOM (C-STORE) без ручной загрузки — команда `receiver` и режим `api+receiver`
+(подробно: `docs/DICOM_RECEIVER.md`):
+
+```bash
+docker compose up -d densito-api densito-receiver          # API :8000 + приёмник DICOM :11112 (AE Title DENSITOAI)
+docker run -d -p 8000:8000 -p 11112:11112 -v $(pwd)/outputs:/data/output densitoai:2.4.0 api+receiver
+python -m pynetdicom echoscu  <ip> 11112 -aec DENSITOAI                      # проверка связи
+python -m pynetdicom storescu <ip> 11112 tests/phantoms/study_01 -r -aec DENSITOAI
+```
+
+Принятые снимки складываются в `/data/output/inbox/<study_uid>/<sop_uid>.dcm` и после закрытия
+ассоциации (или 5 с тишины) уходят в `/api/analyze` тем же путём, что и загрузка через кабинет:
+результат — `/data/output/jobs/<job_id>/` (CSV, XLSX, SR, PNG), коды запроса и доступа — в
+`inbox/<study_uid>/job.json`, журнал приёма без персональных данных — `inbox/receiver_log.csv`.
+Принятые DICOM после анализа остаются в inbox (автоудаление не выполняется; `DENSITO_INBOX_KEEP=0`
+включает удаление после успешного анализа).
+Переменные: `DENSITO_RECEIVER_PORT` (11112), `DENSITO_RECEIVER_AET` (DENSITOAI), `DENSITO_INBOX`,
+`DENSITO_INBOX_KEEP` (1), `DENSITO_API_URL` (`http://127.0.0.1:8000`), `DENSITO_RECEIVER_ALLOWED_AET`.
+Без TLS — только внутренняя сеть отделения.
 
 Переменные окружения контейнера: `DENSITO_INPUT` (по умолчанию `/data/input`),
 `DENSITO_OUTPUT` (`/data/output/results.csv`), `DENSITO_PORT` (8000), `OMP_NUM_THREADS` (4),
@@ -251,8 +285,8 @@ docker compose up densito-api
 Образ содержит средства самопроверки без сети. Полная инструкция для технической группы — `docs/VERIFICATION.md`.
 
 ```bash
-docker build --platform linux/amd64 -t densitoai:2.3.2 .        # базовый образ закреплён по digest
-bash tools/offline_check.sh densitoai:2.3.2 ./outputs            # = docker run --rm --network none ... verify
+docker build --platform linux/amd64 -t densitoai:2.4.0 .        # базовый образ закреплён по digest
+bash tools/offline_check.sh densitoai:2.4.0 ./outputs            # = docker run --rm --network none ... verify
 # отчёт: outputs/verify/verification_report.html, код возврата 0/1
 ```
 
@@ -266,7 +300,7 @@ bash tools/offline_check.sh densitoai:2.3.2 ./outputs            # = docker run 
 бэкбона в образе), и **сверка строк выгрузки со словарём организаторов** (`schema/official_dictionary.json`:
 значения `violation_type` и `anatomical_region`, разделитель `;`, имя колонки `quality_prob`, паспортный
 размер пикселя 1,05 × 0,6 мм), согласованность версии и `config_hash` во всех файлах поставки, безопасность API,
-истинная геометрия фантомов по `MANIFEST.json`, серия с визуализацией и **прогон-двойник** — итого 17 пунктов
+истинная геометрия фантомов по `MANIFEST.json`, серия с визуализацией, **прогон-двойник** и **стресс-набор** битых и нестандартных входов — итого 18 пунктов
 (таблица — `docs/VERIFICATION.md`).
 Прогон-двойник (`tools/transfer_check.py`) делает копии входа с переименованными файлами и каталогами, случайной
 вложенностью, регистром расширений, кириллицей в именах и упаковкой в один или несколько zip, прогоняет инференс
@@ -275,13 +309,23 @@ bash tools/offline_check.sh densitoai:2.3.2 ./outputs            # = docker run 
 sha256. На 10 исследованиях (46 снимков) все режимы дали одинаковый CSV; тест — `tests/test_transfer_twin.py`
 (внутри образа). Файлы без `StudyInstanceUID` получают `study_uid` от содержимого папки, поэтому их нельзя
 раскладывать по разным папкам.
+Стресс-набор (`tools/stress_set.py`, проверка 18) собирает из тех же фантомов 24 случая битых и нестандартных
+входов: обрезанный до половины и нулевой файл, не-DICOM с расширением `.dcm`, DICOM без PixelData, без Rows/Columns,
+без PixelSpacing, MONOCHROME1, 16 бит со знаком, 8 бит, RGB, кадр 8×8 и 4000×3000, Explicit VR Big Endian, Deflated,
+RLE Lossless, JPEG Baseline, BitsStored 12/16, чужая модальность (CT), постоянный кадр, zip с исправным и битым файлом,
+битый zip, вложенность 5, кириллица и пробелы в именах. Все они обрабатываются одним пакетом вместе с 15 фантомами:
+битый вход даёт ровно одну строку `Failure` (class 0, `violation_type` пустой, `quality_prob` 0.5, причина — в
+`results_debug.csv`), корректные кодировки дают тот же класс и регион, что исходный фантом, а 15 строк нормы в
+смешанном пакете совпадают с одиночным прогоном бит в бит. Таблица случаев — `docs/STRESS_SET.md`, ожидания —
+`tests/stress/expected_stress.csv`, тест — `tests/test_stress_set.py`. Пропустить: `VERIFY_SKIP_STRESS=1`; на слабой
+машине уменьшить огромный кадр: `VERIFY_STRESS_HUGE=2500x1500`.
 Проверка на собственных данных: `verify --data /data/input [--expected-sha <sha>]`.
 
 Ресурсы: стенд 2 CPU / 3 ГБ (`docker-compose.yml`: `mem_limit: 3g`, `cpus: 2`; пик памяти инференса около 0,6 ГБ).
 Потоки BLAS задаются переменными `OMP_NUM_THREADS`/`MKL_NUM_THREADS` (по умолчанию 2, переопределяются `-e`).
 
-Релиз: `bash tools/make_release.sh 2.3.2` создаёт `dist/densitoai-2.3.2-src.tar.gz` (без outputs/, data-выгрузок и конкурсных
-DICOM), `WITH_IMAGE=1` добавляет `dist/densitoai-2.3.2-image.tar.gz` (`docker save | gzip`); контрольные суммы — `dist/SHA256SUMS`.
+Релиз: `bash tools/make_release.sh 2.4.0` создаёт `dist/densitoai-2.4.0-src.tar.gz` (без outputs/, data-выгрузок и конкурсных
+DICOM), `WITH_IMAGE=1` добавляет `dist/densitoai-2.4.0-image.tar.gz` (`docker save | gzip`); контрольные суммы — `dist/SHA256SUMS`.
 Матрица форматов DICOM (измерено): `docs/TRANSFER_SYNTAX_MATRIX.md`; лицензии и аудит данных: `docs/LICENSES_AND_DATA_AUDIT.md`.
 
 ---
@@ -350,14 +394,22 @@ python tests/test_inference_format.py
 | POST / GET | `/api/results/{job_id}/decisions` | решение специалиста по предложению коррекции области интереса бедра (JSON `{image_uid, decision: "подтверждено" / "отклонено" / "своя", roi_box_px при "своя", specialist, comment}`; код задачи через `?t=` или заголовок `X-Job-Token`); GET — список решений задачи |
 | GET | `/api/results/{job_id}/decisions.csv` | выгрузка решений (`;`, BOM) |
 | GET | `/api/results/{job_id}/decisions_sr/{study_uid}` | DICOM SR «Решение специалиста по области интереса» (`<study_uid>_SR_decisions.dcm`; основной SR исследования не меняется) |
+| GET | `/api/results/{job_id}/summary` | сводка по партии без персональных данных (JSON, схема `schema/department_summary.schema.json`): всего исследований и файлов, доли с нарушением по области, типу нарушения, аппарату (хэш StationName/серийного номера) и дате исследования (день, ISO-неделя), доля Failure с причинами, доля зоны «не уверен» по критериям, список исследований для пересмотра (только UID). Рядом с каждой долей — доверительный интервал Уилсона 95 % и пометка `low_data` при n < 20. Query `top` (размер списка для пересмотра, 1..100), `min_n` (порог «мало данных», 1..1000). **Нужен код доступа** |
+| GET | `/api/results/{job_id}/summary.md`, `/summary.csv` | та же сводка в Markdown (для печати и рассылки) и CSV (`;`, BOM; колонки `section;group;subgroup;metric;k;n;rate;ci_low;ci_high;low_data`). **Нужен код доступа** |
 | POST | `/api/review` | приём JSON слепой ревизии рентгенолога со страницы `web/review/`, не более 2 МБ; файл сохраняется в `/data/output/review/`, ответ `{"ok": true, "saved": <имя файла>}`. Ничего не отдаёт и на инференс не влияет |
 
+Помимо HTTP, снимки можно передавать по DICOM: приёмник `src/dicom_receiver.py` (Storage SCP,
+C-ECHO/C-STORE; SOP-классы CR, DX for Presentation/Processing, Secondary Capture; несжатые transfer
+syntax и RLE) вызывает тот же `POST /api/analyze`, поэтому ответ, файлы запроса и код доступа
+не отличаются от веб-загрузки. См. `docs/DICOM_RECEIVER.md`.
 Примеры:
 
 ```bash
 curl http://localhost:8000/api/health
 curl -F "files=@study.zip" "http://localhost:8000/api/analyze?xlsx=true"   # в ответе job_id и job_token
 curl -O "http://localhost:8000/api/results/<job_id>/results.csv?t=<job_token>"
+curl "http://localhost:8000/api/results/<job_id>/summary?t=<job_token>"          # сводка по партии (JSON)
+curl -O "http://localhost:8000/api/results/<job_id>/summary.md?t=<job_token>"    # то же в Markdown
 curl -X POST -H 'Content-Type: application/json' \
      -d '{"input_dir":"/data/input","output_csv":"/data/output/results.csv","xlsx":true}' \
      http://localhost:8000/api/batch
@@ -379,6 +431,20 @@ Failure — `null`. Само предложение ничего не меняе
 «Отклонить», «Своя» (рамку можно растянуть мышью), поле «Специалист»; в таблице — статус решения, кнопки
 «Выгрузить решения (CSV)» и «SR решений». Схемы: `schema/roi_decision.schema.json`, поля в
 `schema/api_analyze_response.schema.json`. Решение не влияет на 9 официальных полей; ROI аппарата не меняется.
+
+**Сводка по партии для заведующего отделением и старшего лаборанта (дополнительный функционал).**
+`GET /api/results/{job_id}/summary` (JSON), `/summary.md`, `/summary.csv` агрегируют `results.csv` и технический CSV
+задачи без персональных данных: всего исследований и файлов, доля файлов и исследований с нарушением по области
+и типу нарушения, разрез по аппарату (производитель, модель и хэш StationName или серийного номера — исходные
+значения и оператор не выводятся) и по дате исследования (день и ISO-неделя), доля и причины Failure, доля зоны
+«не уверен» (`needs_review` технического CSV, по критериям), список исследований для пересмотра по наибольшей
+`quality_prob` (только UID). Рядом с каждой долей — доверительный интервал Уилсона 95 %; при n < 20 стоит пометка
+«мало данных». Знаменатель долей нарушений — успешно обработанные файлы. Аппарат и дата берутся из тегов DICOM при
+загрузке (`device_tags.csv` в каталоге задачи; в обезличенных выгрузках, где `StationName`/`StudyDate` заменены
+заглушкой, аппарат помечается «не указан», а разрез по датам пуст). Те же файлы строит CLI
+`tools/department_summary.py --results results.csv [--debug results_debug.csv] [--dicom-root <папка DICOM>]
+--out-dir <папка>` — для одного или нескольких `results.csv`. Схема — `schema/department_summary.schema.json`, тест —
+`tests/test_department_summary.py`. Сводка ничего не меняет в 9 официальных полях и в файлах задачи.
 
 ## 7. Формат входных и выходных данных
 
@@ -447,6 +513,12 @@ Failure — `null`. Само предложение ничего не меняе
   большим перепадом интенсивности) → площадь в мм²;
 - бедро: угол диафиза, расстояние ROI до края кадра (мм), доля площади кости.
 Признаки → `StandardScaler → LogisticRegression` на критерий.
+Для `sp_pos` (2.4.0, H2) в контур A входит третий признак `synth_pos_logit` — логит головы
+`models/head_densito_synth.pth` (`src/sppos_head.py`), обученной на синтетических смещениях кадра
+без меток; вход головы — тот же канонический эмбеддинг `densito`, что считает контур B, поэтому время
+на снимок не растёт. Признак принят по действующему правилу nested (20/20); калиброванный гейт при
+6 положительных исследованиях не имеет мощности (ДИ упирается в 0) — `docs/NESTED_GATE_REPORT.md`, часть 5.
+Отсутствие файла головы — явная ошибка при старте, а не молчаливый ноль (`config.yaml: features`).
 
 **Контур B — визуальные эмбеддинги.** Замороженный EfficientNet-B0 (ImageNet), вход
 320×192, выход 1280-d → `StandardScaler → PCA(32) → LogisticRegression(L2)` на критерий.
@@ -483,7 +555,8 @@ OOF-распределения на трейне (`models/oof_stacked_*.csv`), �
 
 Принцип: **необработанных исключений нет** (ТЗ п.2.7). Каждый файл обрабатывается в своём
 `try/except`; любая ошибка → строка `Failure` + запись в лог с типом и текстом, батч
-продолжается. Проверено smoke-тестом (`tests/test_inference_format.py`) на:
+продолжается. Проверено smoke-тестом (`tests/test_inference_format.py`)
+и стресс-набором `tools/stress_set.py` (24 случая, проверка 18 `verify`, таблица — `docs/STRESS_SET.md`) на:
 
 | Ситуация | Поведение |
 |---|---|
@@ -501,6 +574,10 @@ OOF-распределения на трейне (`models/oof_stacked_*.csv`), �
 | Нет `PixelSpacing` | `Success`, константа аппарата, предупреждение в debug |
 | Невалидные UID (частое у анонимизированных файлов) | предупреждение pydicom подавлено, обработка штатная |
 | MONOCHROME1 / 16-бит / RGB / многокадровый | нормализуется, `Success` |
+| DICOM без `Rows`/`Columns` при наличии `PixelData` | `Failure` (`Missing required element … Columns`) |
+| Битый zip (не архив) / битый файл внутри исправного zip | `Failure` одной строкой на архив / на файл; соседние файлы архива обрабатываются |
+| Explicit VR BE, Deflated LE, RLE Lossless, BitsStored 12/16, Modality CT, вложенность 5, кириллица в именах | `Success`, класс равен исходному фантому (стресс-набор) |
+| JPEG Baseline | `Success` при декодере Pillow (в образе есть); без декодера — `Failure` с причиной в debug |
 | Доля кости вне 1–90 % | `Success`, флаг «non-standard image» в debug |
 | `.pkl` отсутствует или битый | WARNING, fallback-правило по критерию |
 | Backbone (torch) не инициализируется | WARNING, контур B отключён, работает контур A |
@@ -533,8 +610,22 @@ F1, ROC-AUC, PR-AUC, macro-F1, ДИ) — **`docs/METRICS_REPORT.md`**; восп�
 
 | Область | n / n_pos | Sens | Spec | Bal.Acc | F1 [95 % ДИ] | ROC-AUC [95 % ДИ] | PR-AUC |
 |---|---|---|---|---|---|---|---|
-| Позвоночник | 166 / 60 | 0.72 | 0.67 | 0.69 | 0.62 [0.45; 0.77] | 0.77 [0.65; 0.88] | 0.66 |
+| Позвоночник | 166 / 60 | 0.75 | 0.71 | 0.73 | 0.66 [0.49; 0.80] | 0.81 [0.69; 0.91] | 0.71 |
 | Бедро | 329 / 92 | 0.48 | 0.81 | 0.64 | 0.48 [0.29; 0.64] | 0.75 [0.63; 0.86] | 0.62 |
+
+**Как читать `quality_prob` и скоры критериев (`docs/CALIBRATION.md`).** `quality_prob` — грубая, а не точная
+вероятность: на OOF ECE (10 бинов) 0.14 для позвоночника и 0.15 для бедра, Brier 0.199 / 0.198 против 0.231 / 0.201 у
+константы «доля позитивов»; наклон логистической рекалибровки 0.80 / 0.58 — значения в зоне класса 1 завышены.
+`quality_prob >= 0.5` означает «сервис поставил класс 1»: при 0.5–0.8 нарушение подтверждается у 29 % кадров
+позвоночника, при >= 0.8 — у 80 %; для бедра при 0.5–0.9 — у 36 %, при >= 0.9 — у 96 %. Внутри класса это ранг:
+порядок кадров осмыслен (ROC-AUC 0.813 / 0.760), разница «0.72 против 0.78» — нет. Ранговые скоры критериев
+вероятностями не являются (ECE 0.26–0.45, Brier хуже константы у всех пяти); величина `<crit>_p_cal` (Platt,
+debug-CSV и API details) при cross-fit проверке лучше константы по Brier у всех пяти критериев, но читается как
+вероятность только для `sp_art` и `hip_pos` (наклон 0.8, 17 и 24 положительных исследования); для `sp_pos`, `hip_roi`,
+`sp_axis` (6, 6, 10 положительных исследований) — лишь как «низкая / средняя / высокая». Порог по правилу prevalence
+стоит там, где калиброванная вероятность нарушения по критерию 0.24–0.34: флаг критерия означает «шанс нарушения
+от четверти–трети и выше». Воспроизведение: `python tools/calibration_report.py --bins`, тест —
+`python tests/test_calibration_report.py`.
 
 **По типам нарушений, OOF (стек геометрия + эмбеддинги):**
 
@@ -542,11 +633,23 @@ F1, ROC-AUC, PR-AUC, macro-F1, ДИ) — **`docs/METRICS_REPORT.md`**; восп�
 |---|---|---|---|---|---|---|---|
 | Позвоночник | Присутствуют посторонние предметы (`sp_art`) | 35 / 166 | 0.66 | 0.79 | 0.53 [0.23; 0.73] | 0.82 [0.69; 0.91] | **приемлемая** — работает контур B (эмбеддинги) |
 | Позвоночник | Не выравнена ось позвоночника (`sp_axis`) | 17 / 166 | 0.77 | 0.91 | 0.61 [0.29; 0.82] | 0.89 [0.75; 0.98] | **приемлемая** — работают оба контура: геометрия (угол оси) и контур B на бэкбоне `densito_inv` (К13); позитивов мало (17) |
-| Позвоночник | Некорректная укладка (`sp_pos`) | 10 / 166 | 0.50 | 0.96 | 0.48 [0.11; 0.82] | 0.73 [0.45; 1.00] | **низкая** — 10 позитивов, порог prevalence; контур B — наш бэкбон `densito`; предобработка `canonical` (К11) |
+| Позвоночник | Некорректная укладка (`sp_pos`) | 10 / 166 | 0.70 | 0.93 | 0.50 [0.12; 1.00] | 0.89 [0.72; 1.00] | **низкая** — 10 позитивов, порог prevalence; контур A с признаком головы укладки `synth_pos_logit` (H2, 2.4.0), контур B — наш бэкбон `densito`; предобработка `canonical` (К11) |
 | Бедро | Некорректная область интереса (`hip_roi`) | 16 / 329 | 0.56 | 0.97 | 0.51 [0.00; 0.91] | 0.92 [0.73; 1.00] | **хорошая** — единая модель обеих сторон + физические признаки (длина скана, диафиз ниже вертела) |
 | Бедро | Некорректная укладка (`hip_pos`) | 79 / 329 | 0.44 | 0.81 | 0.43 [0.22; 0.60] | 0.73 [0.61; 0.82] | умеренная — консервативный порог, признаки ротации ловятся частично; предобработка `canonical` (К11) |
 
-Macro-F1 по типам нарушений: позвоночник 0.54 [0.36; 0.69], бедро 0.51 [0.21; 0.69].
+Macro-F1 по типам нарушений: позвоночник 0.55 [0.40; 0.70], бедро 0.51 [0.21; 0.69].
+
+**Бейзлайны на тех же OOF-строках (`docs/BASELINES.md`, `python tools/baseline_table.py`).** Чтобы было видно, что
+даёт архитектура, а не сама выборка, рядом со стеком посчитаны на тех же кадрах и том же разбиении: «всегда норма»,
+«всегда нарушение», случайный классификатор по доле позитивов, каждый контур отдельно и логрегрессия на всех
+геометрических признаках региона без отбора (GroupKFold(5) по исследованию). ROC-AUC тривиальных бейзлайнов — 0.5;
+F1 «всегда нарушение» — нижняя планка 2p/(1+p): sp_pos 0.11, sp_axis 0.19, sp_art 0.35, hip_pos 0.39, hip_roi 0.09
+(F1 стека при тех же правилах порога — 0.50 / 0.60 / 0.53 / 0.43 / 0.51). Логрегрессия на всех признаках без отбора даёт
+AUC 0.84 / 0.51 / 0.48 / 0.51 / 0.37 против 0.893 / 0.889 / 0.823 / 0.725 / 0.917 у стека — цена отбора признаков при
+10–35 позитивах. Стек не везде выше сильнейшего контура по AUC (sp_pos — контур A 0.915, sp_art — контур B 0.897): вес
+0.5/0.5 зафиксирован заранее ради устойчивости, а у sp_pos контур A при пороге по доле позитивов помечает 10 клонов
+одного отрицательного исследования и даёт F1 = 0. Таблица описывает различия внутри одной выборки и не доказывает
+перенос на другие аппараты и разметчиков.
 
 Предобработка (20.09, К11): вариант выбран по критерию внутри nested (`tools/preproc_gate.py`,
 `docs/PREPROC_GATE_REPORT.md`): критерии укладки `sp_pos` и `hip_pos` — на канонизированной экспозиции
@@ -566,12 +669,17 @@ Macro-F1 по типам нарушений: позвоночник 0.54 [0.36; 
 кандидатов, парный t-test по повторам — 15–39 %, новый гейт — 1–8 % при номинальных 5 %. Ограничение: у `sp_pos`
 (позитивы в 6 исследованиях) мощность гейта ограничена дискретностью перестановочного распределения — больше повторов не
 помогает, нужны новые положительные исследования. Подробно — `docs/NESTED_GATE_REPORT.md`, часть 4.
+Кандидат H2 (голова укладки, `sp_pos`; 23.09, идея 24) принят решением владельца проекта по действующему правилу (ΔAUC +0.119, 20/20
+повторов); калиброванный гейт его не принял (ДИ90 [−0.004; +0.218], p 0.12, sign-flip p 0.008) — не потому, что эффект
+сомнителен по знаку, а потому, что при 6 положительных исследованиях у гейта нет мощности; это указано явно
+(`docs/NESTED_GATE_REPORT.md`, часть 5; `models/nested_gate_decisions.json`).
 
 Пороги (19.09, К3): правило порога по критерию выбрано nested-сравнением трёх предзаданных правил по минимальному regret F1
-(`config.yaml: thresholds_rule`, раздел «Калибровка и зона не уверен» в `docs/METRICS_REPORT.md`): `sp_pos` prevalence 0.822,
+(`config.yaml: thresholds_rule`, раздел «Калибровка и зона не уверен» в `docs/METRICS_REPORT.md`): `sp_pos` prevalence 0.861,
 `sp_axis` prevalence×1.4 0.777, `sp_art` prevalence×1.4 0.602, `hip_pos` prevalence 0.658, `hip_roi` prevalence 0.918.
 Значения порогов `sp_pos` и `hip_pos` сдвинулись (0.791 → 0.822, 0.643 → 0.658) только потому, что правило
-prevalence пересчитано на новом стэке (К11); само правило не менялось. До К3
+prevalence пересчитано на новом стэке (К11); само правило не менялось. В 2.4.0 порог `sp_pos` пересчитан тем же
+правилом на стэке с признаком H2: 0.822 → 0.861 (10 строк OOF стоят ровно на пороге, поэтому флагов 18 при 10 позитивах). До К3
 пороги `sp_art`/`hip_pos`/`hip_roi` были F1-оптимумом на тех же OOF-предсказаниях (0.557 / 0.709 / 0.891), что давало
 оптимистичные OOF-цифры (F1 0.60 / 0.51 / 0.64; бинарная F1 0.65 / 0.67); nested показал, что prevalence-правила устойчивее
 (sd порога 0.03–0.04 против 0.09–0.13) и дают больший F1 на внешних фолдах (см. таблицу ниже).
@@ -583,7 +691,7 @@ OOF-предсказаниях, поэтому они оптимистичны. 
 
 | Критерий | ROC-AUC OOF | ROC-AUC nested | F1 OOF | F1 nested |
 |---|---|---|---|---|
-| `sp_pos` | 0.734 | 0.702 (0.64–0.74) | 0.48 | 0.50 |
+| `sp_pos` | 0.893 | 0.878 (0.84–0.92; H2, финальная голова 0.873) | 0.50 | 0.61 (было 0.50 без H2) |
 | `sp_axis` | 0.889 | 0.860 (0.83–0.88) | 0.61 | 0.43 (0.748 и 0.22 были на ImageNet до К13) |
 | `sp_art` | 0.823 | 0.817 (0.74–0.89) | 0.53 | 0.56 (было 0.47) |
 | `hip_pos` | 0.725 | 0.709 (0.69–0.74) | 0.43 | 0.47 (было 0.45) |
@@ -599,8 +707,9 @@ ROC-AUC OOF в таблице — `auc_stacked` из `models/metrics_summary.jso
 Почему так и что это значит:
 - **Редкие классы (`sp_pos`: 10 позитивов, `hip_roi`: 16).** ДИ по построению широкие;
   пороги для `sp_pos` взяты как prevalence-квантиль (не подбирались по F1), чтобы не
-  переобучиться на шуме. По `sp_pos` на закрытом тесте следует ожидать результат близкий к
-  случайному.
+  переобучиться на шуме. По `sp_pos` на закрытом тесте следует ожидать результат заметно слабее
+  OOF-цифр 2.4.0: признак H2 проверен только nested на тех же 10 позитивах из 6 исследований, ДИ F1
+  доходит до 1.0, калиброванный гейт мощности не имеет.
 - **Укладка бедра (`hip_pos`).** Позитивов достаточно (79), но экспертная разметка опирается
   на ротацию бедра (видимость малого вертела), которую угол диафиза и глобальный эмбеддинг
   ловят частично. Объединение правого и левого бедра в одну модель (с зеркалированием) дало
@@ -635,6 +744,9 @@ python src/build_dataset.py
 python src/extract_all_features.py
 # 3) эмбеддинги контура B  ->  data/embeddings.npy (+ data/labels_for_embeddings.csv)
 python src/embeddings.py
+# 3b) признак H2 для sp_pos (логит головы укладки из канонического эмбеддинга densito)
+#     -> колонка synth_pos_logit в data/geometry_features_canonical.csv
+python tools/add_sppos_head_feature.py --check
 # 4) обучение + OOF-валидация GroupKFold(5) по исследованию + пороги + bootstrap-ДИ
 python src/train_stacked.py
 #    -> models/oof_stacked_*.csv, models/metrics_summary.json
@@ -674,7 +786,11 @@ lh_pos, lh_roi`) и повторить шаги 2–5. Случайные зёр
 5. Для снимков бедра в кабинете показывается предложение коррекции области интереса (рамка на снимке):
    подтвердите, отклоните или задайте свою область — решение сохраняется в задаче, выгружается в CSV и DICOM SR
    и не влияет на официальную таблицу.
-6. Инструкция для эксперта-тестировщика — `docs/EXPERT_TESTING_GUIDE.md`.
+6. Если в задаче больше одного исследования, в кабинете под очередью появляется блок «Сводка по партии»:
+   доли снимков с нарушением по области, типу нарушения и аппарату с доверительными интервалами, зона «не уверен»,
+   причины Failure и список исследований для пересмотра (по UID, нажатие показывает исследование в очереди).
+   Кнопки «Сводка (Markdown)» и «Сводка (CSV)» скачивают то же в файл. Персональных данных в сводке нет.
+7. Инструкция для эксперта-тестировщика — `docs/EXPERT_TESTING_GUIDE.md`.
 
 ---
 
@@ -684,10 +800,16 @@ lh_pos, lh_roi`) и повторить шаги 2–5. Случайные зёр
    `download.pytorch.org` **только на этапе сборки** (в работе сеть не нужна).
 2. `git clone … && cd densito_rebuild && ./build_and_run.sh build`.
    Офлайн-стенд: соберите образ на машине с интернетом и перенесите
-   `docker save densitoai:2.3.2 | gzip > densitoai.tar.gz` → `docker load`.
+   `docker save densitoai:2.4.0 | gzip > densitoai.tar.gz` → `docker load`.
 3. Пакетный режим: `./build_and_run.sh run <input> <output>`; сервисный режим:
    `docker compose up -d densito-api` (порт 8000, `restart: unless-stopped`, healthcheck на
    `/api/health`).
+3а. Приём снимков с денситометра/PACS по DICOM: `docker compose up -d densito-api densito-receiver`
+   (порт 11112, AE Title `DENSITOAI`, общий том `/data/output`) или один контейнер
+   `densitoai:2.4.0 api+receiver` с `-p 11112:11112`. На аппарате/PACS создаётся узел Storage:
+   AE Title `DENSITOAI`, IP сервера, порт 11112. Порт 11112 не должен быть доступен извне сети
+   отделения (TLS нет). Принятые файлы остаются в `/data/output/inbox` (удаление — только при
+   `DENSITO_INBOX_KEEP=0`). Подробности и проверка: `docs/DICOM_RECEIVER.md`.
 4. Ресурсы: `build_and_run.sh` автоматически берёт `min(nproc, 8)` ядер / 8 ГБ памяти
    по умолчанию (переопределяется через `CPUS`/`MEM`) — без этого на хосте с
    меньшим числом ядер, чем 8, `docker run --cpus=8` завершается с ошибкой (выявлено
@@ -764,6 +886,16 @@ lh_pos, lh_roi`) и повторить шаги 2–5. Случайные зёр
       яркости, перевороту и PhotometricInterpretation — `tools/seg_stability.py` → `outputs/seg_stability.json`.
       Маски — те же эвристики, что используются для измерений, а не обученная модель сегментации;
       эталонной разметки структур нет, поэтому качество масок относительно эталона пока не измерено.
+- [x] **Сводка по партии для отделения** (дополнительный функционал) — `tools/department_summary.py`,
+      `GET /api/results/{job_id}/summary` (+ `.md`, `.csv`), блок «Сводка по партии» в кабинете при нескольких
+      исследованиях в задаче. Агрегаты без персональных данных: по области, типу нарушения, аппарату (хэш),
+      дате исследования; доля Failure с причинами; зона «не уверен»; UID для пересмотра. У каждой доли — ДИ
+      Уилсона 95 % и пометка «мало данных» при n < 20. Схема `schema/department_summary.schema.json`; тест
+      `tests/test_department_summary.py` (79 проверок).
+- [x] **Приём снимков по DICOM** (дополнительный функционал) — `src/dicom_receiver.py`: Storage SCP
+      (C-ECHO/C-STORE, AE Title `DENSITOAI`, порт 11112; CR, DX, Secondary Capture; несжатые transfer syntax и RLE),
+      принятое исследование уходит в тот же `/api/analyze`; команды `receiver` и `api+receiver`, сервис
+      `densito-receiver`. Тест `tests/test_dicom_receiver.py`; описание — `docs/DICOM_RECEIVER.md`.
 - [x] **Веб-интерфейс** — `web/index.html`: загрузка DICOM перетаскиванием, таблица результатов,
       оверлей и рекомендация по полю сканирования по клику, скачивание CSV, DICOM SR и серии
       визуализации. Развёрнут на

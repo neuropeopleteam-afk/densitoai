@@ -20,6 +20,9 @@ POST /api/batch    (JSON {"input_dir": ..., "output_csv": ..., "xlsx": bool})
 GET  /api/results/{job}/{name}       — скачать файл результата конкретного запроса
                                        (CSV/XLSX/технический CSV/summary.json/бонус-файлы);
                                        доступ только к файлам своего запроса.
+GET  /api/results/{job}/summary      — сводка по партии для заведующего/старшего лаборанта (JSON,
+     .../summary.md, .../summary.csv     schema/department_summary.schema.json): доли с ДИ Уилсона по
+                                       области, типу нарушения, аппарату (хэш), дате; без персональных данных.
 GET  /api/jobs, /api/jobs/{job}      — история запросов и карточка запроса.
 GET  /api/results/{name}             — совместимость: results_*.csv/.xlsx из /api/batch.
 GET  /docs                           — Swagger UI (генерируется FastAPI).
@@ -55,6 +58,17 @@ from inference import (  # noqa: E402
     unique_path,
 )
 from region_support import check_file as _region_check  # noqa: E402
+
+# Сводка по партии (идея «в»): библиотека лежит в tools/department_summary.py (тот же код, что и CLI),
+# в образ tools/ копируется целиком. Без неё сервис работает, маршруты сводки отвечают 503.
+try:
+    import importlib.util as _ilu
+    _DS_SPEC = _ilu.spec_from_file_location("department_summary", PROJECT_ROOT / "tools" / "department_summary.py")
+    department_summary = _ilu.module_from_spec(_DS_SPEC)  # type: ignore[arg-type]
+    _DS_SPEC.loader.exec_module(department_summary)  # type: ignore[union-attr]
+except Exception as _e:  # noqa: BLE001
+    department_summary = None  # type: ignore[assignment]
+    logging.getLogger("densito.api").warning("department_summary недоступен: %s", _e)
 
 try:
     from fastapi import FastAPI, File, Header, HTTPException, Request, UploadFile
@@ -539,6 +553,7 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
             if n_file == 0:
                 raise HTTPException(400, f"Файл «{rel}» пустой.")
         eng, out_csv, rows, debug_rows = await run_in_threadpool(_run_job, job, tmp, job_dir, xlsx)
+        _write_device_tags(rows, tmp, job_dir)  # сводка по партии: только аппарат и дата, пока входные файлы ещё есть
         problems = validate_output_csv(out_csv, eng.cfg)
         study_sr = _study_sr_urls(eng, job)
         study_completeness = _study_completeness(eng, rows)
@@ -615,6 +630,9 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
             # идея 23: решения специалиста по предложенной области интереса (POST/GET, CSV)
             "decisions_url": f"/api/results/{job}/decisions",
             "decisions_csv_url": f"/api/results/{job}/decisions.csv",
+            # сводка по партии (для заведующего/старшего лаборанта): JSON и Markdown, без персональных данных
+            "department_summary_url": f"/api/results/{job}/summary",
+            "department_summary_md_url": f"/api/results/{job}/summary.md",
             "rows": rows_out,
             "csv": _rows_to_csv_text(rows, eng.cfg),
         }
@@ -1079,6 +1097,111 @@ def get_roi_decisions_sr(job: str, study_uid: str, t: Optional[str] = None,
             pass
         raise
     return FileResponse(str(out_path), media_type="application/dicom", filename=out_path.name)
+
+
+# =========================================================================== #
+# Идея «в»: сводка по партии для заведующего отделением и старшего лаборанта.
+# Источник — файлы каталога задачи: results.csv (9 колонок), results_debug.csv (needs_review, хэши кадров,
+# причины отказов), results_extras.csv (если есть) и device_tags.csv (аппарат и дата исследования, записан
+# при загрузке, когда входные DICOM ещё доступны; StationName/DeviceSerialNumber — только хэш, оператор не
+# читается). Расчёт — tools/department_summary.py, схема — schema/department_summary.schema.json.
+# Маршруты объявлены ДО общего /api/results/{job}/{name}: иначе «summary» ушло бы в выдачу файла.
+# =========================================================================== #
+DEVICE_TAGS_FILE = "device_tags.csv"
+DEPT_SUMMARY_STEM = "department_summary"
+_SUMMARY_LOCK = threading.Lock()
+
+
+def _write_device_tags(rows: List[Dict[str, Any]], tmp: Path, job_dir: Path) -> None:
+    """device_tags.csv в каталоге задачи. Ошибки не влияют на ответ /api/analyze."""
+    if department_summary is None or not rows:
+        return
+    try:
+        tags = department_summary.read_device_tags_dicom(rows, Path(tmp), salt=os.environ.get("DENSITO_HASH_SALT", ""))
+        if tags:
+            department_summary.write_device_tags_csv(tags, Path(job_dir) / DEVICE_TAGS_FILE)
+    except Exception as e:  # noqa: BLE001
+        LOG.warning("device_tags.csv не записан: %s", e)
+
+
+def build_department_summary(job_dir: Path, top_n: int = 10, min_n: int = 20) -> Dict[str, Any]:
+    """Собрать сводку по каталогу задачи и сохранить department_summary.{json,md,csv} рядом с results.csv."""
+    if department_summary is None:
+        raise HTTPException(503, "модуль сводки (tools/department_summary.py) недоступен")
+    job_dir = Path(job_dir)
+    res = job_dir / "results.csv"
+    if not res.is_file():
+        raise HTTPException(404, "results.csv задачи не найден")
+    try:
+        cfg = _ENGINE.cfg if _ENGINE is not None else load_config(
+            Path(os.environ["DENSITO_CONFIG"]) if os.environ.get("DENSITO_CONFIG") else None)
+        cfg_hash = _config_hash(cfg)
+    except Exception:  # noqa: BLE001 — сводку можно собрать и без конфигурации (строки по умолчанию)
+        cfg, cfg_hash = {}, None
+    dbg = job_dir / "results_debug.csv"
+    ext = job_dir / "results_extras.csv"
+    dev = job_dir / DEVICE_TAGS_FILE
+    try:
+        summary = department_summary.summarize_files(
+            [res], debug=[dbg] if dbg.is_file() else [], extras=[ext] if ext.is_file() else [],
+            device_tags=[dev] if dev.is_file() else None, cfg=cfg, config_hash=cfg_hash,
+            pipeline_version=PIPELINE_VERSION, min_n=int(min_n), top_n=int(top_n),
+            salt=os.environ.get("DENSITO_HASH_SALT", ""))
+    except ValueError as e:
+        raise HTTPException(400, f"results.csv задачи не в официальном формате: {e}")
+    summary["job_id"] = job_dir.name
+    with _SUMMARY_LOCK:
+        try:
+            (job_dir / f"{DEPT_SUMMARY_STEM}.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1), encoding="utf-8")
+            (job_dir / f"{DEPT_SUMMARY_STEM}.md").write_text(department_summary.to_markdown(summary), encoding="utf-8")
+            (job_dir / f"{DEPT_SUMMARY_STEM}.csv").write_text(department_summary.to_csv_text(summary), encoding="utf-8")
+        except OSError as e:
+            LOG.warning("department_summary файлы не записаны: %s", e)
+    return summary
+
+
+def _summary_params(top: Optional[int], min_n: Optional[int]) -> tuple:
+    top_n = 10 if top is None else max(0, min(int(top), 200))
+    mn = 20 if min_n is None else max(1, min(int(min_n), 10000))
+    return top_n, mn
+
+
+@app.get("/api/results/{job}/summary")
+def get_department_summary(job: str, t: Optional[str] = None, x_job_token: Optional[str] = Header(None),
+                           top: Optional[int] = None, min_n: Optional[int] = None):
+    """Сводка по партии (JSON, schema/department_summary.schema.json): исследования и файлы, доли нарушений
+    по области/типу/аппарату/дате с ДИ Уилсона 95 % и пометкой «мало данных» (n < min_n), доля Failure
+    с причинами, зона «не уверен», исследования для пересмотра (только UID). Персональных данных нет."""
+    _check_job_access(job, _decision_token(t, x_job_token))
+    job_dir = _job_dir_checked(job)
+    top_n, mn = _summary_params(top, min_n)
+    return JSONResponse(content=build_department_summary(job_dir, top_n=top_n, min_n=mn))
+
+
+@app.get("/api/results/{job}/summary.md")
+def get_department_summary_md(job: str, t: Optional[str] = None, x_job_token: Optional[str] = Header(None),
+                              top: Optional[int] = None, min_n: Optional[int] = None):
+    """Та же сводка в Markdown (для печати или вставки в отчёт отделения)."""
+    from fastapi.responses import Response
+    _check_job_access(job, _decision_token(t, x_job_token))
+    job_dir = _job_dir_checked(job)
+    top_n, mn = _summary_params(top, min_n)
+    text = department_summary.to_markdown(build_department_summary(job_dir, top_n=top_n, min_n=mn))
+    return Response(content=text.encode("utf-8"), media_type="text/markdown; charset=utf-8",
+                    headers={"Content-Disposition": f'inline; filename="{job}_summary.md"'})
+
+
+@app.get("/api/results/{job}/summary.csv")
+def get_department_summary_csv(job: str, t: Optional[str] = None, x_job_token: Optional[str] = Header(None),
+                               top: Optional[int] = None, min_n: Optional[int] = None):
+    """Плоская таблица долей сводки (разделитель «;»): раздел, группа, метрика, k, n, доля, ДИ, «мало данных»."""
+    from fastapi.responses import Response
+    _check_job_access(job, _decision_token(t, x_job_token))
+    job_dir = _job_dir_checked(job)
+    top_n, mn = _summary_params(top, min_n)
+    text = department_summary.to_csv_text(build_department_summary(job_dir, top_n=top_n, min_n=mn))
+    return Response(content=("\ufeff" + text).encode("utf-8"), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="{job}_summary.csv"'})
 
 
 @app.get("/api/results/{job}/{name}")

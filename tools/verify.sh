@@ -3,16 +3,19 @@
 # verify.sh — самопроверка DensitoAI без сети (хост с python или контейнер).
 #
 #   bash tools/verify.sh                                  # фантомы: схема, строки, UID, Failure,
-#                                                         # детерминизм, sha256 весов, эталон
+#                                                         # детерминизм, sha256 весов, эталон,
+#                                                         # прогон-двойник, стресс-набор
 #   bash tools/verify.sh --data /path/to/dicoms           # + прогон на данных пользователя,
 #                                                         #   печать sha256 предсказаний
 #   bash tools/verify.sh --data DIR --expected-sha <sha>  # + сверка sha256 с заданным
 #   bash tools/verify.sh --update-expected                # перезаписать эталон (только разработчику)
-#   docker run --rm --network none densitoai:2.3.2 verify # то же внутри образа
+#   docker run --rm --network none densitoai:2.4.0 verify # то же внутри образа
 #
 # Переменные: VERIFY_OUT (каталог результатов; по умолчанию $DENSITO_OUTPUT_DIR/verify или outputs/verify),
-#             PYTHON (интерпретатор), OMP_NUM_THREADS (по умолчанию 2), TORCH_HOME (models/torch_home).
-# Результат: <VERIFY_OUT>/verify_results.json, verification_report.html, run1/, run2/, data/; код 0/1.
+#             PYTHON (интерпретатор), OMP_NUM_THREADS (по умолчанию 2), TORCH_HOME (models/torch_home),
+#             VERIFY_SKIP_TRANSFER=1 / VERIFY_SKIP_STRESS=1 (пропустить прогон-двойник / стресс-набор),
+#             VERIFY_STRESS_HUGE (размер огромного кадра стресс-набора, по умолчанию 4000x3000).
+# Результат: <VERIFY_OUT>/verify_results.json, verification_report.html, run1/, run2/, stress/, data/; код 0/1.
 # Совместимость: POSIX sh + bash; используются только printf/test/case, без массивов.
 # =============================================================================
 set -eu
@@ -77,6 +80,17 @@ else
   rm -rf "$OUT/transfer/renamed" "$OUT/transfer/renamed_bundle.zip" "$OUT/transfer/shuffle" "$OUT/transfer/mixed" "$OUT/transfer/var_rename" "$OUT/transfer/var_zip" "$OUT/transfer/var_shuffle" "$OUT/transfer/var_mixed" 2>/dev/null || true
 fi
 
+# --- 1в. стресс-набор: битые и нестандартные входы из фантомов + смешанный пакет ---
+STRESS_JSON=""
+if [ "${VERIFY_SKIP_STRESS:-0}" = "1" ]; then
+  printf -- '-- стресс-набор устойчивости входа пропущен (VERIFY_SKIP_STRESS=1)\n'
+else
+  printf -- '-- стресс-набор: битые и нестандартные входы, смешанный пакет норма+битые (побитово)\n'
+  STRESS_JSON="$OUT/stress_check.json"
+  "$PYTHON" "$ROOT/tools/stress_set.py" --phantoms "$PHANTOMS" --baseline "$OUT/run1/results.csv" --out "$STRESS_JSON" --workdir "$OUT/stress" --python "$PYTHON" --huge "${VERIFY_STRESS_HUGE:-4000x3000}" >"$OUT/stress_check.log" 2>&1 || printf 'verify.sh: stress_set завершился с ошибкой, см. %s/stress_check.log\n' "$OUT" >&2
+  rm -rf "$OUT/stress/input" 2>/dev/null || true
+fi
+
 # --- 2. sha256 весов ----------------------------------------------------------
 printf -- '-- sha256 весов моделей\n'
 "$PYTHON" "$ROOT/tools/hash_weights.py" --check --root "$ROOT" --json "$OUT/weights_check.json" >"$OUT/weights_check.log" 2>&1 || true
@@ -104,7 +118,7 @@ RC=0
   --run1 "$OUT/run1/results.csv" --run2 "$OUT/run2/results.csv" --phantoms "$PHANTOMS" \
   --expected "$PHANTOMS/expected_results.csv" --weights-json "$OUT/weights_check.json" \
   --timings "$OUT/timings.json" --out "$OUT/verify_results.json" \
-  --transfer "$TRANSFER_JSON" --debug-csv "$OUT/run1/results_debug.csv" $DATA_ARGS || RC=$?
+  --transfer "$TRANSFER_JSON" --debug-csv "$OUT/run1/results_debug.csv" --stress "$STRESS_JSON" $DATA_ARGS || RC=$?
 
 "$PYTHON" "$ROOT/tools/verification_report.py" --json "$OUT/verify_results.json" --html "$OUT/verification_report.html" || RC=1
 printf 'Отчёт: %s/verification_report.html (JSON: %s/verify_results.json), всего %s с, код возврата %s\n' \

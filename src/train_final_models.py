@@ -44,7 +44,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
-from train_stacked import (DATA_DIR, OUT_DIR, REGION_CRITERIA, CRITERION_GEOMETRY_COLS,
+from train_stacked import (DATA_DIR, OUT_DIR, REGION_CRITERIA, CRITERION_GEOMETRY_COLS, CRITERION_EXTRA_COLS, contour_a_cols,
                            load_embeddings_by_source, emb_source_for,
                            CRITERION_LABEL_COL, REGION_ROWS, HIP_SIDE_REPORT, PCA_COMPONENTS,
                            GEOM_VARIANT_FILES, preproc_for, emb_matrix_for)
@@ -138,7 +138,9 @@ def main():
             yv = y[valid].astype(int)
             preproc = preproc_for(crit)
             geom_variant = preproc['geom'] if preproc['geom'] in gdf_by_variant else 'baseline'
-            cols = CRITERION_GEOMETRY_COLS[crit]
+            cols = contour_a_cols(crit)   # H2: геометрия + признаки из эмбеддинга (sp_pos: synth_pos_logit)
+            missing_cols = [c for c in cols if c not in gdf_by_variant[geom_variant].columns]
+            assert not missing_cols, f"{crit}: нет колонок {missing_cols} (tools/add_sppos_head_feature.py)"
             Xraw = gdf_by_variant[geom_variant][cols].values.astype(np.float64)
             med = np.nanmedian(Xraw, axis=0)           # медианы по всем строкам региона (как в OOF)
             X = _impute(Xraw, med)[valid]
@@ -160,6 +162,12 @@ def main():
             save(dg, f'{base}_geom.pkl'); save(de, f'{base}_emb_pca.pkl')
             manifest[f'{base}_geom.pkl'] = {'criterion': crit, 'feature_cols': cols, 'n_pos': int(yv.sum())}
             manifest[f'{base}_geom.pkl'].update({'preproc_geom': geom_variant})
+            extra_cols = CRITERION_EXTRA_COLS.get(crit) or []
+            if extra_cols:
+                # H2 (2.4.0): признаки контура A из эмбеддинга — откуда берутся (голова и её эмбеддинг)
+                from sppos_head import HEAD_FILE, EMB_SOURCE, EMB_VARIANT
+                manifest[f'{base}_geom.pkl']['embedding_features'] = {
+                    c: {'head_file': HEAD_FILE, 'emb_source': EMB_SOURCE, 'preproc_emb': EMB_VARIANT} for c in extra_cols}
             manifest[f'{base}_emb_pca.pkl'] = {'criterion': crit, 'n_pos': int(yv.sum()), 'emb_source': emb_src,
                                                'preproc_emb': emb_variant}
 
@@ -171,6 +179,8 @@ def main():
                             OUT_DIR / f'oof_stacked_{reg_name}_{crit_name}.csv', index=False)
 
         # --- "есть хоть одно нарушение" = OR критериев региона ---
+        # any-модель — только геометрия (CRITERION_GEOMETRY_COLS): признаки из эмбеддинга (H2) сюда не входят,
+        # бинарная модель региона в 2.4.0 не менялась.
         ya = any_label[any_seen].astype(int)
         cols_any = sorted({c for cr in criteria for c in CRITERION_GEOMETRY_COLS[cr]})
         Xraw = gdf[cols_any].values.astype(np.float64)

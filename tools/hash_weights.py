@@ -7,8 +7,8 @@ hash_weights.py — контрольные суммы весов моделей 
     python tools/hash_weights.py --check    # сверить файлы с models/WEIGHTS_SHA256.txt (код 0/1)
     sha256sum -c models/WEIGHTS_SHA256.txt  # то же самое стандартной утилитой (из корня проекта)
 
-Файлы: models/*.pkl, models/backbone_densito.pth, models/torch_home/hub/checkpoints/*.pth,
-models/models_manifest.json, models/geometry_medians.json, config.yaml. Формат строк совместим с `sha256sum -c`.
+Файлы: models/*.pkl, models/backbone_densito.pth, models/head_densito_synth.pth (H2, 2.4.0),
+models/torch_home/hub/checkpoints/*.pth, models/models_manifest.json, models/geometry_medians.json, config.yaml. Формат строк совместим с `sha256sum -c`.
 Дополнительно проверяется, что каждый ключ models_manifest.json существует как файл.
 """
 from __future__ import annotations
@@ -34,7 +34,7 @@ def sha256_file(p: Path) -> str:
 
 def tracked_files(root: Path) -> list[Path]:
     files = sorted((root / "models").glob("*.pkl"))
-    for extra in ("models/backbone_densito.pth", "models/models_manifest.json",
+    for extra in ("models/backbone_densito.pth", "models/head_densito_synth.pth", "models/models_manifest.json",
                   "models/geometry_medians.json", "config.yaml"):
         if (root / extra).exists():
             files.append(root / extra)

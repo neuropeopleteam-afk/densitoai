@@ -1,6 +1,6 @@
-# Карточка модели DensitoAI v2.3.0
+# Карточка модели DensitoAI v2.4.0
 
-Сформировано автоматически `tools/make_model_card.py` 2026-09-22 из `models/metrics_summary.json`, `models/models_manifest.json`, `config.yaml`, `requirements.txt`. Ручные правки не вносить — перегенерировать.
+Сформировано автоматически `tools/make_model_card.py` 2026-09-23 из `models/metrics_summary.json`, `models/models_manifest.json`, `config.yaml`, `requirements.txt`. Ручные правки не вносить — перегенерировать.
 
 ## 1. Назначение
 
@@ -13,13 +13,13 @@
 Двухконтурный стекинг для каждого критерия (см. `src/inference.py`, `models/MODEL_CONTRACT.md`):
 
 - контур A — геометрические признаки сегментированной кости (логистическая регрессия, `model_<регион>_<критерий>_geom.pkl`);
-- контур B — эмбеддинги замороженного EfficientNet-B0 (источник `imagenet` или `densito` — дообученный на внешних DXA-наборах бэкбон `models/backbone_densito.pth`) → PCA → логистическая регрессия (`model_..._emb_pca.pkl`);
+- контур B — эмбеддинги замороженного EfficientNet-B0 → PCA → логистическая регрессия (`model_..._emb_pca.pkl`). Источник эмбеддингов выбран по критерию (К13, nested-протокол): `imagenet` — веса torchvision (BSD-3-Clause); `densito` — `models/backbone_densito.pth`, дообучен на пуле внешних DXA/рентген-наборов; `densito_inv` — `models/backbone_densito_inv.pth`, инвариантный вариант того же пула. В пул входят Arak (CC BY-NC) и BUU-LSPINE (некоммерческое EULA), поэтому критерии на `densito`/`densito_inv` (`sp_pos`, `sp_axis`) ограничены исследовательским использованием; `sp_art`, `hip_pos`, `hip_roi` работают на `imagenet` и ограничений не имеют. Разбор и варианты — `docs/LICENSES_AND_DATA_AUDIT.md`, свободный по лицензиям `backbone_densito_inv_free.pth` в образе тоже есть;
 - объединение: ранговое усреднение перцентилей относительно OOF-распределения с весами geom=0.5, emb=0.5; quality_prob = 0.5·any-модель + 0.5·max по критериям; consistent_quality_prob=True.
 - область снимка: правило по ширине (≥ 290 px — позвоночник), для нестандартных ширин — `model_region_emb.pkl`.
 
 Признаки контура A по фактически обученным моделям (models_manifest.json → feature_cols):
 
-- sp_pos (model_spine_sp_pos_geom.pkl): center_offset_ratio, bone_width_ratio
+- sp_pos (model_spine_sp_pos_geom.pkl): center_offset_ratio, bone_width_ratio, synth_pos_logit
 - sp_axis (model_spine_sp_axis_geom.pkl): axis_angle_deg
 - sp_art (model_spine_sp_art_geom.pkl): metal_metal_area_mm2, metal_metal_max_intensity_gap
 - any (model_spine_any_geom.pkl): axis_angle_deg, bone_width_ratio, center_offset_ratio, metal_metal_area_mm2, metal_metal_max_intensity_gap
@@ -42,7 +42,7 @@ Out-of-fold (OOF) предсказания: повторный GroupKFold с г�
 
 | Критерий | Назначение | n_valid | n_pos | AUC geom | AUC emb (источник) | AUC стек | Порог (метод) | F1 OOF [95% ДИ] | Примечание |
 |---|---|---|---|---|---|---|---|---|---|
-| sp_pos | Позвоночник: укладка (центр, симметрия) | 166 | 10 | 0.681 | 0.790 (densito) | 0.734 | 0.822 (prevalence) | 0.476 [0.11; 0.82] |  |
+| sp_pos | Позвоночник: укладка (центр, симметрия) | 166 | 10 | 0.915 | 0.790 (densito) | 0.893 | 0.861 (prevalence) | 0.500 [0.12; 1.00] |  |
 | sp_axis | Позвоночник: ось позвоночника | 166 | 17 | 0.839 | 0.797 (densito_inv) | 0.889 | 0.777 (prevalence_x1.4) | 0.605 [0.29; 0.82] |  |
 | sp_art | Позвоночник: посторонние предметы | 166 | 35 | 0.560 | 0.897 (imagenet) | 0.823 | 0.602 (prevalence_x1.4) | 0.535 [0.24; 0.74] |  |
 | hip_pos | Бедро (обе стороны, общая модель): укладка | 329 | 79 | 0.710 | 0.635 (imagenet) | 0.725 | 0.658 (prevalence) | 0.432 [0.22; 0.60] |  |
@@ -58,7 +58,7 @@ Nested-оценка (порог и стекинг подобраны внутр�
 
 Протокол: repeated GroupKFold 5 внешних фолдов × 10 повторов, 3 внутренних; группы — исследование + хэш пикселей; вес стэкинга и порог выбираются только на внутренних фолдах (`tools/nested_gate.py`, `docs/NESTED_GATE_REPORT.md`). AUC — среднее по 10 повторам для базового стэкинга 0.5/0.5 (он и используется); полные таблицы с ДИ — в отчёте.
 
-- sp_pos: nested AUC = 0.702; OOF AUC = 0.734, протокол nested_gate_K2
+- sp_pos: nested AUC = 0.878; OOF AUC = 0.893, протокол nested_sppos_head_H2
 - sp_axis: nested AUC = 0.860; OOF AUC = 0.889, протокол emb_gate_K13
 - sp_art: nested AUC = 0.817; OOF AUC = 0.823, протокол nested_gate_K2
 - hip_pos: nested AUC = 0.709; OOF AUC = 0.725, протокол nested_gate_K2
@@ -80,12 +80,12 @@ Nested-оценка (порог и стекинг подобраны внутр�
 
 ## 8. Версия и хэши
 
-- Версия пайплайна (config.yaml → version): **2.3.2**; config_hash: **5ac94710a6cd** (тот же пишется в DICOM SR и ответ API).
+- Версия пайплайна (config.yaml → version): **2.4.0**; config_hash: **1f12392d7373** (тот же пишется в DICOM SR и ответ API).
 - Ключевые библиотеки (requirements.txt): torch 2.14.0+cpu, torchvision 0.29.0+cpu, numpy 2.5.3, scipy 1.18.1, scikit-learn 1.9.1, pandas 3.0.5, pydicom 3.0.2, opencv-python-headless 5.0.0.93, scikit-image 0.26.0, PyYAML 6.0.3, fastapi 0.141.1.
 
 | Файл модели | Критерий | Признаки / источник | n_pos | sha256[:12] |
 |---|---|---|---|---|
-| model_spine_sp_pos_geom.pkl | sp_pos | center_offset_ratio, bone_width_ratio | 10 | 61c4f76fe1cc |
+| model_spine_sp_pos_geom.pkl | sp_pos | center_offset_ratio, bone_width_ratio, synth_pos_logit | 10 | 720bff39350b |
 | model_spine_sp_pos_emb_pca.pkl | sp_pos | densito | 10 | b905b160ae25 |
 | model_spine_sp_axis_geom.pkl | sp_axis | axis_angle_deg | 17 | 297e08c840f3 |
 | model_spine_sp_axis_emb_pca.pkl | sp_axis | densito_inv | 17 | 4996fdee1eb7 |
@@ -105,23 +105,3 @@ Nested-оценка (порог и стекинг подобраны внутр�
 | backbone_densito.pth | — | бэкбон densito (EfficientNet-B0) | — | f99110664dad |
 
 Источники: `models/metrics_summary.json`, `models/models_manifest.json`, `config.yaml`, `requirements.txt`; процедура валидации и отвергнутые гипотезы — `docs/EVIDENCE.md`.
-
-### Детектор стороны бедра (маршрутизатор моделей `rh_*` / `lh_*`)
-
-Сторона определяется по изображению, а не по тегам DICOM: в поставке организаторов ни на одном из
-333 бедренных кадров нет `Laterality`/`ImageLaterality`, текстовых тегов со стороной или суффиксов
-имён (`tools/side_detector_audit.py`, `docs/side_detector_audit.csv`). Правило
-(`src/hip_features.py: hip_side_score`): 2 × смещение центроида кости в верхней трети кадра
-(там таз и вертлужная впадина) + доля силуэта тела в крайних 12 % колонок; знак скора задаёт сторону.
-Если силуэт тела упирается в край кадра более чем в 50 % строк (обрезанное поле сканирования),
-краевая подсказка отбрасывается — она в этом случае неверна по построению (латерального «воздуха»
-в кадре нет). Прежнее правило без этой поправки: `DENSITO_SIDE_MODE=baseline`.
-
-Как проверен: на истине синтетических фантомов 8/8 верных сторон (`tests/phantoms/MANIFEST.json`,
-включая два кадра с обрезанным полем); внутренняя согласованность на поставке — ровно right+left в
-63 из 64 исследований с чётным числом бедренных кадров (плотностная эвристика разметки даёт 53/64,
-расхождение со стороной из `labels_full.csv` — 80 кадров из 333). Влияние выбора стороны на метрики
-измерено отдельно (`docs/metrics_side_label.json`): при метке, взятой по стороне из разметки,
-`hip_roi` 0.880/0.267 против 0.917/0.514 — весь эффект даёт одно исследование из пяти кадров.
-Ограничение: стороны как внешней истины нет, поэтому точность маршрутизатора на реальных данных
-неизвестна; вопрос вынесен рентгенологу (`docs/RADIOLOGIST_TEST_BRIEF.md`).

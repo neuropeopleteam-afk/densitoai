@@ -3,10 +3,18 @@
     "criterion": "sp_pos",
     "feature_cols": [
       "center_offset_ratio",
-      "bone_width_ratio"
+      "bone_width_ratio",
+      "synth_pos_logit"
     ],
     "n_pos": 10,
-    "preproc_geom": "canonical"
+    "preproc_geom": "canonical",
+    "embedding_features": {
+      "synth_pos_logit": {
+        "head_file": "head_densito_synth.pth",
+        "emb_source": "densito",
+        "preproc_emb": "canonical"
+      }
+    }
   },
   "model_spine_sp_pos_emb_pca.pkl": {
     "criterion": "sp_pos",

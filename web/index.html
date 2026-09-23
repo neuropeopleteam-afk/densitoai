@@ -546,6 +546,26 @@ body:not(.view-app) .topbar .topnav { display: flex; }
 .badge.roidec { background: var(--primary-soft); color: var(--primary); margin-left: 6px; margin-top: 4px; white-space: normal; line-height: 1.25; font-size: 12px; }
 .badge.roidec.done { background: var(--success-soft); color: var(--success); }
 /* ROI-DECISION:END */
+/* DEPT-SUMMARY:BEGIN — сводка по партии (только когда в задаче больше одного исследования) */
+.dept-summary .body { display: block; }
+.dept-summary.collapsed .body { display: none; }
+.dept-summary .kpis { margin-top: 4px; }
+.dept-summary .ci { font-size: 12.5px; color: var(--muted); font-weight: 400; white-space: nowrap; }
+.dept-summary .kpi .ci { display: block; margin-top: 4px; }
+.dept-summary .lowdata { display: inline-block; font-size: 11.5px; color: var(--warning); border: 1px solid var(--warning); border-radius: 6px; padding: 1px 6px; margin-left: 6px; vertical-align: 1px; }
+.dept-summary h3 { margin: 26px 0 10px; font-size: 17px; }
+.dept-summary table.metrics td.num { font-weight: 600; }
+.dept-summary table.metrics th { overflow-wrap: normal; }
+.dept-summary table.metrics th.num { white-space: nowrap; }
+.dept-summary table.metrics td.mono { font-family: var(--font-mono, ui-monospace, monospace); font-size: 12.5px; overflow-wrap: anywhere; }
+.dept-summary .uidbtn { background: none; border: none; padding: 0; color: var(--primary); cursor: pointer; font: inherit; text-align: left; overflow-wrap: anywhere; }
+.dept-summary .uidbtn:hover { text-decoration: underline; }
+.dept-summary .notes { margin-top: 18px; font-size: 13px; color: var(--muted); }
+.dept-summary .notes li { margin: 3px 0 3px 18px; }
+.dept-summary .msg { font-size: 13.5px; color: var(--muted); }
+.dept-summary .msg.err { color: var(--error); }
+.dept-summary .tblwrap { overflow-x: auto; }
+/* DEPT-SUMMARY:END */
 </style>
 </head>
 <body>
@@ -606,7 +626,7 @@ body:not(.view-app) .topbar .topnav { display: flex; }
     <div class="numbers">
       <div class="n"><div class="v">0.889</div><div class="ci">F1 0.60 [0.29; 0.82]</div><div class="l">AUC стека, ось позвоночника</div></div>
       <div class="n"><div class="v">0.917</div><div class="ci">F1 0.51 [0.00; 0.91]</div><div class="l">AUC стека, область интереса бедра</div></div>
-      <div class="n"><div class="v">0.773 [0.65; 0.88]</div><div class="ci">F1 0.623 [0.45; 0.77]</div><div class="l">ROC-AUC, «есть нарушение», поясничный отдел позвоночника</div></div>
+      <div class="n"><div class="v">0.813 [0.69; 0.91]</div><div class="ci">F1 0.662 [0.49; 0.80]</div><div class="l">ROC-AUC, «есть нарушение», поясничный отдел позвоночника</div></div>
       <div class="n"><div class="v">0.760 [0.63; 0.86]</div><div class="ci">F1 0.516 [0.31; 0.68]</div><div class="l">ROC-AUC, «есть нарушение», проксимальный отдел бедра</div></div>
     </div>
     <p class="metrics-src">Оценки out-of-fold с группировкой по исследованию, 95 % ДИ — бутстрап по исследованиям. Полные таблицы — в <a href="docs.html">документах и проверке</a>.</p>
@@ -620,7 +640,7 @@ body:not(.view-app) .topbar .topnav { display: flex; }
 
 <footer>
   <div class="wrap">
-    <div>DensitoAI · ООО «НЕЙРОПИПЛ» · версия сервиса 2.3.2 · хэш конфигурации 5ac94710a6cd</div>
+    <div>DensitoAI · ООО «НЕЙРОПИПЛ» · версия сервиса 2.4.0 · хэш конфигурации 1f12392d7373</div>
     <div><a href="docs.html">Документы и проверка</a></div>
   </div>
 </footer>
@@ -1113,6 +1133,8 @@ function route() {
     if (!healthLoaded) { healthLoaded = true; loadHealth(); }
     if (!historyLoaded) { historyLoaded = true; loadHistory(); }
     if (h === '#app/demo') loadDemo();
+    const mj = /^#app\/job\/([0-9]{8}_[0-9]{6}_[0-9a-f]{6})(?:\/([\w\-]+))?$/.exec(h);
+    if (mj) { openJob(mj[1], mj[2] || ''); }
   } else {
     const id = h.slice(1);
     const target = id && id !== 'top' ? document.getElementById(id) : null;
@@ -1307,6 +1329,7 @@ function renderResults(data) {
   card.appendChild(queue);
   card.appendChild(el('div', { class: 'hotkeys', text: 'Клавиши: стрелки вниз и вверх — переход по снимкам, Enter — открыть или закрыть карточку, Esc — закрыть просмотр' }));
   resultsEl.appendChild(card);
+  deptSummaryOnRender(data, resultsEl);
   refresh();
   lab.idx = 0; lab.done = new Set();
   renderMode();
@@ -1540,6 +1563,129 @@ function roiDecBlock(r) {
 }
 // ---------- ROI-DECISION:END ----------
 
+// ---------- DEPT-SUMMARY:BEGIN — сводка по партии для заведующего и старшего лаборанта ----------
+// Показывается только когда в задаче больше одного исследования и есть код задачи.
+// Данные: GET /api/results/{job}/summary (агрегаты без персональных данных, ДИ Уилсона 95 %, «мало данных» при n < 20).
+const deptSum = { collapsed: false };
+function deptPct(rt, opts) {
+  // «41,7 % [37,4; 46,1]» + пометка «мало данных»
+  opts = opts || {};
+  if (!rt || rt.rate === null || rt.rate === undefined) return el('span', { class: 'ci', text: '—' });
+  const p = (rt.rate * 100).toFixed(1).replace('.', ',');
+  const lo = (rt.ci_low * 100).toFixed(1).replace('.', ','), hi = (rt.ci_high * 100).toFixed(1).replace('.', ',');
+  const kids = [p + ' %'];
+  if (!opts.noci) kids.push(el('span', { class: 'ci', text: ' [' + lo + '; ' + hi + ']' }));
+  if (rt.low_data) kids.push(el('span', { class: 'lowdata', text: 'мало данных', title: 'n = ' + rt.n + ' < порога, интервал широкий' }));
+  return el('span', {}, kids);
+}
+function deptTable(headers, rows) {
+  const thead = el('thead', {}, [el('tr', {}, headers.map(h => el('th', { class: h.num ? 'num' : '', text: h.t })))]);
+  const tbody = el('tbody', {}, rows.map(r => el('tr', {}, r.map((c, i) => {
+    const td = el('td', { class: headers[i].num ? 'num' : (headers[i].mono ? 'mono' : '') });
+    if (c === null || c === undefined) td.textContent = '—';
+    else if (typeof c === 'object' && c.nodeType) td.appendChild(c);
+    else td.textContent = String(c);
+    return td;
+  }))));
+  return el('div', { class: 'tblwrap' }, [el('table', { class: 'metrics compact' }, [thead, tbody])]);
+}
+function deptRender(panel, s) {
+  const body = el('div', { class: 'body' });
+  const t = s.totals || {};
+  const kp = el('div', { class: 'kpis' });
+  const kpiCi = (rt, label, cls) => { const k = kpi('', label, cls); k.querySelector('.v').textContent = ''; k.querySelector('.v').appendChild(deptPct(rt, { noci: true })); k.querySelector('.v').appendChild(el('span', { class: 'ci', text: rt && rt.rate !== null ? '[' + (rt.ci_low * 100).toFixed(1).replace('.', ',') + '; ' + (rt.ci_high * 100).toFixed(1).replace('.', ',') + '] · n = ' + rt.n : '' })); return k; };
+  kp.appendChild(kpi(fmtNum(t.n_studies), 'исследований'));
+  kp.appendChild(kpi(fmtNum(t.n_files), 'файлов' + (t.n_unique_pixel_hashes ? ' · уникальных кадров ' + fmtNum(t.n_unique_pixel_hashes) : '')));
+  kp.appendChild(kpiCi(s.violation_rate, 'файлов с нарушением (от обработанных)', 'viol'));
+  kp.appendChild(kpiCi(s.violation_rate_studies, 'исследований с нарушением'));
+  if (s.uncertain_rate) kp.appendChild(kpiCi(s.uncertain_rate, 'в зоне «не уверен» (нужен взгляд врача)'));
+  kp.appendChild(kpiCi(s.failure_rate, 'не обработано (Failure)', t.n_failure ? 'fail' : ''));
+  body.appendChild(kp);
+  const per = s.period || {};
+  body.appendChild(el('div', { class: 'hint', text: (per.date_min ? 'Период по датам исследований: ' + per.date_min + ' — ' + per.date_max + (per.n_files_without_date ? ' (без даты: ' + fmtNum(per.n_files_without_date) + ')' : '') : 'Даты исследований в данных не указаны (теги DICOM обезличены или отсутствуют).') + ' Доли нарушений считаются от успешно обработанных файлов; в квадратных скобках — доверительный интервал Уилсона 95 %.' }));
+
+  body.appendChild(el('h3', { text: 'По области' }));
+  body.appendChild(deptTable(
+    [{ t: 'Область' }, { t: 'Исследований', num: true }, { t: 'Файлов', num: true }, { t: 'С нарушением', num: true }, { t: 'Доля файлов с нарушением' }, { t: 'Доля исследований с нарушением' }, { t: 'Failure', num: true }],
+    (s.by_region || []).map(r => [r.region, fmtNum(r.n_studies), fmtNum(r.n_files), fmtNum(r.n_violation), deptPct(r.violation_rate), deptPct(r.studies_with_violation), fmtNum(r.n_failure)])));
+
+  body.appendChild(el('h3', { text: 'По типу нарушения' }));
+  body.appendChild(deptTable(
+    [{ t: 'Область' }, { t: 'Тип нарушения' }, { t: 'Файлов', num: true }, { t: 'Доля файлов' }, { t: 'Исследований', num: true }, { t: 'Доля исследований' }],
+    (s.by_violation_type || []).map(r => [r.region, r.violation_type, fmtNum(r.n_files), deptPct(r.rate_files), fmtNum(r.n_studies), deptPct(r.rate_studies)])));
+
+  body.appendChild(el('h3', { text: 'По аппарату' }));
+  body.appendChild(deptTable(
+    [{ t: 'Аппарат' }, { t: 'Код', mono: true }, { t: 'Исследований', num: true }, { t: 'Файлов', num: true }, { t: 'С нарушением', num: true }, { t: 'Доля файлов с нарушением' }, { t: 'Failure', num: true }],
+    (s.by_device || []).map(r => [r.device, r.device_hash || '—', fmtNum(r.n_studies), fmtNum(r.n_files), fmtNum(r.n_violation), deptPct(r.violation_rate), fmtNum(r.n_failure)])));
+  body.appendChild(el('div', { class: 'hint', text: 'Аппарат обозначен производителем, моделью и кодом (хэш StationName или серийного номера); исходные идентификаторы и оператор не выводятся.' }));
+
+  const bd = s.by_date || {};
+  if ((bd.week || []).length) {
+    body.appendChild(el('h3', { text: 'По неделям исследования' }));
+    body.appendChild(deptTable(
+      [{ t: 'Неделя (ISO)' }, { t: 'Исследований', num: true }, { t: 'Файлов', num: true }, { t: 'С нарушением', num: true }, { t: 'Доля файлов с нарушением' }, { t: 'Failure', num: true }],
+      bd.week.map(r => [r.period, fmtNum(r.n_studies), fmtNum(r.n_files), fmtNum(r.n_violation), deptPct(r.violation_rate), fmtNum(r.n_failure)])));
+    if (bd.n_files_without_date) body.appendChild(el('div', { class: 'hint', text: 'Без даты: ' + plural(bd.n_files_without_date, 'файл', 'файла', 'файлов') + '.' }));
+  }
+
+  if (s.uncertain_by_criterion && s.uncertain_by_criterion.length) {
+    body.appendChild(el('h3', { text: 'Зона «не уверен» по критериям' }));
+    body.appendChild(deptTable([{ t: 'Критерий' }, { t: 'Код', mono: true }, { t: 'Файлов', num: true }],
+      s.uncertain_by_criterion.map(r => [r.title || r.criterion, r.criterion, fmtNum(r.n_files)])));
+  }
+
+  if ((s.failure_reasons || []).length) {
+    body.appendChild(el('h3', { text: 'Причины Failure' }));
+    body.appendChild(deptTable([{ t: 'Причина' }, { t: 'Файлов', num: true }, { t: 'Доля среди Failure' }],
+      s.failure_reasons.map(r => [r.reason, fmtNum(r.n_files), deptPct(r.share)])));
+  }
+
+  if ((s.review_top || []).length) {
+    body.appendChild(el('h3', { text: 'Исследования для пересмотра (по максимальной вероятности нарушения)' }));
+    body.appendChild(deptTable(
+      [{ t: '№', num: true }, { t: 'study_uid', mono: true }, { t: 'Макс. вероятность', num: true }, { t: 'Файлов', num: true }, { t: 'С нарушением', num: true }, { t: '«Не уверен»', num: true }, { t: 'Типы нарушений' }],
+      s.review_top.map(r => [r.rank, el('button', { class: 'uidbtn', type: 'button', title: 'Показать это исследование в очереди', onclick: () => {
+        state.q = String(r.study_uid).toLowerCase();
+        const inp = document.querySelector('#results input[type=search]'); if (inp) inp.value = r.study_uid;
+        refresh();
+        const q = document.getElementById('queue'); if (q) q.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } }, [r.study_uid]), fmt(r.max_quality_prob), fmtNum(r.n_files), fmtNum(r.n_violation), r.n_uncertain === null || r.n_uncertain === undefined ? '—' : fmtNum(r.n_uncertain), (r.violation_types || []).join('; ') || '—'])));
+    body.appendChild(el('div', { class: 'hint', text: 'Список отсортирован по наибольшей quality_prob среди файлов исследования; нажатие на UID показывает исследование в очереди ниже.' }));
+  }
+
+  if ((s.notes || []).length) body.appendChild(el('ul', { class: 'notes' }, s.notes.map(n => el('li', { text: n }))));
+  return body;
+}
+function deptSummaryOnRender(data, host) {
+  const old = document.getElementById('deptSummary'); if (old) old.remove();
+  const n = data && data.summary ? Number(data.summary.n_studies) : 0;
+  if (!(n > 1) || !roiDecJobOk(data)) return;
+  const job = data.job_id, token = data.job_token;
+  const url = name => '/api/results/' + encodeURIComponent(job) + '/' + name + '?t=' + encodeURIComponent(token);
+  const panel = el('div', { class: 'panel dept-summary' + (deptSum.collapsed ? ' collapsed' : ''), id: 'deptSummary' });
+  const toggle = el('button', { class: 'btn ghost sm', type: 'button', text: deptSum.collapsed ? 'Показать' : 'Свернуть', onclick: () => {
+    deptSum.collapsed = !deptSum.collapsed; panel.classList.toggle('collapsed', deptSum.collapsed); toggle.textContent = deptSum.collapsed ? 'Показать' : 'Свернуть';
+  } });
+  const head = el('div', { class: 'panel-head' }, [
+    el('div', {}, [el('h2', { text: 'Сводка по партии' }), el('div', { class: 'hint', text: 'Агрегированная картина качества по ' + plural(n, 'исследованию', 'исследованиям', 'исследованиям') + ' без персональных данных: только UID, хэши аппаратов и даты. Для заведующего отделением и старшего лаборанта.' })]),
+    el('div', { class: 'right' }, [
+      el('a', { class: 'btn ghost sm', href: url('summary.md'), download: 'summary_' + job + '.md', text: 'Сводка (Markdown)' }),
+      el('a', { class: 'btn ghost sm', href: url('summary.csv'), download: 'summary_' + job + '.csv', text: 'Сводка (CSV)' }),
+      toggle,
+    ]),
+  ]);
+  panel.appendChild(head);
+  const msg = el('div', { class: 'msg body', text: 'Загрузка сводки…' });
+  panel.appendChild(msg);
+  host.appendChild(panel);
+  fetch('/api/results/' + encodeURIComponent(job) + '/summary', { headers: { 'X-Job-Token': token } })
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(s => { if (!s || s.kind !== 'department_summary') throw new Error('неожиданный ответ'); msg.remove(); panel.appendChild(deptRender(panel, s)); })
+    .catch(e => { msg.className = 'msg err body'; msg.textContent = 'Сводка недоступна: ' + (e && e.message ? e.message : e) + '. Файлы results.csv и карточка задачи не затронуты.'; });
+}
+// ---------- DEPT-SUMMARY:END ----------
+
 
 // ---------- режим лаборанта: один снимок крупно, без технических деталей ----------
 const lab = { idx: 0, done: new Set() };
@@ -1725,10 +1871,13 @@ async function openJob(jobId, token) {
     const card = await r.json();
     if (!card || !Array.isArray(card.rows)) throw new Error('карточка запроса без строк');
     // в карточке запроса нет картинок (base64 не сохраняется): подставляем ссылки на PNG из папки запроса
-    card.rows = card.rows.map(x => {
-      const stem = String(x.path_to_study || '').replace(/\.[^.]+$/, '');
-      const extra = stem ? { bonus_overlay_png_url: jobUrl(jobId, token, stem + '_overlay.png') } : {};
-      if (stem && x.details && x.details.roi && x.details.roi.needs_correction) extra.bonus_roi_png_url = jobUrl(jobId, token, stem + '_roi_correction.png');
+    // файлы бонус-выходов названы по номеру строки (rowNNNN, см. bonus_row_prefix в api_server.py),
+    // а не по имени файла: префикс берём из ссылки на DICOM SC/SEG той же строки, иначе — по её номеру
+    card.rows = card.rows.map((x, i) => {
+      const m = String(x.bonus_overlay_dcm_download || x.seg_download || '').match(/(row\d{4})_/);
+      const pref = m ? m[1] : ('row' + String(i).padStart(4, '0'));
+      const extra = { bonus_overlay_png_url: jobUrl(jobId, token, pref + '_overlay.png') };
+      if (x.details && x.details.roi && x.details.roi.needs_correction) extra.bonus_roi_png_url = jobUrl(jobId, token, pref + '_roi_correction.png');
       return Object.assign({}, x, extra);
     });
     card.job_token = card.job_token || token; // ROI-DECISION: код доступа нужен для записи решений из истории

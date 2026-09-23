@@ -1,16 +1,16 @@
 {
  "demo": true,
- "demo_note": "Партия из 10 снимков обучающей выборки заказчика, обработана сервисом DensitoAI 2.3.2 без изменений: 5 с нарушениями по всем пяти критериям ТЗ, остальные — норма. Каждый кадр подписан: что отметил эксперт и что сказал сервис. Пропусков в партии: 1 — показаны намеренно, чтобы была видна граница возможностей. Личных данных в файлах нет.",
+ "demo_note": "Партия из 10 снимков обучающей выборки заказчика, обработана сервисом DensitoAI 2.4.0 без изменений: 5 с нарушениями по всем пяти критериям ТЗ, остальные — норма. Каждый кадр подписан: что отметил эксперт и что сказал сервис. Пропусков в партии: 1 — показаны намеренно, чтобы была видна граница возможностей. Личных данных в файлах нет.",
  "job_id": "demo",
  "request_id": "demo",
- "model_version": "2.3.2",
- "config_hash": "5ac94710a6cd",
+ "model_version": "2.4.0",
+ "config_hash": "1f12392d7373",
  "summary": {
   "n_files": 10,
   "n_failures": 0,
   "n_violations": 5,
-  "total_processing_time_s": 68.697,
-  "wall_time_s": 69.572,
+  "total_processing_time_s": 11.791,
+  "wall_time_s": 24.168,
   "n_studies": 10,
   "n_files_uploaded": 10,
   "bytes_uploaded": 826834
@@ -30,12 +30,19 @@
    "anatomical_region": "Поясничный отдел позвоночника",
    "quality_class": 1,
    "violation_type": "Некорректная укладка;Присутствуют посторонние предметы",
-   "quality_prob": 0.93633,
+   "quality_prob": 0.934071,
    "processing_status": "Success",
-   "time_of_processing": 9.7963,
-   "bonus_overlay_dcm_download": "/api/results/20260922_143542_730030/row0000_overlay.dcm?t=y6MT1n-zfPWRwHMLC_cAiamuVkAv8PhY",
+   "time_of_processing": 2.2271,
+   "bonus_overlay_dcm_download": "/api/results/20260923_150418_1ec248/row0000_overlay.dcm?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
+   "seg_png": "/api/results/20260923_150418_1ec248/row0000_seg.png?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
    "region_supported": true,
    "region_support_reason": "",
+   "study_completeness": {
+    "spine": true,
+    "hip": false,
+    "note": "Примечание: в исследовании представлена только одна область из двух (Поясничный отдел позвоночника); полнота исследования не является критерием оценки качества снимка."
+   },
+   "roi_suggestion": null,
    "details": {
     "internal_region": "spine",
     "region_source": "dims",
@@ -45,21 +52,21 @@
     ],
     "warnings": "no PixelSpacing tag -> device default 1.05x0.6 mm",
     "error": null,
-    "quality_prob_raw": 0.872659,
+    "quality_prob_raw": 0.868141,
     "criteria": [
      {
       "code": "sp_pos",
       "title": "Укладка (позвоночник)",
       "violation": "Некорректная укладка",
-      "score": 0.976,
-      "threshold": 0.822,
+      "score": 0.967,
+      "threshold": 0.861,
       "flag": true,
       "method": "stacked_rank_avg",
-      "p_geom": 0.749,
+      "p_geom": 0.974,
       "p_emb": 0.999,
-      "margin": 0.1536,
+      "margin": 0.1054,
       "uncertain": false,
-      "p_cal": 0.38
+      "p_cal": 0.562
      },
      {
       "code": "sp_axis",
@@ -195,10 +202,17 @@
    "violation_type": "Не выравнена ось позвоночника",
    "quality_prob": 0.93884,
    "processing_status": "Success",
-   "time_of_processing": 9.1184,
-   "bonus_overlay_dcm_download": "/api/results/20260922_143542_730030/row0001_overlay.dcm?t=y6MT1n-zfPWRwHMLC_cAiamuVkAv8PhY",
+   "time_of_processing": 1.4627,
+   "bonus_overlay_dcm_download": "/api/results/20260923_150418_1ec248/row0001_overlay.dcm?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
+   "seg_png": "/api/results/20260923_150418_1ec248/row0001_seg.png?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
    "region_supported": true,
    "region_support_reason": "",
+   "study_completeness": {
+    "spine": true,
+    "hip": false,
+    "note": "Примечание: в исследовании представлена только одна область из двух (Поясничный отдел позвоночника); полнота исследования не является критерием оценки качества снимка."
+   },
+   "roi_suggestion": null,
    "details": {
     "internal_region": "spine",
     "region_source": "dims",
@@ -214,15 +228,15 @@
       "code": "sp_pos",
       "title": "Укладка (позвоночник)",
       "violation": "Некорректная укладка",
-      "score": 0.38,
-      "threshold": 0.822,
+      "score": 0.343,
+      "threshold": 0.861,
       "flag": false,
       "method": "stacked_rank_avg",
-      "p_geom": 0.006,
+      "p_geom": 0.0,
       "p_emb": 0.003,
-      "margin": 0.4428,
+      "margin": 0.5181,
       "uncertain": false,
-      "p_cal": 0.014
+      "p_cal": 0.001
      },
      {
       "code": "sp_axis",
@@ -358,10 +372,17 @@
    "violation_type": "Присутствуют посторонние предметы",
    "quality_prob": 0.942169,
    "processing_status": "Success",
-   "time_of_processing": 10.2882,
-   "bonus_overlay_dcm_download": "/api/results/20260922_143542_730030/row0002_overlay.dcm?t=y6MT1n-zfPWRwHMLC_cAiamuVkAv8PhY",
+   "time_of_processing": 1.4869,
+   "bonus_overlay_dcm_download": "/api/results/20260923_150418_1ec248/row0002_overlay.dcm?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
+   "seg_png": "/api/results/20260923_150418_1ec248/row0002_seg.png?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
    "region_supported": true,
    "region_support_reason": "",
+   "study_completeness": {
+    "spine": true,
+    "hip": false,
+    "note": "Примечание: в исследовании представлена только одна область из двух (Поясничный отдел позвоночника); полнота исследования не является критерием оценки качества снимка."
+   },
+   "roi_suggestion": null,
    "details": {
     "internal_region": "spine",
     "region_source": "dims",
@@ -377,15 +398,15 @@
       "code": "sp_pos",
       "title": "Укладка (позвоночник)",
       "violation": "Некорректная укладка",
-      "score": 0.226,
-      "threshold": 0.822,
+      "score": 0.223,
+      "threshold": 0.861,
       "flag": false,
       "method": "stacked_rank_avg",
       "p_geom": 0.0,
       "p_emb": 0.001,
-      "margin": 0.5964,
+      "margin": 0.6386,
       "uncertain": false,
-      "p_cal": 0.005
+      "p_cal": 0.0
      },
      {
       "code": "sp_axis",
@@ -521,10 +542,37 @@
    "violation_type": "Некорректная укладка",
    "quality_prob": 0.990019,
    "processing_status": "Success",
-   "time_of_processing": 4.1257,
-   "bonus_overlay_dcm_download": "/api/results/20260922_143542_730030/row0003_overlay.dcm?t=y6MT1n-zfPWRwHMLC_cAiamuVkAv8PhY",
+   "time_of_processing": 0.7188,
+   "bonus_overlay_dcm_download": "/api/results/20260923_150418_1ec248/row0003_overlay.dcm?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
+   "seg_png": "/api/results/20260923_150418_1ec248/row0003_seg.png?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
    "region_supported": true,
    "region_support_reason": "",
+   "study_completeness": {
+    "spine": false,
+    "hip": true,
+    "note": "Примечание: в исследовании представлена только одна область из двух (Проксимальный отдел бедра); полнота исследования не является критерием оценки качества снимка."
+   },
+   "roi_suggestion": {
+    "needs_correction": false,
+    "box_px": null,
+    "box_mm": null,
+    "extended_box_px": null,
+    "deficit_mm": null,
+    "reason": null,
+    "reason_text": null,
+    "side": "left",
+    "pixel_spacing_mm": [
+     1.05,
+     0.6
+    ],
+    "image_size": [
+     235,
+     280
+    ],
+    "sop_class_uid": "1.2.840.10008.5.1.4.1.1.1",
+    "source": "предложение системы",
+    "status": "коррекция не требуется"
+   },
    "details": {
     "internal_region": "left_hip",
     "region_source": "dims+anatomy",
@@ -664,10 +712,52 @@
    "violation_type": "Некорректная укладка;Некорректная область интереса",
    "quality_prob": 0.981872,
    "processing_status": "Success",
-   "time_of_processing": 3.0165,
-   "bonus_overlay_dcm_download": "/api/results/20260922_143542_730030/row0004_overlay.dcm?t=y6MT1n-zfPWRwHMLC_cAiamuVkAv8PhY",
+   "time_of_processing": 0.7305,
+   "bonus_overlay_dcm_download": "/api/results/20260923_150418_1ec248/row0004_overlay.dcm?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
+   "seg_png": "/api/results/20260923_150418_1ec248/row0004_seg.png?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
    "region_supported": true,
    "region_support_reason": "",
+   "study_completeness": {
+    "spine": false,
+    "hip": true,
+    "note": "Примечание: в исследовании представлена только одна область из двух (Проксимальный отдел бедра); полнота исследования не является критерием оценки качества снимка."
+   },
+   "roi_suggestion": {
+    "needs_correction": true,
+    "box_px": [
+     68,
+     0,
+     248,
+     179
+    ],
+    "box_mm": [
+     40.8,
+     0.0,
+     148.8,
+     188.0
+    ],
+    "extended_box_px": [
+     68,
+     0,
+     248,
+     209
+    ],
+    "deficit_mm": 31.0,
+    "reason": "scan_too_short",
+    "reason_text": "поле сканирования короче требуемого",
+    "side": "right",
+    "pixel_spacing_mm": [
+     1.05,
+     0.6
+    ],
+    "image_size": [
+     180,
+     280
+    ],
+    "sop_class_uid": "1.2.840.10008.5.1.4.1.1.1",
+    "source": "предложение системы",
+    "status": "требует подтверждения специалистом"
+   },
    "details": {
     "internal_region": "right_hip",
     "region_source": "dims+anatomy",
@@ -813,10 +903,37 @@
    "violation_type": "",
    "quality_prob": 0.042674,
    "processing_status": "Success",
-   "time_of_processing": 3.2147,
-   "bonus_overlay_dcm_download": "/api/results/20260922_143542_730030/row0005_overlay.dcm?t=y6MT1n-zfPWRwHMLC_cAiamuVkAv8PhY",
+   "time_of_processing": 0.9319,
+   "bonus_overlay_dcm_download": "/api/results/20260923_150418_1ec248/row0005_overlay.dcm?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
+   "seg_png": "/api/results/20260923_150418_1ec248/row0005_seg.png?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
    "region_supported": true,
    "region_support_reason": "",
+   "study_completeness": {
+    "spine": false,
+    "hip": true,
+    "note": "Примечание: в исследовании представлена только одна область из двух (Проксимальный отдел бедра); полнота исследования не является критерием оценки качества снимка."
+   },
+   "roi_suggestion": {
+    "needs_correction": false,
+    "box_px": null,
+    "box_mm": null,
+    "extended_box_px": null,
+    "deficit_mm": null,
+    "reason": null,
+    "reason_text": null,
+    "side": "right",
+    "pixel_spacing_mm": [
+     1.05,
+     0.6
+    ],
+    "image_size": [
+     320,
+     280
+    ],
+    "sop_class_uid": "1.2.840.10008.5.1.4.1.1.1",
+    "source": "предложение системы",
+    "status": "коррекция не требуется"
+   },
    "details": {
     "internal_region": "right_hip",
     "region_source": "dims+anatomy",
@@ -956,10 +1073,37 @@
    "violation_type": "",
    "quality_prob": 0.069782,
    "processing_status": "Success",
-   "time_of_processing": 2.9243,
-   "bonus_overlay_dcm_download": "/api/results/20260922_143542_730030/row0006_overlay.dcm?t=y6MT1n-zfPWRwHMLC_cAiamuVkAv8PhY",
+   "time_of_processing": 0.9191,
+   "bonus_overlay_dcm_download": "/api/results/20260923_150418_1ec248/row0006_overlay.dcm?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
+   "seg_png": "/api/results/20260923_150418_1ec248/row0006_seg.png?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
    "region_supported": true,
    "region_support_reason": "",
+   "study_completeness": {
+    "spine": false,
+    "hip": true,
+    "note": "Примечание: в исследовании представлена только одна область из двух (Проксимальный отдел бедра); полнота исследования не является критерием оценки качества снимка."
+   },
+   "roi_suggestion": {
+    "needs_correction": false,
+    "box_px": null,
+    "box_mm": null,
+    "extended_box_px": null,
+    "deficit_mm": null,
+    "reason": null,
+    "reason_text": null,
+    "side": "right",
+    "pixel_spacing_mm": [
+     1.05,
+     0.6
+    ],
+    "image_size": [
+     291,
+     280
+    ],
+    "sop_class_uid": "1.2.840.10008.5.1.4.1.1.1",
+    "source": "предложение системы",
+    "status": "коррекция не требуется"
+   },
    "details": {
     "internal_region": "right_hip",
     "region_source": "dims+anatomy",
@@ -1097,12 +1241,19 @@
    "anatomical_region": "Поясничный отдел позвоночника",
    "quality_class": 0,
    "violation_type": "",
-   "quality_prob": 0.12513,
+   "quality_prob": 0.125883,
    "processing_status": "Success",
-   "time_of_processing": 8.0673,
-   "bonus_overlay_dcm_download": "/api/results/20260922_143542_730030/row0007_overlay.dcm?t=y6MT1n-zfPWRwHMLC_cAiamuVkAv8PhY",
+   "time_of_processing": 1.3472,
+   "bonus_overlay_dcm_download": "/api/results/20260923_150418_1ec248/row0007_overlay.dcm?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
+   "seg_png": "/api/results/20260923_150418_1ec248/row0007_seg.png?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
    "region_supported": true,
    "region_support_reason": "",
+   "study_completeness": {
+    "spine": true,
+    "hip": false,
+    "note": "Примечание: в исследовании представлена только одна область из двух (Поясничный отдел позвоночника); полнота исследования не является критерием оценки качества снимка."
+   },
+   "roi_suggestion": null,
    "details": {
     "internal_region": "spine",
     "region_source": "dims",
@@ -1112,21 +1263,21 @@
     ],
     "warnings": "no PixelSpacing tag -> device default 1.05x0.6 mm",
     "error": null,
-    "quality_prob_raw": 0.25026,
+    "quality_prob_raw": 0.251766,
     "criteria": [
      {
       "code": "sp_pos",
       "title": "Укладка (позвоночник)",
       "violation": "Некорректная укладка",
-      "score": 0.334,
-      "threshold": 0.822,
+      "score": 0.337,
+      "threshold": 0.861,
       "flag": false,
       "method": "stacked_rank_avg",
-      "p_geom": 0.006,
+      "p_geom": 0.001,
       "p_emb": 0.002,
-      "margin": 0.488,
+      "margin": 0.5241,
       "uncertain": false,
-      "p_cal": 0.011
+      "p_cal": 0.001
      },
      {
       "code": "sp_axis",
@@ -1262,10 +1413,17 @@
    "violation_type": "",
    "quality_prob": 0.164376,
    "processing_status": "Success",
-   "time_of_processing": 13.1336,
-   "bonus_overlay_dcm_download": "/api/results/20260922_143542_730030/row0008_overlay.dcm?t=y6MT1n-zfPWRwHMLC_cAiamuVkAv8PhY",
+   "time_of_processing": 1.334,
+   "bonus_overlay_dcm_download": "/api/results/20260923_150418_1ec248/row0008_overlay.dcm?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
+   "seg_png": "/api/results/20260923_150418_1ec248/row0008_seg.png?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
    "region_supported": true,
    "region_support_reason": "",
+   "study_completeness": {
+    "spine": true,
+    "hip": false,
+    "note": "Примечание: в исследовании представлена только одна область из двух (Поясничный отдел позвоночника); полнота исследования не является критерием оценки качества снимка."
+   },
+   "roi_suggestion": null,
    "details": {
     "internal_region": "spine",
     "region_source": "dims",
@@ -1281,15 +1439,15 @@
       "code": "sp_pos",
       "title": "Укладка (позвоночник)",
       "violation": "Некорректная укладка",
-      "score": 0.316,
-      "threshold": 0.822,
+      "score": 0.386,
+      "threshold": 0.861,
       "flag": false,
       "method": "stacked_rank_avg",
-      "p_geom": 0.394,
+      "p_geom": 0.171,
       "p_emb": 0.0,
-      "margin": 0.506,
+      "margin": 0.4759,
       "uncertain": false,
-      "p_cal": 0.009
+      "p_cal": 0.002
      },
      {
       "code": "sp_axis",
@@ -1425,10 +1583,52 @@
    "violation_type": "",
    "quality_prob": 0.452654,
    "processing_status": "Success",
-   "time_of_processing": 5.0115,
-   "bonus_overlay_dcm_download": "/api/results/20260922_143542_730030/row0009_overlay.dcm?t=y6MT1n-zfPWRwHMLC_cAiamuVkAv8PhY",
+   "time_of_processing": 0.6329,
+   "bonus_overlay_dcm_download": "/api/results/20260923_150418_1ec248/row0009_overlay.dcm?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
+   "seg_png": "/api/results/20260923_150418_1ec248/row0009_seg.png?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
    "region_supported": true,
    "region_support_reason": "",
+   "study_completeness": {
+    "spine": false,
+    "hip": true,
+    "note": "Примечание: в исследовании представлена только одна область из двух (Проксимальный отдел бедра); полнота исследования не является критерием оценки качества снимка."
+   },
+   "roi_suggestion": {
+    "needs_correction": true,
+    "box_px": [
+     78,
+     0,
+     238,
+     234
+    ],
+    "box_mm": [
+     46.8,
+     0.0,
+     142.8,
+     245.7
+    ],
+    "extended_box_px": [
+     78,
+     0,
+     238,
+     236
+    ],
+    "deficit_mm": 1.5,
+    "reason": "shaft_below_trochanter_too_short",
+    "reason_text": "в кадр вошло мало диафиза ниже вертелов",
+    "side": "left",
+    "pixel_spacing_mm": [
+     1.05,
+     0.6
+    ],
+    "image_size": [
+     235,
+     280
+    ],
+    "sop_class_uid": "1.2.840.10008.5.1.4.1.1.1",
+    "source": "предложение системы",
+    "status": "требует подтверждения специалистом"
+   },
    "details": {
     "internal_region": "left_hip",
     "region_source": "dims+anatomy",

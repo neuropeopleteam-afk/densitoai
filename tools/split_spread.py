@@ -64,7 +64,7 @@ def prepare(region, crit):
 
     preproc = ts.preproc_for(crit)
     gv = preproc["geom"] if preproc["geom"] in geom_by_variant else "baseline"
-    X_geom_raw = geom_by_variant[gv][ts.CRITERION_GEOMETRY_COLS[crit]].values.astype(np.float64)
+    X_geom_raw = geom_by_variant[gv][ts.contour_a_cols(crit)].values.astype(np.float64)  # H2: sp_pos + synth_pos_logit
     med = np.nanmedian(X_geom_raw, axis=0)
     for j in range(X_geom_raw.shape[1]):
         X_geom_raw[np.isnan(X_geom_raw[:, j]), j] = med[j]

@@ -3,42 +3,38 @@
   "sp_pos": {
    "n_valid": 166,
    "n_pos": 10,
-   "auc_geom": 0.6814102564102564,
+   "auc_geom": 0.9153846153846154,
    "auc_emb": 0.7897435897435898,
-   "auc_stacked": 0.7339743589743589,
+   "auc_stacked": 0.8929487179487179,
    "emb_source": "densito",
    "preproc": {
     "geom": "canonical",
     "emb": "canonical"
    },
-   "threshold": 0.822289156626506,
+   "threshold": 0.8614457831325302,
    "threshold_method": "prevalence",
    "threshold_rule": "prevalence",
-   "n_flag_oof": 11,
-   "f1_oof": 0.47619047619047616,
-   "f1_ci_lo": 0.1111111111111111,
-   "f1_ci_hi": 0.8235294117647058,
+   "n_flag_oof": 18,
+   "f1_oof": 0.5,
+   "f1_ci_lo": 0.125,
+   "f1_ci_hi": 1.0,
    "weight_geom": 0.5,
    "weight_emb": 0.5,
    "gate_selected_by": "default",
-   "nested_protocol": "nested_gate_K2",
-   "nested_auc_production": 0.7016666666666667,
-   "nested_auc_alternative": 0.6869551282051283,
-   "nested_alternative_what": "вес вентиля по критерию (К2, не принят)",
-   "nested_auc_mean": 0.6869551282051283,
-   "nested_auc_ci": [
-    0.3533557107701216,
-    0.7360394613692227,
-    1.0
-   ],
-   "nested_auc_base_mean": 0.7016666666666667,
-   "nested_repeats_gain_ge_0.03": 1,
+   "nested_protocol": "nested_sppos_head_H2",
+   "nested_auc_production": 0.8781260592641189,
+   "nested_auc_alternative": 0.759310965775518,
+   "nested_alternative_what": "контур A без synth_pos_logit (2.3.2)",
+   "nested_auc_mean": 0.8781260592641189,
+   "nested_auc_ci": null,
+   "nested_auc_base_mean": 0.759310965775518,
+   "nested_repeats_gain_ge_0.03": 20,
    "platt": {
-    "a": 6.318747105944848,
-    "b": -6.654286937251349
+    "a": 10.92476395783959,
+    "b": -10.312290018812735
    },
    "margin": 0.0,
-   "uncertain_rate_oof": 0.024096385542168676,
+   "uncertain_rate_oof": 0.060240963855421686,
    "f1_ci_method": "бутстрап по исследованиям, 2000 ресэмплов; флаги — решения сервиса (pred_label); ресэмплы без положительных исследований исключены (F1 не определён). Источник: models/metrics_oof_full.json (src/eval_oof_metrics.py)",
    "f1_ci_share_skipped": 0.001
   },
@@ -76,11 +72,11 @@
    "nested_auc_base_mean": 0.7481642321358073,
    "nested_repeats_gain_ge_0.03": 19,
    "platt": {
-    "a": 8.728775551549559,
+    "a": 8.72877555154956,
     "b": -7.913717393268106
    },
-   "margin": 0.0,
-   "uncertain_rate_oof": 0.018072289156626505,
+   "margin": 0.004518073,
+   "uncertain_rate_oof": 0.03614457831325301,
    "f1_ci_method": "бутстрап по исследованиям, 2000 ресэмплов; флаги — решения сервиса (pred_label); ресэмплы без положительных исследований исключены (F1 не определён). Источник: models/metrics_oof_full.json (src/eval_oof_metrics.py)",
    "f1_ci_share_skipped": 0.0
   },
@@ -118,11 +114,11 @@
    "nested_auc_base_mean": 0.8167720828789531,
    "nested_repeats_gain_ge_0.03": 1,
    "platt": {
-    "a": 6.748230992300852,
+    "a": 6.748230992300853,
     "b": -5.171112026323055
    },
-   "margin": 0.0,
-   "uncertain_rate_oof": 0.024096385542168676,
+   "margin": 0.012048193,
+   "uncertain_rate_oof": 0.04819277108433735,
    "f1_ci_method": "бутстрап по исследованиям, 2000 ресэмплов; флаги — решения сервиса (pred_label); ресэмплы без положительных исследований исключены (F1 не определён). Источник: models/metrics_oof_full.json (src/eval_oof_metrics.py)",
    "f1_ci_share_skipped": 0.0
   }
@@ -196,11 +192,11 @@
     }
    },
    "platt": {
-    "a": 4.437303149563029,
-    "b": -3.5888940821123887
+    "a": 4.437303149563028,
+    "b": -3.588894082112388
    },
-   "margin": 0.001519757,
-   "uncertain_rate_oof": 0.02127659574468085,
+   "margin": 0.010638298,
+   "uncertain_rate_oof": 0.04559270516717325,
    "f1_ci_method": "бутстрап по исследованиям, 2000 ресэмплов; флаги — решения сервиса (pred_label); ресэмплы без положительных исследований исключены (F1 не определён). Источник: models/metrics_oof_full.json (src/eval_oof_metrics.py)",
    "f1_ci_share_skipped": 0.0
   },
@@ -272,11 +268,11 @@
     }
    },
    "platt": {
-    "a": 11.244764034173203,
-    "b": -11.312795994412292
+    "a": 11.244764034173206,
+    "b": -11.312795994412294
    },
-   "margin": 0.0,
-   "uncertain_rate_oof": 0.0121580547112462,
+   "margin": 0.025835867,
+   "uncertain_rate_oof": 0.0486322188449848,
    "f1_ci_method": "бутстрап по исследованиям, 2000 ресэмплов; флаги — решения сервиса (pred_label); ресэмплы без положительных исследований исключены (F1 не определён). Источник: models/metrics_oof_full.json (src/eval_oof_metrics.py)",
    "f1_ci_share_skipped": 0.0025
   }
@@ -360,19 +356,19 @@
  "uncertainty": {
   "max_reject_rate": 0.05,
   "quota_per_criterion": {
-   "spine": -7.806255641895632e-18,
-   "hip": 0.02499999999999999
+   "spine": 0.05,
+   "hip": 0.05
   },
   "margin_by_criterion": {
    "sp_pos": 0.0,
-   "sp_axis": 0.0,
-   "sp_art": 0.0,
-   "hip_pos": 0.001519757,
-   "hip_roi": 0.0
+   "sp_axis": 0.004518073,
+   "sp_art": 0.012048193,
+   "hip_pos": 0.010638298,
+   "hip_roi": 0.025835867
   },
   "row_uncertain_rate_by_region": {
-   "spine": 0.06626506024096386,
-   "hip": 0.03343465045592705
+   "spine": 0.14457831325301204,
+   "hip": 0.09422492401215805
   }
  }
 }

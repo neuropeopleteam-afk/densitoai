@@ -1,0 +1,25 @@
+case,file,source,expected_status,rule,description
+truncated_half,CR000000.dcm,study_01/CR000000.dcm,Failure,failure_row,"Файл обрезан до половины байтов (заголовок цел, пиксели неполные)"
+zero_bytes,CR000000.dcm,study_01/CR000000.dcm,Failure,failure_row,Файл нулевой длины с расширением .dcm
+not_dicom_ext,CR000000.dcm,study_01/CR000000.dcm,Failure,failure_row,Текст и случайные байты с расширением .dcm
+no_pixel_data,CR000000.dcm,study_01/CR000000.dcm,Failure,failure_row,DICOM без PixelData (только заголовок)
+no_rows_cols,CR000000.dcm,study_01/CR000001.dcm,Failure,failure_row,DICOM без Rows и Columns при наличии PixelData
+no_pixel_spacing,CR000000.dcm,study_03/CR000000.dcm,Success,same_class,Без PixelSpacing и ImagerPixelSpacing (паспортная константа аппарата)
+monochrome1,CR000000.dcm,study_04/CR000000.dcm,Success,same_class,PhotometricInterpretation MONOCHROME1 (инвертированные пиксели)
+signed16_negative,CR000000.dcm,study_03/CR000000.dcm,Success,same_class,"16 бит со знаком (PixelRepresentation 1), значения от −2048"
+bits8_explicit_le,CR000000.dcm,study_01/CR000002.dcm,Success,same_class,"8 бит, Explicit VR Little Endian"
+rgb,CR000000.dcm,study_03/CR000000.dcm,Success,same_class,"RGB, SamplesPerPixel 3, три одинаковых канала"
+tiny_8x8,CR000000.dcm,study_01/CR000000.dcm,Failure,failure_row,Кадр 8×8 (меньше validation.min_rows/min_cols = 64)
+huge_frame,CR000000.dcm,study_01/CR000000.dcm,Success,success,"Кадр 4000×3000 (в пределах validation.max 4096), 8 бит"
+explicit_be,CR000000.dcm,study_02/CR000001.dcm,Success,same_class,Explicit VR Big Endian (retired)
+deflated_le,CR000000.dcm,study_03/CR000000.dcm,Success,same_class,Deflated Explicit VR Little Endian
+rle_lossless,CR000000.dcm,study_04/CR000000.dcm,Success,same_class,RLE Lossless (кодировщик pydicom)
+jpeg_baseline,CR000000.dcm,study_01/CR000000.dcm,Success,success,"JPEG Baseline: Success, если у pydicom есть декодер (Pillow); иначе Failure с причиной"
+bits12_of_16,CR000000.dcm,study_03/CR000002.dcm,Success,same_class,BitsAllocated 16 / BitsStored 12 / HighBit 11
+modality_ct,CR000000.dcm,study_03/CR000000.dcm,Success,same_class,"Чужая модальность (Modality CT, SOP Class CT Image Storage)"
+constant_frame,CR000000.dcm,study_01/CR000000.dcm,Failure,failure_row,Все пиксели одинаковые (постоянный кадр)
+zip_with_broken,Выгрузка (битый внутри).zip/norm/CR000000.dcm,study_01/CR000001.dcm,Success,same_class,zip: исправный фантом рядом с обрезанным файлом
+zip_with_broken,Выгрузка (битый внутри).zip/broken/CR000001.dcm,study_01/CR000000.dcm,Failure,failure_row,zip: обрезанный файл внутри архива
+corrupt_zip,архив.zip,study_01/CR000000.dcm,Failure,failure_row,Случайные байты с расширением .zip (не архив)
+nested_depth5,a/b/c/d/e/CR000000.dcm,study_04/CR000000.dcm,Success,same_class,Вложенность каталогов глубиной 5
+cyrillic_spaces,Исследование № 7 (копия)/снимок бедра  левый.dcm,study_01/CR000002.dcm,Success,same_class,"Кириллица, пробелы и скобки в именах"

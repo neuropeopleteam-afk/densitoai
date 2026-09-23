@@ -1,0 +1,36 @@
+# FILES — work/gpu_sppos (пути относительно work/gpu_sppos/)
+REPORT.md — итоговый отчёт
+FILES.txt — этот список
+gpu/sppos_cache.py — сборка кэша 499 канонических кадров (песочница; frames_u8.npy, frames_meta.csv)
+gpu/sppos_synth_train.py — v3 (итоговая): синтез окон, обучение finetune/head, GroupKFold(5), OOF- и финальные эмбеддинги/скоры, метаморфика (GPU)
+gpu/_v1_fill_based_sppos_synth_train.py — v1 (сдвиг с дорисовкой) — отвергнута, для истории
+gpu/_v2_window_scale_confounded_sppos_synth_train.py — v2 (окно, конфаунд масштабом) — отвергнута, для истории
+gpu/sppos_preview.py — превью синтетических окон (outputs/synth_preview*.png)
+tools/sppos_nested.py — nested-харнесс sp_pos (5x20x3, группы (study,pixel_hash)), per-repeat CSV для paired_gate
+tools/make_summary.py — сборка outputs/summary.json
+models/backbone_densito_synth.pth — бэкбон finetune v3 (сдан по ТЗ, к использованию не рекомендуется)
+models/head_densito_synth.pth — голова «дефект укладки» head v3 (зерно 0) поверх замороженного densito — кандидат К2
+models/head_densito_synth_finetune.pth — голова из finetune v3
+data/embeddings_densito_synth_canonical.npy — эмбеддинги 499 кадров бэкбоном finetune v3 (порядок = labels_for_embeddings.csv)
+data/embeddings_densito_synth_oof_canonical.npy — то же, OOF-бэкбоны фолдов (кадры hip — финальным бэкбоном)
+outputs/scores_synth_head_v3.csv — скор головы head v3 по строкам labels (p_defect, p_defect_oof, pred_ox/oy/s)
+outputs/scores_synth_finetune_v3.csv — скоры finetune v3
+outputs/summary.json — сводка: синтетическая валидация, диагностические AUC, nested, гейт, метаморфика
+outputs/paired_gate_head_v3.json — результат tools/paired_gate.py (идея 11) для К2/К3s/К2b head v3
+outputs/nested_head_v3/ — nested head v3: summary.json, repeats_sp_pos.csv, per_repeat_sp_pos_<K>.csv
+outputs/nested_head_v3_seed1/ — nested head v3, зерно 1
+outputs/nested_finetune_v3/ — nested finetune v3 (sp_pos)
+outputs/nested_finetune_v3_axis_art/ — справочно: sp_axis/sp_art с эмбеддингом finetune v3
+outputs/head_v3/ head_v3_seed1-3/ finetune_v3/ finetune_v3_lowlr/ finetune_v2/ head_v2/ finetune_v1/ — сырые выходы прогонов с пода (cv_metrics.json, metamorphic.json, scores_synth.csv, fold_k/, run.log)
+outputs/pod_logs_*.log — логи прогонов с пода
+outputs/montage_pos_vs_neg.png — монтаж позитивов sp_pos против нормальных кадров
+outputs/synth_preview_v3.png — превью синтетики v3 (synth_preview.png — v1, _v2 — v2)
+outputs/pixel_hashes.csv — хэши пикселей для групп (копия из work/idea11_gate)
+data/cache/ — кэш кадров (frames_u8.npy 499x320x192, frames_meta.csv)
+backbone_densito.pth — исходный бэкбон densito (копия с сервера)
+
+# В поставку (docs/experiments/gpu_sppos/) включены: REPORT.md, скрипты gpu/ (v3) и tools/, outputs/summary.json,
+# outputs/paired_gate_head_v3.json, outputs/scores_synth_head_v3.csv, outputs/nested_head_v3/ (summary, repeats, folds,
+# per_repeat B_base_only и K2_oof), outputs/nested_head_v3_seed1/ (summary, repeats). Веса, кэш кадров, эмбеддинги,
+# монтажи с кадрами пациентов и сырые логи пода в поставку не входят (объём и обезличивание); итоговая голова —
+# models/head_densito_synth.pth.

@@ -264,6 +264,149 @@
         -0.034178265046941735,
         0.010647914412789963
       ]
+    },
+    {
+      "region": "spine",
+      "criterion": "sp_pos",
+      "kind": "feature",
+      "candidate": "H2_synth_pos_logit",
+      "candidate_what": "признак контура A `synth_pos_logit` — логит головы «дефект укладки» (models/head_densito_synth.pth), обученной на синтетических смещениях кадра без меток разметки, поверх замороженного бэкбона densito (канонический кадр)",
+      "alternative_what": "контур A без synth_pos_logit (2.3.2)",
+      "protocol_id": "nested_sppos_head_H2",
+      "protocol": "work/gpu_sppos/tools/sppos_nested.py: GroupKFold 5 внешних x 20 повторов x 3 внутренних; группы (study, pixel_hash); порог prevalence; база = geom canonical + emb densito canonical, 0.5/0.5",
+      "n": 166,
+      "n_pos": 10,
+      "n_groups": 99,
+      "n_pos_groups": 6,
+      "emb_source": "densito",
+      "preproc": {
+        "geom": "canonical",
+        "emb": "canonical"
+      },
+      "n_repeats": 20,
+      "n_repeats_gain_ge_0.03": 20,
+      "n_repeats_needed": 14,
+      "mean_delta_auc": 0.11881509348860095,
+      "sd_delta_auc": 0.025903749567981013,
+      "min_delta_auc": 0.05352564102564106,
+      "delta_auc_repeats_ci": [
+        0.06631442500000001,
+        0.15070509999999998
+      ],
+      "mean_delta_macro_f1": 0.0793435649057436,
+      "auc_base_mean_over_repeats": 0.759310965775518,
+      "auc_cand_mean_over_repeats": 0.8781260592641189,
+      "auc_cand_ci": null,
+      "macro_f1_base_mean_over_repeats": 0.7274714908022154,
+      "macro_f1_cand_mean_over_repeats": 0.8068150557079588,
+      "score_variant": "K2_oof: скор головы фолда, не видевшей кадр (честная оценка)",
+      "accepted": true,
+      "accepted_by": "действующее правило nested: dAUC >= 0.03 в >= 14/20 повторов и macro-F1 не хуже (пройдено 20/20)",
+      "calibrated_gate": {
+        "accepted": false,
+        "protocol": "tools/paired_gate.py (идея 11), партия 5 гипотез, поправка Холма",
+        "delta_auc_ci90": [
+          -0.0035924347761082383,
+          0.21842135700692236
+        ],
+        "delta_auc_ci95": [
+          -0.005264579951298701,
+          0.2405807830938896
+        ],
+        "p_boot_one_sided": 0.12071124467818682,
+        "p_combined_one_sided": 0.12071124467818682,
+        "signflip_p_one_sided": 0.00849575212393803,
+        "delta_macro_f1_vote": 0.07742729623658218,
+        "delta_macro_f1_ci90": [
+          -0.053942707567625245,
+          0.2318202136073932
+        ],
+        "jackknife_groups": {
+          "full": 0.125,
+          "min": 0.03296703296703296,
+          "max": 0.15625,
+          "n_groups_flip_sign": 0
+        },
+        "conditions": {
+          "ci_low_gt_0": false,
+          "point_ge_minimal_effect": true,
+          "f1_ci_low_ge_floor": false,
+          "perm_p_lt_alpha": false
+        },
+        "old_rule": {
+          "accepted": true,
+          "n_repeats_gain": 20,
+          "n_repeats": 20,
+          "needed": 14,
+          "mean_delta_macro_f1": 0.0793435649057436
+        }
+      },
+      "calibrated_gate_note": "калиброванный гейт (идея 11) не принят: при 6 положительных исследованиях кластерный ДИ90 ΔAUC упирается в 0 ([-0.004; +0.218]), p_boot 0.12; sign-flip p 0.008; jackknife по группам без смен знака (минимум +0.033). Мощности на этой выборке нет — решение принято по действующему правилу с этой оговоркой (владелец, вариант А, 23.09.2026)",
+      "production_variant_control": {
+        "what": "K2: финальная голова (обучена на всех 166 кадрах без меток) — ровно то, что стоит в продакшене; OOF-вариант выше — контроль",
+        "n_repeats_gain_ge_0.03": 20,
+        "mean_delta_auc": 0.11316145918757861,
+        "sd_delta_auc": 0.02590736472161861,
+        "min_delta_auc": 0.055448717948717974,
+        "mean_delta_macro_f1": 0.06656177834168771,
+        "auc_base_mean_over_repeats": 0.759310965775518,
+        "auc_cand_mean_over_repeats": 0.8724724249630966,
+        "calibrated_gate": {
+          "accepted": false,
+          "protocol": "tools/paired_gate.py (идея 11), партия 5 гипотез, поправка Холма",
+          "delta_auc_ci90": [
+            -0.003262254901960779,
+            0.20779708081030196
+          ],
+          "delta_auc_ci95": [
+            -0.004945991463019907,
+            0.2288604727911155
+          ],
+          "p_boot_one_sided": 0.1249686952166291,
+          "p_combined_one_sided": 0.1249686952166291,
+          "signflip_p_one_sided": 0.01899050474762619,
+          "delta_macro_f1_vote": 0.07742729623658218,
+          "delta_macro_f1_ci90": [
+            -0.053942707567625245,
+            0.2318202136073932
+          ],
+          "jackknife_groups": {
+            "full": 0.11282051282051275,
+            "min": 0.034798534798534786,
+            "max": 0.14102564102564097,
+            "n_groups_flip_sign": 0
+          },
+          "conditions": {
+            "ci_low_gt_0": false,
+            "point_ge_minimal_effect": true,
+            "f1_ci_low_ge_floor": false,
+            "perm_p_lt_alpha": false
+          },
+          "old_rule": {
+            "accepted": true,
+            "n_repeats_gain": 20,
+            "n_repeats": 20,
+            "needed": 14,
+            "mean_delta_macro_f1": 0.06656177834168771
+          }
+        }
+      },
+      "head": {
+        "file": "models/head_densito_synth.pth",
+        "sha256": "03e483e6d8351af3af2177bd4e520f4c475d54af96c1f62179403680961f8213",
+        "arch": "Dropout(0.2) -> Linear(1280,256) -> GELU -> Linear(256,4); признак = out[:,0]",
+        "trained_by": "work/gpu_sppos/gpu/sppos_synth_train.py --mode head (head v3, зерно 0), синтетические окна кадра без меток",
+        "cpu_vs_gpu_score_check": "sigmoid(логит) на CPU-эмбеддингах против work/gpu_sppos/outputs/scores_synth_head_v3.csv p_defect: max |Δp| 0.0022, медиана 0.0003, 458/499 в допуске 1e-3 (разница эмбеддингов GPU/CPU до 0.0039), Спирмен 0.99996"
+      },
+      "sources": [
+        "work/gpu_sppos/REPORT.md",
+        "work/gpu_sppos/outputs/paired_gate_head_v3.json",
+        "work/gpu_sppos/outputs/nested_head_v3/per_repeat_sp_pos_K2_oof.csv",
+        "work/gpu_sppos/outputs/nested_head_v3/per_repeat_sp_pos_K2.csv",
+        "docs/NESTED_GATE_REPORT.md, часть 5"
+      ],
+      "date": "2026-09-23",
+      "version": "2.4.0"
     }
   ],
   "any": [
@@ -333,6 +476,7 @@
       0.75,
       1.0
     ],
-    "acceptance": "dAUC>=0.03 in >=7/10 repeats and mean macro-F1 not worse"
+    "acceptance": "dAUC>=0.03 in >=7/10 repeats and mean macro-F1 not worse",
+    "feature_candidates": "записи kind == 'feature' — кандидаты-признаки контура A (H2: sppos_nested.py, 5 x 20 x 3, правило dAUC >= 0.03 в >= 14/20); принятая запись имеет приоритет для nested_* в metrics_summary.json (train_stacked.nested_decision_for)"
   }
 }

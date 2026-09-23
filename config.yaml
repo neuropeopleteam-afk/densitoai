@@ -3,7 +3,7 @@
 # порог берётся из models/metrics_summary.json (поле "threshold"), а если и там
 # нет — из fallback_threshold.
 
-version: "2.3.2"
+version: "2.4.0"
 
 # Маркировка назначения. Одна строка — один источник: её показывает веб, отдаёт /api/health,
 # она же стоит в README, docs/VERIFICATION.md и docs/DZM_CONFORMANCE.md. Не редактировать
@@ -78,6 +78,18 @@ geometry_cols:
   rh_roi: [edge_distance_ratio, bone_area_ratio]
   lh_pos: [shaft_angle_deg]
   lh_roi: [edge_distance_ratio, bone_area_ratio]
+
+# H2 (2.4.0): признаки контура A, считаемые не из геометрии, а из канонического эмбеддинга кадра
+# (только позвоночник). sp_pos: synth_pos_logit — логит головы «дефект укладки»
+# models/head_densito_synth.pth (src/sppos_head.py), обученной на синтетических смещениях кадра без меток;
+# вход головы — эмбеддинг densito канонического кадра, который контур B sp_pos уже считает.
+# Признак входит третьим в геометрическую модель model_spine_sp_pos_geom.pkl (вместе с geometry_cols.sp_pos);
+# в any-модель региона не входит. Список ОБЯЗАН совпадать с CRITERION_EXTRA_COLS в train_stacked.py.
+# Принят по действующему правилу nested (ΔAUC >= 0.03 в 20/20 повторов); калиброванный гейт при
+# 6 положительных исследованиях не имеет мощности (ДИ90 [-0.004; +0.218]) — docs/NESTED_GATE_REPORT.md, часть 5.
+# Отсутствие файла головы — явная ошибка при старте, а не молчаливый ноль.
+features:
+  sp_pos: [synth_pos_logit]
 
 stacking:
   # Ранговое усреднение: скор -> перцентиль относительно OOF-распределения
@@ -261,7 +273,9 @@ uncertainty:
   quota_scope: per_criterion
   quota_step: 0.0025
   margin_by_criterion:
-    sp_pos: 0.042168675
+    # sp_pos (2.4.0, H2): 10 строк OOF стоят ровно на пороге prevalence (ранговые связки), при margin 0.0 доля
+    # «не уверен» уже 6.0 % > квоты, поэтому квота даёт 0.0: зона срабатывает только при точном совпадении с порогом.
+    sp_pos: 0.0
     sp_axis: 0.004518073
     sp_art: 0.012048193
     hip_pos: 0.010638298

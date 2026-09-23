@@ -1,0 +1,1112 @@
+{
+ "version": null,
+ "method": {
+  "rows": "models/oof_stacked_<region>_<crit>.csv — те же OOF-строки, что у замороженных метрик",
+  "threshold": "правило порога критерия (threshold_rule из metrics_summary.json) на OOF-скорах самой модели; для стека — pred_label (решение сервиса)",
+  "ci": "ROC-AUC: перцентильный бутстрап 95 %, 500 ресэмплов, seed 0, кластер = исследование, одна последовательность ресэмплов для всех строк; ресэмплы без обоих классов пропущены",
+  "random": "скор U(0,1), флаги по правилу порога; ожидание по 2000 розыгрышам, seed 0; AUC записан аналитически (0.5)",
+  "simple_all_geom": "LogisticRegression(C=1, class_weight=balanced) на всех геометрических признаках региона из data/geometry_features_canonical.csv (без synth_pos_logit), медианная импутация по обучающему фолду, StandardScaler, GroupKFold(5, shuffle=True, random_state=0) по исследованию",
+  "region_binary": "метка и флаг — OR по критериям; скор — max скоров критериев (у стека скоры ранговые, у контуров и простой модели — вероятности логрегрессии с balanced-весами); для стека это компонента max_criteria_only из metrics_oof_full.json; боевой quality_prob содержит ещё any-модель и здесь не пересобирается",
+  "frozen_tolerance": 0.001
+ },
+ "models": [
+  {
+   "key": "always_normal",
+   "label": "всегда «норма»"
+  },
+  {
+   "key": "always_violation",
+   "label": "всегда «нарушение»"
+  },
+  {
+   "key": "random_prevalence",
+   "label": "случайный по распространённости (ожидание)"
+  },
+  {
+   "key": "contour_a",
+   "label": "только контур A (геометрия)"
+  },
+  {
+   "key": "contour_b",
+   "label": "только контур B (эмбеддинги)"
+  },
+  {
+   "key": "simple_all_geom",
+   "label": "простая модель на всех геометрических признаках"
+  },
+  {
+   "key": "stack",
+   "label": "боевой стек A+B (поставка)"
+  }
+ ],
+ "criteria": {
+  "sp_pos": {
+   "section": "spine",
+   "violation_type": "Некорректная укладка",
+   "n": 166,
+   "n_pos": 10,
+   "n_studies": 99,
+   "n_pos_studies": 6,
+   "prevalence": 0.060240963855421686,
+   "threshold_rule": "prevalence",
+   "threshold_frozen": 0.8614457831325302,
+   "rows": {
+    "always_normal": {
+     "f1": 0.0,
+     "balanced_accuracy": 0.5,
+     "n_flag": 0,
+     "roc_auc": 0.5,
+     "pr_auc": 0.060240963855421686,
+     "score": "константа",
+     "roc_auc_ci": {
+      "lo": 0.5,
+      "hi": 0.5,
+      "share_skipped": 0.0
+     }
+    },
+    "always_violation": {
+     "f1": 0.11363636363636363,
+     "balanced_accuracy": 0.5,
+     "n_flag": 166,
+     "roc_auc": 0.5,
+     "pr_auc": 0.060240963855421686,
+     "score": "константа",
+     "roc_auc_ci": {
+      "lo": 0.5,
+      "hi": 0.5,
+      "share_skipped": 0.0
+     }
+    },
+    "random_prevalence": {
+     "f1": 0.05975,
+     "balanced_accuracy": 0.49973878205128214,
+     "pr_auc": 0.08707194990348327,
+     "roc_auc": 0.5,
+     "n_flag": 10.0,
+     "roc_auc_mc": 0.5008653846153845,
+     "n_draw": 2000,
+     "score": "U(0,1)"
+    },
+    "contour_a": {
+     "f1": 0.0,
+     "balanced_accuracy": 0.46794871794871795,
+     "n_flag": 10,
+     "roc_auc": 0.9153846153846154,
+     "pr_auc": 0.29327894327894327,
+     "threshold": 0.9905069641968522,
+     "roc_auc_ci": {
+      "lo": 0.7814992121760703,
+      "hi": 1.0,
+      "share_skipped": 0.0020000000000000018
+     }
+    },
+    "contour_b": {
+     "f1": 0.5,
+     "balanced_accuracy": 0.733974358974359,
+     "n_flag": 10,
+     "roc_auc": 0.7897435897435898,
+     "pr_auc": 0.4425396825396825,
+     "threshold": 0.0645291875643902,
+     "roc_auc_ci": {
+      "lo": 0.5065878378378379,
+      "hi": 1.0,
+      "share_skipped": 0.0020000000000000018
+     }
+    },
+    "simple_all_geom": {
+     "f1": 0.2,
+     "balanced_accuracy": 0.5743589743589743,
+     "n_flag": 10,
+     "roc_auc": 0.8365384615384616,
+     "pr_auc": 0.3506692041647986,
+     "threshold": 0.7999768698434947,
+     "n_features": 13,
+     "roc_auc_ci": {
+      "lo": 0.7220045045045045,
+      "hi": 0.9570197996543188,
+      "share_skipped": 0.0020000000000000018
+     }
+    },
+    "stack": {
+     "f1": 0.5,
+     "balanced_accuracy": 0.8147435897435897,
+     "n_flag": 18,
+     "roc_auc": 0.8929487179487179,
+     "pr_auc": 0.721153846153846,
+     "threshold": 0.8614457831325302,
+     "threshold_by_rule_recomputed": 0.8614457831325301,
+     "roc_auc_published": 0.8929487179487179,
+     "roc_auc_ci": {
+      "lo": 0.7025455796353629,
+      "hi": 1.0,
+      "share_skipped": 0.0020000000000000018
+     }
+    }
+   },
+   "frozen": {
+    "auc_geom": 0.9153846153846154,
+    "auc_emb": 0.7897435897435898,
+    "auc_stacked": 0.8929487179487179,
+    "f1_oof": 0.5,
+    "n_flag_oof": 18,
+    "oof_full": {
+     "roc_auc": 0.8929487179487179,
+     "pr_auc": 0.721153846153846,
+     "f1": 0.5,
+     "balanced_accuracy": 0.8147435897435897
+    }
+   },
+   "check": {
+    "criterion": "sp_pos",
+    "n_ok": true,
+    "n_pos_ok": true,
+    "auc_stack_diff": 0.0,
+    "f1_stack_diff": 0.0,
+    "auc_geom_diff": 0.0,
+    "auc_emb_diff": 0.0,
+    "threshold_rule_diff": 1.1102230246251565e-16,
+    "n_flag_ok": true,
+    "auc_stack_diff_oof_full": 0.0,
+    "pr_auc_stack_diff_oof_full": 0.0,
+    "bal_acc_stack_diff_oof_full": 0.0,
+    "ok": true
+   }
+  },
+  "sp_axis": {
+   "section": "spine",
+   "violation_type": "Не выравнена ось позвоночника",
+   "n": 166,
+   "n_pos": 17,
+   "n_studies": 99,
+   "n_pos_studies": 10,
+   "prevalence": 0.10240963855421686,
+   "threshold_rule": "prevalence_x1.4",
+   "threshold_frozen": 0.7771084337349398,
+   "rows": {
+    "always_normal": {
+     "f1": 0.0,
+     "balanced_accuracy": 0.5,
+     "n_flag": 0,
+     "roc_auc": 0.5,
+     "pr_auc": 0.10240963855421686,
+     "score": "константа",
+     "roc_auc_ci": {
+      "lo": 0.5,
+      "hi": 0.5,
+      "share_skipped": 0.0
+     }
+    },
+    "always_violation": {
+     "f1": 0.18579234972677597,
+     "balanced_accuracy": 0.5,
+     "n_flag": 166,
+     "roc_auc": 0.5,
+     "pr_auc": 0.10240963855421686,
+     "score": "константа",
+     "roc_auc_ci": {
+      "lo": 0.5,
+      "hi": 0.5,
+      "share_skipped": 0.0
+     }
+    },
+    "random_prevalence": {
+     "f1": 0.11853658536585367,
+     "balanced_accuracy": 0.49908803789972367,
+     "pr_auc": 0.12761668734644696,
+     "roc_auc": 0.5,
+     "n_flag": 24.0,
+     "roc_auc_mc": 0.4967791156731149,
+     "n_draw": 2000,
+     "score": "U(0,1)"
+    },
+    "contour_a": {
+     "f1": 0.2926829268292683,
+     "balanced_accuracy": 0.6160679036715357,
+     "n_flag": 24,
+     "roc_auc": 0.8393209632846428,
+     "pr_auc": 0.281354239630156,
+     "threshold": 0.6889020899049375,
+     "roc_auc_ci": {
+      "lo": 0.7405318750370942,
+      "hi": 0.9318393552143668,
+      "share_skipped": 0.0
+     }
+    },
+    "contour_b": {
+     "f1": 0.43902439024390244,
+     "balanced_accuracy": 0.7143703118831426,
+     "n_flag": 24,
+     "roc_auc": 0.7970785629688116,
+     "pr_auc": 0.5282634631937063,
+     "threshold": 0.458459062425487,
+     "roc_auc_ci": {
+      "lo": 0.5675795118588342,
+      "hi": 0.9509845430107527,
+      "share_skipped": 0.0
+     }
+    },
+    "simple_all_geom": {
+     "f1": 0.1951219512195122,
+     "balanced_accuracy": 0.5505329648637979,
+     "n_flag": 24,
+     "roc_auc": 0.5096723253059613,
+     "pr_auc": 0.13133573801598258,
+     "threshold": 0.7159286414435952,
+     "n_features": 13,
+     "roc_auc_ci": {
+      "lo": 0.2512012078220859,
+      "hi": 0.7421035480735237,
+      "share_skipped": 0.0
+     }
+    },
+    "stack": {
+     "f1": 0.6046511627906976,
+     "balanced_accuracy": 0.8387287801026451,
+     "n_flag": 26,
+     "roc_auc": 0.8888669561784445,
+     "pr_auc": 0.5650549953703137,
+     "threshold": 0.7771084337349398,
+     "threshold_by_rule_recomputed": 0.7771084337349398,
+     "roc_auc_published": 0.8888669561784445,
+     "roc_auc_ci": {
+      "lo": 0.7512733780966397,
+      "hi": 0.9773567667227893,
+      "share_skipped": 0.0
+     }
+    }
+   },
+   "frozen": {
+    "auc_geom": 0.8393209632846428,
+    "auc_emb": 0.7970785629688116,
+    "auc_stacked": 0.8888669561784445,
+    "f1_oof": 0.6046511627906976,
+    "n_flag_oof": 26,
+    "oof_full": {
+     "roc_auc": 0.8888669561784445,
+     "pr_auc": 0.5650549953703137,
+     "f1": 0.6046511627906976,
+     "balanced_accuracy": 0.8387287801026451
+    }
+   },
+   "check": {
+    "criterion": "sp_axis",
+    "n_ok": true,
+    "n_pos_ok": true,
+    "auc_stack_diff": 0.0,
+    "f1_stack_diff": 0.0,
+    "auc_geom_diff": 0.0,
+    "auc_emb_diff": 0.0,
+    "threshold_rule_diff": 0.0,
+    "n_flag_ok": true,
+    "auc_stack_diff_oof_full": 0.0,
+    "pr_auc_stack_diff_oof_full": 0.0,
+    "bal_acc_stack_diff_oof_full": 0.0,
+    "ok": true
+   }
+  },
+  "sp_art": {
+   "section": "spine",
+   "violation_type": "Присутствуют посторонние предметы",
+   "n": 166,
+   "n_pos": 35,
+   "n_studies": 99,
+   "n_pos_studies": 17,
+   "prevalence": 0.21084337349397592,
+   "threshold_rule": "prevalence_x1.4",
+   "threshold_frozen": 0.6024096385542168,
+   "rows": {
+    "always_normal": {
+     "f1": 0.0,
+     "balanced_accuracy": 0.5,
+     "n_flag": 0,
+     "roc_auc": 0.5,
+     "pr_auc": 0.21084337349397592,
+     "score": "константа",
+     "roc_auc_ci": {
+      "lo": 0.5,
+      "hi": 0.5,
+      "share_skipped": 0.0
+     }
+    },
+    "always_violation": {
+     "f1": 0.3482587064676617,
+     "balanced_accuracy": 0.5,
+     "n_flag": 166,
+     "roc_auc": 0.5,
+     "pr_auc": 0.21084337349397592,
+     "score": "константа",
+     "roc_auc_ci": {
+      "lo": 0.5,
+      "hi": 0.5,
+      "share_skipped": 0.0
+     }
+    },
+    "random_prevalence": {
+     "f1": 0.2468690476190476,
+     "balanced_accuracy": 0.5006729552889858,
+     "pr_auc": 0.23336197498387987,
+     "roc_auc": 0.5,
+     "n_flag": 49.0,
+     "roc_auc_mc": 0.5000816793893129,
+     "n_draw": 2000,
+     "score": "U(0,1)"
+    },
+    "contour_a": {
+     "f1": 0.30952380952380953,
+     "balanced_accuracy": 0.548309705561614,
+     "n_flag": 49,
+     "roc_auc": 0.5598691384950927,
+     "pr_auc": 0.25817908441154236,
+     "threshold": 0.5374287156419715,
+     "roc_auc_ci": {
+      "lo": 0.4130333182571989,
+      "hi": 0.7280727733237604,
+      "share_skipped": 0.0
+     }
+    },
+    "contour_b": {
+     "f1": 0.6823529411764706,
+     "balanced_accuracy": 0.8341330425299891,
+     "n_flag": 50,
+     "roc_auc": 0.8970556161395856,
+     "pr_auc": 0.8052390558950844,
+     "threshold": 0.083227664232254,
+     "roc_auc_ci": {
+      "lo": 0.77221215710868,
+      "hi": 0.9710982193654598,
+      "share_skipped": 0.0
+     }
+    },
+    "simple_all_geom": {
+     "f1": 0.20930232558139536,
+     "balanced_accuracy": 0.4682660850599782,
+     "n_flag": 51,
+     "roc_auc": 0.4815703380588876,
+     "pr_auc": 0.21133637593630178,
+     "threshold": 0.49730344837548984,
+     "n_features": 13,
+     "roc_auc_ci": {
+      "lo": 0.3320191400233697,
+      "hi": 0.6858375340481018,
+      "share_skipped": 0.0
+     }
+    },
+    "stack": {
+     "f1": 0.5348837209302325,
+     "balanced_accuracy": 0.721701199563795,
+     "n_flag": 51,
+     "roc_auc": 0.8236641221374046,
+     "pr_auc": 0.5459237275219789,
+     "threshold": 0.6024096385542168,
+     "threshold_by_rule_recomputed": 0.6024096385542168,
+     "roc_auc_published": 0.8226826608505997,
+     "roc_auc_ci": {
+      "lo": 0.7001743412952475,
+      "hi": 0.9168421266946872,
+      "share_skipped": 0.0
+     }
+    }
+   },
+   "frozen": {
+    "auc_geom": 0.5598691384950927,
+    "auc_emb": 0.8970556161395856,
+    "auc_stacked": 0.8226826608505997,
+    "f1_oof": 0.5348837209302325,
+    "n_flag_oof": 51,
+    "oof_full": {
+     "roc_auc": 0.8236641221374046,
+     "pr_auc": 0.5459237275219789,
+     "f1": 0.5348837209302325,
+     "balanced_accuracy": 0.721701199563795
+    }
+   },
+   "check": {
+    "criterion": "sp_art",
+    "n_ok": true,
+    "n_pos_ok": true,
+    "auc_stack_diff": 0.0009814612868048744,
+    "f1_stack_diff": 0.0,
+    "auc_geom_diff": 0.0,
+    "auc_emb_diff": 0.0,
+    "threshold_rule_diff": 0.0,
+    "n_flag_ok": true,
+    "auc_stack_diff_oof_full": 0.0,
+    "pr_auc_stack_diff_oof_full": 0.0,
+    "bal_acc_stack_diff_oof_full": 0.0,
+    "ok": true
+   }
+  },
+  "hip_pos": {
+   "section": "hip",
+   "violation_type": "Некорректная укладка",
+   "n": 329,
+   "n_pos": 79,
+   "n_studies": 78,
+   "n_pos_studies": 24,
+   "prevalence": 0.24012158054711247,
+   "threshold_rule": "prevalence",
+   "threshold_frozen": 0.6580547112462006,
+   "rows": {
+    "always_normal": {
+     "f1": 0.0,
+     "balanced_accuracy": 0.5,
+     "n_flag": 0,
+     "roc_auc": 0.5,
+     "pr_auc": 0.24012158054711247,
+     "score": "константа",
+     "roc_auc_ci": {
+      "lo": 0.5,
+      "hi": 0.5,
+      "share_skipped": 0.0
+     }
+    },
+    "always_violation": {
+     "f1": 0.3872549019607843,
+     "balanced_accuracy": 0.5,
+     "n_flag": 329,
+     "roc_auc": 0.5,
+     "pr_auc": 0.24012158054711247,
+     "score": "константа",
+     "roc_auc_ci": {
+      "lo": 0.5,
+      "hi": 0.5,
+      "share_skipped": 0.0
+     }
+    },
+    "random_prevalence": {
+     "f1": 0.24026582278481012,
+     "balanced_accuracy": 0.5000949113924051,
+     "pr_auc": 0.2527293403786351,
+     "roc_auc": 0.5,
+     "n_flag": 79.0,
+     "roc_auc_mc": 0.5001985316455696,
+     "n_draw": 2000,
+     "score": "U(0,1)"
+    },
+    "contour_a": {
+     "f1": 0.43037974683544306,
+     "balanced_accuracy": 0.6251898734177215,
+     "n_flag": 79,
+     "roc_auc": 0.7100759493670887,
+     "pr_auc": 0.43861102348193,
+     "threshold": 0.622551963268813,
+     "roc_auc_ci": {
+      "lo": 0.5936673578169485,
+      "hi": 0.8207633301165164,
+      "share_skipped": 0.0
+     }
+    },
+    "contour_b": {
+     "f1": 0.36477987421383645,
+     "balanced_accuracy": 0.5815443037974684,
+     "n_flag": 80,
+     "roc_auc": 0.6346835443037975,
+     "pr_auc": 0.44762104706810535,
+     "threshold": 0.4730120599269867,
+     "roc_auc_ci": {
+      "lo": 0.5129241652746781,
+      "hi": 0.740205470537926,
+      "share_skipped": 0.0
+     }
+    },
+    "simple_all_geom": {
+     "f1": 0.189873417721519,
+     "balanced_accuracy": 0.4669367088607595,
+     "n_flag": 79,
+     "roc_auc": 0.511746835443038,
+     "pr_auc": 0.2549293256904369,
+     "threshold": 0.6448328631949672,
+     "n_features": 69,
+     "roc_auc_ci": {
+      "lo": 0.3964862265591265,
+      "hi": 0.6321277059585889,
+      "share_skipped": 0.0
+     }
+    },
+    "stack": {
+     "f1": 0.43209876543209874,
+     "balanced_accuracy": 0.6255189873417721,
+     "n_flag": 83,
+     "roc_auc": 0.7254177215189873,
+     "pr_auc": 0.48935932064361926,
+     "threshold": 0.6580547112462006,
+     "threshold_by_rule_recomputed": 0.6580547112462006,
+     "roc_auc_published": 0.7254177215189873,
+     "roc_auc_ci": {
+      "lo": 0.6162928211029477,
+      "hi": 0.8208639215519817,
+      "share_skipped": 0.0
+     }
+    }
+   },
+   "frozen": {
+    "auc_geom": 0.7100759493670887,
+    "auc_emb": 0.6346835443037975,
+    "auc_stacked": 0.7254177215189873,
+    "f1_oof": 0.43209876543209874,
+    "n_flag_oof": 83,
+    "oof_full": {
+     "roc_auc": 0.7254177215189873,
+     "pr_auc": 0.48935932064361926,
+     "f1": 0.43209876543209874,
+     "balanced_accuracy": 0.6255189873417721
+    }
+   },
+   "check": {
+    "criterion": "hip_pos",
+    "n_ok": true,
+    "n_pos_ok": true,
+    "auc_stack_diff": 0.0,
+    "f1_stack_diff": 0.0,
+    "auc_geom_diff": 0.0,
+    "auc_emb_diff": 0.0,
+    "threshold_rule_diff": 0.0,
+    "n_flag_ok": true,
+    "auc_stack_diff_oof_full": 0.0,
+    "pr_auc_stack_diff_oof_full": 0.0,
+    "bal_acc_stack_diff_oof_full": 0.0,
+    "ok": true
+   }
+  },
+  "hip_roi": {
+   "section": "hip",
+   "violation_type": "Некорректная область интереса",
+   "n": 329,
+   "n_pos": 16,
+   "n_studies": 78,
+   "n_pos_studies": 6,
+   "prevalence": 0.0486322188449848,
+   "threshold_rule": "prevalence",
+   "threshold_frozen": 0.9179331306990881,
+   "rows": {
+    "always_normal": {
+     "f1": 0.0,
+     "balanced_accuracy": 0.5,
+     "n_flag": 0,
+     "roc_auc": 0.5,
+     "pr_auc": 0.0486322188449848,
+     "score": "константа",
+     "roc_auc_ci": {
+      "lo": 0.5,
+      "hi": 0.5,
+      "share_skipped": 0.0
+     }
+    },
+    "always_violation": {
+     "f1": 0.0927536231884058,
+     "balanced_accuracy": 0.5,
+     "n_flag": 329,
+     "roc_auc": 0.5,
+     "pr_auc": 0.0486322188449848,
+     "score": "константа",
+     "roc_auc_ci": {
+      "lo": 0.5,
+      "hi": 0.5,
+      "share_skipped": 0.0
+     }
+    },
+    "random_prevalence": {
+     "f1": 0.049125,
+     "balanced_accuracy": 0.5002589856230031,
+     "pr_auc": 0.06451947235891928,
+     "roc_auc": 0.5,
+     "n_flag": 16.0,
+     "roc_auc_mc": 0.4991805111821086,
+     "n_draw": 2000,
+     "score": "U(0,1)"
+    },
+    "contour_a": {
+     "f1": 0.47058823529411764,
+     "balanced_accuracy": 0.7340255591054313,
+     "n_flag": 18,
+     "roc_auc": 0.9019568690095846,
+     "pr_auc": 0.6006434571874671,
+     "threshold": 0.9242194782521644,
+     "roc_auc_ci": {
+      "lo": 0.7022325537611915,
+      "hi": 0.9979966540053257,
+      "share_skipped": 0.0020000000000000018
+     }
+    },
+    "contour_b": {
+     "f1": 0.35294117647058826,
+     "balanced_accuracy": 0.6683306709265175,
+     "n_flag": 18,
+     "roc_auc": 0.876797124600639,
+     "pr_auc": 0.34019900057678404,
+     "threshold": 0.6402903318405151,
+     "roc_auc_ci": {
+      "lo": 0.7111078280232956,
+      "hi": 0.9793853073463268,
+      "share_skipped": 0.0020000000000000018
+     }
+    },
+    "simple_all_geom": {
+     "f1": 0.0625,
+     "balanced_accuracy": 0.507288338658147,
+     "n_flag": 16,
+     "roc_auc": 0.373202875399361,
+     "pr_auc": 0.10517573087314996,
+     "threshold": 0.6121223887601352,
+     "n_features": 69,
+     "roc_auc_ci": {
+      "lo": 0.15600555404347977,
+      "hi": 0.7062276258020939,
+      "share_skipped": 0.0020000000000000018
+     }
+    },
+    "stack": {
+     "f1": 0.5142857142857142,
+     "balanced_accuracy": 0.7652755591054313,
+     "n_flag": 19,
+     "roc_auc": 0.917332268370607,
+     "pr_auc": 0.5014176528599605,
+     "threshold": 0.9179331306990881,
+     "threshold_by_rule_recomputed": 0.917933130699088,
+     "roc_auc_published": 0.917332268370607,
+     "roc_auc_ci": {
+      "lo": 0.7107894736842105,
+      "hi": 1.0,
+      "share_skipped": 0.0020000000000000018
+     }
+    }
+   },
+   "frozen": {
+    "auc_geom": 0.9019568690095846,
+    "auc_emb": 0.876797124600639,
+    "auc_stacked": 0.917332268370607,
+    "f1_oof": 0.5142857142857142,
+    "n_flag_oof": 19,
+    "oof_full": {
+     "roc_auc": 0.917332268370607,
+     "pr_auc": 0.5014176528599605,
+     "f1": 0.5142857142857142,
+     "balanced_accuracy": 0.7652755591054313
+    }
+   },
+   "check": {
+    "criterion": "hip_roi",
+    "n_ok": true,
+    "n_pos_ok": true,
+    "auc_stack_diff": 0.0,
+    "f1_stack_diff": 0.0,
+    "auc_geom_diff": 0.0,
+    "auc_emb_diff": 0.0,
+    "threshold_rule_diff": 1.1102230246251565e-16,
+    "n_flag_ok": true,
+    "auc_stack_diff_oof_full": 0.0,
+    "pr_auc_stack_diff_oof_full": 0.0,
+    "bal_acc_stack_diff_oof_full": 0.0,
+    "ok": true
+   }
+  }
+ },
+ "region_binary": {
+  "spine": {
+   "anatomical_region": "Поясничный отдел позвоночника",
+   "criteria": [
+    "sp_pos",
+    "sp_axis",
+    "sp_art"
+   ],
+   "n": 166,
+   "n_pos": 60,
+   "n_studies": 99,
+   "n_pos_studies": 31,
+   "prevalence": 0.3614457831325301,
+   "rows": {
+    "always_normal": {
+     "f1": 0.0,
+     "balanced_accuracy": 0.5,
+     "n_flag": 0,
+     "roc_auc": 0.5,
+     "pr_auc": 0.3614457831325301,
+     "roc_auc_ci": {
+      "lo": 0.5,
+      "hi": 0.5,
+      "share_skipped": 0.0
+     }
+    },
+    "always_violation": {
+     "f1": 0.5309734513274337,
+     "balanced_accuracy": 0.5,
+     "n_flag": 166,
+     "roc_auc": 0.5,
+     "pr_auc": 0.3614457831325301,
+     "roc_auc_ci": {
+      "lo": 0.5,
+      "hi": 0.5,
+      "share_skipped": 0.0
+     }
+    },
+    "random_prevalence": {
+     "f1": 0.3952856001677893,
+     "balanced_accuracy": 0.5008110062893082,
+     "pr_auc": 0.3809857383629451,
+     "roc_auc": 0.5,
+     "n_flag": 72.0685,
+     "roc_auc_mc": 0.5017653301886793,
+     "n_draw": 2000
+    },
+    "contour_a": {
+     "f1": 0.5147058823529411,
+     "balanced_accuracy": 0.5982704402515724,
+     "n_flag": 76,
+     "roc_auc": 0.7312893081761006,
+     "pr_auc": 0.6577593653514316,
+     "roc_auc_ci": {
+      "lo": 0.5682840129864619,
+      "hi": 0.8482717178053569,
+      "share_skipped": 0.0
+     }
+    },
+    "contour_b": {
+     "f1": 0.6766917293233082,
+     "balanced_accuracy": 0.7429245283018868,
+     "n_flag": 73,
+     "roc_auc": 0.7537735849056604,
+     "pr_auc": 0.6731704246949127,
+     "roc_auc_ci": {
+      "lo": 0.6027206927335321,
+      "hi": 0.8552509591278437,
+      "share_skipped": 0.0
+     }
+    },
+    "simple_all_geom": {
+     "f1": 0.3333333333333333,
+     "balanced_accuracy": 0.4322327044025157,
+     "n_flag": 78,
+     "roc_auc": 0.30880503144654087,
+     "pr_auc": 0.29820301744206235,
+     "roc_auc_ci": {
+      "lo": 0.18144323385534622,
+      "hi": 0.47991810794429623,
+      "share_skipped": 0.0
+     }
+    },
+    "stack": {
+     "f1": 0.6617647058823529,
+     "balanced_accuracy": 0.7287735849056604,
+     "n_flag": 76,
+     "roc_auc": 0.7715408805031446,
+     "pr_auc": 0.6705680415377759,
+     "roc_auc_ci": {
+      "lo": 0.6409026920381371,
+      "hi": 0.8663047411342866,
+      "share_skipped": 0.0
+     }
+    }
+   },
+   "frozen": {
+    "f1": 0.6617647058823529,
+    "roc_auc_quality_prob": 0.8127358490566038,
+    "roc_auc_max_criteria_only": 0.7715408805031447,
+    "balanced_accuracy": 0.7287735849056604,
+    "pr_auc_quality_prob": 0.706253750244589
+   },
+   "check": {
+    "criterion": "spine/binary",
+    "n_ok": true,
+    "n_pos_ok": true,
+    "f1_stack_diff": 0.0,
+    "auc_max_criteria_diff": 1.1102230246251565e-16,
+    "ok": true
+   }
+  },
+  "hip": {
+   "anatomical_region": "Проксимальный отдел бедра",
+   "criteria": [
+    "hip_pos",
+    "hip_roi"
+   ],
+   "n": 329,
+   "n_pos": 92,
+   "n_studies": 78,
+   "n_pos_studies": 28,
+   "prevalence": 0.2796352583586626,
+   "rows": {
+    "always_normal": {
+     "f1": 0.0,
+     "balanced_accuracy": 0.5,
+     "n_flag": 0,
+     "roc_auc": 0.5,
+     "pr_auc": 0.2796352583586626,
+     "roc_auc_ci": {
+      "lo": 0.5,
+      "hi": 0.5,
+      "share_skipped": 0.0
+     }
+    },
+    "always_violation": {
+     "f1": 0.43705463182897863,
+     "balanced_accuracy": 0.5,
+     "n_flag": 329,
+     "roc_auc": 0.5,
+     "pr_auc": 0.2796352583586626,
+     "roc_auc_ci": {
+      "lo": 0.5,
+      "hi": 0.5,
+      "share_skipped": 0.0
+     }
+    },
+    "random_prevalence": {
+     "f1": 0.27957529944007825,
+     "balanced_accuracy": 0.5008240231150248,
+     "pr_auc": 0.2914413161631346,
+     "roc_auc": 0.5,
+     "n_flag": 91.193,
+     "roc_auc_mc": 0.4997771739130435,
+     "n_draw": 2000
+    },
+    "contour_a": {
+     "f1": 0.5217391304347826,
+     "balanced_accuracy": 0.6680425609979821,
+     "n_flag": 92,
+     "roc_auc": 0.771830856723537,
+     "pr_auc": 0.6324552130751057,
+     "roc_auc_ci": {
+      "lo": 0.6486093254593652,
+      "hi": 0.8661135862828812,
+      "share_skipped": 0.0
+     }
+    },
+    "contour_b": {
+     "f1": 0.4419889502762431,
+     "balanced_accuracy": 0.6140157769216658,
+     "n_flag": 89,
+     "roc_auc": 0.7100990643918548,
+     "pr_auc": 0.5696449491119407,
+     "roc_auc_ci": {
+      "lo": 0.5965223296740857,
+      "hi": 0.8103098937542209,
+      "share_skipped": 0.0
+     }
+    },
+    "simple_all_geom": {
+     "f1": 0.3225806451612903,
+     "balanced_accuracy": 0.528022381214456,
+     "n_flag": 94,
+     "roc_auc": 0.5537516052100532,
+     "pr_auc": 0.3255844098078847,
+     "roc_auc_ci": {
+      "lo": 0.44061085972850683,
+      "hi": 0.6736674978182137,
+      "share_skipped": 0.0
+     }
+    },
+    "stack": {
+     "f1": 0.5161290322580645,
+     "balanced_accuracy": 0.6638231517152816,
+     "n_flag": 94,
+     "roc_auc": 0.7748119611080536,
+     "pr_auc": 0.6705721144370416,
+     "roc_auc_ci": {
+      "lo": 0.6640832767193262,
+      "hi": 0.8671941634987869,
+      "share_skipped": 0.0
+     }
+    }
+   },
+   "frozen": {
+    "f1": 0.5161290322580645,
+    "roc_auc_quality_prob": 0.7600898917629793,
+    "roc_auc_max_criteria_only": 0.7748119611080536,
+    "balanced_accuracy": 0.6638231517152816,
+    "pr_auc_quality_prob": 0.6418532423235341
+   },
+   "check": {
+    "criterion": "hip/binary",
+    "n_ok": true,
+    "n_pos_ok": true,
+    "f1_stack_diff": 0.0,
+    "auc_max_criteria_diff": 0.0,
+    "ok": true
+   }
+  }
+ },
+ "checks": [
+  {
+   "criterion": "sp_pos",
+   "n_ok": true,
+   "n_pos_ok": true,
+   "auc_stack_diff": 0.0,
+   "f1_stack_diff": 0.0,
+   "auc_geom_diff": 0.0,
+   "auc_emb_diff": 0.0,
+   "threshold_rule_diff": 1.1102230246251565e-16,
+   "n_flag_ok": true,
+   "auc_stack_diff_oof_full": 0.0,
+   "pr_auc_stack_diff_oof_full": 0.0,
+   "bal_acc_stack_diff_oof_full": 0.0,
+   "ok": true
+  },
+  {
+   "criterion": "sp_axis",
+   "n_ok": true,
+   "n_pos_ok": true,
+   "auc_stack_diff": 0.0,
+   "f1_stack_diff": 0.0,
+   "auc_geom_diff": 0.0,
+   "auc_emb_diff": 0.0,
+   "threshold_rule_diff": 0.0,
+   "n_flag_ok": true,
+   "auc_stack_diff_oof_full": 0.0,
+   "pr_auc_stack_diff_oof_full": 0.0,
+   "bal_acc_stack_diff_oof_full": 0.0,
+   "ok": true
+  },
+  {
+   "criterion": "sp_art",
+   "n_ok": true,
+   "n_pos_ok": true,
+   "auc_stack_diff": 0.0009814612868048744,
+   "f1_stack_diff": 0.0,
+   "auc_geom_diff": 0.0,
+   "auc_emb_diff": 0.0,
+   "threshold_rule_diff": 0.0,
+   "n_flag_ok": true,
+   "auc_stack_diff_oof_full": 0.0,
+   "pr_auc_stack_diff_oof_full": 0.0,
+   "bal_acc_stack_diff_oof_full": 0.0,
+   "ok": true
+  },
+  {
+   "criterion": "spine/binary",
+   "n_ok": true,
+   "n_pos_ok": true,
+   "f1_stack_diff": 0.0,
+   "auc_max_criteria_diff": 1.1102230246251565e-16,
+   "ok": true
+  },
+  {
+   "criterion": "hip_pos",
+   "n_ok": true,
+   "n_pos_ok": true,
+   "auc_stack_diff": 0.0,
+   "f1_stack_diff": 0.0,
+   "auc_geom_diff": 0.0,
+   "auc_emb_diff": 0.0,
+   "threshold_rule_diff": 0.0,
+   "n_flag_ok": true,
+   "auc_stack_diff_oof_full": 0.0,
+   "pr_auc_stack_diff_oof_full": 0.0,
+   "bal_acc_stack_diff_oof_full": 0.0,
+   "ok": true
+  },
+  {
+   "criterion": "hip_roi",
+   "n_ok": true,
+   "n_pos_ok": true,
+   "auc_stack_diff": 0.0,
+   "f1_stack_diff": 0.0,
+   "auc_geom_diff": 0.0,
+   "auc_emb_diff": 0.0,
+   "threshold_rule_diff": 1.1102230246251565e-16,
+   "n_flag_ok": true,
+   "auc_stack_diff_oof_full": 0.0,
+   "pr_auc_stack_diff_oof_full": 0.0,
+   "bal_acc_stack_diff_oof_full": 0.0,
+   "ok": true
+  },
+  {
+   "criterion": "hip/binary",
+   "n_ok": true,
+   "n_pos_ok": true,
+   "f1_stack_diff": 0.0,
+   "auc_max_criteria_diff": 0.0,
+   "ok": true
+  }
+ ],
+ "simple_model_features": {
+  "spine": [
+   "metal_metal_area_px",
+   "metal_metal_area_mm2",
+   "metal_metal_outside_bone_px",
+   "metal_metal_outside_bone_mm2",
+   "metal_has_metal",
+   "metal_metal_max_intensity_gap",
+   "axis_angle_deg",
+   "curvature",
+   "valid_rows",
+   "center_offset_ratio",
+   "top_margin_ratio",
+   "bottom_margin_ratio",
+   "bone_width_ratio"
+  ],
+  "hip": [
+   "metal_metal_area_px",
+   "metal_metal_area_mm2",
+   "metal_metal_outside_bone_px",
+   "metal_metal_outside_bone_mm2",
+   "metal_has_metal",
+   "metal_metal_max_intensity_gap",
+   "signed_shaft_angle_deg",
+   "abs_shaft_angle_deg",
+   "shaft_width_mm",
+   "shaft_len_below_troch_mm",
+   "lesser_troch_prominence_mm",
+   "greater_troch_offset_mm",
+   "lateral_margin_mm",
+   "medial_neck_extent_mm",
+   "merge_height_mm",
+   "neck_min_width_mm",
+   "scan_length_mm",
+   "scan_width_mm",
+   "femur_track_rows",
+   "shaft_bottom_center_ratio",
+   "bone_area_ratio",
+   "femur_fill_ratio",
+   "bone_top_touch_ratio",
+   "bone_bottom_touch_ratio",
+   "femur_solidity",
+   "femur_compactness",
+   "femur_eccentricity",
+   "prof_lat_0",
+   "prof_med_0",
+   "prof_lat_1",
+   "prof_med_1",
+   "prof_lat_2",
+   "prof_med_2",
+   "prof_lat_3",
+   "prof_med_3",
+   "prof_lat_4",
+   "prof_med_4",
+   "prof_lat_5",
+   "prof_med_5",
+   "prof_lat_6",
+   "prof_med_6",
+   "prof_lat_7",
+   "prof_med_7",
+   "prof_lat_8",
+   "prof_med_8",
+   "prof_lat_9",
+   "prof_med_9",
+   "prof_lat_10",
+   "prof_med_10",
+   "prof_lat_11",
+   "prof_med_11",
+   "prof_lat_12",
+   "prof_med_12",
+   "prof_lat_13",
+   "prof_med_13",
+   "prof_lat_14",
+   "prof_med_14",
+   "prof_lat_15",
+   "prof_med_15",
+   "prof_lat_16",
+   "prof_med_16",
+   "prof_lat_17",
+   "prof_med_17",
+   "prof_lat_18",
+   "prof_med_18",
+   "prof_lat_19",
+   "prof_med_19",
+   "shaft_angle_deg",
+   "edge_distance_ratio"
+  ]
+ },
+ "all_frozen_ok": true,
+ "n_boot": 500,
+ "seed_boot": 0,
+ "n_random": 2000
+}
