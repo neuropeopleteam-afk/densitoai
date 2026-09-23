@@ -62,6 +62,22 @@
         }
       }
     },
+    "decisions_url": {
+      "description": "Решения специалиста по предложенной области интереса: POST (записать) и GET (список) /api/results/{job}/decisions; доступ по коду задачи. Схема записи — schema/roi_decision.schema.json",
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^/api/results/[0-9]{8}_[0-9]{6}_[0-9a-f]{6}/decisions(\\.csv)?(\\?t=[A-Za-z0-9_\\-]+)?$"
+    },
+    "decisions_csv_url": {
+      "description": "Выгрузка решений специалиста в CSV (разделитель «;»)",
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^/api/results/[0-9]{8}_[0-9]{6}_[0-9a-f]{6}/decisions(\\.csv)?(\\?t=[A-Za-z0-9_\\-]+)?$"
+    },
     "rows": {
       "type": "array",
       "items": { "$ref": "#/$defs/row_with_extras" }
@@ -92,6 +108,138 @@
         "seg_download": { "type": "string", "pattern": "^/api/results/.+_seg\\.dcm(\\?t=[A-Za-z0-9_\\-]+)?$" },
         "seg_png": { "type": "string", "pattern": "^/api/results/.+_seg\\.png(\\?t=[A-Za-z0-9_\\-]+)?$" },
         "seg_json_download": { "type": "string", "pattern": "^/api/results/.+_seg\\.json(\\?t=[A-Za-z0-9_\\-]+)?$" },
+        "roi_suggestion": {
+          "description": "Предложение коррекции области интереса бедра (src/auto_roi.py: suggest_hip_roi) — требует подтверждения специалистом через POST /api/results/{job}/decisions. Для позвоночника, отказа по области и Failure — null. Не критерий качества: 9 официальных полей не меняет.",
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "needs_correction",
+            "box_px",
+            "box_mm",
+            "deficit_mm",
+            "reason",
+            "source"
+          ],
+          "properties": {
+            "needs_correction": {
+              "type": "boolean",
+              "description": "true — система предлагает исправленную область; false — коррекция не требуется, box_px = null"
+            },
+            "box_px": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "description": "[x0, y0, x1, y1] в пикселях исходного кадра",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "box_mm": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "description": "[x0, y0, x1, y1] в мм от левого верхнего угла кадра",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "number",
+                "minimum": 0
+              }
+            },
+            "extended_box_px": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "description": "рамка с учётом недостающей длины поля сканирования; может выходить за кадр",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "integer"
+              }
+            },
+            "deficit_mm": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "недостающая длина поля сканирования, мм"
+            },
+            "reason": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "scan_too_short",
+                "shaft_below_trochanter_too_short",
+                "lateral_margin_below_threshold",
+                null
+              ]
+            },
+            "reason_text": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "side": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "pixel_spacing_mm": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "description": "[мм/px по y, мм/px по x]",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": {
+                "type": "number"
+              }
+            },
+            "image_size": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "description": "[rows, cols] исходного кадра",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": {
+                "type": "integer"
+              }
+            },
+            "sop_class_uid": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "source": {
+              "type": "string",
+              "const": "предложение системы"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "требует подтверждения специалистом",
+                "коррекция не требуется"
+              ]
+            }
+          },
+          "additionalProperties": true
+        },
         "details": {
           "type": "object",
           "required": ["internal_region", "criteria", "measurements", "action", "action_code"],

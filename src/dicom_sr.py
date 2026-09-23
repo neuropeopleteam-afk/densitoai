@@ -500,6 +500,214 @@ def study_header_from_ds(ds) -> Dict[str, Any]:
     return out
 
 
+# =========================================================================== #
+# Идея 23: отдельный SR «Решение специалиста по области интереса» (бедро).
+#
+# Основной SR исследования (build_study_sr) не меняется — его UID детерминированы и проверяются
+# тестами. Решения специалиста по предложенной области интереса пишутся в ОТДЕЛЬНЫЙ документ
+# <study_uid>_SR_decisions.dcm (своя серия SeriesNumber 9002), который формируется по запросу
+# GET /api/results/{job}/decisions_sr/{study_uid}. Содержимое: по каждому решению — ссылка на исходный
+# снимок (IMAGE), предложенная область (пиксели и мм), решение (CODE), итоговая область при решении
+# «своя», специалист (строка без персональных данных: должность/инициалы), комментарий, время.
+# UID: Series — от (study_uid, версия модели); SOP Instance — от тех же величин плюс дайджест решений:
+# повторный запрос без новых решений даёт тот же файл, новое решение — новый UID.
+# =========================================================================== #
+DECISION_CONFIRMED = "подтверждено"
+DECISION_REJECTED = "отклонено"
+DECISION_CUSTOM = "своя"
+DECISION_VALUES = (DECISION_CONFIRMED, DECISION_REJECTED, DECISION_CUSTOM)
+_DECISION_CODES = {
+    DECISION_CONFIRMED: ("ROI-CONFIRMED", "Предложенная область интереса подтверждена специалистом"),
+    DECISION_REJECTED: ("ROI-REJECTED", "Предложенная область интереса отклонена специалистом"),
+    DECISION_CUSTOM: ("ROI-CUSTOM", "Специалист задал свою область интереса"),
+}
+ROI_REASON_TEXT = {
+    "scan_too_short": "поле сканирования короче требуемого",
+    "shaft_below_trochanter_too_short": "в кадр вошло мало диафиза ниже вертелов",
+    "lateral_margin_below_threshold": "кость ближе к краю кадра, чем требует ТЗ (не менее 20 мм)",
+}
+DECISION_SR_SUFFIX = "_SR_decisions.dcm"
+
+
+def decision_sr_filename(study_uid: str) -> str:
+    safe = re.sub(r"[^0-9A-Za-z._-]", "_", str(study_uid))[:170]
+    return f"{safe}{DECISION_SR_SUFFIX}"
+
+
+def _box_text(box) -> str:
+    """[x0, y0, x1, y1] -> "x0, y0, x1, y1" (для TEXT-элементов SR); пустая строка, если рамки нет."""
+    if not box or len(box) != 4:
+        return ""
+    try:
+        vals = [float(v) for v in box]
+    except (TypeError, ValueError):
+        return ""
+    return ", ".join(str(int(round(v))) if abs(v - round(v)) < 1e-6 else f"{v:.1f}" for v in vals)
+
+
+def _decisions_digest(decisions: list) -> str:
+    keys = ("decision_id", "image_uid", "decision", "roi_box_px", "suggested_box_px", "specialist",
+            "comment", "created_at")
+    payload = [{k: d.get(k) for k in keys} for d in sorted(decisions, key=lambda x: str(x.get("created_at", "")) + str(x.get("decision_id", "")))]
+    return hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str).encode()).hexdigest()
+
+
+def _dicom_datetime(iso: str) -> str:
+    """ISO 8601 ("2026-09-23T11:52:00") -> DICOM DT ("20260923115200"); пустая строка, если формат иной."""
+    m = re.match(r"^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?", str(iso or ""))
+    if not m:
+        return ""
+    return "".join(g or "00" for g in m.groups())
+
+
+def build_decision_sr(study_uid: str, decisions: list, model_version: str, config_hash: str,
+                      study_header: Optional[Dict[str, Any]] = None,
+                      manufacturer: str = SERVICE_NAME, now: Optional[datetime.datetime] = None) -> Dataset:
+    """DICOM Comprehensive SR «Решение специалиста по области интереса» для одного исследования.
+
+    decisions — список словарей (записи decisions.json задачи, отфильтрованные по study_uid):
+      decision_id, image_uid, sop_class_uid, path_to_study, decision (подтверждено/отклонено/своя),
+      suggested_box_px [x0,y0,x1,y1], suggested_box_mm, deficit_mm, reason, roi_box_px (при «своя»),
+      roi_box_mm, specialist, comment, created_at (ISO 8601).
+    Пустой список решений допустим: документ содержит контекст и число решений 0.
+    """
+    now = now or datetime.datetime.now()
+    study_header = study_header or {}
+    decisions = [d for d in decisions if isinstance(d, dict)]
+
+    sr_study_uid = study_uid if is_valid_uid(study_uid) else deterministic_uid("densito-study", study_uid)
+    series_uid = deterministic_uid("densito-sr-decisions-series", study_uid, model_version)
+    sop_uid = deterministic_uid("densito-sr-decisions-instance", study_uid, model_version, config_hash,
+                                _decisions_digest(decisions))
+
+    file_meta = FileMetaDataset()
+    file_meta.MediaStorageSOPClassUID = ComprehensiveSRStorage
+    file_meta.MediaStorageSOPInstanceUID = sop_uid
+    file_meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian
+
+    ds = FileDataset(None, {}, file_meta=file_meta, preamble=b"\x00" * 128)
+    ds.SpecificCharacterSet = "ISO_IR 192"
+    ds.SOPClassUID = ComprehensiveSRStorage
+    ds.SOPInstanceUID = sop_uid
+    ds.InstanceCreationDate = now.strftime("%Y%m%d")
+    ds.InstanceCreationTime = now.strftime("%H%M%S")
+    for attr in ("PatientName", "PatientID", "PatientBirthDate", "PatientSex",
+                 "StudyDate", "StudyTime", "StudyID", "AccessionNumber", "ReferringPhysicianName"):
+        setattr(ds, attr, study_header.get(attr, ""))
+    ds.StudyInstanceUID = sr_study_uid
+    ds.Modality = "SR"
+    ds.SeriesInstanceUID = series_uid
+    ds.SeriesNumber = 9002
+    ds.SeriesDescription = "DensitoAI ROI decision by specialist"
+    ds.ReferencedPerformedProcedureStepSequence = Sequence()
+    ds.Manufacturer = manufacturer
+    ds.ManufacturerModelName = "DensitoAI DXA QC"
+    ds.SoftwareVersions = str(model_version)
+    ds.InstanceNumber = 1
+    ds.ContentDate = now.strftime("%Y%m%d")
+    ds.ContentTime = now.strftime("%H%M%S")
+    ds.CompletionFlag = "COMPLETE"
+    # Решение вводит специалист через кабинет по коду доступа задачи; электронной подписи и
+    # аутентификации наблюдателя нет, поэтому документ формально не верифицирован.
+    ds.VerificationFlag = "UNVERIFIED"
+    ds.PerformedProcedureCodeSequence = Sequence()
+
+    # Evidence: снимки, по которым есть решения (одна «неизвестная» серия — series_uid снимка в
+    # decisions.json не хранится)
+    ref_imgs = sorted({str(d.get("image_uid")): d.get("sop_class_uid") for d in decisions
+                       if is_valid_uid(d.get("image_uid"))}.items())
+    if ref_imgs:
+        ev = Dataset()
+        ev.StudyInstanceUID = sr_study_uid
+        rs = Dataset()
+        rs.SeriesInstanceUID = deterministic_uid("densito-unknown-series", study_uid)
+        refs = []
+        for img_uid, sop_cls in ref_imgs:
+            r = Dataset()
+            r.ReferencedSOPClassUID = sop_cls if is_valid_uid(sop_cls) else "1.2.840.10008.5.1.4.1.1.7"
+            r.ReferencedSOPInstanceUID = img_uid
+            refs.append(r)
+        rs.ReferencedSOPSequence = Sequence(refs)
+        ev.ReferencedSeriesSequence = Sequence([rs])
+        ds.CurrentRequestedProcedureEvidenceSequence = Sequence([ev])
+
+    counts = {v: sum(1 for d in decisions if str(d.get("decision")) == v) for v in DECISION_VALUES}
+    root_children = [
+        _text_item("HAS OBS CONTEXT", "SERVICE-NAME", "Наименование ИИ-сервиса", SERVICE_NAME),
+        _text_item("HAS OBS CONTEXT", "MODEL-VERSION", "Версия модели", str(model_version)),
+        _text_item("HAS OBS CONTEXT", "CONFIG-HASH", "Хэш конфигурации (config_hash)", str(config_hash)),
+        _text_item("HAS OBS CONTEXT", "STUDY-UID-SRC", "StudyInstanceUID исходного исследования", str(study_uid)),
+        _text_item("HAS OBS CONTEXT", "AI-WARNING", "Предупреждение об использовании ИИ", AI_WARNING),
+        _text_item("HAS OBS CONTEXT", "DOC-PURPOSE", "Назначение документа",
+                   "Предложение коррекции области интереса бедра сформировано системой и требует подтверждения "
+                   "специалистом; в документе зафиксированы решения специалиста. Исходный снимок не изменяется."),
+        _num_item("CONTAINS", "N-DECISIONS", "Число решений", len(decisions), "1"),
+        _num_item("CONTAINS", "N-CONFIRMED", "Число решений «подтверждено»", counts[DECISION_CONFIRMED], "1"),
+        _num_item("CONTAINS", "N-REJECTED", "Число решений «отклонено»", counts[DECISION_REJECTED], "1"),
+        _num_item("CONTAINS", "N-CUSTOM", "Число решений «своя область»", counts[DECISION_CUSTOM], "1"),
+    ]
+
+    ordered = sorted(decisions, key=lambda x: (str(x.get("created_at", "")), str(x.get("decision_id", ""))))
+    for idx, d in enumerate(ordered, 1):
+        children = []
+        img_item = _image_item(str(d.get("image_uid", "")), d.get("sop_class_uid"))
+        if img_item is not None:
+            children.append(img_item)
+        children += [
+            _text_item("CONTAINS", "IMAGE-UID", "image_uid (SOPInstanceUID снимка)", str(d.get("image_uid", "")) or "—"),
+            _text_item("CONTAINS", "FILE", "Файл (path_to_study)", str(d.get("path_to_study", "")) or "—"),
+            _text_item("CONTAINS", "SUGGEST-SOURCE", "Источник предложенной области", "предложение системы"),
+        ]
+        sug_px = _box_text(d.get("suggested_box_px"))
+        if sug_px:
+            children.append(_text_item("CONTAINS", "SUGGESTED-BOX-PX", "Предложенная область, пиксели (x0, y0, x1, y1)", sug_px))
+        sug_mm = _box_text(d.get("suggested_box_mm"))
+        if sug_mm:
+            children.append(_text_item("CONTAINS", "SUGGESTED-BOX-MM", "Предложенная область, мм от угла кадра (x0, y0, x1, y1)", sug_mm))
+        if d.get("deficit_mm") is not None:
+            try:
+                children.append(_num_item("CONTAINS", "ROI-DEFICIT", "Недостающая длина поля сканирования", float(d["deficit_mm"]), "mm"))
+            except (TypeError, ValueError):
+                pass
+        if d.get("reason"):
+            children.append(_text_item("CONTAINS", "ROI-REASON", "Причина предложения",
+                                       ROI_REASON_TEXT.get(str(d["reason"]), str(d["reason"]))))
+        code, meaning = _DECISION_CODES.get(str(d.get("decision")), ("ROI-UNKNOWN", "Решение не распознано"))
+        children.append(_code_content_item("CONTAINS", "ROI-DECISION", "Решение специалиста", code, meaning))
+        fin_px = _box_text(d.get("roi_box_px"))
+        if fin_px:
+            children.append(_text_item("CONTAINS", "FINAL-BOX-PX", "Область интереса специалиста, пиксели (x0, y0, x1, y1)", fin_px))
+        fin_mm = _box_text(d.get("roi_box_mm"))
+        if fin_mm:
+            children.append(_text_item("CONTAINS", "FINAL-BOX-MM", "Область интереса специалиста, мм (x0, y0, x1, y1)", fin_mm))
+        children.append(_text_item("CONTAINS", "SPECIALIST", "Специалист (должность/инициалы)",
+                                   str(d.get("specialist") or "").strip() or "не указан"))
+        if str(d.get("comment") or "").strip():
+            children.append(_text_item("CONTAINS", "COMMENT", "Комментарий специалиста", str(d["comment"]).strip()))
+        dt = _dicom_datetime(str(d.get("created_at", "")))
+        if dt:
+            children.append(_content_item("CONTAINS", "DATETIME", "DECISION-TIME", "Время решения", DateTime=dt))
+        else:
+            children.append(_text_item("CONTAINS", "DEC-TIME-TEXT", "Время решения", str(d.get("created_at", "")) or "—"))
+        root_children.append(_container_item("CONTAINS", "ROI-DEC-ITEM", f"Решение {idx}", children))
+
+    root = _content_item("", "CONTAINER", "ROI-DEC-REPORT", "Решение специалиста по области интереса (DensitoAI)")
+    root.ContinuityOfContent = "SEPARATE"
+    root.ContentSequence = Sequence(root_children)
+    for attr in ("ValueType", "ConceptNameCodeSequence", "ContinuityOfContent", "ContentSequence"):
+        setattr(ds, attr, getattr(root, attr))
+    ds.is_little_endian = True
+    ds.is_implicit_VR = False
+    return ds
+
+
+def save_decision_sr(path: str, study_uid: str, decisions: list, model_version: str, config_hash: str,
+                     study_header: Optional[Dict[str, Any]] = None) -> str:
+    ds = build_decision_sr(study_uid, decisions, model_version, config_hash, study_header)
+    ds.save_as(path, write_like_original=False)
+    return path
+
+
 if __name__ == "__main__":
     import sys
     sys.path.insert(0, ".")

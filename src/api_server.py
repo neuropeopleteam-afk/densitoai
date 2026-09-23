@@ -568,6 +568,12 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
                 rb["study_sr_download"] = study_sr[str(r.get("study_uid"))]
             if str(r.get("study_uid") or "") in study_completeness:
                 rb["study_completeness"] = study_completeness[str(r.get("study_uid"))]
+            # идея 23: предложение коррекции области интереса (бедро) — требует подтверждения специалистом
+            try:
+                rb["roi_suggestion"] = _roi_suggestion(r, dbg, reg_ok)
+            except Exception as e:  # noqa: BLE001
+                LOG.warning("roi_suggestion failed for row %d: %s", i, e)
+                rb["roi_suggestion"] = None
             try:
                 rb["details"] = _details(r, dbg, eng.cfg)
                 if i < len(extras_rows) and isinstance(extras_rows[i], dict):
@@ -606,6 +612,9 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
             "study_completeness": study_completeness,
             "result_extras_csv_url": (f"/api/results/{job}/results_extras.csv"
                                       if (out_csv.parent / "results_extras.csv").exists() else None),
+            # идея 23: решения специалиста по предложенной области интереса (POST/GET, CSV)
+            "decisions_url": f"/api/results/{job}/decisions",
+            "decisions_csv_url": f"/api/results/{job}/decisions.csv",
             "rows": rows_out,
             "csv": _rows_to_csv_text(rows, eng.cfg),
         }
@@ -725,6 +734,351 @@ def _safe_job_file(job: str, name: str) -> Path:
         if job_dir in cand.parents and cand.is_file():
             return cand
     raise HTTPException(404, "file not found")
+
+
+# =========================================================================== #
+# Идея 23: предложение коррекции области интереса бедра с подтверждением специалистом.
+#
+# 1) В строке ответа /api/analyze для бедра — roi_suggestion (по данным auto_roi.suggest_hip_roi через
+#    debug-поля bonus_roi_*), для позвоночника — null. Источник всегда «предложение системы».
+# 2) Решения специалиста хранятся в каталоге задачи в decisions.json (атомарная запись: временный файл
+#    + os.replace под блокировкой). Доступ — по коду задачи, как у остальных /api/results/{job}/...
+# 3) Эндпоинты: POST/GET /api/results/{job}/decisions, GET .../decisions.csv,
+#    GET .../decisions_sr/{study_uid} (отдельный DICOM SR «Решение специалиста по области интереса»).
+# Маршруты объявлены ДО общего /api/results/{job}/{name}, иначе «decisions» ушло бы в выдачу файла.
+# =========================================================================== #
+DECISIONS_FILE = "decisions.json"
+DECISIONS_SR_SUBDIR = "decisions_sr"
+DECISION_VALUES = ("подтверждено", "отклонено", "своя")
+ROI_SUGGESTION_SOURCE = "предложение системы"
+SPECIALIST_MAX_LEN = 80
+COMMENT_MAX_LEN = 500
+MAX_DECISIONS_PER_JOB = 1000
+_DECISIONS_LOCK = threading.Lock()
+ROI_REASON_TEXT_API = {
+    "scan_too_short": "поле сканирования короче требуемого",
+    "shaft_below_trochanter_too_short": "в кадр вошло мало диафиза ниже вертелов",
+    "lateral_margin_below_threshold": "кость ближе к краю кадра, чем требует ТЗ (не менее 20 мм)",
+}
+
+
+def _parse_box(val: Any) -> Optional[List[int]]:
+    """"x0,y0,x1,y1" или список из 4 чисел -> [x0, y0, x1, y1] (int) либо None."""
+    if val is None:
+        return None
+    if isinstance(val, str):
+        parts = [p.strip() for p in val.split(",") if p.strip() != ""]
+    elif isinstance(val, (list, tuple)):
+        parts = list(val)
+    else:
+        return None
+    if len(parts) != 4:
+        return None
+    try:
+        box = [int(round(float(p))) for p in parts]
+    except (TypeError, ValueError):
+        return None
+    return box
+
+
+def _box_mm(box: Optional[List[int]], spacing_yx: Optional[List[float]]) -> Optional[List[float]]:
+    """Рамка в пикселях -> мм от левого верхнего угла кадра [x0, y0, x1, y1] (spacing = (мм/px по y, по x))."""
+    if not box or not spacing_yx or len(spacing_yx) != 2:
+        return None
+    try:
+        sy, sx = float(spacing_yx[0]), float(spacing_yx[1])
+    except (TypeError, ValueError):
+        return None
+    if sy <= 0 or sx <= 0:
+        return None
+    return [round(box[0] * sx, 1), round(box[1] * sy, 1), round(box[2] * sx, 1), round(box[3] * sy, 1)]
+
+
+def _roi_suggestion(row: Dict[str, Any], dbg: Dict[str, Any], region_ok: bool = True) -> Optional[Dict[str, Any]]:
+    """Предложение коррекции области интереса для строки бедра; None для позвоночника, отказа
+    по области, Failure или когда предложение не вычислялось (нет debug-полей bonus_roi_*)."""
+    if not isinstance(dbg, dict) or not region_ok:
+        return None
+    region = str(dbg.get("internal_region") or "")
+    if region not in ("right_hip", "left_hip", "hip"):
+        return None
+    if "bonus_roi_needs_correction" not in dbg or dbg.get("bonus_roi_error"):
+        return None
+    needs = dbg.get("bonus_roi_needs_correction")
+    needs = bool(needs) if needs is not None and needs == needs else False  # NaN из CSV -> False
+    spacing = None
+    sp = dbg.get("bonus_roi_pixel_spacing_mm")
+    if isinstance(sp, str) and "," in sp:
+        try:
+            spacing = [float(v) for v in sp.split(",")[:2]]
+        except ValueError:
+            spacing = None
+    box = _parse_box(dbg.get("bonus_roi_box_px")) if needs else None
+    ext = _parse_box(dbg.get("bonus_roi_ext_box_px")) if needs else None
+    reason = dbg.get("bonus_roi_reason") if needs else None
+    reason = str(reason) if reason and reason == reason else None
+    deficit = _num(dbg.get("bonus_roi_deficit_mm")) if needs else None
+    rows_n, cols_n = _num(dbg.get("rows")), _num(dbg.get("cols"))
+    return {
+        "needs_correction": needs,
+        "box_px": box,                       # [x0, y0, x1, y1] в пикселях исходного кадра (обрезано кадром)
+        "box_mm": _box_mm(box, spacing),     # то же в мм от левого верхнего угла кадра
+        "extended_box_px": ext,              # рамка с учётом недостающей длины (может выходить за кадр)
+        "deficit_mm": deficit,
+        "reason": reason,
+        "reason_text": ROI_REASON_TEXT_API.get(reason or "", None),
+        "side": (str(dbg.get("bonus_roi_side")) if dbg.get("bonus_roi_side") else None) or None,
+        "pixel_spacing_mm": spacing,         # [по y, по x]
+        "image_size": [int(rows_n), int(cols_n)] if rows_n and cols_n else None,  # [rows, cols]
+        "sop_class_uid": str(dbg.get("sop_class_uid") or "") or None,
+        "source": ROI_SUGGESTION_SOURCE,
+        "status": "требует подтверждения специалистом" if needs else "коррекция не требуется",
+    }
+
+
+def _job_dir_checked(job: str) -> Path:
+    if not JOB_RE.match(job or ""):
+        raise HTTPException(404, "job not found")
+    d = (JOBS_DIR / job).resolve()
+    if JOBS_DIR.resolve() not in d.parents or not d.is_dir():
+        raise HTTPException(404, "job not found")
+    return d
+
+
+def load_decisions(job_dir: Path) -> List[Dict[str, Any]]:
+    p = Path(job_dir) / DECISIONS_FILE
+    if not p.is_file():
+        return []
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    items = data.get("decisions") if isinstance(data, dict) else data
+    return [d for d in (items or []) if isinstance(d, dict)]
+
+
+def save_decisions_atomic(job_dir: Path, decisions: List[Dict[str, Any]]) -> Path:
+    """Атомарная запись decisions.json: временный файл в том же каталоге + os.replace."""
+    job_dir = Path(job_dir)
+    job_dir.mkdir(parents=True, exist_ok=True)
+    target = job_dir / DECISIONS_FILE
+    payload = {"version": 1, "updated_at": time.strftime("%Y-%m-%dT%H:%M:%S"), "decisions": decisions}
+    fd, tmp_name = tempfile.mkstemp(prefix=".decisions_", suffix=".tmp", dir=str(job_dir))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump(payload, fh, ensure_ascii=False, indent=1)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp_name, target)
+    except Exception:
+        try:
+            os.unlink(tmp_name)
+        except OSError:
+            pass
+        raise
+    return target
+
+
+def _summary_rows(job_dir: Path) -> List[Dict[str, Any]]:
+    p = Path(job_dir) / "summary.json"
+    if not p.is_file():
+        return []
+    try:
+        card = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    rows = card.get("rows") if isinstance(card, dict) else None
+    return [r for r in (rows or []) if isinstance(r, dict)]
+
+
+def _clean_text(val: Any, max_len: int, field: str) -> str:
+    if val is None:
+        return ""
+    if not isinstance(val, str):
+        raise ValueError(f"поле {field} должно быть строкой")
+    s = " ".join(val.replace("\r", " ").replace("\n", " ").split())
+    if len(s) > max_len:
+        raise ValueError(f"поле {field} длиннее {max_len} символов")
+    return s
+
+
+def validate_decision(body: Dict[str, Any], rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Проверить тело POST /api/results/{job}/decisions и собрать запись для decisions.json.
+    rows — строки summary.json задачи (snapshot roi_suggestion берётся оттуда). ValueError -> 400."""
+    if not isinstance(body, dict):
+        raise ValueError("тело запроса должно быть JSON-объектом")
+    image_uid = str(body.get("image_uid") or "").strip()
+    if not image_uid or len(image_uid) > 128 or not re.match(r"^[0-9A-Za-z._:-]+$", image_uid):
+        raise ValueError("image_uid обязателен (SOPInstanceUID снимка из строки ответа)")
+    row = next((r for r in rows if str(r.get("image_uid") or "") == image_uid), None)
+    if row is None:
+        raise ValueError("снимок с таким image_uid в этой задаче не найден")
+    sug = row.get("roi_suggestion")
+    if not isinstance(sug, dict):
+        raise ValueError("для этого снимка предложение области интереса не формировалось (не бедро или отказ)")
+    decision = str(body.get("decision") or "").strip().lower()
+    if decision not in DECISION_VALUES:
+        raise ValueError("decision должно быть одним из: " + ", ".join(DECISION_VALUES))
+    specialist = _clean_text(body.get("specialist"), SPECIALIST_MAX_LEN, "specialist")
+    if not specialist:
+        raise ValueError("укажите специалиста (должность или инициалы, без персональных данных)")
+    comment = _clean_text(body.get("comment"), COMMENT_MAX_LEN, "comment")
+    img_size = sug.get("image_size") or (row.get("details") or {}).get("image_size")
+    spacing = sug.get("pixel_spacing_mm")
+    suggested_box = _parse_box(sug.get("box_px"))
+    final_box: Optional[List[int]] = None
+    if decision == "своя":
+        final_box = _parse_box(body.get("roi_box_px"))
+        if final_box is None:
+            raise ValueError("для решения «своя» нужен roi_box_px: [x0, y0, x1, y1] в пикселях исходного кадра")
+        x0, y0, x1, y1 = final_box
+        if x1 <= x0 or y1 <= y0:
+            raise ValueError("roi_box_px: требуется x0 < x1 и y0 < y1")
+        if x0 < 0 or y0 < 0:
+            raise ValueError("roi_box_px: координаты не могут быть отрицательными")
+        if isinstance(img_size, (list, tuple)) and len(img_size) == 2:
+            rows_n, cols_n = int(img_size[0]), int(img_size[1])
+            if x1 > cols_n or y1 > rows_n:
+                raise ValueError(f"roi_box_px выходит за кадр {cols_n}x{rows_n} px")
+        if (x1 - x0) < 4 or (y1 - y0) < 4:
+            raise ValueError("roi_box_px: рамка меньше 4 px по стороне")
+    elif decision == "подтверждено":
+        if suggested_box is None:
+            raise ValueError("подтверждать нечего: система не предлагала коррекцию для этого снимка")
+        final_box = suggested_box
+    else:  # отклонено — итоговой рамки нет
+        final_box = None
+    now = time.strftime("%Y-%m-%dT%H:%M:%S")
+    return {
+        "decision_id": uuid.uuid4().hex[:12],
+        "image_uid": image_uid,
+        "study_uid": str(row.get("study_uid") or ""),
+        "path_to_study": str(row.get("path_to_study") or ""),
+        "sop_class_uid": sug.get("sop_class_uid"),
+        "decision": decision,
+        "roi_box_px": final_box,
+        "roi_box_mm": _box_mm(final_box, spacing),
+        "suggested_box_px": suggested_box,
+        "suggested_box_mm": sug.get("box_mm"),
+        "deficit_mm": sug.get("deficit_mm"),
+        "reason": sug.get("reason"),
+        "specialist": specialist,
+        "comment": comment,
+        "created_at": now,
+        "source": ROI_SUGGESTION_SOURCE,
+    }
+
+
+DECISIONS_CSV_COLUMNS = ["decision_id", "created_at", "study_uid", "image_uid", "path_to_study", "decision",
+                         "specialist", "comment", "suggested_box_px", "suggested_box_mm", "roi_box_px",
+                         "roi_box_mm", "deficit_mm", "reason", "source"]
+
+
+def decisions_to_csv(decisions: List[Dict[str, Any]]) -> str:
+    """CSV решений (разделитель «;», как в остальных выгрузках; UTF-8 с BOM для Excel)."""
+    import csv
+    buf = io.StringIO()
+    w = csv.writer(buf, delimiter=";", lineterminator="\n", quoting=csv.QUOTE_MINIMAL)
+    w.writerow(DECISIONS_CSV_COLUMNS)
+    for d in decisions:
+        vals = []
+        for c in DECISIONS_CSV_COLUMNS:
+            v = d.get(c)
+            if isinstance(v, (list, tuple)):
+                v = ",".join(str(x) for x in v)
+            vals.append("" if v is None else str(v))
+        w.writerow(vals)
+    return "\ufeff" + buf.getvalue()
+
+
+def _decision_token(t: Optional[str], x_job_token: Optional[str]) -> str:
+    return (x_job_token or t or "").strip()
+
+
+@app.post("/api/results/{job}/decisions")
+async def post_roi_decision(job: str, request: Request, t: Optional[str] = None,
+                            x_job_token: Optional[str] = Header(None)):
+    """Зафиксировать решение специалиста по предложенной области интереса (бедро).
+    Тело JSON: image_uid, decision ∈ {подтверждено, отклонено, своя}, roi_box_px (при «своя»),
+    specialist (должность/инициалы, без персональных данных), comment (необязательно)."""
+    _check_job_access(job, _decision_token(t, x_job_token))
+    job_dir = _job_dir_checked(job)
+    try:
+        body = await request.json()
+    except Exception:  # noqa: BLE001
+        raise HTTPException(400, "тело запроса должно быть JSON")
+    with _DECISIONS_LOCK:
+        rows = _summary_rows(job_dir)
+        try:
+            rec = validate_decision(body, rows)
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+        items = load_decisions(job_dir)
+        if len(items) >= MAX_DECISIONS_PER_JOB:
+            raise HTTPException(400, "превышен предел числа решений для задачи")
+        items.append(rec)
+        save_decisions_atomic(job_dir, items)
+    return {"ok": True, "decision": rec, "n_decisions": len(items),
+            "sr_url": _with_token(f"/api/results/{job}/decisions_sr/{rec['study_uid']}", job, _decision_token(t, x_job_token))
+            if rec.get("study_uid") else None}
+
+
+@app.get("/api/results/{job}/decisions")
+def get_roi_decisions(job: str, t: Optional[str] = None, x_job_token: Optional[str] = Header(None)):
+    """Список решений специалиста по задаче (в порядке записи)."""
+    _check_job_access(job, _decision_token(t, x_job_token))
+    job_dir = _job_dir_checked(job)
+    items = load_decisions(job_dir)
+    return {"job_id": job, "n_decisions": len(items), "decisions": items}
+
+
+@app.get("/api/results/{job}/decisions.csv")
+def get_roi_decisions_csv(job: str, t: Optional[str] = None, x_job_token: Optional[str] = Header(None)):
+    """Выгрузка решений специалиста в CSV (разделитель «;»)."""
+    from fastapi.responses import Response
+    _check_job_access(job, _decision_token(t, x_job_token))
+    job_dir = _job_dir_checked(job)
+    text = decisions_to_csv(load_decisions(job_dir))
+    return Response(content=text.encode("utf-8"), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="{job}_decisions.csv"'})
+
+
+@app.get("/api/results/{job}/decisions_sr/{study_uid}")
+def get_roi_decisions_sr(job: str, study_uid: str, t: Optional[str] = None,
+                         x_job_token: Optional[str] = Header(None)):
+    """Отдельный DICOM SR «Решение специалиста по области интереса» по исследованию задачи:
+    файл <study_uid>_SR_decisions.dcm (основной SR исследования не меняется)."""
+    from dicom_sr import build_decision_sr, decision_sr_filename, is_valid_uid
+    _check_job_access(job, _decision_token(t, x_job_token))
+    job_dir = _job_dir_checked(job)
+    study_uid = (study_uid or "").strip()
+    if not is_valid_uid(study_uid):
+        raise HTTPException(400, "некорректный study_uid")
+    rows = _summary_rows(job_dir)
+    if not any(str(r.get("study_uid") or "") == study_uid for r in rows):
+        raise HTTPException(404, "исследование с таким study_uid в этой задаче не найдено")
+    items = [d for d in load_decisions(job_dir) if str(d.get("study_uid") or "") == study_uid]
+    try:
+        cfg_hash = _config_hash(_ENGINE.cfg) if _ENGINE is not None else _config_hash(load_config(
+            Path(os.environ["DENSITO_CONFIG"]) if os.environ.get("DENSITO_CONFIG") else None))
+    except Exception:  # noqa: BLE001 — SR можно собрать и без конфигурации
+        cfg_hash = ""
+    out_dir = job_dir / DECISIONS_SR_SUBDIR
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / decision_sr_filename(study_uid)
+    ds = build_decision_sr(study_uid, items, PIPELINE_VERSION, cfg_hash)
+    fd, tmp_name = tempfile.mkstemp(prefix=".sr_", suffix=".tmp", dir=str(out_dir))
+    os.close(fd)
+    try:
+        ds.save_as(tmp_name, write_like_original=False)
+        os.replace(tmp_name, out_path)
+    except Exception:
+        try:
+            os.unlink(tmp_name)
+        except OSError:
+            pass
+        raise
+    return FileResponse(str(out_path), media_type="application/dicom", filename=out_path.name)
 
 
 @app.get("/api/results/{job}/{name}")

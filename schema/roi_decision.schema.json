@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://densitoai.local/schema/roi_decision.schema.json",
+  "title": "DensitoAI: решение специалиста по предложенной области интереса (бедро)",
+  "description": "Запись decisions.json в каталоге задачи и элемент ответа GET /api/results/{job}/decisions (поле decisions[*]) / POST (поле decision). Тело POST-запроса описано в $defs/request. Предложение области формирует система (roi_suggestion в строке ответа /api/analyze), решение принимает специалист; исходный снимок и 9 официальных полей результата не меняются.",
+  "type": "object",
+  "required": [
+    "decision_id",
+    "image_uid",
+    "study_uid",
+    "decision",
+    "roi_box_px",
+    "suggested_box_px",
+    "specialist",
+    "created_at",
+    "source"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "decision_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{12}$"
+    },
+    "image_uid": {
+      "type": "string",
+      "description": "SOPInstanceUID снимка (image_uid строки результата)"
+    },
+    "study_uid": {
+      "type": "string"
+    },
+    "path_to_study": {
+      "type": "string"
+    },
+    "sop_class_uid": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "decision": {
+      "$ref": "#/$defs/decision_value"
+    },
+    "roi_box_px": {
+      "description": "[x0, y0, x1, y1] в пикселях исходного кадра",
+      "type": [
+        "array",
+        "null"
+      ],
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "roi_box_mm": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "description": "[x0, y0, x1, y1] в мм от левого верхнего угла кадра",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "number",
+        "minimum": 0
+      }
+    },
+    "suggested_box_px": {
+      "description": "[x0, y0, x1, y1] в пикселях исходного кадра",
+      "type": [
+        "array",
+        "null"
+      ],
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "suggested_box_mm": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "description": "[x0, y0, x1, y1] в мм от левого верхнего угла кадра",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "number",
+        "minimum": 0
+      }
+    },
+    "deficit_mm": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "specialist": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "Должность или инициалы; персональные данные не вводятся"
+    },
+    "comment": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "created_at": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}$"
+    },
+    "source": {
+      "type": "string",
+      "const": "предложение системы",
+      "description": "Источник предложенной области, к которой относится решение"
+    }
+  },
+  "$defs": {
+    "decision_value": {
+      "type": "string",
+      "enum": [
+        "подтверждено",
+        "отклонено",
+        "своя"
+      ]
+    },
+    "request": {
+      "description": "Тело POST /api/results/{job}/decisions (JSON). Доступ — код задачи в ?t= или заголовке X-Job-Token",
+      "type": "object",
+      "required": [
+        "image_uid",
+        "decision",
+        "specialist"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "image_uid": {
+          "type": "string"
+        },
+        "decision": {
+          "$ref": "#/$defs/decision_value"
+        },
+        "roi_box_px": {
+          "description": "[x0, y0, x1, y1] в пикселях исходного кадра",
+          "type": [
+            "array",
+            "null"
+          ],
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "specialist": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "comment": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "list_response": {
+      "description": "Ответ GET /api/results/{job}/decisions",
+      "type": "object",
+      "required": [
+        "job_id",
+        "n_decisions",
+        "decisions"
+      ],
+      "properties": {
+        "job_id": {
+          "type": "string"
+        },
+        "n_decisions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "decisions": {
+          "type": "array",
+          "items": {
+            "$ref": "#"
+          }
+        }
+      }
+    }
+  }
+}

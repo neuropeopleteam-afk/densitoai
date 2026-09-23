@@ -1441,6 +1441,7 @@ class DensitoInference:
                 debug["bonus_roi_needs_correction"] = suggestion.get("needs_correction")
                 debug["bonus_roi_reason"] = suggestion.get("reason")
                 debug["bonus_roi_deficit_mm"] = suggestion.get("deficit_mm")
+                debug.update(roi_suggestion_debug_fields(suggestion, info))  # идея 23: рамка и шаг пикселя для API
                 if suggestion.get("needs_correction"):
                     import cv2
                     out_png = self.roi_autocorrect_dir / f"{stem}_roi_correction.png"
@@ -1791,6 +1792,40 @@ def write_xlsx(rows: List[Dict[str, Any]], xlsx_path: Path, cfg: Dict[str, Any])
     ws3.auto_filter.ref = f"A1:F{max(2, ws3.max_row)}"
     _autowidth(ws3, minimum=10)
     wb.save(xlsx_path)
+
+
+# --------------------------------------------------------------------------- #
+# Идея 23: предложение коррекции области интереса бедра для подтверждения специалистом.
+# Только дополнительные колонки debug-CSV (bonus_roi_*); официальные 9 колонок не затрагиваются.
+# --------------------------------------------------------------------------- #
+def _box_to_str(box) -> str:
+    """(x0, y0, x1, y1) -> "x0,y0,x1,y1" (пустая строка, если рамки нет)."""
+    if not box:
+        return ""
+    try:
+        return ",".join(str(int(round(float(v)))) for v in box)
+    except (TypeError, ValueError):
+        return ""
+
+
+def roi_suggestion_debug_fields(suggestion: Dict[str, Any], info) -> Dict[str, Any]:
+    """Дополнительные debug-поля по предложению области интереса (auto_roi.suggest_hip_roi):
+    рамка в пикселях исходного кадра, расширенная рамка (если скан короткий — нижняя граница
+    может выходить за кадр), сторона и шаг пикселя (мм), чтобы API мог показать рамку в мм.
+    Ничего не бросает: при любой ошибке возвращает пустые строки."""
+    out: Dict[str, Any] = {}
+    try:
+        out["bonus_roi_box_px"] = _box_to_str(suggestion.get("suggested_box_px"))
+        out["bonus_roi_ext_box_px"] = _box_to_str(suggestion.get("extended_box_px"))
+        out["bonus_roi_bone_box_px"] = _box_to_str(suggestion.get("bone_box_px"))
+        out["bonus_roi_side"] = str(suggestion.get("side_detected") or "")
+        ps = getattr(info, "pixel_spacing", None)
+        out["bonus_roi_pixel_spacing_mm"] = f"{float(ps[0]):.4f},{float(ps[1]):.4f}" if ps else ""
+    except Exception:  # noqa: BLE001
+        for k in ("bonus_roi_box_px", "bonus_roi_ext_box_px", "bonus_roi_bone_box_px",
+                  "bonus_roi_side", "bonus_roi_pixel_spacing_mm"):
+            out.setdefault(k, "")
+    return out
 
 
 def write_debug(debug_rows: List[Dict[str, Any]], path: Path):

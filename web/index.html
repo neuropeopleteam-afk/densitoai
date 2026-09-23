@@ -524,6 +524,28 @@ table.crit tr.flag td { background: var(--error-soft); }
 body:not(.view-app) .topbar .topnav { display: flex; }
 @media (max-width: 560px) { body:not(.view-app) .topbar .topnav { display: none; } }
 
+/* ROI-DECISION:BEGIN — предложение коррекции области интереса с подтверждением специалистом */
+.roi-dec { margin-top: 14px; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; background: var(--surface); }
+.roi-dec .t { font-weight: 700; font-size: 14px; }
+.roi-dec .m { font-size: 13px; color: var(--muted); margin-top: 4px; line-height: 1.45; }
+.roi-dec .m.done { color: var(--success); font-weight: 600; }
+.roi-dec .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+.roi-dec .lbl { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+.roi-dec input[type=text], .roi-dec textarea { border: 1px solid var(--border); border-radius: 8px; padding: 7px 11px; font-size: 13.5px; background: var(--surface); color: var(--text); font-family: inherit; }
+.roi-dec input[type=text] { min-width: 260px; }
+.roi-dec textarea { width: 100%; box-sizing: border-box; margin-top: 8px; resize: vertical; }
+.roi-dec .stage { position: relative; margin-top: 10px; overflow: hidden; border-radius: 8px; border: 1px solid var(--border); background: #000; max-width: 420px; }
+.roi-dec .stage img { width: 100%; display: block; cursor: default; border: 0; border-radius: 0; }
+.roi-dec .stage canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; touch-action: none; }
+.roi-dec .stage.draw canvas { cursor: crosshair; }
+.roi-dec .fchip.active { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
+.roi-dec .fchip[disabled] { opacity: .45; cursor: not-allowed; }
+.roi-dec .msg { font-size: 13px; color: var(--muted); }
+.roi-dec .msg.ok { color: var(--success); font-weight: 600; }
+.roi-dec .msg.err { color: var(--error); font-weight: 600; }
+.badge.roidec { background: var(--primary-soft); color: var(--primary); margin-left: 6px; margin-top: 4px; white-space: normal; line-height: 1.25; font-size: 12px; }
+.badge.roidec.done { background: var(--success-soft); color: var(--success); }
+/* ROI-DECISION:END */
 </style>
 </head>
 <body>
@@ -1261,6 +1283,7 @@ function renderResults(data) {
   if (!csvUrl && !xlsxUrl) dl.appendChild(el('span', { class: 'hint', text: data.demo ? 'В демо-примере файлы выгрузки не прикладываются: загрузите свои снимки, чтобы получить CSV и XLSX.' : 'Файлы выгрузки недоступны.' }));
   if (jobOk) dl.appendChild(el('span', { class: 'hint', style: 'align-self:center;margin-left:8px', text: 'Код запроса: ' + data.job_id }));
   card.appendChild(dl);
+  roiDecOnRender(data, dl); // ROI-DECISION: код задачи, список решений, кнопка «Выгрузить решения (CSV)»
 
   // панель фильтров
   const tb = el('div', { class: 'toolbar' });
@@ -1347,7 +1370,8 @@ function queueRow(r) {
     el('div', { class: 'risk' + (p >= 0.5 ? ' hot' : '') }, [el('span', { class: 'bar' }, [el('i', { style: `width:${Math.round(p * 100)}%` }), el('b')]), el('span', { text: fmt(p) })]),
     // зона «не уверен»: решение взято, но запас до порога мал — в очереди видно сразу
     el('div', {}, [el('span', { class: 'badge ' + r._state, text: regionUnsupported(r) ? 'Вне применения' : STATE_TEXT[r._state] }),
-      (needsDoctor(d) && !regionUnsupported(r)) ? el('span', { class: 'badge uncertain', text: 'Не уверен' , title: 'Запас до порога мал' + (Array.isArray(d.uncertain_criteria) && d.uncertain_criteria.length ? ' (' + d.uncertain_criteria.join(', ') + ')' : '') + ' — посмотреть глазами' }) : null]),
+      (needsDoctor(d) && !regionUnsupported(r)) ? el('span', { class: 'badge uncertain', text: 'Не уверен' , title: 'Запас до порога мал' + (Array.isArray(d.uncertain_criteria) && d.uncertain_criteria.length ? ' (' + d.uncertain_criteria.join(', ') + ')' : '') + ' — посмотреть глазами' }) : null,
+      roiDecBadge(r)]), // ROI-DECISION: статус решения специалиста по области интереса
   ]);
   if (state.selected === r._i) row.appendChild(detailPanel(r));
   return row;
@@ -1361,6 +1385,7 @@ function detailPanel(r) {
   const right = el('div', { onclick: e => e.stopPropagation() });
   right.appendChild(el('h3', { text: 'Карточка решения' }));
   right.appendChild(decisionCard(r));
+  const roiDecEl = roiDecBlock(r); if (roiDecEl) right.appendChild(roiDecEl); // ROI-DECISION
   const links = el('div', { class: 'links' });
   if (regionUnsupported(r)) return el('div', { class: 'detail' }, [left, right]); // выгрузки по неподдерживаемой области не предлагаются
   const sr = safeApiUrl(r.bonus_sr_dcm_download);
@@ -1373,10 +1398,148 @@ function detailPanel(r) {
   const segDcm = safeApiUrl(r.seg_download), segJson = safeApiUrl(r.seg_json_download);
   if (segDcm) links.appendChild(el('a', { class: 'btn sm ghost', href: segDcm, target: '_blank', rel: 'noopener', text: 'Сегментация (DICOM SEG)' }));
   if (segJson) links.appendChild(el('a', { class: 'btn sm ghost', href: segJson, target: '_blank', rel: 'noopener', text: 'Контуры сегментации (JSON)' }));
+  const decSr = roiDecSrUrl(r); if (decSr) links.appendChild(el('a', { class: 'btn sm ghost', href: decSr, target: '_blank', rel: 'noopener', text: 'SR решений' })); // ROI-DECISION
   if (ov) links.appendChild(el('a', { class: 'btn sm ghost', href: ov, download: String(r.path_to_study || 'overlay').replace(/[^\w.\-а-яА-ЯёЁ]+/g, '_') + '_overlay.png', text: 'Сохранить визуализацию PNG' }));
   if (links.childNodes.length) right.appendChild(links);
   return el('div', { class: 'detail' }, [left, right]);
 }
+
+// ---------- ROI-DECISION:BEGIN — предложение коррекции области интереса с подтверждением специалистом ----------
+// Данные приходят из API: roi_suggestion в строке результата (бедро; для позвоночника null),
+// решения — POST/GET /api/results/{job}/decisions, выгрузка decisions.csv, отдельный SR decisions_sr/{study_uid}.
+// Доступ — код задачи (job_token): заголовок X-Job-Token. В демо-примере (без задачи) кнопки недоступны.
+const ROI_DEC_TITLE = 'Предложение коррекции области интереса — требует подтверждения специалистом';
+const ROI_DEC_TEXT = { 'подтверждено': 'подтверждено', 'отклонено': 'отклонено', 'своя': 'своя область' };
+const roiDec = { job: null, token: '', byImage: {}, draft: {}, specialist: '', flash: null };
+function roiDecJobOk(data) { return typeof data.job_id === 'string' && /^[0-9]{8}_[0-9]{6}_[0-9a-f]{6}$/.test(data.job_id) && typeof data.job_token === 'string' && /^[\w\-]+$/.test(data.job_token); }
+function roiDecUrl(name) { return roiDec.job ? '/api/results/' + encodeURIComponent(roiDec.job) + '/' + name + '?t=' + encodeURIComponent(roiDec.token) : null; }
+function roiDecHeaders() { return { 'Content-Type': 'application/json', 'X-Job-Token': roiDec.token }; }
+function roiDecOnRender(data, dl) {
+  roiDec.byImage = {}; roiDec.draft = {};
+  if (!roiDecJobOk(data)) { roiDec.job = null; roiDec.token = ''; return; }
+  roiDec.job = data.job_id; roiDec.token = data.job_token;
+  if (dl) {
+    const hasSuggest = state.rows.some(r => r.roi_suggestion && typeof r.roi_suggestion === 'object');
+    if (hasSuggest) dl.appendChild(el('a', { class: 'btn sm ghost', href: roiDecUrl('decisions.csv'), target: '_blank', rel: 'noopener', text: 'Выгрузить решения (CSV)' }));
+  }
+  // решения, уже записанные по этой задаче (например, при открытии из истории)
+  fetch('/api/results/' + encodeURIComponent(roiDec.job) + '/decisions', { headers: { 'X-Job-Token': roiDec.token }, cache: 'no-store' })
+    .then(r => r.ok ? r.json() : null)
+    .then(j => { if (!j || !Array.isArray(j.decisions) || roiDec.job !== data.job_id) return; j.decisions.forEach(d => { roiDec.byImage[d.image_uid] = d; }); if (j.decisions.length) refresh(); })
+    .catch(() => { /* список решений недоступен — карточка работает без него */ });
+}
+function roiDecLatest(r) { return (r && r.image_uid && roiDec.byImage[r.image_uid]) || null; }
+function roiDecBadge(r) {
+  const s = r && r.roi_suggestion;
+  if (!s || typeof s !== 'object' || regionUnsupported(r)) return null;
+  const d = roiDecLatest(r);
+  if (d) return el('span', { class: 'badge roidec done', text: 'Область: ' + (ROI_DEC_TEXT[d.decision] || d.decision), title: 'Решение специалиста: ' + (d.specialist || '') + (d.created_at ? ', ' + String(d.created_at).replace('T', ' ') : '') });
+  if (s.needs_correction) return el('span', { class: 'badge roidec', text: 'Область: ждёт решения', title: ROI_DEC_TITLE });
+  return null;
+}
+function roiDecSrUrl(r) {
+  if (!roiDec.job || !r || !r.roi_suggestion || !r.study_uid || !/^[0-9.]+$/.test(String(r.study_uid))) return null;
+  return roiDecUrl('decisions_sr/' + encodeURIComponent(String(r.study_uid)));
+}
+function roiDecBoxText(b, mm) {
+  if (!Array.isArray(b) || b.length !== 4) return '—';
+  const w = b[2] - b[0], h = b[3] - b[1];
+  let t = `x ${b[0]}–${b[2]}, y ${b[1]}–${b[3]} px (${w}×${h} px)`;
+  if (Array.isArray(mm) && mm.length === 4) t += `; ${fmt(mm[2] - mm[0], 1)}×${fmt(mm[3] - mm[1], 1)} мм`;
+  return t;
+}
+function roiDecBlock(r) {
+  const s = r && r.roi_suggestion;
+  if (!s || typeof s !== 'object' || regionUnsupported(r)) return null;
+  const d = r.details || {};
+  const size = (Array.isArray(s.image_size) && s.image_size.length === 2) ? s.image_size : (Array.isArray(d.image_size) ? d.image_size : null);
+  const rows = size ? Number(size[0]) : 0, cols = size ? Number(size[1]) : 0;
+  const sp = Array.isArray(s.pixel_spacing_mm) && s.pixel_spacing_mm.length === 2 ? s.pixel_spacing_mm : null;
+  const toMm = b => (b && sp) ? [b[0] * sp[1], b[1] * sp[0], b[2] * sp[1], b[3] * sp[0]] : null;
+  const box = el('div', { class: 'roi-dec', onclick: e => e.stopPropagation() });
+  box.appendChild(el('div', { class: 't', text: ROI_DEC_TITLE }));
+  const last = roiDecLatest(r);
+  if (!s.needs_correction && !last) {
+    box.appendChild(el('div', { class: 'm', text: 'Система не предлагает коррекцию области интереса для этого снимка. При необходимости специалист может задать свою область.' }));
+  } else if (s.needs_correction) {
+    box.appendChild(el('div', { class: 'm', text: `Источник: ${s.source || 'предложение системы'}. Причина: ${s.reason_text || ROI_REASON[s.reason] || s.reason || '—'}` + (s.deficit_mm !== null && s.deficit_mm !== undefined ? `; недостающая длина ${fmt(s.deficit_mm, 1)} мм` : '') + '.' }));
+    box.appendChild(el('div', { class: 'm', text: 'Предложенная область: ' + roiDecBoxText(s.box_px, s.box_mm) }));
+  }
+  if (last) box.appendChild(el('div', { class: 'm done', text: `Решение: ${ROI_DEC_TEXT[last.decision] || last.decision} — ${last.specialist || '—'}, ${String(last.created_at || '').replace('T', ' ')}` + (last.roi_box_px ? '. Итоговая область: ' + roiDecBoxText(last.roi_box_px, last.roi_box_mm) : '') + (last.comment ? '. Комментарий: ' + last.comment : '') }));
+  // снимок с рамкой: изображение области интереса (если есть) или визуализация измерений; панель под кадром скрыта
+  const src = roiSrc(r) || overlaySrc(r);
+  const stage = el('div', { class: 'stage' });
+  const img = el('img', { alt: 'снимок с предложенной областью интереса', draggable: 'false' });
+  const cv = el('canvas');
+  if (rows > 0 && cols > 0) stage.style.aspectRatio = cols + ' / ' + rows;
+  const draft = roiDec.draft[r.image_uid] || null;
+  const state2 = { mode: 'view', start: null, cur: draft ? draft.slice() : null };
+  const px = e => { const rc = cv.getBoundingClientRect(); const k = cols / Math.max(rc.width, 1); return [Math.max(0, Math.min(cols, Math.round((e.clientX - rc.left) * k))), Math.max(0, Math.min(rows, Math.round((e.clientY - rc.top) * k)))]; };
+  const draw = () => {
+    const rc = stage.getBoundingClientRect(); if (!rc.width || !cols) return;
+    cv.width = Math.round(rc.width); cv.height = Math.round(rc.height);
+    const k = cv.width / cols; const ctx = cv.getContext('2d'); ctx.clearRect(0, 0, cv.width, cv.height);
+    const rect = (b, color, dash, label) => { if (!Array.isArray(b) || b.length !== 4) return; ctx.save(); ctx.lineWidth = 2; ctx.strokeStyle = color; ctx.setLineDash(dash); ctx.strokeRect(b[0] * k + 1, b[1] * k + 1, (b[2] - b[0]) * k - 2, (b[3] - b[1]) * k - 2); ctx.setLineDash([]); ctx.font = '12px sans-serif'; ctx.fillStyle = color; ctx.fillText(label, b[0] * k + 5, Math.max(12, b[1] * k + 14)); ctx.restore(); };
+    if (s.needs_correction) rect(s.box_px, '#5FB3BE', [8, 5], 'предложение системы');
+    if (last && last.decision === 'своя') rect(last.roi_box_px, '#86C05A', [], 'область специалиста');
+    if (state2.cur) rect(state2.cur, '#F2C94C', [], 'своя область (черновик)');
+  };
+  if (src) { img.src = src; img.addEventListener('load', draw); stage.appendChild(img); }
+  else stage.appendChild(el('div', { class: 'empty', text: 'Изображение недоступно' }));
+  stage.appendChild(cv);
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(draw).observe(stage);
+  cv.addEventListener('pointerdown', e => { if (state2.mode !== 'draw') return; e.preventDefault(); state2.start = px(e); state2.cur = null; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener('pointermove', e => { if (state2.mode !== 'draw' || !state2.start) return; const p = px(e); state2.cur = [Math.min(state2.start[0], p[0]), Math.min(state2.start[1], p[1]), Math.max(state2.start[0], p[0]), Math.max(state2.start[1], p[1])]; draw(); });
+  cv.addEventListener('pointerup', e => { if (state2.mode !== 'draw' || !state2.start) return; state2.start = null; if (state2.cur && (state2.cur[2] - state2.cur[0] < 4 || state2.cur[3] - state2.cur[1] < 4)) state2.cur = null; roiDec.draft[r.image_uid] = state2.cur; draw(); msg(state2.cur ? 'Своя область: ' + roiDecBoxText(state2.cur, toMm(state2.cur)) + '. Нажмите «Отправить решение».' : 'Растяните прямоугольник мышью по снимку.', ''); });
+  box.appendChild(stage);
+  box.appendChild(el('div', { class: 'roi-legend' }, [
+    s.needs_correction ? el('span', {}, [el('i', { class: 'dash' }), 'предложение системы (пунктир)']) : null,
+    el('span', {}, [el('i', { class: 'cur', style: 'border-color:#F2C94C' }), 'своя область — растянуть мышью после кнопки «Своя»']),
+  ]));
+  const msgEl = el('div', { class: 'msg' });
+  const msg = (t, cls) => { msgEl.textContent = t; msgEl.className = 'msg ' + (cls || ''); };
+  if (!roiDec.job) {
+    box.appendChild(el('div', { class: 'm', text: 'Запись решения доступна только для задач, обработанных на сервере (нужен код доступа задачи).' }));
+    box.appendChild(msgEl);
+    return box;
+  }
+  if (!roiDec.specialist) roiDec.specialist = lsGet('densito_specialist') || '';
+  const specialist = el('input', { type: 'text', maxlength: '80', placeholder: 'должность или инициалы, без персональных данных', 'aria-label': 'Специалист', value: roiDec.specialist, oninput: e => { roiDec.specialist = e.target.value; lsSet('densito_specialist', roiDec.specialist); } });
+  const comment = el('textarea', { rows: '2', maxlength: '500', placeholder: 'комментарий (необязательно)', 'aria-label': 'Комментарий' });
+  let choice = null;
+  const btns = {};
+  const setChoice = c => { choice = c; Object.entries(btns).forEach(([k, b]) => b.classList.toggle('active', k === c)); state2.mode = c === 'своя' ? 'draw' : 'view'; stage.classList.toggle('draw', state2.mode === 'draw'); if (c === 'своя') msg(state2.cur ? 'Своя область: ' + roiDecBoxText(state2.cur, toMm(state2.cur)) : 'Растяните прямоугольник мышью по снимку — от одного угла области до другого.', ''); else msg('', ''); };
+  const mk = (c, label, disabled) => { const b = el('button', { type: 'button', class: 'fchip', disabled: disabled ? 'disabled' : null, onclick: () => setChoice(c) }, [label]); btns[c] = b; return b; };
+  const row1 = el('div', { class: 'row' }, [
+    mk('подтверждено', 'Подтвердить', !s.needs_correction),
+    mk('отклонено', 'Отклонить', !s.needs_correction),
+    mk('своя', 'Своя'),
+    el('label', { class: 'lbl' }, ['Специалист ', specialist]),
+  ]);
+  box.appendChild(row1);
+  box.appendChild(comment);
+  const send = el('button', { type: 'button', class: 'btn sm', text: 'Отправить решение', onclick: async () => {
+    if (!choice) { msg('Выберите решение: «Подтвердить», «Отклонить» или «Своя».', 'err'); return; }
+    if (!specialist.value.trim()) { msg('Укажите специалиста (должность или инициалы).', 'err'); specialist.focus(); return; }
+    const body = { image_uid: r.image_uid, decision: choice, specialist: specialist.value.trim(), comment: comment.value.trim() };
+    if (choice === 'своя') { if (!state2.cur) { msg('Для решения «Своя» растяните прямоугольник мышью по снимку.', 'err'); return; } body.roi_box_px = state2.cur; }
+    send.disabled = true; msg('Отправка…', '');
+    try {
+      const resp = await fetch(roiDecUrl('decisions'), { method: 'POST', headers: roiDecHeaders(), body: JSON.stringify(body) });
+      const txt = await resp.text();
+      if (!resp.ok) throw new Error(humanError(resp.status, txt));
+      const j = JSON.parse(txt);
+      if (j && j.decision) { roiDec.byImage[r.image_uid] = j.decision; roiDec.draft[r.image_uid] = null; }
+      roiDec.flash = { uid: r.image_uid, text: 'Решение записано.' }; // покажется в перерисованной карточке
+      refresh();
+    } catch (e) { msg('Не удалось записать решение: ' + e.message, 'err'); send.disabled = false; }
+  } });
+  box.appendChild(el('div', { class: 'row' }, [send, msgEl]));
+  if (roiDec.flash && roiDec.flash.uid === r.image_uid) { msg(roiDec.flash.text, 'ok'); roiDec.flash = null; }
+  return box;
+}
+// ---------- ROI-DECISION:END ----------
+
 
 // ---------- режим лаборанта: один снимок крупно, без технических деталей ----------
 const lab = { idx: 0, done: new Set() };
@@ -1568,6 +1731,7 @@ async function openJob(jobId, token) {
       if (stem && x.details && x.details.roi && x.details.roi.needs_correction) extra.bonus_roi_png_url = jobUrl(jobId, token, stem + '_roi_correction.png');
       return Object.assign({}, x, extra);
     });
+    card.job_token = card.job_token || token; // ROI-DECISION: код доступа нужен для записи решений из истории
     renderResults(card);
     setRunChip(card);
     statusLine.className = 'status-line ok';
