@@ -390,6 +390,11 @@ def safe_extract_zip(zip_path: Path, dest: Path) -> List[Tuple[Path, str]]:
     return out
 
 
+def _find_zips(root: Path) -> List[Path]:
+    """Вложенные архивы в любом регистре расширения (.zip/.ZIP/.Zip), отсортированные."""
+    return sorted(p for p in root.rglob("*") if p.is_file() and p.suffix.lower() == ".zip")
+
+
 def discover_files(input_path: Path, tmp_holder: List[Path],
                    display: Optional[Dict[Path, str]] = None) -> Tuple[Path, List[Path]]:
     """Возвращает (корень, отсортированный список DICOM-кандидатов).
@@ -422,7 +427,7 @@ def discover_files(input_path: Path, tmp_holder: List[Path],
     # (ограничение — защита от архивных бомб; архив глубже предела попадает в выгрузку
     # строкой Failure, а не исчезает молча)
     pending: List[Tuple[Path, str, int]] = []
-    for z in sorted(root.rglob("*.zip")):
+    for z in _find_zips(root):
         try:
             z_rel = str(z.resolve().relative_to(root.resolve()))
         except ValueError:
@@ -437,7 +442,7 @@ def discover_files(input_path: Path, tmp_holder: List[Path],
             for target, rel in extracted:
                 display[target.resolve()] = f"{z_rel}/{rel}"
             files += [p for p in sorted(sub.rglob("*")) if p.is_file() and is_dicom_candidate(p)]
-            inner = sorted(sub.rglob("*.zip"))
+            inner = _find_zips(sub)
             for z2 in inner:
                 try:
                     z2_rel = str(z2.resolve().relative_to(sub.resolve()))
@@ -664,11 +669,8 @@ def classify_region(info: DicomInfo, path: Path, cfg: Dict[str, Any]) -> Tuple[s
 
 
 def guess_region_without_pixels(path: Path, cfg: Dict[str, Any]) -> str:
-    """Для строки-заглушки при сбое: имя файла -> заголовок DICOM (Rows/Columns) -> дефолт."""
-    name_up = path.stem.upper()
-    for hint, region in FILENAME_HINTS:
-        if hint.upper() in name_up:
-            return region
+    """Для строки-заглушки при сбое: заголовок DICOM (Columns) -> имя файла -> дефолт.
+    Заголовок — первым, чтобы регион строки Failure не зависел от переименования файла (прогон-двойник, идея 1)."""
     try:
         ds = pydicom.dcmread(str(path), force=True, stop_before_pixels=True)
         cols = int(getattr(ds, "Columns", 0) or 0)
@@ -678,6 +680,10 @@ def guess_region_without_pixels(path: Path, cfg: Dict[str, Any]) -> str:
             return "left_hip"
     except Exception:  # noqa: BLE001
         pass
+    name_up = path.stem.upper()
+    for hint, region in FILENAME_HINTS:
+        if hint.upper() in name_up:
+            return region
     return "spine" if cfg["regions"]["default_when_unknown"] == "spine" else "left_hip"
 
 
@@ -1080,7 +1086,7 @@ class DensitoInference:
             LOG.warning("No trained .pkl models found in %s -> using physical fallback rules "
                         "(config.yaml: fallback_rules). Retrain/save models to enable stacking.",
                         self.registry.models_dir)
-        # --- Бонус-функции (ТЗ п.2.6): визуализация, DICOM SR, ROI-автокоррекция.
+        # --- Бонус-функции (ТЗ п.2.6): визуализация, DICOM SR, предложение коррекции области интереса.
         # Строго опциональны, по умолчанию выключены (None), не влияют на обязательный
         # CSV-выход даже при внутренней ошибке (каждая обёрнута в try/except в process_file).
         self.visualize_dir = Path(visualize_dir) if visualize_dir else None
@@ -1100,6 +1106,9 @@ class DensitoInference:
         self.sr_study_dir = Path(sr_study_dir) if sr_study_dir else None
         self._study_headers: Dict[str, Dict[str, Any]] = {}
         self.last_study_sr: Dict[str, str] = {}
+        # {study_uid: {"spine": bool, "hip": bool, "note": str|None}} — полнота исследования по областям
+        # (идея 4); считается по строкам результата после каждого run(), независимо от режима SR
+        self.last_study_completeness: Dict[str, Dict[str, Any]] = {}
         if self.visualize_dir or self.sr_dir or self.roi_autocorrect_dir:
             for d in (self.visualize_dir, self.sr_dir, self.roi_autocorrect_dir):
                 if d:
@@ -1375,7 +1384,7 @@ class DensitoInference:
         debug["time_of_processing"] = row["time_of_processing"]
         return row, debug
 
-    # ---- бонус-выходы (визуализация / DICOM SR / ROI-автокоррекция) — опционально,
+    # ---- бонус-выходы (визуализация / DICOM SR / предложение коррекции области интереса) — опционально,
     # никогда не бросает исключение наружу (process_file уже внутри своего try, но эта
     # функция сама оборачивает каждый под-шаг отдельно, чтобы сбой одного бонуса не
     # тушил остальные и уж тем более не портил основную строку CSV).
@@ -1574,6 +1583,11 @@ class DensitoInference:
 
         write_results(rows, Path(output_csv), self.cfg, xlsx=xlsx)
         self.last_debug_rows = debug_rows  # для API: детали по критериям без повторного чтения CSV
+        try:
+            self.last_study_completeness = study_completeness_by_study(rows)
+        except Exception as e:  # noqa: BLE001 — примечание не должно ломать основной выход
+            LOG.warning("study completeness not computed: %s", e)
+            self.last_study_completeness = {}
         self.last_study_sr = {}
         if self.sr_study:
             try:
@@ -1604,6 +1618,21 @@ class DensitoInference:
 # --------------------------------------------------------------------------- #
 # Запись результатов
 # --------------------------------------------------------------------------- #
+def study_completeness_by_study(rows: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+    """{study_uid: {"spine": bool, "hip": bool, "note": str|None}} по строкам официального формата.
+
+    Та же функция dicom_sr.study_completeness, что формирует примечание в SR исследования, поэтому
+    JSON API и SR согласованы по построению. Официальные колонки не читаются на запись и не меняются."""
+    from dicom_sr import study_completeness
+    groups: Dict[str, List[Dict[str, Any]]] = {}
+    for r in rows:
+        uid = str(r.get("study_uid") or "")
+        if uid:
+            groups.setdefault(uid, []).append({"anatomical_region": str(r.get("anatomical_region") or ""),
+                                               "processing_status": str(r.get("processing_status") or "")})
+    return {uid: study_completeness(items) for uid, items in groups.items()}
+
+
 def write_results(rows: List[Dict[str, Any]], output_csv: Path, cfg: Dict[str, Any], xlsx: bool = False):
     cols = cfg["output"]["columns"]
     output_csv = Path(output_csv)

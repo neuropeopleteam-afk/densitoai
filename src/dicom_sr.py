@@ -37,6 +37,12 @@ ReferencedSOPSequence), область, класс, список нарушен�
 config_hash и предупреждение об использовании ИИ. Series Instance UID детерминирован от
 (study_uid, версия модели); SOP Instance UID детерминирован от тех же величин плюс содержимое
 (повторный прогон с тем же результатом даёт тот же UID, другой результат — другой UID).
+
+Полнота исследования (идея 4 бэклога): если в исследовании представлена только одна из двух областей
+(поясничный отдел позвоночника или проксимальный отдел бедра), в корень SR добавляется TEXT-элемент
+STUDY-COMPLETENESS с нейтральным примечанием. Это не критерий качества снимка: колонки CSV, per-image SR
+и вердикты не меняются. Функция study_completeness(items) возвращает тот же результат в виде словаря
+{"spine": bool, "hip": bool, "note": str | None} — его отдаёт API (/api/analyze -> study_completeness).
 """
 from __future__ import annotations
 
@@ -246,11 +252,61 @@ def _image_item(image_uid: str, sop_class_uid: Optional[str]) -> Optional[Datase
     return item
 
 
-def _items_digest(items: list) -> str:
+def _items_digest(items: list, study_notes: Optional[list] = None) -> str:
+    """Дайджест содержимого SR для детерминированного SOP Instance UID.
+
+    study_notes — примечания уровня исследования (например, примечание о полноте). Они добавляются в
+    дайджест только когда непусты, поэтому для исследований без примечаний дайджест (и SOP Instance UID)
+    совпадает с версиями до появления примечания."""
     keys = ("image_uid", "anatomical_region", "quality_class", "violations", "quality_prob",
             "processing_status", "sha256_file", "sha256_pixels")
     payload = [{k: it.get(k) for k in keys} for it in sorted(items, key=lambda x: str(x.get("image_uid")))]
+    notes = [str(n) for n in (study_notes or []) if n]
+    if notes:
+        payload.append({"study_notes": notes})
     return hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str).encode()).hexdigest()
+
+
+# --- Полнота исследования: обе области (позвоночник и бедро) или только одна ------------------------ #
+REGION_SPINE_NAME = "Поясничный отдел позвоночника"   # официальная строка (config.yaml -> regions.spine)
+REGION_HIP_NAME = "Проксимальный отдел бедра"        # официальная строка (config.yaml -> regions.hip)
+COMPLETENESS_CODE = "STUDY-COMPLETENESS"
+COMPLETENESS_MEANING = "Примечание о полноте исследования (представленные области)"
+COMPLETENESS_NOTE = ("Примечание: в исследовании представлена только одна область из двух ({region}); "
+                     "полнота исследования не является критерием оценки качества снимка.")
+
+
+def _region_kind(name: Any) -> Optional[str]:
+    """'spine' / 'hip' / None по официальной строке области или внутреннему имени
+    (spine, right_hip, left_hip). Сравнение без учёта регистра; лишние пробелы игнорируются."""
+    s = str(name or "").strip().lower()
+    if not s:
+        return None
+    if s == REGION_SPINE_NAME.lower() or s == "spine" or "позвоночник" in s:
+        return "spine"
+    if s == REGION_HIP_NAME.lower() or s in ("right_hip", "left_hip", "hip") or "бедр" in s:
+        return "hip"
+    return None
+
+
+def study_completeness(items: list) -> Dict[str, Any]:
+    """Какие области представлены в исследовании и нужно ли примечание.
+
+    Возвращает {"spine": bool, "hip": bool, "note": str | None}. Примечание формируется только
+    когда представлена ровно одна из двух областей. Учитываются все строки исследования, включая
+    Failure: область строки-заглушки определяется по заголовку DICOM, как и в CSV. Если область не
+    распознана ни у одной строки (пустой список) или ни один снимок исследования не обработан
+    (все строки Failure — область там лишь предположение по заголовку), примечания нет — утверждать
+    нечего."""
+    kinds = {_region_kind(it.get("anatomical_region")) for it in items}
+    has_spine = "spine" in kinds
+    has_hip = "hip" in kinds
+    any_processed = any(str(it.get("processing_status", "")).lower() != "failure" for it in items)
+    note = None
+    if any_processed and has_spine != has_hip:
+        present = REGION_SPINE_NAME if has_spine else REGION_HIP_NAME
+        note = COMPLETENESS_NOTE.format(region=present)
+    return {"spine": has_spine, "hip": has_hip, "note": note}
 
 
 def build_study_sr(study_uid: str, items: list, model_version: str, config_hash: str,
@@ -270,9 +326,13 @@ def build_study_sr(study_uid: str, items: list, model_version: str, config_hash:
     study_header = study_header or {}
     items = list(items)
 
+    completeness = study_completeness(items)
+    study_notes = [completeness["note"]] if completeness["note"] else []
+
     sr_study_uid = study_uid if is_valid_uid(study_uid) else deterministic_uid("densito-study", study_uid)
     series_uid = deterministic_uid("densito-sr-series", study_uid, model_version)
-    sop_uid = deterministic_uid("densito-sr-instance", study_uid, model_version, config_hash, _items_digest(items))
+    sop_uid = deterministic_uid("densito-sr-instance", study_uid, model_version, config_hash,
+                                _items_digest(items, study_notes))
 
     file_meta = FileMetaDataset()
     file_meta.MediaStorageSOPClassUID = ComprehensiveSRStorage
@@ -320,7 +380,10 @@ def build_study_sr(study_uid: str, items: list, model_version: str, config_hash:
         ev = Dataset()
         ev.StudyInstanceUID = sr_study_uid
         ref_series = []
-        for s_uid, its in by_series.items():
+        # Порядок серий и ссылок — по UID, а не по порядку обхода файлов: байты SR не должны
+        # зависеть от того, в каком порядке пришли снимки (прогон-двойник, идея 1).
+        for s_uid in sorted(by_series):
+            its = sorted(by_series[s_uid], key=lambda x: str(x["image_uid"]))
             rs = Dataset()
             rs.SeriesInstanceUID = s_uid
             refs = []
@@ -356,6 +419,9 @@ def build_study_sr(study_uid: str, items: list, model_version: str, config_hash:
         _num_item("CONTAINS", "N-VIOLATION", "Число снимков с нарушениями", n_viol, "1"),
         _num_item("CONTAINS", "N-FAILURE", "Число снимков, не обработанных (Failure)", n_fail, "1"),
     ]
+    if completeness["note"]:
+        # мягкое примечание: представлена только одна область из двух; на вердикты не влияет
+        root_children.append(_text_item("CONTAINS", COMPLETENESS_CODE, COMPLETENESS_MEANING, completeness["note"]))
 
     for idx, it in enumerate(sorted(items, key=lambda x: (str(x.get("anatomical_region", "")), str(x.get("image_uid", "")))), 1):
         status = str(it.get("processing_status", ""))

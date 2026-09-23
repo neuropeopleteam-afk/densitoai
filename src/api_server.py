@@ -430,6 +430,18 @@ def _study_sr_urls(eng: DensitoInference, job: str) -> Dict[str, str]:
     return out
 
 
+def _study_completeness(eng: DensitoInference, rows: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+    """{study_uid: {"spine": bool, "hip": bool, "note": str|None}} — какие области пришли в исследовании.
+    Считается по строкам этого запроса той же функцией, что и примечание в SR исследования; ошибка
+    даёт пустой словарь, а не сбой ответа."""
+    try:
+        from inference import study_completeness_by_study
+        return study_completeness_by_study(rows)
+    except Exception as e:  # noqa: BLE001
+        LOG.warning("study completeness failed: %s", e)
+        return dict(getattr(eng, "last_study_completeness", {}) or {})
+
+
 def _safe_upload_rel(filename: Optional[str]) -> str:
     """Относительный путь для файла загрузки.
 
@@ -509,6 +521,7 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
         eng, out_csv, rows, debug_rows = await run_in_threadpool(_run_job, job, tmp, job_dir, xlsx)
         problems = validate_output_csv(out_csv, eng.cfg)
         study_sr = _study_sr_urls(eng, job)
+        study_completeness = _study_completeness(eng, rows)
         extras_rows = list(getattr(eng, "last_extras_rows", []) or [])
         rows_out = []
         n_unsupported = 0
@@ -531,6 +544,8 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
                     rb.pop(k, None)
             if str(r.get("study_uid") or "") in study_sr:
                 rb["study_sr_download"] = study_sr[str(r.get("study_uid"))]
+            if str(r.get("study_uid") or "") in study_completeness:
+                rb["study_completeness"] = study_completeness[str(r.get("study_uid"))]
             try:
                 rb["details"] = _details(r, dbg, eng.cfg)
                 if i < len(extras_rows) and isinstance(extras_rows[i], dict):
@@ -564,6 +579,9 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
             "result_xlsx_url": f"/api/results/{job}/{xlsx_path.name}" if has_xlsx else None,
             # один DICOM SR на исследование (включая норму): {study_uid: url}
             "study_sr": study_sr,
+            # полнота исследования по областям: {study_uid: {"spine": bool, "hip": bool, "note": str|null}};
+            # note заполнено, когда представлена только одна область из двух (тот же текст, что в SR)
+            "study_completeness": study_completeness,
             "result_extras_csv_url": (f"/api/results/{job}/results_extras.csv"
                                       if (out_csv.parent / "results_extras.csv").exists() else None),
             "rows": rows_out,
@@ -624,6 +642,7 @@ def batch(req: BatchRequest):
             "output_csv": str(out_csv),
             "output_xlsx": str(out_csv.with_suffix(".xlsx")) if req.xlsx else None,
             "study_sr": dict(getattr(eng, "last_study_sr", {}) or {}),
+            "study_completeness": dict(getattr(eng, "last_study_completeness", {}) or {}),
         }
     except ValueError as e:
         raise HTTPException(400, str(e))

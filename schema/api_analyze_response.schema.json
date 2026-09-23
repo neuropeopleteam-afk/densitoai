@@ -49,6 +49,19 @@
       "type": "object",
       "additionalProperties": { "type": "string", "pattern": "^/api/results/[0-9]{8}_[0-9]{6}_[0-9a-f]{6}/.+_SR\\.dcm(\\?t=[A-Za-z0-9_\\-]+)?$" }
     },
+    "study_completeness": {
+      "description": "Полнота исследования по областям: {study_uid: {spine, hip, note}}. note — нейтральное примечание, когда представлена только одна область из двух (тот же текст, что TEXT STUDY-COMPLETENESS в SR исследования); null, если представлены обе. Не критерий качества снимка.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["spine", "hip", "note"],
+        "properties": {
+          "spine": { "type": "boolean" },
+          "hip": { "type": "boolean" },
+          "note": { "type": ["string", "null"] }
+        }
+      }
+    },
     "rows": {
       "type": "array",
       "items": { "$ref": "#/$defs/row_with_extras" }

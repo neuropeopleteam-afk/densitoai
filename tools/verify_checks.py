@@ -294,7 +294,7 @@ def official_dictionary_check() -> tuple:
 def transfer_invariance_check(json_path: Path) -> tuple[str, bool, str]:
     """Инвариантность предсказаний к именам файлов, порядку и упаковке (tools/transfer_check.py).
     Закрытый набор приходит без суффиксов в именах и, возможно, одним архивом."""
-    name = "Инвариантность к именам файлов, порядку и упаковке (переименованная копия и zip)"
+    name = "Инвариантность к именам файлов, порядку и упаковке (переименование, zip, перемешивание, смешанный вход)"
     if not json_path or not Path(json_path).exists():
         return name, False, "нет transfer_check.json (проверка не выполнялась)"
     try:
@@ -306,7 +306,11 @@ def transfer_invariance_check(json_path: Path) -> tuple[str, bool, str]:
         for mode, res in sorted(modes.items()):
             ok = bool(res.get("ok"))
             ok_all = ok_all and ok
-            det = (f"{mode}: сверено {res.get('n_compared')} строк, max|Δprob| {res.get('max_abs_dprob')}"
+            bw = res.get("bitwise") or {}
+            bw_txt = ""
+            if bw:
+                bw_txt = ", CSV без time/path побитово " + ("совпал" if bw.get("identical_without_path") else "не совпал")
+            det = (f"{mode}: сверено {res.get('n_compared')} строк, max|Δprob| {res.get('max_abs_dprob')}{bw_txt}"
                    if ok else f"{mode}: {'; '.join(res.get('problems', [])[:3])}")
             parts.append(det)
         return name, ok_all, "; ".join(parts)

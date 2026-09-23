@@ -71,10 +71,10 @@ TRANSFER_JSON=""
 if [ "${VERIFY_SKIP_TRANSFER:-0}" = "1" ]; then
   printf -- '-- проверка инвариантности к именам/порядку/zip пропущена (VERIFY_SKIP_TRANSFER=1)\n'
 else
-  printf -- '-- проверка инвариантности: переименованная копия и zip\n'
+  printf -- '-- проверка инвариантности: переименование, zip, перемешивание, смешанный вход (побитово)\n'
   TRANSFER_JSON="$OUT/transfer_check.json"
-  "$PYTHON" "$ROOT/tools/transfer_check.py" --input "$PHANTOMS" --baseline "$OUT/run1/results.csv" --out "$TRANSFER_JSON" --modes rename,zip --workdir "$OUT/transfer" --python "$PYTHON" >"$OUT/transfer_check.log" 2>&1 || printf 'verify.sh: transfer_check завершился с ошибкой, см. %s/transfer_check.log\n' "$OUT" >&2
-  rm -rf "$OUT/transfer/renamed" "$OUT/transfer/renamed_bundle.zip" "$OUT/transfer/var_rename" "$OUT/transfer/var_zip" 2>/dev/null || true
+  "$PYTHON" "$ROOT/tools/transfer_check.py" --input "$PHANTOMS" --baseline "$OUT/run1/results.csv" --out "$TRANSFER_JSON" --modes rename,zip,shuffle,mixed --bitwise --workdir "$OUT/transfer" --python "$PYTHON" >"$OUT/transfer_check.log" 2>&1 || printf 'verify.sh: transfer_check завершился с ошибкой, см. %s/transfer_check.log\n' "$OUT" >&2
+  rm -rf "$OUT/transfer/renamed" "$OUT/transfer/renamed_bundle.zip" "$OUT/transfer/shuffle" "$OUT/transfer/mixed" "$OUT/transfer/var_rename" "$OUT/transfer/var_zip" "$OUT/transfer/var_shuffle" "$OUT/transfer/var_mixed" 2>/dev/null || true
 fi
 
 # --- 2. sha256 весов ----------------------------------------------------------
