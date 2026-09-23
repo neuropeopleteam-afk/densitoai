@@ -21,8 +21,10 @@ HERE = Path(__file__).resolve().parent
 DEFAULT_ROOT = HERE.parent.parent / "densito_rebuild"
 DEFAULT_HTML = HERE / "patch" / "web" / "index.html"
 
-# Ориентиры заказчика (ДЗМ / ЦДиТ): приемлемо AUC > 0.81, высоко > 0.9 (docs/council/SYNTHESIS_ROUND2.md, HANDOVER.md)
-BAR_MIN, BAR_MAX, T_OK, T_HIGH = 0.5, 1.0, 0.81, 0.90
+# Шкала полосы AUC. Сравнение с внешними ориентирами на сайте не приводится (правило проекта, 22.09):
+# показываем только положение AUC стека на шкале 0.5–1.0 и интервалы по исследованиям.
+BAR_MIN, BAR_MAX = 0.5, 1.0
+N_POS_SMALL = 15  # меньше — интервалы широки, читать по AUC и по паспорту выборки
 
 CRITERIA = [  # (регион в json, ключ, человеческое название, область)
     ("spine", "sp_pos", "Укладка пациента", "позвоночник"),
@@ -51,33 +53,18 @@ def pct(v):
     return (v - BAR_MIN) / (BAR_MAX - BAR_MIN) * 100.0
 
 
-def zone(auc):
-    if auc >= T_HIGH:
-        return "high", "высоко"
-    if auc >= T_OK:
-        return "ok", "приемлемо"
-    return "below", "ниже ориентира"
-
-
 def reliability(m):
     n_pos = int(m["n_pos"])
-    auc = float(m["auc_stacked"])
-    if n_pos < 15 and auc >= T_HIGH:
-        return "AUC высокий, но позитивов мало (" + str(n_pos) + "): интервал широкий"
-    if n_pos < 15:
-        return "мало позитивов (" + str(n_pos) + "): результат ненадёжен, читать по AUC"
-    if auc >= T_OK:
-        return "приемлемая, работает контур B (эмбеддинги)" if float(m["auc_emb"]) > float(m["auc_geom"]) else "приемлемая, работает геометрия"
-    return "умеренная: " + ("сильнее геометрия" if float(m["auc_geom"]) > float(m["auc_emb"]) else "сильнее эмбеддинги")
+    stronger = "сильнее контур B (эмбеддинги)" if float(m["auc_emb"]) > float(m["auc_geom"]) else "сильнее геометрия"
+    if n_pos < N_POS_SMALL:
+        return "мало позитивов (" + str(n_pos) + "): интервал широкий, читать по AUC; " + stronger
+    return stronger
 
 
 def bar_html(auc):
-    z, ztxt = zone(auc)
     return (
-        f'<div class="aucbar" role="img" aria-label="AUC {f3(auc)}, {ztxt}">'
-        f'<span class="aucbar-zone ok" style="left:{pct(T_OK):.1f}%;width:{pct(T_HIGH) - pct(T_OK):.1f}%"></span>'
-        f'<span class="aucbar-zone high" style="left:{pct(T_HIGH):.1f}%;width:{100 - pct(T_HIGH):.1f}%"></span>'
-        f'<span class="aucbar-mark {z}" style="left:{pct(auc):.1f}%"></span>'
+        f'<div class="aucbar" role="img" aria-label="AUC {f3(auc)} на шкале 0.5–1.0">'
+        f'<span class="aucbar-mark ok" style="left:{pct(auc):.1f}%"></span>'
         f'</div>'
     )
 
@@ -104,24 +91,22 @@ def build(root: Path) -> str:
 
     out = []
     out.append('<div class="metrics-legend">'
-               '<span><i class="lg below"></i>ниже 0.81</span>'
-               f'<span><i class="lg ok"></i>приемлемо: AUC &gt; {T_OK:.2f}</span>'
-               f'<span><i class="lg high"></i>высоко: AUC &gt; {T_HIGH:.1f}</span>'
-               '<span class="metrics-legend-note">шкала 0.5–1.0, метка — AUC стека на OOF</span></div>')
+               '<span>Полоса — положение ROC-AUC стека (OOF) на шкале 0.5–1.0; левый край — случайный классификатор</span>'
+               '<span class="metrics-legend-note">интервалы F1 — бутстрап по исследованиям, 95 %</span></div>')
     out.append('<div class="table-wrap"><table class="metrics main">')
     out.append('<colgroup><col style="width:18%"><col style="width:10%"><col style="width:8%"><col style="width:8%">'
                '<col style="width:8%"><col style="width:7%"><col style="width:15%"><col style="width:11%"><col style="width:15%"></colgroup>')
     out.append('<thead><tr><th>Критерий</th><th>Область</th><th class="num">n / позит.</th>'
                '<th class="num">AUC геом.</th><th class="num">AUC эмб.</th>'
-               '<th class="num">AUC стек</th><th>Где мы относительно ориентира</th>'
+               '<th class="num">AUC стек</th><th>AUC на шкале 0.5–1.0</th>'
                '<th class="num">F1 OOF [95 % ДИ]</th><th>Надёжность</th></tr></thead><tbody>')
-    n_ok = n_high = 0
+    aucs, small = [], []
     for region, key, title, area in CRITERIA:
         m = ms[region][key]
         auc = float(m["auc_stacked"])
-        z, ztxt = zone(auc)
-        n_ok += auc >= T_OK
-        n_high += auc >= T_HIGH
+        aucs.append(auc)
+        if int(m["n_pos"]) < N_POS_SMALL:
+            small.append(key)
         out.append(
             "<tr>"
             f'<td><div class="crit-title">{html.escape(title)}</div><div class="crit-sub">{html.escape(key)} · {html.escape(THR_METHOD.get(m.get("threshold_method", ""), str(m.get("threshold_method", ""))))}, порог {f3(m["threshold"])}</div></td>'
@@ -130,16 +115,36 @@ def build(root: Path) -> str:
             f'<td class="num">{f3(m["auc_geom"])}</td>'
             f'<td class="num">{f3(m["auc_emb"])}</td>'
             f'<td class="num strong">{f3(auc)}</td>'
-            f'<td>{bar_html(auc)}<div class="zone-txt {z}">{ztxt}</div></td>'
+            f'<td>{bar_html(auc)}</td>'
             f'<td class="num">{f2(m["f1_oof"])} [{f2(m["f1_ci_lo"])}; {f2(m["f1_ci_hi"])}]</td>'
             f"<td>{html.escape(reliability(m))}</td>"
             "</tr>"
         )
     out.append("</tbody></table></div>")
 
+    # Паспорт выборки (docs/sample_passport.json): число положительных исследований по критерию, если файл есть
+    pos_studies = {}
+    pp = root / "docs" / "sample_passport.json"
+    if pp.exists():
+        try:
+            pj = json.loads(pp.read_text(encoding="utf-8"))
+            pos_studies = {k: int(v["pos_studies"]) for k, v in pj.get("criteria", {}).items() if v.get("pos_studies") is not None}
+        except (ValueError, KeyError, TypeError):
+            pos_studies = {}
+    rare = [(k, n) for k, n in pos_studies.items() if k in {c[1] for c in CRITERIA} and n < 10]
+    if rare:
+        rare_txt = ", ".join(f"{html.escape(k)} — {n}" for k, n in rare)
+        rare_sent = (f'У критериев с малым числом положительных исследований ({rare_txt}) интервалы широки: оценка описывает '
+                     f'несколько конкретных исследований, а не устойчивую способность распознавать дефект '
+                     f'(паспорт выборки — <code>docs/sample_passport.json</code>). ')
+    else:
+        small_txt = ", ".join(html.escape(k) for k in small) if small else "—"
+        rare_sent = (f'У критериев с числом позитивов меньше {N_POS_SMALL} ({small_txt}) интервалы широки: оценка описывает несколько '
+                     f'конкретных исследований, а не устойчивую способность распознавать дефект. ')
     out.append(
-        f'<p class="metrics-summary">Из пяти критериев {n_ok} достигают ориентира «приемлемо» (AUC &gt; {T_OK:.2f}) '
-        f'и {n_high} — ориентира «высоко» (AUC &gt; {T_HIGH:.1f}). Остальные ниже ориентира, и мы это показываем, а не скрываем. '
+        f'<p class="metrics-summary">ROC-AUC стека по пяти критериям — от {f3(min(aucs))} до {f3(max(aucs))}. '
+        + rare_sent +
+        f'Слабые места показываем, а не скрываем. '
         f'Источник: <code>models/metrics_summary.json</code> (OOF, группировка по исследованию), '
         f'ДИ по F1 — бутстрап по исследованиям.</p>'
     )

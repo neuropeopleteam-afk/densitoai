@@ -134,7 +134,7 @@ densito_rebuild/
 │   └── index.html               ← [бонус] веб-интерфейс (загрузка DICOM, таблица, оверлеи, SR, CSV)
 ├── tests/
 │   ├── test_inference_format.py ← smoke-тест: реальные + битые входы, формат, детерминизм
-│   ├── test_api_isolation.py    ← 71 проверка API (изоляция jobs и бонус-файлов, код доступа, traversal, лимиты, битый zip)
+│   ├── test_api_isolation.py    ← 88 проверок API (изоляция jobs и бонус-файлов, код доступа, traversal, лимиты, битый zip, отказ по области)
 │   ├── test_schema.py           ← JSON Schema результата и ответа API (37 проверок)
 │   ├── test_transfer_syntax.py  ← матрица transfer syntax / битности / MONOCHROME1 → docs/TRANSFER_SYNTAX_MATRIX.md
 │   ├── phantoms/                ← 15 синтетических DICOM-фантомов + MANIFEST.json + expected_results.csv (эталон verify)
@@ -335,6 +335,7 @@ python tests/test_inference_format.py
 | GET | `/api/results/{job_id}/{name}` | файл результата этого запроса (CSV, XLSX, технический CSV, `summary.json`, PNG-оверлей, DICOM SR). **Нужен код доступа** |
 | GET | `/api/jobs` | список всех запросов сервиса — **закрыт**: отдаётся только по админскому ключу (`DENSITO_ADMIN_KEY`, заголовок `X-Admin-Key`). Кабинет ведёт свою историю в браузере, поэтому один пользователь не видит запросы другого |
 | GET | `/api/results/{name}` | совместимость: файл результата `/api/batch` из корня папки результатов по имени |
+| POST | `/api/review` | приём JSON слепой ревизии рентгенолога со страницы `web/review/`, не более 2 МБ; файл сохраняется в `/data/output/review/`, ответ `{"ok": true, "saved": <имя файла>}`. Ничего не отдаёт и на инференс не влияет |
 
 Примеры:
 
@@ -551,9 +552,11 @@ OOF-предсказаниях, поэтому они оптимистичны. 
 |---|---|---|---|---|
 | `sp_pos` | 0.734 | 0.702 (0.64–0.74) | 0.48 | 0.50 |
 | `sp_axis` | 0.889 | 0.860 (0.83–0.88) | 0.61 | 0.43 (0.748 и 0.22 были на ImageNet до К13) |
-| `sp_art` | 0.824 | 0.817 (0.74–0.89) | 0.53 | 0.56 (было 0.47) |
+| `sp_art` | 0.823 | 0.817 (0.74–0.89) | 0.53 | 0.56 (было 0.47) |
 | `hip_pos` | 0.725 | 0.709 (0.69–0.74) | 0.43 | 0.47 (было 0.45) |
 | `hip_roi` | 0.917 | 0.873 (0.79–0.91) | 0.51 | 0.35 (было 0.34) |
+
+ROC-AUC OOF в таблице — `auc_stacked` из `models/metrics_summary.json` (для `sp_art` 0.8227 → 0.823, как в `docs/EVIDENCE.md` и веб-справке); в `docs/METRICS_REPORT.md` для `sp_art` стоит 0.824 — это тот же прогон, пересчитанный `tools/eval_oof_metrics.py` по `models/metrics_oof_full.json` (0.8237), разница в округлении.
 
 Вывод: ранжирование (ROC-AUC) переносится почти без потерь, а F1 редких критериев (`sp_axis`, `hip_roi`: 16–17 позитивов)
 для редких критериев (`sp_axis`, `hip_roi`: 16–17 позитивов) остаётся низким при любом правиле порога — это главный источник
@@ -680,7 +683,7 @@ lh_pos, lh_roi`) и повторить шаги 2–5. Случайные зёр
 | п.2.5 формат таблицы (`path_to_study, study_uid, image_uid, anatomical_region, quality_class, violation_type, quality_prob, processing_status, time_of_processing`) | выполнено; проверяется `tests/test_inference_format.py` и `format_check` в ответе API |
 | п.2.7 ≤ 3 мин/исследование, без необработанных исключений, batch → csv/xlsx | выполнено: ~0,06 с/файл в пакете (499 файлов за 29,6 с), 499/499 успешно, 0 исключений |
 | п.3 контейнер, полностью локально, пиновка версий, скрипт сборки/запуска Linux | выполнено: `Dockerfile`, `build_and_run.sh`, `docker-compose.yml`, `requirements.txt` с точными версиями; образ собран и прогнан на сервере (самопроверка внутри сборки) |
-| п.3.2 API пакетной обработки | выполнено: `/api/batch`, `/api/analyze`, `/api/health`, `/api/results/{name}`, Swagger `/docs` |
+| п.3.2 API пакетной обработки | выполнено: `/api/batch`, `/api/analyze`, `/api/health`, `/api/jobs/{job_id}`, `/api/jobs` (по админскому ключу), `/api/results/{job_id}/{name}`, `/api/results/{name}`, `/api/review`, Swagger `/docs` |
 | п.5 README (назначение/ограничения, структура, требования, сборка, API, форматы, модель/пре-/постобработка, ошибки) + руководства пользователя, развёртывания, обучения | выполнено: §1–§13 этого файла, `docs/EXPERT_TESTING_GUIDE.md` |
 | п.8.4 метрики по областям и типам с 95 % ДИ | выполнено: `docs/METRICS_REPORT.md`, `src/eval_oof_metrics.py` |
 | Публичный репозиторий (Q&A организаторов) | выполнено: `https://neuropeople.pro/git/densitoai.git` |

@@ -6,8 +6,10 @@ verification_report.py — HTML-отчёт самопроверки DensitoAI и
     python tools/verification_report.py --json outputs/verify/verify_results.json \
                                          --html outputs/verify/verification_report.html
 
-Отчёт автономный (без внешних ресурсов): таблица проверок (зелёное/красное), окружение и версии
-пакетов, sha256 весов и CSV, время прогонов, результат на данных пользователя (если был).
+Отчёт автономный (без внешних ресурсов): таблица проверок (зелёное/красное), карта доказательств
+(какому пункту ТЗ отвечает каждая проверка и что она доказывает — tools/evidence_map.json), блок
+«что отчёт не доказывает», окружение и версии пакетов, sha256 весов и CSV, время прогонов,
+результат на данных пользователя (если был).
 """
 from __future__ import annotations
 
@@ -29,7 +31,29 @@ td.st.ok{background:#22863a} td.st.fail{background:#cb2431} td.st.warn{backgroun
 code,.mono{font-family:SFMono-Regular,Consolas,Menlo,monospace;font-size:12.5px;word-break:break-all}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px} @media(max-width:800px){.grid{grid-template-columns:1fr}}
 .small{font-size:12px;color:#586069}
+td.tz{width:200px;font-size:12.5px} td.know{font-size:13px} .know b{color:#22863a} .miss{color:#b08800}
+.notproven{background:#fff8e5;border:1px solid #f0d58c;border-radius:6px;padding:10px 14px;margin:8px 0}
+.notproven h3{font-size:14px;margin:0 0 6px} .notproven p{margin:0 0 8px;font-size:13px}
 """
+
+EVIDENCE_MAP_PATH = Path(__file__).resolve().parent / "evidence_map.json"
+
+
+def load_evidence_map(path: Path = EVIDENCE_MAP_PATH) -> dict:
+    """Карта доказательств: список записей {prefix, tz, requirement, knows, where}. Если файла нет —
+    пустая карта (отчёт всё равно строится, раздел помечается как недоступный)."""
+    try:
+        return json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"entries": [], "not_proven": []}
+
+
+def evidence_for(name: str, emap: dict):
+    """Запись карты для проверки по началу имени (в имени могут быть подставленные значения, например допуск)."""
+    hits = [e for e in emap.get("entries", []) if str(name).startswith(e["prefix"])]
+    if not hits:
+        return None
+    return max(hits, key=lambda e: len(e["prefix"]))
 
 
 def esc(x) -> str:
@@ -57,6 +81,43 @@ def render(res: dict) -> str:
             cls, txt = "fail", "ОШИБКА"
         rows.append(f"<tr><td class='st {cls}'>{txt}</td><td>{esc(c['name'])}</td><td class='small'>{esc(c['detail'])}</td></tr>")
     checks_html = "<table><tr><th>Статус</th><th>Проверка</th><th>Подробности</th></tr>" + "".join(rows) + "</table>"
+
+    emap = load_evidence_map()
+    ev_rows, unmapped = [], []
+    for c in checks:
+        e = evidence_for(c["name"], emap)
+        cls = "ok" if c["ok"] else ("warn" if c.get("level") == "warning" else "fail")
+        txt = "OK" if c["ok"] else ("ЗАМЕЧАНИЕ" if cls == "warn" else "ОШИБКА")
+        if e is None:
+            unmapped.append(c["name"])
+            ev_rows.append(f"<tr><td class='st {cls}'>{txt}</td><td>{esc(c['name'])}</td><td class='tz miss'>нет в карте</td>"
+                           f"<td class='know miss'>Для этой проверки нет записи в tools/evidence_map.json — см. её подробности в разделе 1.</td></tr>")
+            continue
+        knows = esc(e.get("knows", ""))
+        if not c["ok"]:
+            knows = ("<b style='color:#cb2431'>Проверка не пройдена — утверждение ниже НЕ доказано.</b><br>" + knows) if cls == "fail" \
+                else ("<b style='color:#b08800'>Замечание, не ошибка.</b><br>" + knows)
+        ev_rows.append(f"<tr><td class='st {cls}'>{txt}</td><td>{esc(c['name'])}<div class='small mono'>{esc(e.get('where', ''))}</div></td>"
+                       f"<td class='tz'>{esc(e.get('tz', ''))}<div class='small'>{esc(e.get('requirement', ''))}</div></td><td class='know'>{knows}</td></tr>")
+    if emap.get("entries"):
+        evidence_html = ("<p class='small'>Каждая строка — одна проверка из раздела 1, пункт ТЗ или требование заказчика, которому она отвечает, "
+                         "и то, что проверяющий теперь знает, если строка зелёная. Источник сопоставления — <code>tools/evidence_map.json</code>, "
+                         "полнота карты проверяется <code>tests/test_evidence_map.py</code>.</p>"
+                         "<table><tr><th>Статус</th><th>Проверка</th><th>Пункт ТЗ / требование</th><th>Что вы теперь знаете</th></tr>"
+                         + "".join(ev_rows) + "</table>")
+        if unmapped:
+            evidence_html += "<p class='small miss'>Проверок без записи в карте: " + esc(len(unmapped)) + ".</p>"
+        n_fail = sum(1 for c in checks if not c["ok"] and c.get("level") != "warning")
+        n_warn = sum(1 for c in checks if not c["ok"] and c.get("level") == "warning")
+        summary = f"Пройдено {n_ok} из {len(checks)} проверок"
+        summary += f", ошибок {n_fail}" if n_fail else ", ошибок нет"
+        summary += f", замечаний {n_warn}." if n_warn else "."
+        evidence_html = f"<p><b>{esc(summary)}</b></p>" + evidence_html
+    else:
+        evidence_html = "<p class='small miss'>Файл tools/evidence_map.json не найден рядом с отчётом — карта доказательств недоступна.</p>"
+    np_blocks = "".join(f"<h3>{esc(b.get('title', ''))}</h3><p>{esc(b.get('text', ''))}</p>" for b in emap.get("not_proven", []))
+    not_proven_html = (f"<div class='notproven'>{np_blocks}</div>" if np_blocks
+                       else "<p class='small'>Список ограничений отчёта не задан в tools/evidence_map.json.</p>")
 
     env = res.get("env", {})
     env_keys = ["python", "platform", "machine", "torch", "torchvision", "numpy", "scipy", "sklearn", "pandas",
@@ -88,7 +149,9 @@ def render(res: dict) -> str:
 <div class="sub">Сформирован {esc(res.get('generated_at', ''))} · корень проекта <span class="mono">{esc(res.get('root', ''))}</span></div>
 <div class="badge {status_cls}">{status_txt}: {n_ok} из {len(checks)} проверок</div>
 <h2>1. Проверки</h2>{checks_html}
-<h2>2. Фантомы и контрольные суммы</h2>
+<h2>2. Карта доказательств: что вы теперь знаете</h2>{evidence_html}
+<h2>3. Что этот отчёт не доказывает</h2>{not_proven_html}
+<h2>4. Фантомы и контрольные суммы</h2>
 <div class="grid">
 {kv_table({"Файлов-фантомов": pm.get('n_files'), "Из них заведомо битых": pm.get('n_expected_failure'), "Seed генератора": pm.get('seed'),
            "Версия фантомов": pm.get('phantom_version'), "sha256 MANIFEST.json": sha.get('phantoms_manifest_json')})}
@@ -96,19 +159,41 @@ def render(res: dict) -> str:
            "sha256 файла expected_results.csv": sha.get('expected_results_csv'), "sha256 файла results.csv (прогон 1, с временем)": sha.get('run1_csv_file')})}
 </div>
 <p class="small">sha256 предсказаний считается по CSV без колонки <code>time_of_processing</code> (см. <code>tools/verify_checks.py predsha</code>).</p>
-<h2>3. Веса моделей</h2>{w_html}
-<h2>4. Окружение</h2>
+<h2>5. Веса моделей</h2>{w_html}
+<h2>6. Окружение</h2>
 <div class="grid">{kv_table(env, env_keys)}{t_html}</div>
-<h2>5. Данные пользователя</h2>{ud_html}
+<h2>7. Данные пользователя</h2>{ud_html}
 <p class="small">Файлы: <span class="mono">{esc(res.get('run1', ''))}</span>, <span class="mono">{esc(res.get('run2', ''))}</span>; фантомы: <span class="mono">{esc(res.get('phantoms', ''))}</span>.</p>
 </body></html>"""
 
 
+def evidence_markdown(emap: dict | None = None) -> str:
+    """Карта доказательств как markdown-таблица (для docs/VERIFICATION.md): python tools/verification_report.py --evidence-md."""
+    emap = emap or load_evidence_map()
+    cell = lambda x: str(x).replace("|", "\\|").replace("\n", " ")  # noqa: E731
+    out = ["| № | Проверка verify | Пункт ТЗ / требование | Что вы теперь знаете (если строка зелёная) |", "|---|---|---|---|"]
+    for i, e in enumerate(emap.get("entries", []), 1):
+        mark = " (только с `--data`)" if e.get("optional") else ""
+        out.append(f"| {i} | {cell(e['prefix'])}{mark} | {cell(e['tz'])} | {cell(e['knows'])} |")
+    out.append("")
+    out.append("Что этот отчёт не доказывает:")
+    out.append("")
+    for b in emap.get("not_proven", []):
+        out.append(f"- **{cell(b.get('title', ''))}.** {cell(b.get('text', ''))}")
+    return "\n".join(out) + "\n"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--json", required=True)
-    ap.add_argument("--html", required=True)
+    ap.add_argument("--json", help="verify_results.json (обязателен, если не задан --evidence-md)")
+    ap.add_argument("--html", help="куда писать HTML-отчёт")
+    ap.add_argument("--evidence-md", action="store_true", help="напечатать карту доказательств как markdown и выйти")
     a = ap.parse_args()
+    if a.evidence_md:
+        sys.stdout.write(evidence_markdown())
+        return 0
+    if not a.json or not a.html:
+        ap.error("нужны --json и --html (или --evidence-md)")
     res = json.loads(Path(a.json).read_text(encoding="utf-8"))
     Path(a.html).write_text(render(res), encoding="utf-8")
     print(f"report: {a.html}")

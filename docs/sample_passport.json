@@ -1,0 +1,1619 @@
+{
+ "version": null,
+ "n_boot": 2000,
+ "seed": 2026,
+ "pixel_hash_source": "пересчёт по DICOM (inference.normalize_pixels, baseline; как tools/make_pixel_hashes.py)",
+ "point_check_tolerance": 0.0005,
+ "method": {
+  "unit": "исследование (StudyInstanceUID); метка критерия задана на исследование, для бедра — на исследование и сторону",
+  "unique_frames": "sha1 нормализованных пикселей (tools/make_pixel_hashes.py, baseline)",
+  "icc": "ANOVA-оценка внутрикластерной корреляции для бинарного исхода (Fleiss–Cuzick), rho в [0; 1]",
+  "deff": "1 + (m_bar - 1) * rho, m_bar = N / k; n_eff = N / DEFF",
+  "ci": "перцентильный бутстрап 95 %, 2000 ресэмплов, seed 2026; кластер = исследование; ресэмплы без обоих классов пропущены для AUC/F1; рядом наивный бутстрап по файлам",
+  "flags": "pred_label из models/oof_stacked_*.csv (решение сервиса при боевом пороге)"
+ },
+ "total": {
+  "files": 499,
+  "studies": 100,
+  "unique_frames": 252,
+  "duplicate_files": 247,
+  "hash_groups_spanning_studies": 0,
+  "files_by_region_label": {
+   "right_hip": 172,
+   "spine": 166,
+   "left_hip": 161
+  },
+  "unique_frames_by_region_label": {
+   "left_hip": 76,
+   "right_hip": 77,
+   "spine": 99
+  },
+  "studies_by_region": {
+   "spine": 99,
+   "hip": 79
+  },
+  "studies_both_regions": 78,
+  "studies_spine_only": 21,
+  "studies_hip_only": 1,
+  "files_not_applicable": 6,
+  "hip_frames_by_label_side": {
+   "right": 172,
+   "left": 161
+  },
+  "hip_frames_by_detected_side": {
+   "right": 164,
+   "left": 169
+  },
+  "hip_frames_side_disagree": 80,
+  "hip_files_with_side_label_valid": 329,
+  "frames_per_study": {
+   "spine": {
+    "1": 57,
+    "2": 24,
+    "3": 17,
+    "10": 1
+   },
+   "hip": {
+    "1": 5,
+    "2": 30,
+    "3": 3,
+    "4": 22,
+    "6": 1,
+    "8": 9,
+    "9": 6,
+    "10": 2,
+    "19": 1
+   }
+  }
+ },
+ "criteria": {
+  "sp_pos": {
+   "section": "spine",
+   "violation_type": "Некорректная укладка",
+   "threshold": 0.822289156626506,
+   "files": 166,
+   "studies": 99,
+   "pos_files": 10,
+   "pos_studies": 6,
+   "unique_frames": 99,
+   "pos_unique_frames": 6,
+   "prevalence_files": 0.060240963855421686,
+   "prevalence_studies": 0.06060606060606061,
+   "concentration": {
+    "studies_for_50pct": 2,
+    "studies_for_80pct": 4,
+    "top1_share": 0.3,
+    "positives_by_study": [
+     3,
+     2,
+     2,
+     1,
+     1,
+     1
+    ]
+   },
+   "design_effect": {
+    "n_frames": 166,
+    "n_clusters": 99,
+    "m_bar": 1.6767676767676767,
+    "icc": 1.0,
+    "m0": 1.6689205802803049,
+    "deff": 1.6767676767676767,
+    "deff_m0": 1.6689205802803049,
+    "n_eff": 99.0
+   },
+   "point": {
+    "roc_auc": 0.7339743589743589,
+    "f1": 0.47619047619047616,
+    "n_flag": 11
+   },
+   "frozen": {
+    "n_valid": 166,
+    "n_pos": 10,
+    "auc_stacked": 0.7339743589743589,
+    "f1_oof": 0.47619047619047616,
+    "f1_ci": [
+     0.1111111111111111,
+     0.8235294117647058
+    ],
+    "oof_full": {
+     "roc_auc": 0.7339743589743589,
+     "f1": 0.47619047619047616,
+     "roc_auc_ci": [
+      0.4480602356655136,
+      1.0
+     ],
+     "f1_ci": [
+      0.1111111111111111,
+      0.8235294117647058
+     ]
+    }
+   },
+   "ci_by_study": {
+    "unit": "исследование",
+    "n_boot": 2000,
+    "seed": 2026,
+    "prevalence_ci": [
+     0.013788411916490734,
+     0.11876138245033106
+    ],
+    "share_skipped": 0.0010000000000000009,
+    "roc_auc_ci": [
+     0.4480602356655136,
+     1.0
+    ],
+    "f1_ci": [
+     0.1111111111111111,
+     0.8235294117647058
+    ],
+    "f1_boot_mean": 0.4708021594436801
+   },
+   "ci_by_file": {
+    "unit": "файл",
+    "n_boot": 2000,
+    "seed": 2026,
+    "prevalence_ci": [
+     0.024096385542168676,
+     0.0963855421686747
+    ],
+    "share_skipped": 0.0,
+    "roc_auc_ci": [
+     0.5192337591312162,
+     0.9334758299426007
+    ],
+    "f1_ci": [
+     0.16666666666666666,
+     0.7142857142857143
+    ],
+    "f1_boot_mean": 0.4644812084902592
+   },
+   "check": {
+    "criterion": "sp_pos",
+    "n_valid_ok": true,
+    "n_pos_ok": true,
+    "auc_diff": 0.0,
+    "f1_diff": 0.0,
+    "auc_ok": true,
+    "f1_ok": true,
+    "auc_diff_oof_full": 0.0,
+    "f1_diff_oof_full": 0.0,
+    "auc_ok_oof_full": true,
+    "f1_ci_frozen": [
+     0.1111111111111111,
+     0.8235294117647058
+    ],
+    "f1_ci_here": [
+     0.1111111111111111,
+     0.8235294117647058
+    ],
+    "f1_ci_max_abs_diff": 0.0
+   }
+  },
+  "sp_axis": {
+   "section": "spine",
+   "violation_type": "Не выравнена ось позвоночника",
+   "threshold": 0.7771084337349398,
+   "files": 166,
+   "studies": 99,
+   "pos_files": 17,
+   "pos_studies": 10,
+   "unique_frames": 99,
+   "pos_unique_frames": 10,
+   "prevalence_files": 0.10240963855421686,
+   "prevalence_studies": 0.10101010101010101,
+   "concentration": {
+    "studies_for_50pct": 4,
+    "studies_for_80pct": 7,
+    "top1_share": 0.17647058823529413,
+    "positives_by_study": [
+     3,
+     3,
+     2,
+     2,
+     2,
+     1,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "design_effect": {
+    "n_frames": 166,
+    "n_clusters": 99,
+    "m_bar": 1.6767676767676767,
+    "icc": 1.0,
+    "m0": 1.6689205802803049,
+    "deff": 1.6767676767676767,
+    "deff_m0": 1.6689205802803049,
+    "n_eff": 99.0
+   },
+   "point": {
+    "roc_auc": 0.8888669561784445,
+    "f1": 0.6046511627906976,
+    "n_flag": 26
+   },
+   "frozen": {
+    "n_valid": 166,
+    "n_pos": 17,
+    "auc_stacked": 0.8888669561784445,
+    "f1_oof": 0.6046511627906976,
+    "f1_ci": [
+     0.2857142857142857,
+     0.8182190760059611
+    ],
+    "oof_full": {
+     "roc_auc": 0.8888669561784445,
+     "f1": 0.6046511627906976,
+     "roc_auc_ci": [
+      0.7466123788492209,
+      0.9776492802108677
+     ],
+     "f1_ci": [
+      0.2857142857142857,
+      0.8182190760059611
+     ]
+    }
+   },
+   "ci_by_study": {
+    "unit": "исследование",
+    "n_boot": 2000,
+    "seed": 2026,
+    "prevalence_ci": [
+     0.04216236202294207,
+     0.17544452347083922
+    ],
+    "share_skipped": 0.0,
+    "roc_auc_ci": [
+     0.7536389122511915,
+     0.9799105846042121
+    ],
+    "f1_ci": [
+     0.3,
+     0.8205357142857141
+    ],
+    "f1_boot_mean": 0.5896325713317816
+   },
+   "ci_by_file": {
+    "unit": "файл",
+    "n_boot": 2000,
+    "seed": 2026,
+    "prevalence_ci": [
+     0.060240963855421686,
+     0.15060240963855423
+    ],
+    "share_skipped": 0.0,
+    "roc_auc_ci": [
+     0.7895733305739514,
+     0.9615422484783386
+    ],
+    "f1_ci": [
+     0.4,
+     0.7619047619047619
+    ],
+    "f1_boot_mean": 0.5985314146658771
+   },
+   "check": {
+    "criterion": "sp_axis",
+    "n_valid_ok": true,
+    "n_pos_ok": true,
+    "auc_diff": 0.0,
+    "f1_diff": 0.0,
+    "auc_ok": true,
+    "f1_ok": true,
+    "auc_diff_oof_full": 0.0,
+    "f1_diff_oof_full": 0.0,
+    "auc_ok_oof_full": true,
+    "f1_ci_frozen": [
+     0.2857142857142857,
+     0.8182190760059611
+    ],
+    "f1_ci_here": [
+     0.3,
+     0.8205357142857141
+    ],
+    "f1_ci_max_abs_diff": 0.01428571428571429
+   }
+  },
+  "sp_art": {
+   "section": "spine",
+   "violation_type": "Присутствуют посторонние предметы",
+   "threshold": 0.6024096385542168,
+   "files": 166,
+   "studies": 99,
+   "pos_files": 35,
+   "pos_studies": 17,
+   "unique_frames": 99,
+   "pos_unique_frames": 17,
+   "prevalence_files": 0.21084337349397592,
+   "prevalence_studies": 0.1717171717171717,
+   "concentration": {
+    "studies_for_50pct": 4,
+    "studies_for_80pct": 10,
+    "top1_share": 0.2857142857142857,
+    "positives_by_study": [
+     10,
+     3,
+     3,
+     3,
+     2,
+     2,
+     2,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "design_effect": {
+    "n_frames": 166,
+    "n_clusters": 99,
+    "m_bar": 1.6767676767676767,
+    "icc": 1.0,
+    "m0": 1.6689205802803049,
+    "deff": 1.6767676767676767,
+    "deff_m0": 1.6689205802803049,
+    "n_eff": 99.0
+   },
+   "point": {
+    "roc_auc": 0.8236641221374046,
+    "f1": 0.5348837209302325,
+    "n_flag": 51
+   },
+   "frozen": {
+    "n_valid": 166,
+    "n_pos": 35,
+    "auc_stacked": 0.8226826608505997,
+    "f1_oof": 0.5348837209302325,
+    "f1_ci": [
+     0.23522571819425445,
+     0.7417394140076259
+    ],
+    "oof_full": {
+     "roc_auc": 0.8236641221374046,
+     "f1": 0.5348837209302325,
+     "roc_auc_ci": [
+      0.687090491492605,
+      0.912131120327935
+     ],
+     "f1_ci": [
+      0.23522571819425445,
+      0.7417394140076259
+     ]
+    }
+   },
+   "ci_by_study": {
+    "unit": "исследование",
+    "n_boot": 2000,
+    "seed": 2026,
+    "prevalence_ci": [
+     0.10320926385442515,
+     0.33337563451776625
+    ],
+    "share_skipped": 0.0,
+    "roc_auc_ci": [
+     0.7031162180656935,
+     0.9136471238898694
+    ],
+    "f1_ci": [
+     0.246140350877193,
+     0.7391453245979749
+    ],
+    "f1_boot_mean": 0.5141320824532297
+   },
+   "ci_by_file": {
+    "unit": "файл",
+    "n_boot": 2000,
+    "seed": 2026,
+    "prevalence_ci": [
+     0.15060240963855423,
+     0.27710843373493976
+    ],
+    "share_skipped": 0.0,
+    "roc_auc_ci": [
+     0.7451915322580646,
+     0.8943621735074627
+    ],
+    "f1_ci": [
+     0.4050557564798071,
+     0.6539383561643831
+    ],
+    "f1_boot_mean": 0.5348689892311218
+   },
+   "check": {
+    "criterion": "sp_art",
+    "n_valid_ok": true,
+    "n_pos_ok": true,
+    "auc_diff": 0.0009814612868048744,
+    "f1_diff": 0.0,
+    "auc_ok": false,
+    "f1_ok": true,
+    "auc_diff_oof_full": 0.0,
+    "f1_diff_oof_full": 0.0,
+    "auc_ok_oof_full": true,
+    "f1_ci_frozen": [
+     0.23522571819425445,
+     0.7417394140076259
+    ],
+    "f1_ci_here": [
+     0.246140350877193,
+     0.7391453245979749
+    ],
+    "f1_ci_max_abs_diff": 0.010914632682938546
+   }
+  },
+  "hip_pos": {
+   "section": "hip",
+   "violation_type": "Некорректная укладка",
+   "threshold": 0.6580547112462006,
+   "files": 329,
+   "studies": 78,
+   "pos_files": 79,
+   "pos_studies": 24,
+   "unique_frames": 150,
+   "pos_unique_frames": 36,
+   "prevalence_files": 0.24012158054711247,
+   "prevalence_studies": 0.3076923076923077,
+   "concentration": {
+    "studies_for_50pct": 7,
+    "studies_for_80pct": 15,
+    "top1_share": 0.10126582278481013,
+    "positives_by_study": [
+     8,
+     8,
+     8,
+     4,
+     4,
+     4,
+     4,
+     4,
+     4,
+     4,
+     4,
+     3,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "design_effect": {
+    "n_frames": 329,
+    "n_clusters": 78,
+    "m_bar": 4.217948717948718,
+    "icc": 0.7312456619431456,
+    "m0": 4.187976157581021,
+    "deff": 3.353111040355507,
+    "deff_m0": 3.3311937356092995,
+    "n_eff": 98.11783625427401
+   },
+   "point": {
+    "roc_auc": 0.7254177215189873,
+    "f1": 0.43209876543209874,
+    "n_flag": 83
+   },
+   "frozen": {
+    "n_valid": 329,
+    "n_pos": 79,
+    "auc_stacked": 0.7254177215189873,
+    "f1_oof": 0.43209876543209874,
+    "f1_ci": [
+     0.21779792437075032,
+     0.6009481726963085
+    ],
+    "oof_full": {
+     "roc_auc": 0.7254177215189873,
+     "f1": 0.43209876543209874,
+     "roc_auc_ci": [
+      0.6126937154267843,
+      0.8247399414956138
+     ],
+     "f1_ci": [
+      0.21779792437075032,
+      0.6009481726963085
+     ]
+    }
+   },
+   "ci_by_study": {
+    "unit": "исследование",
+    "n_boot": 2000,
+    "seed": 2026,
+    "prevalence_ci": [
+     0.15223400541153878,
+     0.34756370749191356
+    ],
+    "share_skipped": 0.0,
+    "roc_auc_ci": [
+     0.6126053902993558,
+     0.8212170496206543
+    ],
+    "f1_ci": [
+     0.22554981203007518,
+     0.6060776302349336
+    ],
+    "f1_boot_mean": 0.42715997293956687
+   },
+   "ci_by_file": {
+    "unit": "файл",
+    "n_boot": 2000,
+    "seed": 2026,
+    "prevalence_ci": [
+     0.1945288753799392,
+     0.2857142857142857
+    ],
+    "share_skipped": 0.0,
+    "roc_auc_ci": [
+     0.6581344917840978,
+     0.7855329162586129
+    ],
+    "f1_ci": [
+     0.3354018670733068,
+     0.525743471582181
+    ],
+    "f1_boot_mean": 0.4316093852079992
+   },
+   "check": {
+    "criterion": "hip_pos",
+    "n_valid_ok": true,
+    "n_pos_ok": true,
+    "auc_diff": 0.0,
+    "f1_diff": 0.0,
+    "auc_ok": true,
+    "f1_ok": true,
+    "auc_diff_oof_full": 0.0,
+    "f1_diff_oof_full": 0.0,
+    "auc_ok_oof_full": true,
+    "f1_ci_frozen": [
+     0.21779792437075032,
+     0.6009481726963085
+    ],
+    "f1_ci_here": [
+     0.22554981203007518,
+     0.6060776302349336
+    ],
+    "f1_ci_max_abs_diff": 0.007751887659324858
+   }
+  },
+  "hip_roi": {
+   "section": "hip",
+   "violation_type": "Некорректная область интереса",
+   "threshold": 0.9179331306990881,
+   "files": 329,
+   "studies": 78,
+   "pos_files": 16,
+   "pos_studies": 6,
+   "unique_frames": 150,
+   "pos_unique_frames": 7,
+   "prevalence_files": 0.0486322188449848,
+   "prevalence_studies": 0.07692307692307693,
+   "concentration": {
+    "studies_for_50pct": 2,
+    "studies_for_80pct": 4,
+    "top1_share": 0.3125,
+    "positives_by_study": [
+     5,
+     4,
+     2,
+     2,
+     2,
+     1
+    ]
+   },
+   "design_effect": {
+    "n_frames": 329,
+    "n_clusters": 78,
+    "m_bar": 4.217948717948718,
+    "icc": 0.40314333888941584,
+    "m0": 4.187976157581021,
+    "deff": 2.297294590528761,
+    "deff_m0": 2.2852113524670634,
+    "n_eff": 143.21193344397122
+   },
+   "point": {
+    "roc_auc": 0.917332268370607,
+    "f1": 0.5142857142857142,
+    "n_flag": 19
+   },
+   "frozen": {
+    "n_valid": 329,
+    "n_pos": 16,
+    "auc_stacked": 0.917332268370607,
+    "f1_oof": 0.5142857142857142,
+    "f1_ci": [
+     0.0,
+     0.9090909090909091
+    ],
+    "oof_full": {
+     "roc_auc": 0.917332268370607,
+     "f1": 0.5142857142857142,
+     "roc_auc_ci": [
+      0.7315201132835251,
+      1.0
+     ],
+     "f1_ci": [
+      0.0,
+      0.9090909090909091
+     ]
+    }
+   },
+   "ci_by_study": {
+    "unit": "исследование",
+    "n_boot": 2000,
+    "seed": 2026,
+    "prevalence_ci": [
+     0.012303951367781155,
+     0.0931696990273811
+    ],
+    "share_skipped": 0.0024999999999999467,
+    "roc_auc_ci": [
+     0.7421372737457265,
+     1.0
+    ],
+    "f1_ci": [
+     0.0,
+     0.8888888888888888
+    ],
+    "f1_boot_mean": 0.49606008339469965
+   },
+   "ci_by_file": {
+    "unit": "файл",
+    "n_boot": 2000,
+    "seed": 2026,
+    "prevalence_ci": [
+     0.02735562310030395,
+     0.0729483282674772
+    ],
+    "share_skipped": 0.0,
+    "roc_auc_ci": [
+     0.8258402906617193,
+     0.981958638744418
+    ],
+    "f1_ci": [
+     0.2857142857142857,
+     0.6939219165927238
+    ],
+    "f1_boot_mean": 0.5043677926930263
+   },
+   "check": {
+    "criterion": "hip_roi",
+    "n_valid_ok": true,
+    "n_pos_ok": true,
+    "auc_diff": 0.0,
+    "f1_diff": 0.0,
+    "auc_ok": true,
+    "f1_ok": true,
+    "auc_diff_oof_full": 0.0,
+    "f1_diff_oof_full": 0.0,
+    "auc_ok_oof_full": true,
+    "f1_ci_frozen": [
+     0.0,
+     0.9090909090909091
+    ],
+    "f1_ci_here": [
+     0.0,
+     0.8888888888888888
+    ],
+    "f1_ci_max_abs_diff": 0.02020202020202022
+   }
+  },
+  "rh_pos": {
+   "section": "right_hip",
+   "violation_type": "Некорректная укладка (правое)",
+   "threshold": 0.6580547112462006,
+   "files": 161,
+   "studies": 72,
+   "pos_files": 39,
+   "pos_studies": 17,
+   "unique_frames": 72,
+   "pos_unique_frames": 17,
+   "prevalence_files": 0.2422360248447205,
+   "prevalence_studies": 0.2361111111111111,
+   "concentration": {
+    "studies_for_50pct": 5,
+    "studies_for_80pct": 11,
+    "top1_share": 0.10256410256410256,
+    "positives_by_study": [
+     4,
+     4,
+     4,
+     4,
+     4,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     1,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "design_effect": {
+    "n_frames": 161,
+    "n_clusters": 72,
+    "m_bar": 2.236111111111111,
+    "icc": 1.0,
+    "m0": 2.2211530049864403,
+    "deff": 2.236111111111111,
+    "deff_m0": 2.2211530049864403,
+    "n_eff": 72.0
+   },
+   "point": {
+    "roc_auc": 0.7114333753678016,
+    "f1": 0.43478260869565216,
+    "n_flag": 30
+   },
+   "frozen": {
+    "n_valid": 161,
+    "n_pos": 39,
+    "auc_stacked": 0.7114333753678016,
+    "f1_oof": 0.43478260869565216,
+    "f1_ci": [
+     0.1777450980392157,
+     0.6575515866134904
+    ]
+   },
+   "ci_by_study": {
+    "unit": "исследование",
+    "n_boot": 2000,
+    "seed": 2026,
+    "prevalence_ci": [
+     0.13114471452798193,
+     0.3688074226305608
+    ],
+    "share_skipped": 0.0,
+    "roc_auc_ci": [
+     0.5606130640132917,
+     0.8514077103917694
+    ],
+    "f1_ci": [
+     0.1777450980392157,
+     0.6575515866134904
+    ],
+    "f1_boot_mean": 0.42859573667205336
+   },
+   "ci_by_file": {
+    "unit": "файл",
+    "n_boot": 2000,
+    "seed": 2026,
+    "prevalence_ci": [
+     0.18012422360248448,
+     0.3105590062111801
+    ],
+    "share_skipped": 0.0,
+    "roc_auc_ci": [
+     0.617440064815781,
+     0.79703160735101
+    ],
+    "f1_ci": [
+     0.27582826233941854,
+     0.5714285714285714
+    ],
+    "f1_boot_mean": 0.4320384048314251
+   },
+   "check": {
+    "criterion": "rh_pos",
+    "n_valid_ok": true,
+    "n_pos_ok": true,
+    "auc_diff": 0.0,
+    "f1_diff": 0.0,
+    "auc_ok": true,
+    "f1_ok": true,
+    "f1_ci_frozen": [
+     0.1777450980392157,
+     0.6575515866134904
+    ],
+    "f1_ci_here": [
+     0.1777450980392157,
+     0.6575515866134904
+    ],
+    "f1_ci_max_abs_diff": 0.0
+   }
+  },
+  "rh_roi": {
+   "section": "right_hip",
+   "violation_type": "Некорректная область интереса (правое)",
+   "threshold": 0.9179331306990881,
+   "files": 161,
+   "studies": 72,
+   "pos_files": 7,
+   "pos_studies": 3,
+   "unique_frames": 72,
+   "pos_unique_frames": 3,
+   "prevalence_files": 0.043478260869565216,
+   "prevalence_studies": 0.041666666666666664,
+   "concentration": {
+    "studies_for_50pct": 1,
+    "studies_for_80pct": 2,
+    "top1_share": 0.5714285714285714,
+    "positives_by_study": [
+     4,
+     2,
+     1
+    ]
+   },
+   "design_effect": {
+    "n_frames": 161,
+    "n_clusters": 72,
+    "m_bar": 2.236111111111111,
+    "icc": 1.0,
+    "m0": 2.2211530049864403,
+    "deff": 2.236111111111111,
+    "deff_m0": 2.2211530049864403,
+    "n_eff": 72.0
+   },
+   "point": {
+    "roc_auc": 0.9703153988868275,
+    "f1": 0.375,
+    "n_flag": 9
+   },
+   "frozen": {
+    "n_valid": 161,
+    "n_pos": 7,
+    "auc_stacked": 0.9703153988868275,
+    "f1_oof": 0.375,
+    "f1_ci": [
+     0.0,
+     1.0
+    ]
+   },
+   "ci_by_study": {
+    "unit": "исследование",
+    "n_boot": 2000,
+    "seed": 2026,
+    "prevalence_ci": [
+     0.0,
+     0.10753332045586243
+    ],
+    "share_skipped": 0.050000000000000044,
+    "roc_auc_ci": [
+     0.9139083363406711,
+     1.0
+    ],
+    "f1_ci": [
+     0.0,
+     1.0
+    ],
+    "f1_boot_mean": 0.39691196737106793
+   },
+   "ci_by_file": {
+    "unit": "файл",
+    "n_boot": 2000,
+    "seed": 2026,
+    "prevalence_ci": [
+     0.012422360248447204,
+     0.07453416149068323
+    ],
+    "share_skipped": 0.0,
+    "roc_auc_ci": [
+     0.935483870967742,
+     0.9944078332980538
+    ],
+    "f1_ci": [
+     0.0,
+     0.6666666666666666
+    ],
+    "f1_boot_mean": 0.3590949908648031
+   },
+   "check": {
+    "criterion": "rh_roi",
+    "n_valid_ok": true,
+    "n_pos_ok": true,
+    "auc_diff": 0.0,
+    "f1_diff": 0.0,
+    "auc_ok": true,
+    "f1_ok": true,
+    "f1_ci_frozen": [
+     0.0,
+     1.0
+    ],
+    "f1_ci_here": [
+     0.0,
+     1.0
+    ],
+    "f1_ci_max_abs_diff": 0.0
+   }
+  },
+  "lh_pos": {
+   "section": "left_hip",
+   "violation_type": "Некорректная укладка (левое)",
+   "threshold": 0.6580547112462006,
+   "files": 168,
+   "studies": 78,
+   "pos_files": 40,
+   "pos_studies": 19,
+   "unique_frames": 78,
+   "pos_unique_frames": 19,
+   "prevalence_files": 0.23809523809523808,
+   "prevalence_studies": 0.24358974358974358,
+   "concentration": {
+    "studies_for_50pct": 6,
+    "studies_for_80pct": 12,
+    "top1_share": 0.1,
+    "positives_by_study": [
+     4,
+     4,
+     4,
+     4,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "design_effect": {
+    "n_frames": 168,
+    "n_clusters": 78,
+    "m_bar": 2.1538461538461537,
+    "icc": 1.0,
+    "m0": 2.138991960420532,
+    "deff": 2.1538461538461537,
+    "deff_m0": 2.138991960420532,
+    "n_eff": 78.0
+   },
+   "point": {
+    "roc_auc": 0.7339843749999999,
+    "f1": 0.43010752688172044,
+    "n_flag": 53
+   },
+   "frozen": {
+    "n_valid": 168,
+    "n_pos": 40,
+    "auc_stacked": 0.7339843749999999,
+    "f1_oof": 0.43010752688172044,
+    "f1_ci": [
+     0.18461538461538463,
+     0.6379310344827587
+    ]
+   },
+   "ci_by_study": {
+    "unit": "исследование",
+    "n_boot": 2000,
+    "seed": 2026,
+    "prevalence_ci": [
+     0.1437482040229885,
+     0.3548387096774194
+    ],
+    "share_skipped": 0.0,
+    "roc_auc_ci": [
+     0.5720735060977173,
+     0.8669354838709677
+    ],
+    "f1_ci": [
+     0.18461538461538463,
+     0.6379310344827587
+    ],
+    "f1_boot_mean": 0.42560957796297044
+   },
+   "ci_by_file": {
+    "unit": "файл",
+    "n_boot": 2000,
+    "seed": 2026,
+    "prevalence_ci": [
+     0.17842261904761905,
+     0.30357142857142855
+    ],
+    "share_skipped": 0.0,
+    "roc_auc_ci": [
+     0.6420991432068544,
+     0.8170079430575613
+    ],
+    "f1_ci": [
+     0.2988261188554659,
+     0.5454545454545454
+    ],
+    "f1_boot_mean": 0.42884813489803025
+   },
+   "check": {
+    "criterion": "lh_pos",
+    "n_valid_ok": true,
+    "n_pos_ok": true,
+    "auc_diff": 0.0,
+    "f1_diff": 0.0,
+    "auc_ok": true,
+    "f1_ok": true,
+    "f1_ci_frozen": [
+     0.18461538461538463,
+     0.6379310344827587
+    ],
+    "f1_ci_here": [
+     0.18461538461538463,
+     0.6379310344827587
+    ],
+    "f1_ci_max_abs_diff": 0.0
+   }
+  },
+  "lh_roi": {
+   "section": "left_hip",
+   "violation_type": "Некорректная область интереса (левое)",
+   "threshold": 0.9179331306990881,
+   "files": 168,
+   "studies": 78,
+   "pos_files": 9,
+   "pos_studies": 4,
+   "unique_frames": 78,
+   "pos_unique_frames": 4,
+   "prevalence_files": 0.05357142857142857,
+   "prevalence_studies": 0.05128205128205128,
+   "concentration": {
+    "studies_for_50pct": 1,
+    "studies_for_80pct": 3,
+    "top1_share": 0.5555555555555556,
+    "positives_by_study": [
+     5,
+     2,
+     1,
+     1
+    ]
+   },
+   "design_effect": {
+    "n_frames": 168,
+    "n_clusters": 78,
+    "m_bar": 2.1538461538461537,
+    "icc": 1.0,
+    "m0": 2.138991960420532,
+    "deff": 2.1538461538461537,
+    "deff_m0": 2.138991960420532,
+    "n_eff": 78.0
+   },
+   "point": {
+    "roc_auc": 0.8658280922431866,
+    "f1": 0.631578947368421,
+    "n_flag": 10
+   },
+   "frozen": {
+    "n_valid": 168,
+    "n_pos": 9,
+    "auc_stacked": 0.8658280922431866,
+    "f1_oof": 0.631578947368421,
+    "f1_ci": [
+     0.0,
+     1.0
+    ]
+   },
+   "ci_by_study": {
+    "unit": "исследование",
+    "n_boot": 2000,
+    "seed": 2026,
+    "prevalence_ci": [
+     0.0056179775280898875,
+     0.12422452129809988
+    ],
+    "share_skipped": 0.019000000000000017,
+    "roc_auc_ci": [
+     0.5118351524101805,
+     1.0
+    ],
+    "f1_ci": [
+     0.0,
+     1.0
+    ],
+    "f1_boot_mean": 0.5479536856471122
+   },
+   "ci_by_file": {
+    "unit": "файл",
+    "n_boot": 2000,
+    "seed": 2026,
+    "prevalence_ci": [
+     0.023809523809523808,
+     0.08928571428571429
+    ],
+    "share_skipped": 0.0,
+    "roc_auc_ci": [
+     0.6999609375000001,
+     0.9873437624392962
+    ],
+    "f1_ci": [
+     0.30750000000000005,
+     0.8421052631578947
+    ],
+    "f1_boot_mean": 0.616352715722479
+   },
+   "check": {
+    "criterion": "lh_roi",
+    "n_valid_ok": true,
+    "n_pos_ok": true,
+    "auc_diff": 0.0,
+    "f1_diff": 0.0,
+    "auc_ok": true,
+    "f1_ok": true,
+    "f1_ci_frozen": [
+     0.0,
+     1.0
+    ],
+    "f1_ci_here": [
+     0.0,
+     1.0
+    ],
+    "f1_ci_max_abs_diff": 0.0
+   }
+  }
+ },
+ "region_binary": {
+  "spine": {
+   "anatomical_region": "Поясничный отдел позвоночника",
+   "files": 166,
+   "studies": 99,
+   "pos_files": 60,
+   "pos_studies": 31,
+   "unique_frames": 99,
+   "pos_unique_frames": 31,
+   "prevalence_files": 0.3614457831325301,
+   "prevalence_studies": 0.31313131313131315,
+   "concentration": {
+    "studies_for_50pct": 8,
+    "studies_for_80pct": 19,
+    "top1_share": 0.16666666666666666,
+    "positives_by_study": [
+     10,
+     3,
+     3,
+     3,
+     3,
+     3,
+     3,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "design_effect": {
+    "n_frames": 166,
+    "n_clusters": 99,
+    "m_bar": 1.6767676767676767,
+    "icc": 1.0,
+    "m0": 1.6689205802803049,
+    "deff": 1.6767676767676767,
+    "deff_m0": 1.6689205802803049,
+    "n_eff": 99.0
+   },
+   "prob_note": "quality_prob пересобран как в src/eval_oof_metrics.py (any-модель OOF + max по критериям, согласование с классом)",
+   "point": {
+    "f1": 0.6231884057971014,
+    "roc_auc": 0.7732704402515723,
+    "n_flag": 78
+   },
+   "ci_by_study": {
+    "unit": "исследование",
+    "n_boot": 2000,
+    "seed": 2026,
+    "prevalence_ci": [
+     0.2409582775546631,
+     0.4816870792819745
+    ],
+    "share_skipped": 0.0,
+    "roc_auc_ci": [
+     0.6423412475740108,
+     0.8758421994884908
+    ],
+    "f1_ci": [
+     0.4444444444444444,
+     0.7638493011505614
+    ],
+    "f1_boot_mean": 0.6169425018004268
+   },
+   "ci_by_file": {
+    "unit": "файл",
+    "n_boot": 2000,
+    "seed": 2026,
+    "prevalence_ci": [
+     0.2891566265060241,
+     0.43373493975903615
+    ],
+    "share_skipped": 0.0,
+    "roc_auc_ci": [
+     0.6962311302361853,
+     0.8476757144309051
+    ],
+    "f1_ci": [
+     0.5271113831089351,
+     0.7153284671532847
+    ],
+    "f1_boot_mean": 0.6233160729565067
+   },
+   "frozen": {
+    "n": 166,
+    "n_pos": 60,
+    "f1": 0.6231884057971014,
+    "roc_auc": 0.7732704402515723,
+    "f1_ci": [
+     0.4462350780532599,
+     0.7669304074138834
+    ],
+    "roc_auc_ci": [
+     0.6463809544510897,
+     0.8791221010272159
+    ]
+   },
+   "check": {
+    "criterion": "spine/binary",
+    "n_valid_ok": true,
+    "n_pos_ok": true,
+    "f1_diff": 0.0,
+    "auc_diff": 0.0,
+    "f1_ok": true,
+    "auc_ok": true
+   }
+  },
+  "hip": {
+   "anatomical_region": "Проксимальный отдел бедра",
+   "files": 329,
+   "studies": 78,
+   "pos_files": 92,
+   "pos_studies": 28,
+   "unique_frames": 150,
+   "pos_unique_frames": 41,
+   "prevalence_files": 0.2796352583586626,
+   "prevalence_studies": 0.358974358974359,
+   "concentration": {
+    "studies_for_50pct": 9,
+    "studies_for_80pct": 17,
+    "top1_share": 0.08695652173913043,
+    "positives_by_study": [
+     8,
+     8,
+     8,
+     5,
+     4,
+     4,
+     4,
+     4,
+     4,
+     4,
+     4,
+     4,
+     4,
+     3,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     2,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "design_effect": {
+    "n_frames": 329,
+    "n_clusters": 78,
+    "m_bar": 4.217948717948718,
+    "icc": 0.6489588388406052,
+    "m0": 4.187976157581021,
+    "deff": 3.0883162634486143,
+    "deff_m0": 3.0688653054753137,
+    "n_eff": 106.53054024739592
+   },
+   "prob_note": "quality_prob пересобран как в src/eval_oof_metrics.py (any-модель OOF + max по критериям, согласование с классом)",
+   "point": {
+    "f1": 0.5161290322580645,
+    "roc_auc": 0.7600898917629793,
+    "n_flag": 94
+   },
+   "ci_by_study": {
+    "unit": "исследование",
+    "n_boot": 2000,
+    "seed": 2026,
+    "prevalence_ci": [
+     0.18665686274509805,
+     0.3879085062847119
+    ],
+    "share_skipped": 0.0,
+    "roc_auc_ci": [
+     0.6330313069333638,
+     0.8630448255344587
+    ],
+    "f1_ci": [
+     0.31338922271758096,
+     0.6882748538011695
+    ],
+    "f1_boot_mean": 0.5119542182693871
+   },
+   "ci_by_file": {
+    "unit": "файл",
+    "n_boot": 2000,
+    "seed": 2026,
+    "prevalence_ci": [
+     0.23100303951367782,
+     0.3252279635258359
+    ],
+    "share_skipped": 0.0,
+    "roc_auc_ci": [
+     0.701708954740611,
+     0.818890887846011
+    ],
+    "f1_ci": [
+     0.42857142857142855,
+     0.6030340381151037
+    ],
+    "f1_boot_mean": 0.516191883886046
+   },
+   "frozen": {
+    "n": 329,
+    "n_pos": 92,
+    "f1": 0.5161290322580645,
+    "roc_auc": 0.7600898917629793,
+    "f1_ci": [
+     0.30666666666666664,
+     0.6754445234708392
+    ],
+    "roc_auc_ci": [
+     0.6337315006443348,
+     0.8638771005169966
+    ]
+   },
+   "check": {
+    "criterion": "hip/binary",
+    "n_valid_ok": true,
+    "n_pos_ok": true,
+    "f1_diff": 0.0,
+    "auc_diff": 0.0,
+    "f1_ok": true,
+    "auc_ok": true
+   }
+  }
+ },
+ "checks": [
+  {
+   "criterion": "sp_pos",
+   "n_valid_ok": true,
+   "n_pos_ok": true,
+   "auc_diff": 0.0,
+   "f1_diff": 0.0,
+   "auc_ok": true,
+   "f1_ok": true,
+   "auc_diff_oof_full": 0.0,
+   "f1_diff_oof_full": 0.0,
+   "auc_ok_oof_full": true,
+   "f1_ci_frozen": [
+    0.1111111111111111,
+    0.8235294117647058
+   ],
+   "f1_ci_here": [
+    0.1111111111111111,
+    0.8235294117647058
+   ],
+   "f1_ci_max_abs_diff": 0.0
+  },
+  {
+   "criterion": "sp_axis",
+   "n_valid_ok": true,
+   "n_pos_ok": true,
+   "auc_diff": 0.0,
+   "f1_diff": 0.0,
+   "auc_ok": true,
+   "f1_ok": true,
+   "auc_diff_oof_full": 0.0,
+   "f1_diff_oof_full": 0.0,
+   "auc_ok_oof_full": true,
+   "f1_ci_frozen": [
+    0.2857142857142857,
+    0.8182190760059611
+   ],
+   "f1_ci_here": [
+    0.3,
+    0.8205357142857141
+   ],
+   "f1_ci_max_abs_diff": 0.01428571428571429
+  },
+  {
+   "criterion": "sp_art",
+   "n_valid_ok": true,
+   "n_pos_ok": true,
+   "auc_diff": 0.0009814612868048744,
+   "f1_diff": 0.0,
+   "auc_ok": false,
+   "f1_ok": true,
+   "auc_diff_oof_full": 0.0,
+   "f1_diff_oof_full": 0.0,
+   "auc_ok_oof_full": true,
+   "f1_ci_frozen": [
+    0.23522571819425445,
+    0.7417394140076259
+   ],
+   "f1_ci_here": [
+    0.246140350877193,
+    0.7391453245979749
+   ],
+   "f1_ci_max_abs_diff": 0.010914632682938546
+  },
+  {
+   "criterion": "hip_pos",
+   "n_valid_ok": true,
+   "n_pos_ok": true,
+   "auc_diff": 0.0,
+   "f1_diff": 0.0,
+   "auc_ok": true,
+   "f1_ok": true,
+   "auc_diff_oof_full": 0.0,
+   "f1_diff_oof_full": 0.0,
+   "auc_ok_oof_full": true,
+   "f1_ci_frozen": [
+    0.21779792437075032,
+    0.6009481726963085
+   ],
+   "f1_ci_here": [
+    0.22554981203007518,
+    0.6060776302349336
+   ],
+   "f1_ci_max_abs_diff": 0.007751887659324858
+  },
+  {
+   "criterion": "hip_roi",
+   "n_valid_ok": true,
+   "n_pos_ok": true,
+   "auc_diff": 0.0,
+   "f1_diff": 0.0,
+   "auc_ok": true,
+   "f1_ok": true,
+   "auc_diff_oof_full": 0.0,
+   "f1_diff_oof_full": 0.0,
+   "auc_ok_oof_full": true,
+   "f1_ci_frozen": [
+    0.0,
+    0.9090909090909091
+   ],
+   "f1_ci_here": [
+    0.0,
+    0.8888888888888888
+   ],
+   "f1_ci_max_abs_diff": 0.02020202020202022
+  },
+  {
+   "criterion": "rh_pos",
+   "n_valid_ok": true,
+   "n_pos_ok": true,
+   "auc_diff": 0.0,
+   "f1_diff": 0.0,
+   "auc_ok": true,
+   "f1_ok": true,
+   "f1_ci_frozen": [
+    0.1777450980392157,
+    0.6575515866134904
+   ],
+   "f1_ci_here": [
+    0.1777450980392157,
+    0.6575515866134904
+   ],
+   "f1_ci_max_abs_diff": 0.0
+  },
+  {
+   "criterion": "rh_roi",
+   "n_valid_ok": true,
+   "n_pos_ok": true,
+   "auc_diff": 0.0,
+   "f1_diff": 0.0,
+   "auc_ok": true,
+   "f1_ok": true,
+   "f1_ci_frozen": [
+    0.0,
+    1.0
+   ],
+   "f1_ci_here": [
+    0.0,
+    1.0
+   ],
+   "f1_ci_max_abs_diff": 0.0
+  },
+  {
+   "criterion": "lh_pos",
+   "n_valid_ok": true,
+   "n_pos_ok": true,
+   "auc_diff": 0.0,
+   "f1_diff": 0.0,
+   "auc_ok": true,
+   "f1_ok": true,
+   "f1_ci_frozen": [
+    0.18461538461538463,
+    0.6379310344827587
+   ],
+   "f1_ci_here": [
+    0.18461538461538463,
+    0.6379310344827587
+   ],
+   "f1_ci_max_abs_diff": 0.0
+  },
+  {
+   "criterion": "lh_roi",
+   "n_valid_ok": true,
+   "n_pos_ok": true,
+   "auc_diff": 0.0,
+   "f1_diff": 0.0,
+   "auc_ok": true,
+   "f1_ok": true,
+   "f1_ci_frozen": [
+    0.0,
+    1.0
+   ],
+   "f1_ci_here": [
+    0.0,
+    1.0
+   ],
+   "f1_ci_max_abs_diff": 0.0
+  },
+  {
+   "criterion": "spine/binary",
+   "n_valid_ok": true,
+   "n_pos_ok": true,
+   "f1_diff": 0.0,
+   "auc_diff": 0.0,
+   "f1_ok": true,
+   "auc_ok": true
+  },
+  {
+   "criterion": "hip/binary",
+   "n_valid_ok": true,
+   "n_pos_ok": true,
+   "f1_diff": 0.0,
+   "auc_diff": 0.0,
+   "f1_ok": true,
+   "auc_ok": true
+  }
+ ],
+ "discrepancies": [
+  {
+   "criterion": "sp_art",
+   "what": "auc_stacked в metrics_summary.json",
+   "abs_diff": 0.0009814612868048744,
+   "matches_metrics_oof_full": true
+  }
+ ],
+ "all_points_match": true,
+ "all_points_match_metrics_summary": false
+}
