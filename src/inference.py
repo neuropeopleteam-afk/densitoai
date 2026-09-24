@@ -77,6 +77,7 @@ from geometry_features import (  # noqa: E402
 from hip_features import hip_all_features  # noqa: E402
 from calibration_utils import risk_level  # noqa: E402  (К3: правило уровня риска)
 import preprocess  # noqa: E402  (инвариантная предобработка: маска тела, канонизация экспозиции)
+import markup_clean  # noqa: E402  (очистка впечатанной разметки денситометра, docs/MARKUP_STRESS.md)
 
 __version__ = "2.4.0"
 LOG = logging.getLogger("densito.inference")
@@ -529,6 +530,13 @@ def normalize_pixels_ex(ds) -> Tuple[np.ndarray, np.ndarray, float]:
     else:
         arr = np.zeros_like(arr)
     img_u8 = arr.astype(np.uint8)
+    # Впечатанная разметка денситометра (контуры ROI, линии L1–L4, рамка шейки) — убирается до оценки
+    # (src/markup_clean.py, docs/MARKUP_STRESS.md). Включается только при >= 4 тонких прямых отрезках:
+    # на 499 кадрах заказчика не срабатывает ни разу, поэтому их кадры и числа поставки не меняются.
+    img_u8, _mk = markup_clean.clean(img_u8)
+    if _mk.get("markup_cleaned"):
+        LOG.info("разметка денситометра на изображении убрана: отрезков %d, пикселей %d",
+                 _mk["markup_segments"], _mk["markup_pixels"])
     # Канонизация экспозиции — тот же код, что у обучения (src/preprocess.py):
     # окно 1–99 % снимает только линейные сдвиги яркости, степенные — нет.
     img_canonical, gamma = preprocess.canonical_frame(img_u8)
