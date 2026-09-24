@@ -67,12 +67,16 @@ button.sel{background:#111827;border-color:#111827;color:#fff}
       <li>По каждому снимку один вопрос: исследование выполнено правильно или нет, и если нет, то что именно не так.</li>
       <li>Сразу после вашего ответа мы показываем, что о том же снимке сказал сервис, и спрашиваем только о формулировке.</li>
       <li>Согласие с сервисом мы посчитаем сами, сравнив ваши ответы с его выводом: отдельно оценивать модель и рисовать контуры не нужно.</li>
-      <li>Ответы сохраняются в браузере по ходу работы, поэтому закрытая вкладка ничего не потеряет.</li>
+      <li>Ответы сохраняются в браузере по ходу работы, поэтому закрытая вкладка ничего не потеряет. После отправки они удаляются из браузера, и следующий врач за этим же компьютером начинает с первого снимка.</li>
     </ol>
     <p class="muted">Версия сервиса <span id="w-ver"></span>. Идентификатор набора (sha256): <span id="w-sha"></span>.</p>
+    <label class="f" for="w-name">Ваше имя или инициалы (необязательно): так мы отличим ответы разных врачей</label>
+    <input type="text" id="w-name" autocomplete="off" maxlength="80" placeholder="Например: Иванова А. или врач 3">
+    <p id="done-note" class="note hidden"></p>
     <p id="resume" class="note hidden"></p>
     <div class="row" style="margin-top:14px">
       <button class="primary" id="btn-start">Начать</button>
+      <button id="btn-restart" class="hidden">Начать с чистого листа</button>
     </div>
   </section>
 
@@ -129,7 +133,7 @@ button.sel{background:#111827;border-color:#111827;color:#fff}
   <!-- ЭКРАН 5: готово -->
   <section id="s-done" class="card hidden">
     <h1>Ответы отправлены</h1>
-    <p>Спасибо за ревизию. Вкладку можно закрыть.</p>
+    <p>Спасибо за ревизию. Вкладку можно закрыть. Если за этим компьютером будет проходить другой врач, просто откройте страницу заново: она начнёт с первого снимка.</p>
     <div class="row"><button id="btn-download2">Скачать копию ответов</button></div>
   </section>
 
@@ -205,9 +209,11 @@ const FREE_Q = [
 const SHOWS = DATA.shows;
 const TOTAL = SHOWS.length;
 const LS_KEY = "densito_review_light_full";
+const LS_DONE = LS_KEY + "_done";
 
 const S = {
   reviewer: "",
+  session_id: null,
   mode: "full",
   kit_sha256: DATA.kit_sha256,
   started_at: null,
@@ -235,7 +241,7 @@ function nowIso() { return new Date().toISOString(); }
 function save() {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify({
-      reviewer: S.reviewer, mode: S.mode, kit_sha256: S.kit_sha256,
+      reviewer: S.reviewer, session_id: S.session_id, mode: S.mode, kit_sha256: S.kit_sha256,
       started_at: S.started_at, pos: S.pos, answers: S.answers,
       phrases: S.phrases, free_text: S.free_text
     }));
@@ -255,25 +261,80 @@ function load() {
 $("w-ver").textContent = DATA.service_version;
 $("w-sha").textContent = String(DATA.kit_sha256).slice(0, 12);
 
-const saved = load();
-if (saved && Array.isArray(saved.answers) && saved.answers.length > 0 && saved.pos < TOTAL) {
-  $("resume").classList.remove("hidden");
-  $("resume").textContent = "Найдены сохранённые ответы: " + saved.answers.length + " из " + TOTAL + ". Нажмите «Начать», работа продолжится с этого места.";
+function newSessionId() {
+  try {
+    const b = new Uint8Array(6);
+    crypto.getRandomValues(b);
+    return Array.prototype.map.call(b, (x) => ("0" + x.toString(16)).slice(-2)).join("");
+  } catch (e) {
+    return Date.now().toString(16) + Math.random().toString(16).slice(2, 8);
+  }
+}
+function loadDone() {
+  try {
+    const raw = localStorage.getItem(LS_DONE);
+    const d = raw ? JSON.parse(raw) : null;
+    return (d && d.kit_sha256 === S.kit_sha256) ? d : null;
+  } catch (e) { return null; }
+}
+function fmtTime(iso) {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const p = (n) => (n < 10 ? "0" : "") + n;
+  return p(d.getDate()) + "." + p(d.getMonth() + 1) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
 }
 
-$("btn-start").addEventListener("click", () => {
-  if (saved && Array.isArray(saved.answers) && saved.answers.length > 0) {
+let saved = load();
+const hasSaved = () => !!(saved && Array.isArray(saved.answers) && saved.answers.length > 0);
+
+// ответы уже отправлены с этого браузера: сообщаем и начинаем с чистого листа
+const done = loadDone();
+if (done) {
+  $("done-note").classList.remove("hidden");
+  $("done-note").textContent = "С этого браузера ответы уже отправлены" +
+    (done.reviewer ? " (" + done.reviewer + ")" : "") + (done.finished_at ? " " + fmtTime(done.finished_at) : "") +
+    ". Они у нас сохранены, в браузере их больше нет: новый врач начинает с первого снимка.";
+}
+// есть неотправленные ответы: предлагаем продолжить или начать заново другому врачу
+if (hasSaved()) {
+  $("w-name").value = saved.reviewer || "";
+  $("resume").classList.remove("hidden");
+  $("resume").textContent = "Найдены неотправленные ответы: " + saved.answers.length + " из " + TOTAL +
+    (saved.reviewer ? " (" + saved.reviewer + ")" : "") +
+    ". Нажмите «Начать», работа продолжится с этого места. Если вы другой врач, нажмите «Начать с чистого листа».";
+  $("btn-restart").classList.remove("hidden");
+}
+
+function startReview(fresh) {
+  S.reviewer = ($("w-name").value || "").trim().slice(0, 80);
+  if (!fresh && hasSaved()) {
     S.answers = saved.answers;
     S.phrases = Array.isArray(saved.phrases) ? saved.phrases : [];
     S.free_text = saved.free_text || {};
     S.pos = Math.min(Number(saved.pos) || 0, TOTAL);
     S.started_at = saved.started_at || nowIso();
+    S.session_id = saved.session_id || newSessionId();
   } else {
+    S.answers = [];
+    S.phrases = [];
+    S.free_text = {};
+    S.pos = 0;
     S.started_at = nowIso();
+    S.session_id = newSessionId();
   }
   save();
   if (S.pos >= TOTAL) { renderPhrases(); return; }
   renderFrame();
+}
+
+$("btn-start").addEventListener("click", () => startReview(false));
+$("btn-restart").addEventListener("click", () => {
+  if (!window.confirm("Неотправленные ответы предыдущего врача будут удалены из этого браузера. Начать с чистого листа?")) return;
+  try { localStorage.removeItem(LS_KEY); } catch (e) { /* приватный режим */ }
+  saved = null;
+  $("resume").classList.add("hidden");
+  $("btn-restart").classList.add("hidden");
+  startReview(true);
 });
 
 // ---------- экран кадра ----------
@@ -461,6 +522,7 @@ function renderFree() {
 function payload() {
   return {
     reviewer: S.reviewer,
+    session_id: S.session_id,
     kit_sha256: S.kit_sha256,
     mode: S.mode,
     service_version: DATA.service_version,
@@ -486,6 +548,14 @@ async function submit() {
     });
     if (!r.ok) throw new Error("HTTP " + r.status);
     $("send-state").textContent = "";
+    // ответы приняты сервером: убираем их из браузера, чтобы следующий врач начал с первого снимка
+    try {
+      localStorage.removeItem(LS_KEY);
+      localStorage.setItem(LS_DONE, JSON.stringify({
+        kit_sha256: S.kit_sha256, reviewer: S.reviewer, session_id: S.session_id,
+        finished_at: S.finished_at, n: S.answers.length
+      }));
+    } catch (e) { /* приватный режим */ }
     show("s-done");
   } catch (e) {
     $("send-state").textContent = "";
