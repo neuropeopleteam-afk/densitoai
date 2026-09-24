@@ -644,6 +644,12 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
             (job_dir / "summary.json").write_text(json.dumps(card, ensure_ascii=False, indent=1), encoding="utf-8")
         except Exception as e:  # noqa: BLE001
             LOG.warning("summary.json failed: %s", e)
+        # журнал исследований отделения (src/registry.py): теги DICOM для поиска читаем, пока загрузка ещё на диске.
+        # Ошибка журнала не влияет на ответ и на CSV по ТЗ.
+        try:
+            REGISTRY.index_rows(job, rows_out, registry_read_tags(rows_out, tmp), card.get("created_at"))
+        except Exception as e:  # noqa: BLE001
+            LOG.warning("registry index failed: %s", e)
         return _with_token(resp, job, job_token)
     except HTTPException:
         shutil.rmtree(job_dir, ignore_errors=True)
@@ -1277,6 +1283,29 @@ def download(name: str):
 # Каталог переопределяется DENSITO_WEB_DIR; если его нет — API работает как раньше, без UI.
 # --------------------------------------------------------------------------- #
 WEB_DIR = Path(os.environ.get("DENSITO_WEB_DIR", PROJECT_ROOT / "web")).resolve()
+
+
+# --------------------------------------------------------------------------- #
+# Журнал исследований отделения (поиск по ФИО/дате, фильтры, статусы, комментарии врача и лаборанта).
+# Выключен, пока нет учётных записей (OUTPUT_DIR/registry_users.json); подробности — src/registry.py.
+# --------------------------------------------------------------------------- #
+from registry import Registry, mount as registry_mount, read_tags as registry_read_tags  # noqa: E402
+
+REGISTRY = Registry(OUTPUT_DIR, users_file=Path(os.environ["DENSITO_USERS_FILE"]) if os.environ.get("DENSITO_USERS_FILE") else None)
+
+
+def _registry_job_token(job: str) -> Optional[str]:
+    """Код доступа к задаче для ссылки на карточку из журнала (только вошедшему пользователю журнала)."""
+    if not JOB_RE.match(job or ""):
+        return None
+    tp = JOBS_DIR / job / JOB_TOKEN_FILE
+    try:
+        return tp.read_text(encoding="utf-8").strip() if tp.is_file() else None
+    except OSError:
+        return None
+
+
+registry_mount(app, REGISTRY, _registry_job_token, LOG)
 
 
 @app.post("/api/review")

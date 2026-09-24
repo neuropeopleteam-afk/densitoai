@@ -51,6 +51,13 @@ ALLOWED_MODALITY = ("CR", "OT", "DX", "RG", "SC", "")
 
 TEXT_TAGS = ("BodyPartExamined", "SeriesDescription", "ProtocolName", "StudyDescription")
 
+# Аппарат вне области применения (24.09.2026, docs/EXTERNAL_DXA.md): на 904 PNG чужих аппаратов сервис без этого
+# правила не отказывал ни разу и давал 70–92 % «нарушений» с quality_prob ~0,93–1,00. Отказ — только если тег
+# Manufacturer ЗАПОЛНЕН и явно не GE/Lunar; пустой или обезличенный тег — не повод для отказа (сомнение — в пользу
+# обработки). Все 499 файлов заказчика: Manufacturer = 'GE Healthcare' — правило на них не срабатывает.
+SUPPORTED_VENDOR_MARKERS = ("GE ", "GE_", "GEHC", "GE HEALTHCARE", "GENERAL ELECTRIC", "LUNAR")
+VENDOR_UNKNOWN = ("", "ANONYMIZED", "ANONYMOUS", "UNKNOWN", "NONE", "N/A", "-")
+
 # Границы геометрии кадра. Наблюдаемое в наших данных: ширина 248–300, высота 180–405.
 # Отказ — только при явном выходе за границы, чтобы не отсекать другой экспорт того же аппарата.
 COLS_MIN, COLS_MAX = 200, 400
@@ -88,6 +95,12 @@ def check_tags(tags: Dict[str, Any], cols: int = 0, rows: int = 0) -> Tuple[bool
         return False, (f"модальность снимка {mod} не соответствует рентгеновской "
                        f"денситометрии; {SUPPORTED_SCOPE}")
 
+    vendor = " ".join(str(low.get(k) or "") for k in ("manufacturer", "manufacturermodelname")).strip().upper()
+    if vendor not in VENDOR_UNKNOWN and vendor != "GE" and not any(m in vendor + " " for m in SUPPORTED_VENDOR_MARKERS):
+        shown = " ".join(str(low.get(k) or "") for k in ("manufacturer", "manufacturermodelname")).strip()
+        return False, (f"аппарат «{shown}» вне области применения: сервис настроен на GE Lunar Prodigy, "
+                       f"на снимках других аппаратов и форматов результат не определён; {SUPPORTED_SCOPE}")
+
     try:
         c = int(cols or low.get("columns") or 0)
     except (TypeError, ValueError):
@@ -113,7 +126,7 @@ def check_file(path: Path, rows: int = 0, cols: int = 0) -> Tuple[bool, str]:
         import pydicom  # локальный импорт: модуль пригоден и без pydicom
 
         ds = pydicom.dcmread(str(path), force=True, stop_before_pixels=True)
-        for t in TEXT_TAGS + ("Modality", "Rows", "Columns"):
+        for t in TEXT_TAGS + ("Modality", "Rows", "Columns", "Manufacturer", "ManufacturerModelName"):
             v = getattr(ds, t, None)
             if v not in (None, ""):
                 tags[t] = v

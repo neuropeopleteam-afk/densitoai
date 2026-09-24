@@ -70,6 +70,18 @@ for cols, rows in ((256, 320), (320, 420), (240, 200)):
     ok, reason = check_tags({"Modality": "CR"}, cols=cols, rows=rows)
     check(ok, f"близкая геометрия {cols}x{rows} проходит")
 
+# 4б. Аппарат вне области применения (docs/EXTERNAL_DXA.md): отказ только при явно чужом производителе.
+for tags, what in (({"Manufacturer": "HOLOGIC", "ManufacturerModelName": "Horizon A"}, "Hologic"),
+                   ({"Manufacturer": "Norland"}, "Norland"), ({"Manufacturer": "external PNG", "Modality": "OT"}, "PNG-обёртка")):
+    ok, reason = check_tags(tags, cols=300, rows=300)
+    check((not ok) and "вне области применения" in reason, f"отказ по аппарату: {what}")
+for tags, what in (({"Manufacturer": "GE Healthcare", "ManufacturerModelName": "Lunar Prodigy Advance", "Modality": "CR"}, "наш аппарат (все 499)"),
+                   ({"Manufacturer": "GE MEDICAL SYSTEMS"}, "GE другим написанием"), ({"Manufacturer": "GE"}, "GE"),
+                   ({"ManufacturerModelName": "Lunar iDXA"}, "Lunar без производителя"),
+                   ({"Manufacturer": ""}, "пустой производитель"), ({"Manufacturer": "Anonymized"}, "обезличенный производитель"), ({}, "нет тега")):
+    ok, reason = check_tags(tags, cols=300, rows=300)
+    check(ok, f"аппарат допускается: {what} {reason}")
+
 # 5. Главная гарантия: пакетный путь (CSV для организаторов) проверку области не вызывает,
 #    поэтому числа поставки не могут измениться из-за неё.
 src = (ROOT / "src" / "inference.py").read_text(encoding="utf-8")

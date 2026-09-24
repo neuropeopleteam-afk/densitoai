@@ -566,6 +566,101 @@ body:not(.view-app) .topbar .topnav { display: flex; }
 .dept-summary .msg.err { color: var(--error); }
 .dept-summary .tblwrap { overflow-x: auto; }
 /* DEPT-SUMMARY:END */
+
+/* ---------- журнал исследований (поиск, фильтры, статусы, комментарии) ---------- */
+.reg-filters { display: grid; grid-template-columns: minmax(220px, 2.2fr) repeat(2, minmax(130px, 1fr)) repeat(3, minmax(130px, 1fr)); gap: 10px; align-items: end; }
+.reg-filters label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.reg-filters input, .reg-filters select, .reg-login input, .reg-new textarea, .reg-new select { border: 1px solid var(--border); border-radius: 8px; padding: 8px 11px; font-size: 14px; background: var(--surface); color: var(--text); font-family: inherit; min-width: 0; width: 100%; box-sizing: border-box; }
+.reg-quick { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px; align-items: center; }
+.reg-quick button { border: 1px solid var(--border); background: var(--surface-alt); color: var(--text); border-radius: 999px; padding: 5px 12px; font-size: 13px; cursor: pointer; font-family: inherit; }
+.reg-quick button.on { background: var(--primary, var(--accent)); color: #fff; border-color: transparent; }
+.reg-quick .sp { flex: 1; }
+.reg-meta { font-size: 13px; color: var(--muted); margin: 10px 0; }
+.reg-list { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.reg-row { display: grid; grid-template-columns: 96px minmax(170px, 1.4fr) minmax(120px, 1fr) minmax(150px, 1.3fr) minmax(130px, 1fr) 70px; gap: 12px; align-items: center; padding: 11px 16px; border-bottom: 1px solid var(--border); cursor: pointer; font-size: 14px; background: var(--surface); }
+.reg-row:hover { background: var(--surface-alt); }
+.reg-row.open { background: var(--surface-alt); }
+.reg-row.head { cursor: default; background: var(--surface-alt); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; }
+.reg-row .pn { font-weight: 700; }
+.reg-row .sub2, .reg-detail .sub2 { font-size: 12.5px; color: var(--muted); }
+.reg-row .com { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.badge.st-retake { background: var(--error-soft); color: var(--error); }
+.badge.st-retaken { background: var(--warning-soft); color: var(--warning); }
+.badge.st-accepted { background: var(--success-soft); color: var(--success); }
+.badge.st-disputed { background: var(--surface-2); color: var(--text); }
+.badge.st-new { background: var(--surface-alt); color: var(--muted); }
+.reg-detail { padding: 18px 20px 22px; border-bottom: 1px solid var(--border); background: var(--surface); display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 22px; }
+.reg-detail h3 { font-size: 15px; margin: 0 0 10px; }
+.reg-imgs { display: flex; flex-direction: column; gap: 8px; }
+.reg-img { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; font-size: 13.5px; }
+.reg-img .fn { font-weight: 700; overflow-wrap: anywhere; }
+.reg-pii { margin-top: 14px; font-size: 13.5px; border: 1px dashed var(--border-strong); border-radius: 10px; padding: 10px 12px; }
+.reg-pii .kv { display: grid; grid-template-columns: 140px 1fr; gap: 4px 10px; margin-top: 6px; }
+.reg-pii .kv span:nth-child(odd) { color: var(--muted); }
+.reg-status { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 10px; }
+.reg-log { font-size: 12.5px; color: var(--muted); margin-bottom: 12px; }
+.reg-thread { display: flex; flex-direction: column; gap: 8px; max-height: 340px; overflow-y: auto; margin-bottom: 10px; }
+.reg-msg { border-radius: 10px; padding: 9px 12px; background: var(--surface-alt); font-size: 14px; }
+.reg-msg.role-lab { background: color-mix(in srgb, var(--warning-soft) 60%, var(--surface)); }
+.reg-msg .who { font-size: 12.5px; color: var(--muted); margin-bottom: 3px; }
+.reg-msg .txt { white-space: pre-wrap; overflow-wrap: anywhere; }
+.reg-new { display: flex; flex-direction: column; gap: 8px; }
+.reg-new textarea { min-height: 70px; resize: vertical; }
+.reg-new .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.reg-new .row select { width: auto; flex: 1; min-width: 160px; }
+.reg-login { display: grid; grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr) auto; gap: 10px; align-items: end; max-width: 640px; }
+.reg-login label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.reg-user { display: flex; gap: 10px; align-items: center; font-size: 14px; color: var(--muted); }
+.reg-err { color: var(--error); font-size: 13.5px; margin-top: 8px; }
+.reg-empty { padding: 26px; text-align: center; color: var(--muted); font-size: 14.5px; }
+.reg-more { display: flex; justify-content: center; padding: 12px; }
+.app-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+@media (max-width: 1100px) {
+  .reg-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .reg-filters .q { grid-column: 1 / -1; }
+  .reg-detail { grid-template-columns: 1fr; }
+}
+@media (max-width: 820px) {
+  .reg-row.head { display: none; }
+  .reg-row { grid-template-columns: 1fr auto; gap: 4px 10px; padding: 12px 14px; }
+  .reg-row > .c-date { grid-column: 1; order: 2; font-size: 12.5px; color: var(--muted); }
+  .reg-row > .c-pat { grid-column: 1; order: 1; }
+  .reg-row > .c-res { grid-column: 2; grid-row: 1; justify-self: end; }
+  .reg-row > .c-reg { grid-column: 1; order: 3; font-size: 13px; }
+  .reg-row > .c-st { grid-column: 2; grid-row: 2; justify-self: end; }
+  .reg-row > .c-com { grid-column: 2; grid-row: 3; justify-self: end; }
+  .reg-login { grid-template-columns: 1fr; }
+  .reg-pii .kv { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .reg-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .panel { padding: 18px 16px; border-radius: 14px; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .kpi { padding: 12px 14px; }
+  .kpi .v { font-size: 24px; }
+  .app-head h1 { font-size: 26px; }
+  .app-head .sub { font-size: 14.5px; }
+  .app-head .wrap { flex-direction: column; align-items: stretch; }
+}
+
+body.view-registry #uploadPanel, body.view-registry #results, body.view-registry #historyCard { display: none; }
+body:not(.view-registry) #registryCard { display: none; }
+
+.app-tabs .tab-btn.ghost { background: transparent; color: var(--ink-text); border-color: rgba(255,255,255,.35); }
+.app-tabs .tab-btn.ghost:hover { border-color: rgba(255,255,255,.7); }
+body.view-registry .app-head .sub { display: none; }
+@media (max-width: 560px) { .app-tabs .tab-btn { flex: 1; text-align: center; } }
+
+.reg-detail > div { min-width: 0; }
+.reg-log { white-space: pre-line; }
+.reg-new .row select { min-width: 0; }
+.reg-row .c-res { display: flex; flex-wrap: wrap; gap: 4px; }
+.reg-row .c-res .badge.uncertain { margin-left: 0; }
+body.view-registry .mode-switch { display: none; }
+@media (max-width: 820px) {
+  .reg-row > .c-res { max-width: 150px; justify-content: flex-end; }
+  .reg-detail { padding: 14px 12px 18px; }
+}
 </style>
 </head>
 <body>
@@ -654,6 +749,7 @@ body:not(.view-app) .topbar .topnav { display: flex; }
         <div class="eyebrow" style="color:var(--accent)">Кабинет рентгенолога и лаборанта</div>
         <h1>Контроль качества партии снимков</h1>
         <p class="sub">Загрузите DICOM-файлы или zip-архив исследования — поясничный отдел позвоночника или проксимальный отдел бедра. Сервис определит область, оценит критерии, отсортирует снимки по риску и для каждого покажет карточку решения; другую область отметит как неподдерживаемую. Обработка полностью на сервере, наружу снимки не передаются.</p>
+        <div class="app-tabs" role="tablist"><a class="btn sm tab-btn" id="tabUpload" href="#app">Загрузка и результаты</a><a class="btn sm tab-btn ghost" id="tabRegistry" href="#app/registry">Журнал исследований</a></div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:12px">
         <div class="mode-switch" role="group" aria-label="Режим кабинета"><button type="button" id="modeDoctor" class="active">Врач</button><button type="button" id="modeLab">Лаборант</button></div>
@@ -684,6 +780,14 @@ body:not(.view-app) .topbar .topnav { display: flex; }
       </div>
 
       <div id="results"></div>
+
+      <div class="panel" id="registryCard">
+        <div class="panel-head">
+          <div><h2>Журнал исследований</h2><div class="hint">Общий для отделения: поиск по фамилии, ID пациента, номеру направления или имени файла, фильтры по дате и результату, статусы и комментарии врача и лаборанта. ФИО в списке сокращены; полные данные открываются по кнопке, и каждый просмотр фиксируется.</div></div>
+          <div class="right" id="regUserBox"></div>
+        </div>
+        <div id="registryBody"><div class="reg-empty">Загрузка журнала…</div></div>
+      </div>
 
       <div class="panel" id="historyCard">
         <div class="panel-head">
@@ -1133,6 +1237,11 @@ function route() {
     if (!healthLoaded) { healthLoaded = true; loadHealth(); }
     if (!historyLoaded) { historyLoaded = true; loadHistory(); }
     if (h === '#app/demo') loadDemo();
+    const isReg = h === '#app/registry';
+    document.body.classList.toggle('view-registry', isReg);
+    const tu = document.getElementById('tabUpload'), tr = document.getElementById('tabRegistry');
+    if (tu && tr) { tu.classList.toggle('ghost', isReg); tr.classList.toggle('ghost', !isReg); }
+    if (isReg && !registryLoaded) { registryLoaded = true; loadRegistry(); }
     const mj = /^#app\/job\/([0-9]{8}_[0-9]{6}_[0-9a-f]{6})(?:\/([\w\-]+))?$/.exec(h);
     if (mj) { openJob(mj[1], mj[2] || ''); }
   } else {
@@ -1802,6 +1911,7 @@ function rememberJob(data) {
     format_check: data.format_check, n_rows: Array.isArray(data.rows) ? data.rows.length : null,
   };
   histSave([item].concat(histRead().filter(x => x && x.job_id !== jobId)));
+  if (typeof reg !== 'undefined' && reg.user) setTimeout(() => regSearch(true), 300);  // новая партия сразу видна в журнале
 }
 function jobUrl(jobId, token, name) {
   const u = '/api/results/' + encodeURIComponent(jobId) + '/' + encodeURIComponent(name);
@@ -1895,6 +2005,228 @@ document.getElementById('historyBtn').addEventListener('click', () => loadHistor
 loadCardText().then(() => { if (state.rows.length) { refresh(); renderMode(); } });
 document.getElementById('modeDoctor').classList.toggle('active', currentMode() !== 'lab');
 document.getElementById('modeLab').classList.toggle('active', currentMode() === 'lab');
+
+// ---------- журнал исследований (src/registry.py) ----------
+const REG_STATUS = { new: 'новое', retake: 'нужна пересъёмка', retaken: 'переснято', accepted: 'принято', disputed: 'спорно' };
+const REG_RESULT = { violation: 'с нарушением', ok: 'норма', uncertain: 'не уверен', fail: 'ошибка обработки', unsupported: 'область не поддерживается' };
+const ssGet = k => { try { return sessionStorage.getItem(k); } catch (e) { return null; } };
+const ssSet = (k, v) => { try { if (v === null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, v); } catch (e) { /* без сохранения */ } };
+const reg = { enabled: null, session: ssGet('densito_reg_session'), user: null, f: { q: '', date_from: '', date_to: '', region: '', result: '', status: '', has_comments: '' }, offset: 0, items: [], total: 0, open: null, timer: null };
+let registryLoaded = false;
+function regHeaders(json) { const h = { 'X-Registry-Session': reg.session || '' }; if (json) h['Content-Type'] = 'application/json'; return h; }
+async function regFetch(url, opts) {
+  const r = await fetch(url, Object.assign({ headers: regHeaders(opts && opts.body) }, opts || {}));
+  if (r.status === 401) { reg.session = null; reg.user = null; ssSet('densito_reg_session', null); renderRegistry(); throw new Error('Сессия истекла, войдите заново'); }
+  const t = await r.text(); let d = null; try { d = JSON.parse(t); } catch (e) { /* не JSON */ }
+  if (!r.ok) throw new Error((d && d.detail) || ('Ошибка ' + r.status));
+  return d;
+}
+async function loadRegistry() {
+  try { const st = await (await fetch('/api/registry/status')).json(); reg.enabled = !!st.enabled; } catch (e) { reg.enabled = false; }
+  if (reg.enabled && reg.session) { try { reg.user = await regFetch('/api/registry/me'); } catch (e) { reg.user = null; } }
+  renderRegistry();
+  if (reg.user) regSearch(true);
+}
+function regUserBox() {
+  const box = document.getElementById('regUserBox'); box.textContent = '';
+  if (!reg.user) return;
+  box.appendChild(el('div', { class: 'reg-user' }, [el('span', { text: reg.user.name + ' · ' + reg.user.role_title }),
+    el('button', { class: 'btn ghost sm', type: 'button', text: 'Выйти', onclick: () => { reg.session = null; reg.user = null; ssSet('densito_reg_session', null); renderRegistry(); } })]));
+}
+function renderRegistry() {
+  const body = document.getElementById('registryBody'); if (!body) return;
+  body.textContent = ''; regUserBox();
+  if (reg.enabled === false) { body.appendChild(el('div', { class: 'reg-empty', text: 'Журнал не настроен на этом сервере: техгруппа создаёт учётные записи врачей и лаборантов командой python src/registry.py add-user (README, раздел «Журнал исследований»). Загрузка и оценка снимков работают и без него.' })); return; }
+  if (!reg.user) { body.appendChild(regLoginForm()); return; }
+  body.appendChild(regFilters());
+  body.appendChild(el('div', { class: 'reg-meta', id: 'regMeta', text: '' }));
+  body.appendChild(el('div', { class: 'reg-list', id: 'regList' }));
+  regRenderList();
+}
+function regLoginForm() {
+  const lg = el('input', { type: 'text', autocomplete: 'username', placeholder: 'логин' });
+  const pw = el('input', { type: 'password', autocomplete: 'current-password', placeholder: 'пароль' });
+  const err = el('div', { class: 'reg-err' });
+  const go = async () => {
+    err.textContent = '';
+    try {
+      const r = await fetch('/api/registry/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ login: lg.value, password: pw.value }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.detail || ('Ошибка ' + r.status));
+      reg.session = d.session; reg.user = d.user; ssSet('densito_reg_session', d.session);
+      renderRegistry(); regSearch(true);
+    } catch (e) { err.textContent = e.message; }
+  };
+  pw.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+  return el('div', {}, [
+    el('div', { class: 'hint', style: 'margin-bottom:12px', text: 'Вход для сотрудников отделения. Роль определяет права: лаборант отмечает «переснято» и «спорно», врач ставит любой статус.' }),
+    el('div', { class: 'reg-login' }, [el('label', {}, ['Логин', lg]), el('label', {}, ['Пароль', pw]), el('button', { class: 'btn', type: 'button', text: 'Войти', onclick: go })]),
+    err]);
+}
+function regFilters() {
+  const f = reg.f;
+  const inp = (key, attrs) => { const n = el('input', Object.assign({ value: f[key] || '' }, attrs)); n.addEventListener('input', () => { f[key] = n.value; regDebounced(); }); return n; };
+  const sel = (key, opts) => { const n = el('select', {}, Object.entries(opts).map(([v, t]) => { const o = el('option', { value: v, text: t }); if ((f[key] || '') === v) o.selected = true; return o; })); n.addEventListener('change', () => { f[key] = n.value; regSearch(true); }); return n; };
+  const grid = el('div', { class: 'reg-filters' }, [
+    el('label', { class: 'q' }, ['Поиск', inp('q', { type: 'search', placeholder: 'Фамилия, ID пациента, № направления, файл' })]),
+    el('label', {}, ['Дата с', inp('date_from', { type: 'date' })]),
+    el('label', {}, ['Дата по', inp('date_to', { type: 'date' })]),
+    el('label', {}, ['Область', sel('region', { '': 'все', spine: 'позвоночник', hip: 'бедро' })]),
+    el('label', {}, ['Результат', sel('result', Object.assign({ '': 'любой' }, REG_RESULT))]),
+    el('label', {}, ['Статус', sel('status', Object.assign({ '': 'любой' }, REG_STATUS))]),
+  ]);
+  const day = n => { const d = new Date(Date.now() - n * 864e5); return d.toISOString().slice(0, 10); };
+  const quick = (label, apply, on) => el('button', { type: 'button', class: on ? 'on' : '', text: label, onclick: () => { apply(); renderRegistry(); regSearch(true); } });
+  const q = el('div', { class: 'reg-quick' }, [
+    quick('Сегодня', () => { f.date_from = day(0); f.date_to = day(0); }, f.date_from && f.date_from === f.date_to && f.date_from === day(0)),
+    quick('7 дней', () => { f.date_from = day(7); f.date_to = ''; }, f.date_from === day(7) && !f.date_to),
+    quick('Нужна пересъёмка', () => { f.status = f.status === 'retake' ? '' : 'retake'; }, f.status === 'retake'),
+    quick('С нарушением', () => { f.result = f.result === 'violation' ? '' : 'violation'; }, f.result === 'violation'),
+    quick('Не уверен', () => { f.result = f.result === 'uncertain' ? '' : 'uncertain'; }, f.result === 'uncertain'),
+    quick('С комментариями', () => { f.has_comments = f.has_comments === '1' ? '' : '1'; }, f.has_comments === '1'),
+    el('span', { class: 'sp' }),
+    el('button', { type: 'button', text: 'Сбросить', onclick: () => { Object.keys(f).forEach(k => { f[k] = ''; }); renderRegistry(); regSearch(true); } }),
+    el('button', { type: 'button', text: 'Скачать CSV', onclick: regExport }),
+  ]);
+  return el('div', {}, [grid, q]);
+}
+function regDebounced() { clearTimeout(reg.timer); reg.timer = setTimeout(() => regSearch(true), 350); }
+function regQuery(extra) {
+  const p = new URLSearchParams();
+  for (const [k, v] of Object.entries(reg.f)) if (v) p.set(k, v);
+  for (const [k, v] of Object.entries(extra || {})) p.set(k, v);
+  return p.toString();
+}
+async function regSearch(reset) {
+  if (!reg.user) return;
+  if (reset) { reg.offset = 0; reg.items = []; }
+  const meta = document.getElementById('regMeta');
+  try {
+    const d = await regFetch('/api/registry/studies?' + regQuery({ limit: 30, offset: reg.offset }));
+    reg.total = d.total; reg.items = reset ? d.studies : reg.items.concat(d.studies);
+    regRenderList();
+  } catch (e) { if (meta) meta.textContent = e.message; }
+}
+async function regExport() {
+  try {
+    const r = await fetch('/api/registry/studies.csv?' + regQuery(), { headers: regHeaders() });
+    if (!r.ok) throw new Error('Ошибка ' + r.status);
+    const url = URL.createObjectURL(await r.blob());
+    const a = el('a', { href: url, download: 'journal_densitoai.csv' }); document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  } catch (e) { const m = document.getElementById('regMeta'); if (m) m.textContent = e.message; }
+}
+function regBadgeResult(s) {
+  const map = { violation: ['violation', 'нарушение'], ok: ['ok', 'норма'], fail: ['fail', 'ошибка'], unsupported: ['neutral', 'вне области'] };
+  const [c, t] = map[s.verdict] || ['neutral', s.verdict];
+  const box = el('span', {}, [el('span', { class: 'badge ' + c, text: t + (s.n_violation > 1 ? ' · ' + s.n_violation : '') })]);
+  if ((s.flags || []).includes('uncertain')) box.appendChild(el('span', { class: 'badge uncertain', text: 'не уверен' }));
+  return box;
+}
+function regRenderList() {
+  const list = document.getElementById('regList'), meta = document.getElementById('regMeta');
+  if (!list) return;
+  list.textContent = '';
+  if (meta) meta.textContent = reg.total ? `Найдено исследований: ${reg.total}` + (reg.items.length < reg.total ? ` · показано ${reg.items.length}` : '') : '';
+  list.appendChild(el('div', { class: 'reg-row head' }, ['Дата', 'Пациент', 'Области', 'Результат', 'Статус', ''].map(t => el('div', { text: t }))));
+  if (!reg.items.length) { list.appendChild(el('div', { class: 'reg-empty', text: 'Ничего не найдено. Измените условия поиска или загрузите партию — она появится в журнале автоматически.' })); return; }
+  for (const s of reg.items) {
+    const row = el('div', { class: 'reg-row' + (reg.open === s.study_uid ? ' open' : ''), tabindex: '0', role: 'button', onclick: () => regToggle(s.study_uid) }, [
+      el('div', { class: 'c-date' }, [el('div', { text: s.study_date || '—' }), el('div', { class: 'sub2', text: s.study_date_source === 'DICOM' ? '' : 'дата загрузки' })]),
+      el('div', { class: 'c-pat' }, [el('div', { class: 'pn', text: s.patient }), el('div', { class: 'sub2', text: [s.patient_id && ('ID ' + s.patient_id), s.accession && ('напр. ' + s.accession)].filter(Boolean).join(' · ') || plural(s.n_images, 'снимок', 'снимка', 'снимков') })]),
+      el('div', { class: 'c-reg', text: (s.regions || []).map(x => REGION_SHORT[x] || x).join(', ') + ' · ' + plural(s.n_images, 'снимок', 'снимка', 'снимков') }),
+      el('div', { class: 'c-res' }, [regBadgeResult(s)]),
+      el('div', { class: 'c-st' }, [el('span', { class: 'badge st-' + s.status, text: s.status_title })]),
+      el('div', { class: 'c-com', text: s.n_comments ? s.n_comments + ' комм.' : '' }),
+    ]);
+    row.addEventListener('keydown', e => { if (e.key === 'Enter') regToggle(s.study_uid); });
+    list.appendChild(row);
+    if (reg.open === s.study_uid) list.appendChild(el('div', { class: 'reg-detail', id: 'regDetail' }, [el('div', { class: 'reg-empty', text: 'Загрузка…' })]));
+  }
+  if (reg.items.length < reg.total) list.appendChild(el('div', { class: 'reg-more' }, [el('button', { class: 'btn ghost sm', type: 'button', text: 'Показать ещё', onclick: () => { reg.offset = reg.items.length; regSearch(false); } })]));
+  if (reg.open) regLoadDetail(reg.open, false);
+}
+function regToggle(uid) { reg.open = reg.open === uid ? null : uid; regRenderList(); }
+async function regLoadDetail(uid, reveal) {
+  const host = document.getElementById('regDetail'); if (!host) return;
+  try { const d = await regFetch('/api/registry/studies/' + encodeURIComponent(uid) + (reveal ? '?reveal=1' : '')); regDetail(host, d); }
+  catch (e) { host.textContent = ''; host.appendChild(el('div', { class: 'reg-err', text: e.message })); }
+}
+function regDetail(host, d) {
+  host.textContent = '';
+  const left = el('div', {}), right = el('div', {});
+  const imgs = el('div', { class: 'reg-imgs' });
+  const IMG_LIMIT = 5;
+  d.images.forEach((im, idx) => {
+    const res = im.processing_status && im.processing_status !== 'Success' ? el('span', { class: 'badge fail', text: 'ошибка' })
+      : (String(im.quality_class) === '1' ? el('span', { class: 'badge violation', text: 'нарушение' }) : el('span', { class: 'badge ok', text: 'норма' }));
+    imgs.appendChild(el('div', { class: 'reg-img' }, [
+      el('div', {}, [el('div', { class: 'fn', text: im.file_name || im.image_uid }),
+        el('div', { class: 'sub2', text: [REGION_SHORT[im.region] || im.region, im.violation_type ? im.violation_type.split(';').join(', ') : '', im.quality_prob !== null ? 'quality_prob ' + fmt(im.quality_prob) : '', im.uncertain ? 'не уверен' : ''].filter(Boolean).join(' · ') })]),
+      el('div', { style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end' }, [res,
+        im.card_url ? el('a', { class: 'btn ghost sm', href: im.card_url, text: 'Карточка' }) : null]),
+    ]));
+    if (idx >= IMG_LIMIT) imgs.lastChild.style.display = 'none';
+  });
+  const pii = el('div', { class: 'reg-pii', style: 'margin:0 0 14px' });
+  if (d.pii) {
+    pii.appendChild(el('div', { text: 'Персональные данные (просмотр записан в журнал доступа)' }));
+    pii.appendChild(el('div', { class: 'kv' }, [['ФИО', d.pii.patient_name], ['ID пациента', d.pii.patient_id || '—'], ['Дата рождения', d.pii.birth_date || '—'], ['Пол', ({ F: 'Ж', M: 'М' })[d.pii.sex] || d.pii.sex || '—'], ['№ направления', d.pii.accession || '—']].flatMap(([k, v]) => [el('span', { text: k }), el('span', { text: v })])));
+  } else if (d.has_pii) {
+    pii.appendChild(el('div', { text: 'В списке ФИО сокращено до инициалов, ID — до последних цифр.' }));
+    pii.appendChild(el('button', { class: 'btn ghost sm', type: 'button', style: 'margin-top:8px', text: 'Показать ФИО и данные пациента', onclick: () => regLoadDetail(d.study_uid, true) }));
+  } else {
+    pii.appendChild(el('div', { text: 'Исследование обезличено: в DICOM нет ФИО и ID пациента.' }));
+  }
+  left.appendChild(pii);
+  left.appendChild(el('h3', { text: 'Снимки исследования · ' + d.images.length }));
+  left.appendChild(imgs);
+  if (d.images.length > IMG_LIMIT) {
+    const more = el('button', { class: 'btn ghost sm', type: 'button', style: 'margin-top:8px', text: 'Показать все снимки (' + d.images.length + ')',
+      onclick: () => { [...imgs.children].forEach(c => { c.style.display = ''; }); more.remove(); } });
+    left.appendChild(more);
+  }
+  left.appendChild(el('div', { class: 'sub2', style: 'margin-top:10px;overflow-wrap:anywhere', text: 'StudyInstanceUID ' + d.study_uid }));
+
+  right.appendChild(el('h3', { text: 'Статус' }));
+  const stBox = el('div', { class: 'reg-status' });
+  for (const k of d.allowed_statuses) {
+    if (k === 'new' && d.status === 'new') continue;
+    stBox.appendChild(el('button', { class: 'btn sm ' + (d.status === k ? '' : 'ghost'), type: 'button', text: REG_STATUS[k],
+      onclick: async () => { try { await regFetch('/api/registry/studies/' + encodeURIComponent(d.study_uid) + '/status', { method: 'POST', body: JSON.stringify({ status: k }) }); await regRefreshOne(d.study_uid); } catch (e) { alert(e.message); } } }));
+  }
+  right.appendChild(stBox);
+  if (d.status_log && d.status_log.length) right.appendChild(el('div', { class: 'reg-log', text: d.status_log.slice(-4).map(x => `${x.at.replace('T', ' ').slice(0, 16)} — ${x.status_title} (${x.author}, ${x.role_title})`).join('\n') }));
+  right.appendChild(el('h3', { text: 'Комментарии врача и лаборанта' }));
+  const thread = el('div', { class: 'reg-thread' });
+  if (!d.comments.length) thread.appendChild(el('div', { class: 'sub2', text: 'Комментариев пока нет.' }));
+  const fnByUid = Object.fromEntries(d.images.map(im => [im.image_uid, im.file_name]));
+  for (const c of d.comments) {
+    thread.appendChild(el('div', { class: 'reg-msg role-' + c.role }, [
+      el('div', { class: 'who', text: `${c.author} · ${c.role_title} · ${c.at.replace('T', ' ').slice(0, 16)}` + (c.image_uid ? ' · к снимку ' + (fnByUid[c.image_uid] || '') : '') }),
+      el('div', { class: 'txt', text: c.text })]));
+  }
+  right.appendChild(thread);
+  const ta = el('textarea', { maxlength: '2000', placeholder: 'Например: переснять, ротация бедра; стопа не повёрнута внутрь' });
+  const pick = el('select', {}, [el('option', { value: '', text: 'ко всему исследованию' })].concat(d.images.map(im => el('option', { value: im.image_uid, text: 'к снимку ' + (im.file_name || im.image_uid) }))));
+  const send = async () => {
+    if (!ta.value.trim()) return;
+    try { await regFetch('/api/registry/studies/' + encodeURIComponent(d.study_uid) + '/comments', { method: 'POST', body: JSON.stringify({ text: ta.value, image_uid: pick.value || null }) }); ta.value = ''; await regRefreshOne(d.study_uid); }
+    catch (e) { alert(e.message); }
+  };
+  ta.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) send(); });
+  right.appendChild(el('div', { class: 'reg-new' }, [ta, el('div', { class: 'row' }, [pick, el('button', { class: 'btn sm', type: 'button', text: 'Отправить', onclick: send })])]));
+  host.appendChild(left); host.appendChild(right);
+  thread.scrollTop = thread.scrollHeight;
+}
+async function regRefreshOne(uid) {
+  try {
+    const d = await regFetch('/api/registry/studies?' + regQuery({ limit: 200, offset: 0 }));
+    reg.total = d.total; const upd = d.studies.find(s => s.study_uid === uid);
+    reg.items = reg.items.map(s => s.study_uid === uid && upd ? upd : s);
+  } catch (e) { /* список обновится при следующем поиске */ }
+  regRenderList();
+}
+
 route();
 </script>
 </body>
