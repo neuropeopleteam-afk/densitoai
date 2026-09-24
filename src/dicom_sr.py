@@ -309,6 +309,156 @@ def study_completeness(items: list) -> Dict[str, Any]:
     return {"spine": has_spine, "hip": has_hip, "note": note}
 
 
+# --- Главное действие на визит (C1): одно приоритетное действие по исследованию ------------------- #
+# Правило: среди критериев с флагом по всем снимкам исследования выбирается критерий с максимальным
+# относительным запасом над порогом  (score - threshold) / (1 - threshold)  (0 — ровно на пороге,
+# 1 — максимум шкалы). Остальные замечания сохраняются в others (свёрнуты в кабинете, не скрыты).
+# Повторы одной и той же пары «область + критерий» (копии кадра) сворачиваются в одно замечание с числом
+# снимков. Снимок с классом 1 без флага по критерию (решение общей модели) идёт после критериев.
+# На quality_class, violation_type и 9 колонок CSV не влияет.
+PRIORITY_CODE = "PRIORITY-ACTION"
+PRIORITY_MEANING = "Приоритетное действие"
+PRIORITY_TEXT_CODE = "PRIORITY-TEXT"  # CodeValue (SH) — не длиннее 16 символов
+PRIORITY_TEXT_MEANING = "Приоритетное действие: подробно"
+PRIORITY_RULE = "максимальный относительный запас над порогом (score - threshold) / (1 - threshold)"
+
+_SIDE_TITLES = {"spine": "Позвоночник", "right_hip": "Правое бедро", "left_hip": "Левое бедро"}
+_CRIT_TITLES = {
+    "sp_pos": "укладка позвоночника", "sp_axis": "ось позвоночника", "sp_art": "посторонние предметы в поле",
+    "rh_pos": "укладка бедра", "lh_pos": "укладка бедра",
+    "rh_roi": "область интереса бедра", "lh_roi": "область интереса бедра",
+}
+# код значения -> (краткий смысл для CodeMeaning, <= 64 символов; хвост текста действия).
+# В SR и в API значение кода — "PA-" + короткий код (_PRIORITY_VALUE), CodeValue (SH) не длиннее 16 символов.
+_PRIORITY_ACTIONS = {
+    "RETAKE-CHECK": ("Проверить снимок, при подтверждении переснять", "проверить снимок, при подтверждении переснять"),
+    "RESCAN-DISCUSS": ("Поле неполное: обсудить повторное сканирование",
+                       "поле сканирования неполное, обсудить повторное сканирование"),
+    "ANALYSIS-CHECK": ("Поле полное: проверить анализ на аппарате",
+                       "поле полное, вопрос к области анализа: проверить анализ на аппарате, повторно не облучать"),
+    "DOCTOR": ("Решение врача по снимку", "измерений поля недостаточно, решение врача по снимку"),
+    "REVIEW": ("Проверить снимок (общая оценка)", "нарушение по общей оценке снимка, проверить снимок"),
+    "FILES": ("Проверить необработанные файлы", "проверить необработанные файлы"),
+    "NONE": ("Действий по качеству не требуется", "нарушений не выявлено, действий по качеству не требуется"),
+}
+_PRIORITY_VALUE = {"RETAKE-CHECK": "PA-RETAKE", "RESCAN-DISCUSS": "PA-RESCAN", "ANALYSIS-CHECK": "PA-ANALYSIS",
+                   "DOCTOR": "PA-DOCTOR", "REVIEW": "PA-REVIEW", "FILES": "PA-FILES", "NONE": "PA-NONE"}
+_ROI_ROUTE_ACTION = {"field_incomplete": "RESCAN-DISCUSS", "field_complete": "ANALYSIS-CHECK",
+                     "insufficient_data": "DOCTOR"}
+
+
+def _fnum(v: Any) -> Optional[float]:
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    return f if f == f and f not in (float("inf"), float("-inf")) else None
+
+
+def _item_region(it: Dict[str, Any]) -> str:
+    r = str(it.get("internal_region") or "").strip()
+    if r in _SIDE_TITLES:
+        return r
+    return "spine" if _region_kind(it.get("anatomical_region")) == "spine" else (r or "")
+
+
+def relative_margin(score: Any, threshold: Any) -> Optional[float]:
+    """(score - threshold) / (1 - threshold); None, если чисел нет или порог >= 1."""
+    s, t = _fnum(score), _fnum(threshold)
+    if s is None or t is None or t >= 1.0:
+        return None
+    return round((s - t) / (1.0 - t), 6)
+
+
+def study_priority_action(items: list) -> Dict[str, Any]:
+    """Одно главное действие по исследованию + остальные замечания.
+
+    items — как в build_study_sr, плюс необязательные поля: internal_region, criteria
+    ([{code, score, threshold, flag, uncertain}]) и roi_route (код hip_roi: field_incomplete /
+    field_complete / insufficient_data). Без criteria снимок с классом 1 даёт замечание «общая оценка».
+    Возвращает {status, action_code, action_meaning, text, image_uid, region, criterion,
+    relative_margin, uncertain, n_images, others: [...], n_others, rule}. Детерминирован: при равных
+    запасах порядок — по коду критерия и image_uid."""
+    cands: Dict[tuple, Dict[str, Any]] = {}
+    general: Dict[str, Dict[str, Any]] = {}
+    n_fail = 0
+    for it in items or []:
+        if str(it.get("processing_status", "")).lower() == "failure":
+            n_fail += 1
+            continue
+        reg = _item_region(it)
+        uid = str(it.get("image_uid") or "")
+        any_flag = False
+        for c in it.get("criteria") or []:
+            try:
+                flagged = int(c.get("flag") or 0) == 1
+            except (TypeError, ValueError):
+                flagged = False
+            if not flagged:
+                continue
+            any_flag = True
+            code = str(c.get("code") or "")
+            rm = relative_margin(c.get("score"), c.get("threshold"))
+            if code.endswith("_roi"):
+                act = _ROI_ROUTE_ACTION.get(str(it.get("roi_route") or ""), "DOCTOR")
+            else:
+                act = "RETAKE-CHECK"
+            key = (reg, code)
+            cur = cands.get(key)
+            entry = {"image_uid": uid, "region": reg, "criterion": code, "relative_margin": rm,
+                     "uncertain": bool(c.get("uncertain")), "action_code": act, "n_images": 1}
+            if cur is None:
+                cands[key] = entry
+            else:
+                n = cur["n_images"] + 1
+                a = rm if rm is not None else -9.0
+                b = cur["relative_margin"] if cur["relative_margin"] is not None else -9.0
+                better = a > b or (a == b and uid < cur["image_uid"])
+                cands[key] = {**(entry if better else cur), "n_images": n}
+        if not any_flag and int(it.get("quality_class") or 0) == 1:
+            g = general.get(reg)
+            general[reg] = {"image_uid": min(uid, g["image_uid"]) if g else uid, "region": reg, "criterion": "",
+                            "relative_margin": None, "uncertain": False, "action_code": "REVIEW",
+                            "n_images": (g["n_images"] + 1) if g else 1}
+
+    def _text(e: Dict[str, Any]) -> str:
+        side = _SIDE_TITLES.get(e["region"], e["region"] or "Снимок")
+        tail = _PRIORITY_ACTIONS[e["action_code"]][1]
+        crit = _CRIT_TITLES.get(e["criterion"], "")
+        s = f"{side}: {crit}, {tail}" if crit else f"{side}: {tail}"
+        if e.get("n_images", 1) > 1:
+            s += f" (снимков: {e['n_images']})"
+        if e.get("uncertain"):
+            s += "; оценка у порога"
+        return s
+
+    ranked = sorted(cands.values(), key=lambda e: (-(e["relative_margin"] if e["relative_margin"] is not None else -9.0),
+                                                   e["criterion"], e["region"], e["image_uid"]))
+    ranked += sorted(general.values(), key=lambda e: (e["region"], e["image_uid"]))
+    for e in ranked:
+        e["text"] = _text(e)
+    if n_fail:
+        ranked.append({"image_uid": "", "region": "", "criterion": "", "relative_margin": None, "uncertain": False,
+                       "action_code": "FILES", "n_images": n_fail,
+                       "text": f"Проверить необработанные файлы (Failure): {n_fail}"})
+    if ranked:
+        main, others = ranked[0], ranked[1:]
+        status = "files" if main["action_code"] == "FILES" else "action"
+    else:
+        main = {"image_uid": "", "region": "", "criterion": "", "relative_margin": None, "uncertain": False,
+                "action_code": "NONE", "n_images": 0, "text": "Нарушений не выявлено, действий по качеству не требуется"}
+        others, status = [], "ok"
+    return {"status": status, "action_code": _PRIORITY_VALUE[main["action_code"]],
+            "action_meaning": _PRIORITY_ACTIONS[main["action_code"]][0], "text": main["text"],
+            "image_uid": main["image_uid"], "region": main["region"], "criterion": main["criterion"],
+            "relative_margin": main["relative_margin"], "uncertain": main["uncertain"],
+            "n_images": main["n_images"],
+            "others": [dict({k: e[k] for k in ("text", "image_uid", "region", "criterion", "relative_margin",
+                                               "uncertain", "n_images")}, action_code=_PRIORITY_VALUE[e["action_code"]])
+                       for e in others],
+            "n_others": len(others), "rule": PRIORITY_RULE}
+
+
 def build_study_sr(study_uid: str, items: list, model_version: str, config_hash: str,
                    study_header: Optional[Dict[str, Any]] = None,
                    manufacturer: str = SERVICE_NAME, now: Optional[datetime.datetime] = None) -> Dataset:
@@ -398,6 +548,7 @@ def build_study_sr(study_uid: str, items: list, model_version: str, config_hash:
         ds.CurrentRequestedProcedureEvidenceSequence = Sequence([ev])
 
     # --- Дерево содержимого
+    priority = study_priority_action(items)  # C1: главное действие на визит, рядом с итогом
     n_total = len(items)
     n_fail = sum(1 for it in items if str(it.get("processing_status", "")).lower() == "failure")
     n_viol = sum(1 for it in items if int(it.get("quality_class") or 0) == 1)
@@ -415,6 +566,9 @@ def build_study_sr(study_uid: str, items: list, model_version: str, config_hash:
         _text_item("HAS OBS CONTEXT", "STUDY-UID-SRC", "StudyInstanceUID исходного исследования", str(study_uid)),
         _text_item("HAS OBS CONTEXT", "AI-WARNING", "Предупреждение об использовании ИИ", AI_WARNING),
         _code_content_item("CONTAINS", "STUDY-VERDICT", "Итог по исследованию", *verdict),
+        _code_content_item("CONTAINS", PRIORITY_CODE, PRIORITY_MEANING, priority["action_code"],
+                           priority["action_meaning"]),
+        _text_item("CONTAINS", PRIORITY_TEXT_CODE, PRIORITY_TEXT_MEANING, priority["text"]),
         _num_item("CONTAINS", "N-IMAGES", "Число снимков в исследовании", n_total, "1"),
         _num_item("CONTAINS", "N-VIOLATION", "Число снимков с нарушениями", n_viol, "1"),
         _num_item("CONTAINS", "N-FAILURE", "Число снимков, не обработанных (Failure)", n_fail, "1"),

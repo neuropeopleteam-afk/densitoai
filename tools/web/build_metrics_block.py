@@ -102,13 +102,15 @@ def build(root: Path) -> str:
                '<span>Полоса — положение ROC-AUC стека (OOF) на шкале 0.5–1.0; левый край — случайный классификатор</span>'
                '<span class="metrics-legend-note">интервалы F1 — бутстрап по исследованиям, 95 %</span></div>')
     out.append('<div class="table-wrap"><table class="metrics main">')
-    out.append('<colgroup><col style="width:18%"><col style="width:10%"><col style="width:8%"><col style="width:8%">'
-               '<col style="width:8%"><col style="width:7%"><col style="width:15%"><col style="width:11%"><col style="width:15%"></colgroup>')
+    out.append('<colgroup><col style="width:17%"><col style="width:9%"><col style="width:8%"><col style="width:7%">'
+               '<col style="width:7%"><col style="width:7%"><col style="width:8%"><col style="width:13%"><col style="width:10%"><col style="width:14%"></colgroup>')
     out.append('<thead><tr><th>Критерий</th><th>Область</th><th class="num">n / позит.</th>'
                '<th class="num">AUC геом.</th><th class="num">AUC эмб.</th>'
-               '<th class="num">AUC стек</th><th>AUC на шкале 0.5–1.0</th>'
+               '<th class="num">AUC стек</th><th class="num" title="оценка поставленной модели во вложенной проверке">AUC nested</th><th>AUC на шкале 0.5–1.0</th>'
                '<th class="num">F1 OOF [95 % ДИ]</th><th>Надёжность</th></tr></thead><tbody>')
     aucs, small = [], []
+    gaps = [float(ms[r][k]["auc_stacked"]) - float(ms[r][k]["nested_auc_production"]) for r, k, _t, _a in CRITERIA
+            if ms[r][k].get("nested_auc_production") is not None] or [0.0]
     for region, key, title, area in CRITERIA:
         m = ms[region][key]
         auc = float(m["auc_stacked"])
@@ -123,6 +125,7 @@ def build(root: Path) -> str:
             f'<td class="num">{f3(m["auc_geom"])}</td>'
             f'<td class="num">{f3(m["auc_emb"])}</td>'
             f'<td class="num strong">{f3(auc)}</td>'
+            f'<td class="num">{f3(m.get("nested_auc_production"))}</td>'
             f'<td>{bar_html(auc)}</td>'
             f'<td class="num">{f2(m["f1_oof"])} [{f2(m["f1_ci_lo"])}; {f2(m["f1_ci_hi"])}]</td>'
             f"<td>{html.escape(reliability(m, bool(manifest.get(f'model_{region}_{key}_geom.pkl', {}).get('embedding_features'))))}</td>"
@@ -152,6 +155,10 @@ def build(root: Path) -> str:
     out.append(
         f'<p class="metrics-summary">ROC-AUC стека по пяти критериям — от {f3(min(aucs))} до {f3(max(aucs))}. '
         + rare_sent +
+        f'AUC nested — оценка поставленной модели без подгонки порога и веса стэкинга (вложенная проверка по группам '
+        f'«исследование + хэш пикселей», поле <code>nested_auc_production</code>); она ниже OOF на '
+        f'{f3(min(gaps))}–{f3(max(gaps))}. '
+        + hip_roi_note(root, ms) +
         f'Слабые места показываем, а не скрываем. '
         f'Источник: <code>models/metrics_summary.json</code> (OOF, группировка по исследованию), '
         f'ДИ по F1 — бутстрап по исследованиям.</p>'
@@ -168,7 +175,61 @@ def build(root: Path) -> str:
         out.append("</tbody></table></div>")
         out.append('<p class="metrics-src">Источник: <code>docs/METRICS_REPORT.md</code>, таблица «Итого» '
                    '(<code>python src/eval_oof_metrics.py</code>, 95 % ДИ — бутстрап по исследованиям, 2000 повторов).</p>')
+    out += organizer_block(root)
     return "\n".join(out)
+
+
+def hip_roi_note(root: Path, ms: dict) -> str:
+    """Оговорка по F1 hip_roi: обе оценки (сторона детектора / старая плотностная привязка), docs/metrics_side_label.json."""
+    p = root / "docs" / "metrics_side_label.json"
+    if not p.exists():
+        return ""
+    try:
+        c = json.loads(p.read_text(encoding="utf-8"))["criteria"]["hip_roi"]
+        a, b, dis = c["A_side_detected"], c["B_side_label"], c["disagreements"]
+    except (ValueError, KeyError, TypeError):
+        return ""
+    return (f'F1 hip_roi {f3(a["f1"])} зависит от одного исследования: у {dis["n_frames"]} кадров в '
+            f'{dis["n_studies"]} исследовании метки правого и левого бедра различаются, и при старой плотностной '
+            f'привязке стороны F1 {f3(b["f1"])} (<code>docs/metrics_side_label.json</code>). ')
+
+
+def organizer_block(root: Path) -> list:
+    """Метрики в схеме организаторов (docs/organizer_metrics_oof.json, tools/organizer_metrics.py --oof)."""
+    p = root / "docs" / "organizer_metrics_oof.json"
+    if not p.exists():
+        return []
+    r = json.loads(p.read_text(encoding="utf-8"))
+    out = ['<h3 class="metrics-h3">Схема организаторов: общий пул файлов и три трактовки macro-F1, OOF</h3>',
+           '<div class="table-wrap"><table class="metrics compact"><thead><tr><th>Показатель</th>'
+           '<th class="num">По файлам [95 % ДИ]</th><th class="num">По уникальным кадрам [95 % ДИ]</th></tr></thead><tbody>']
+    rows = [("Бинарная ROC-AUC по quality_prob, все файлы одним пулом", "bin_auc/pooled"),
+            ("Бинарная F1 по quality_class, все файлы одним пулом", "bin_f1/pooled"),
+            ("Macro-F1 по областям: позвоночник / бедро", ("macro/spine", "macro/hip")),
+            ("Macro-F1 по 5 критериям", "macro/5_criteria"),
+            ("Macro-F1 по 4 строкам словаря («Некорректная укладка» общая)", "macro/4_dictionary_rows"),
+            ("Уровень визита: чувствительность", "visit/sensitivity"),
+            ("Уровень визита: специфичность", "visit/specificity")]
+
+    def cell(blk, k):
+        pt, ci = blk["point"], blk.get("ci95", {})
+        if isinstance(k, tuple):
+            return " / ".join(f3(pt[x]) for x in k)
+        c = ci.get(k)
+        return f3(pt[k]) + (f" [{f2(c[0])}; {f2(c[1])}]" if c else "")
+    for title, k in rows:
+        out.append(f'<tr><td>{html.escape(title)}</td><td class="num">{cell(r["files"], k)}</td>'
+                   f'<td class="num">{cell(r["unique_frames"], k)}</td></tr>')
+    out.append("</tbody></table></div>")
+    tb = r.get("tie_blocks", {}).get("sp_pos", {})
+    v = r["files"]["visit"]
+    out.append(f'<p class="metrics-src">Источник: <code>docs/ORGANIZER_METRICS.md</code> '
+               f'(<code>python tools/organizer_metrics.py --oof</code>; разметка по исследованиям, лист «Калибровка»; '
+               f'кластерный бутстрап по исследованиям). Файлов {r["files"]["n_rows"]}, уникальных кадров '
+               f'{r["unique_frames"]["n_rows"]}, визитов {v["n"]} (с нарушением {v["n_pos"]}). У sp_pos '
+               f'{tb.get("flags_total", "—")} флагов при {tb.get("positives_total", "—")} позитивах: '
+               f'{tb.get("rows_on_threshold", "—")} строк — клоны одного кадра без нарушения ровно на пороге.</p>')
+    return out
 
 
 def inject(html_path: Path, fragment: str) -> None:

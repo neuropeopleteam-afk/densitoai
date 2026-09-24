@@ -27,6 +27,7 @@
    "nested_alternative_what": "контур A без synth_pos_logit (2.3.2)",
    "nested_auc_mean": 0.8781260592641189,
    "nested_auc_ci": null,
+   "nested_auc_alternative_ci": null,
    "nested_auc_base_mean": 0.759310965775518,
    "nested_repeats_gain_ge_0.03": 20,
    "platt": {
@@ -69,6 +70,11 @@
     0.8623063866301526,
     0.9608696264464938
    ],
+   "nested_auc_alternative_ci": [
+    0.6473233284599684,
+    0.7896465673990877,
+    0.905406016573296
+   ],
    "nested_auc_base_mean": 0.7481642321358073,
    "nested_repeats_gain_ge_0.03": 19,
    "platt": {
@@ -105,8 +111,13 @@
    "nested_auc_production": 0.8167720828789531,
    "nested_auc_alternative": 0.8090730643402398,
    "nested_alternative_what": "вес вентиля по критерию (К2, не принят)",
-   "nested_auc_mean": 0.8090730643402398,
+   "nested_auc_mean": 0.8167720828789531,
    "nested_auc_ci": [
+    0.7494795072727232,
+    0.8494407754183195,
+    0.9295763975634205
+   ],
+   "nested_auc_alternative_ci": [
     0.720054555388759,
     0.8443352681799068,
     0.938722855816729
@@ -149,8 +160,13 @@
    "nested_auc_production": 0.7091088607594938,
    "nested_auc_alternative": 0.6808101265822784,
    "nested_alternative_what": "вес вентиля по критерию (К2, не принят)",
-   "nested_auc_mean": 0.6808101265822784,
+   "nested_auc_mean": 0.7091088607594938,
    "nested_auc_ci": [
+    0.5737473067912123,
+    0.7270768587851195,
+    0.849079759553591
+   ],
+   "nested_auc_alternative_ci": [
     0.5461273678371307,
     0.7056860868337339,
     0.8282671966262128
@@ -225,8 +241,13 @@
    "nested_auc_production": 0.8732727635782748,
    "nested_auc_alternative": 0.8523362619808307,
    "nested_alternative_what": "вес вентиля по критерию (К2, не принят)",
-   "nested_auc_mean": 0.8523362619808307,
+   "nested_auc_mean": 0.8732727635782748,
    "nested_auc_ci": [
+    0.728503793994188,
+    0.8783209264323271,
+    0.9695016488994554
+   ],
+   "nested_auc_alternative_ci": [
     0.6995167828197084,
     0.8441426613853853,
     0.9609487538725655

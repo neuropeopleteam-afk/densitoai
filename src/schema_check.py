@@ -6,7 +6,7 @@
 Если в окружении есть пакет `jsonschema`, используется он (полная реализация); иначе —
 встроенный мини-валидатор, покрывающий ключевые слова, которые используются в
 `schema/results_row.schema.json` и `schema/api_analyze_response.schema.json`:
-type, enum, const, minimum, maximum, exclusiveMinimum, minLength, maxLength, pattern,
+type, enum, const, minimum, maximum, exclusiveMinimum, exclusiveMaximum, minLength, maxLength, pattern,
 required, properties, additionalProperties, items, minItems, allOf, anyOf, oneOf, not, if/then/else,
 $ref только вида "#/$defs/<name>".
 
@@ -117,6 +117,8 @@ def _validate(value: Any, schema: Any, root: Dict[str, Any], path: str, errors: 
             errors.append(f"{path}: {value} > maximum {schema['maximum']}")
         if "exclusiveMinimum" in schema and value <= schema["exclusiveMinimum"]:
             errors.append(f"{path}: {value} <= exclusiveMinimum {schema['exclusiveMinimum']}")
+        if "exclusiveMaximum" in schema and value >= schema["exclusiveMaximum"]:
+            errors.append(f"{path}: {value} >= exclusiveMaximum {schema['exclusiveMaximum']}")
     if isinstance(value, str):
         if "minLength" in schema and len(value) < schema["minLength"]:
             errors.append(f"{path}: length {len(value)} < minLength {schema['minLength']}")

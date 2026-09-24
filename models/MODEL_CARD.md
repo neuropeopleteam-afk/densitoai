@@ -1,10 +1,12 @@
 # Карточка модели DensitoAI v2.4.0
 
-Сформировано автоматически `tools/make_model_card.py` 2026-09-23 из `models/metrics_summary.json`, `models/models_manifest.json`, `config.yaml`, `requirements.txt`. Ручные правки не вносить — перегенерировать.
+Сформировано автоматически `tools/make_model_card.py` 2026-09-24 из `models/metrics_summary.json`, `models/models_manifest.json`, `config.yaml`, `requirements.txt`. Ручные правки не вносить — перегенерировать.
 
 ## 1. Назначение
 
 Автоматическая оценка качества денситометрических снимков (DXA, GE Lunar Prodigy) двух областей: «Поясничный отдел позвоночника» и «Проксимальный отдел бедра». Для каждого снимка выдаётся quality_class (0 — норма, 1 — есть нарушение), закрытый список нарушений и quality_prob. Инструмент поддержки контроля качества укладки; не является медицинским изделием и не ставит диагноз. Решение принимает оператор/врач.
+
+**Лицензии.** Исследовательский прототип: бэкбоны `sp_pos` (`densito`) и `sp_axis` (`densito_inv`) дообучены на пуле с некоммерческими лицензиями (Arak — CC BY-NC, BUU-LSPINE — EULA). Для передачи заказчику — вариант `densito_inv_free` (`models/backbone_densito_inv_free.pth`, без этих наборов), цена измерена на nested-протоколе: `sp_axis` AUC стэка 0.860 → 0.773 (`docs/EMB_GATE_REPORT.md`); для `sp_pos` `densito_inv_free` не измерен, замена на `imagenet` стоила 0.759 → 0.672 (К13, до H2).
 
 Официальные строки нарушений (config.yaml → violations): Не выравнена ось позвоночника; Некорректная область интереса; Некорректная укладка; Присутствуют посторонние предметы.
 
@@ -69,7 +71,7 @@ Nested-оценка (порог и стекинг подобраны внутр�
 - Порог критерия: `config.yaml → thresholds.<критерий>`; если null — из `metrics_summary.json → threshold`; если нет и там — fallback_threshold = 0.5.
 - Сейчас в config.yaml: sp_pos=из metrics_summary, sp_axis=из metrics_summary, sp_art=из metrics_summary, rh_pos=из metrics_summary, rh_roi=из metrics_summary, lh_pos=из metrics_summary, lh_roi=из metrics_summary.
 - Правило: критерий срабатывает, если стек-скор ≥ порога; quality_class = 1, если сработал хотя бы один критерий области; violation_type — официальные строки сработавших критериев через «;». quality_prob согласован с классом (class 1 → [0.5; 1], class 0 → [0; 0.5)).
-- Ошибка чтения файла → строка Failure с quality_class 0, пустым violation_type и quality_prob = 0.5.
+- Ошибка чтения файла → строка Failure с quality_class 0, пустым violation_type и quality_prob = 0.499999.
 
 ## 7. Ограничения
 
@@ -80,7 +82,7 @@ Nested-оценка (порог и стекинг подобраны внутр�
 
 ## 8. Версия и хэши
 
-- Версия пайплайна (config.yaml → version): **2.4.0**; config_hash: **1f12392d7373** (тот же пишется в DICOM SR и ответ API).
+- Версия пайплайна (config.yaml → version): **2.4.0**; config_hash: **d97d54aaacd2** (тот же пишется в DICOM SR и ответ API).
 - Ключевые библиотеки (requirements.txt): torch 2.14.0+cpu, torchvision 0.29.0+cpu, numpy 2.5.3, scipy 1.18.1, scikit-learn 1.9.1, pandas 3.0.5, pydicom 3.0.2, opencv-python-headless 5.0.0.93, scikit-image 0.26.0, PyYAML 6.0.3, fastapi 0.141.1.
 
 | Файл модели | Критерий | Признаки / источник | n_pos | sha256[:12] |

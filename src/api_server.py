@@ -55,7 +55,7 @@ sys.path.insert(0, str(SRC_DIR))
 from inference import (  # noqa: E402
     DensitoInference, MODELS_DIR, PROJECT_ROOT, load_config, setup_logging,
     write_results, validate_output_csv, config_hash as _cfg_hash, __version__ as PIPELINE_VERSION,
-    unique_path,
+    unique_path, failure_quality_prob,
 )
 from region_support import check_file as _region_check  # noqa: E402
 
@@ -252,8 +252,13 @@ def _collect_bonus(job_dir: Path, debug_rows: List[Dict[str, Any]]) -> None:
 
 
 def _region_support(row: Dict[str, Any], dbg: Dict[str, Any], tmp: Path) -> tuple:
-    """Поддерживается ли область исследования. Только для слоя API: пакетный путь не вызывает.
-    Любая ошибка проверки трактуется как «поддерживается» — отказ выдумывать нельзя."""
+    """Поддерживается ли область исследования. Пакетный путь (DensitoInference.process_file) уже
+    проверил файл до классификации и записал итог в debug (region_supported / region_support_reason):
+    отказ оттуда берётся как есть. Здесь — повторная проверка по заголовку для строк без этого итога
+    (например, Failure до чтения пикселей). Любая ошибка проверки трактуется как «поддерживается» —
+    отказ выдумывать нельзя."""
+    if isinstance(dbg, dict) and str(dbg.get("region_supported", "")) in ("0", "False"):
+        return False, str(dbg.get("region_support_reason") or "")
     try:
         rel = str(row.get("path_to_study") or "")
         cand = [Path(tmp) / rel, Path(rel)]
@@ -275,7 +280,7 @@ def _mark_unsupported(row: Dict[str, Any], cfg: Dict[str, Any]) -> None:
     out = cfg["output"]
     row["quality_class"] = 0
     row["violation_type"] = ""
-    row["quality_prob"] = float(out["fallback_quality_prob"])
+    row["quality_prob"] = failure_quality_prob(out)  # строго < 0.5 (класс 0)
     row["processing_status"] = out["status_failure"]
 
 
@@ -372,6 +377,78 @@ def _num(v) -> Optional[float]:
         return None
 
 
+# C1: подписи признаков, которые реально подаются в модели контура A (feature_cols файлов моделей;
+# значения — из debug-поля <crit>_model_features, вариант предобработки критерия).
+# (подпись, единица, множитель, знаков)
+MODEL_FEATURE_TITLES = {
+    "scan_length_mm": ("Длина скана", "мм", 1.0, 0),
+    "shaft_len_below_troch_mm": ("Длина диафиза ниже вертела", "мм", 1.0, 0),
+    "femur_solidity": ("Компактность контура бедра", "", 1.0, 3),
+    "shaft_width_mm": ("Ширина диафиза", "мм", 1.0, 1),
+    "abs_shaft_angle_deg": ("Наклон диафиза бедра", "°", 1.0, 1),
+    "merge_height_mm": ("Высота слияния диафиза с тазом", "мм", 1.0, 1),
+    "medial_neck_extent_mm": ("Медиальный выступ шейки бедра", "мм", 1.0, 1),
+    "axis_angle_deg": ("Угол оси позвоночника к вертикали кадра", "°", 1.0, 1),
+    "center_offset_ratio": ("Смещение позвоночника от центра кадра", "% ширины", 100.0, 1),
+    "bone_width_ratio": ("Ширина костной области", "% ширины", 100.0, 1),
+    "synth_pos_logit": ("Признак укладки по изображению (перенос из контура B)", "", 1.0, 2),
+    "metal_metal_area_mm2": ("Площадь плотных включений", "мм²", 1.0, 0),
+    "metal_metal_max_intensity_gap": ("Контраст включений к кости", "сигм", 1.0, 2),
+}
+DECISION_SOURCE_TEXT = {
+    "geom_and_image": "решение по измерениям и по изображению",
+    "geom": "решение по измерениям (контур A)",
+    "image": "решение по изображению, измерения в норме — проверьте снимок визуально",
+    "rule": "решение по резервному правилу (моделей нет)",
+}
+
+
+def _model_features(dbg: Dict[str, Any], crit: str) -> Dict[str, Any]:
+    """{variant, items: [{key, title, unit, value, raw}]} из debug <crit>_model_features; пусто, если поля нет."""
+    raw = dbg.get(f"{crit}_model_features")
+    try:
+        obj = json.loads(raw) if isinstance(raw, str) and raw.strip() else (raw if isinstance(raw, dict) else None)
+    except (TypeError, ValueError):
+        obj = None
+    if not obj:
+        return {"variant": None, "items": []}
+    items = []
+    for k, v in (obj.get("values") or {}).items():
+        title, unit, mult, nd = MODEL_FEATURE_TITLES.get(k, (k, "", 1.0, 3))
+        vv = _num(v)
+        items.append({"key": k, "title": title, "unit": unit,
+                      "value": None if vv is None else round(vv * mult, nd), "raw": vv})
+    return {"variant": obj.get("variant"), "items": items}
+
+
+def _decision_source(dbg: Dict[str, Any], crit: str, flag: bool) -> Optional[str]:
+    """Чем поставлен флаг критерия: geom_and_image / geom / image / rule; None — флага нет.
+    Скор = взвешенное среднее рангов контуров A (измерения) и B (изображение); контур «за нарушение»,
+    если его ранг сам по себе не ниже порога (при равных весах хотя бы один контур не ниже порога)."""
+    if not flag:
+        return None
+    method = str(dbg.get(f"{crit}_method") or "")
+    if method == "fallback_rule":
+        return "rule"
+    if method == "geom_only":
+        return "geom"
+    if method == "emb_only":
+        return "image"
+    thr = _num(dbg.get(f"{crit}_threshold"))
+    rg = _num(dbg.get(f"{crit}_rank_geom"))
+    rg = rg if rg is not None else _num(dbg.get(f"{crit}_p_geom"))
+    re_ = _num(dbg.get(f"{crit}_rank_emb"))
+    re_ = re_ if re_ is not None else _num(dbg.get(f"{crit}_p_emb"))
+    if thr is None or rg is None or re_ is None:
+        return None
+    a, b = rg >= thr, re_ >= thr
+    if a and b:
+        return "geom_and_image"
+    if b and not a:
+        return "image"
+    return "geom"
+
+
 def _details(row: Dict[str, Any], dbg: Dict[str, Any], cfg: Dict[str, Any]) -> Dict[str, Any]:
     """Карточка решения: по каждому критерию — скор, порог, флаг, источник; плюс
     измерения в понятных единицах и рекомендуемое действие. Только для UI/экспертного просмотра."""
@@ -396,7 +473,18 @@ def _details(row: Dict[str, Any], dbg: Dict[str, Any], cfg: Dict[str, Any]) -> D
             "margin": (lambda v: None if v is None else round(v, 4))(_num(dbg.get(f"{c}_margin"))),
             "uncertain": bool(_num(dbg.get(f"{c}_uncertain")) or 0),
             "p_cal": (lambda v: None if v is None else round(v, 3))(_num(dbg.get(f"{c}_p_cal"))),
+            # C1 (добавочные поля): ранги контуров, признаки модели и источник решения
+            "rank_geom": (lambda v: None if v is None else round(v, 3))(_num(dbg.get(f"{c}_rank_geom"))),
+            "rank_emb": (lambda v: None if v is None else round(v, 3))(_num(dbg.get(f"{c}_rank_emb"))),
+            "model_features": _model_features(dbg, c),
+            "decision_source": _decision_source(dbg, c, bool(flag) if flag not in (None, "") else False),
         })
+        crits[-1]["decision_source_text"] = DECISION_SOURCE_TEXT.get(crits[-1]["decision_source"] or "")
+        try:
+            rel = (score - thr) / (1.0 - thr) if (score is not None and thr is not None and thr < 1.0) else None
+        except ZeroDivisionError:
+            rel = None
+        crits[-1]["relative_margin"] = None if rel is None else round(rel, 4)
     # К3: уровень риска и «нужна проверка» — правило calibration_utils.risk_level:
     # средний — не уверен хотя бы один критерий (или отказ); высокий — class=1 и уверен; низкий — class=0 и уверен.
     needs_review = bool(_num(dbg.get("needs_review")) or 0) or is_fail
@@ -430,12 +518,65 @@ def _details(row: Dict[str, Any], dbg: Dict[str, Any], cfg: Dict[str, Any]) -> D
             "reason": dbg.get("bonus_roi_reason"),
             "deficit_mm": _num(dbg.get("bonus_roi_deficit_mm")),
         },
+        # C1: развилка по области интереса бедра (код причины; класс не меняется) — только при флаге *_roi
+        "hip_roi_reason": _hip_roi_reason(region, dbg),
+        "lateral_margin_mm": (lambda v: None if v is None else round(v, 1))(_num(dbg.get("feat_lateral_margin_mm"))),
         "action": action,
         "action_code": action_code,
         "risk_level": risk,
         "needs_review": needs_review,
         "uncertain_criteria": [c for c in str(dbg.get("uncertain_criteria") or "").split(";") if c],
     }
+
+
+def _hip_roi_reason(region: str, dbg: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    if region not in ("right_hip", "left_hip"):
+        return None
+    crit = "rh_roi" if region == "right_hip" else "lh_roi"
+    if not (_num(dbg.get(f"{crit}_flag")) or 0):
+        return None
+    try:
+        import extras as _ex
+        return _ex.hip_roi_reason(dbg, True)
+    except Exception as e:  # noqa: BLE001
+        LOG.warning("hip_roi_reason failed: %s", e)
+        return None
+
+
+def _study_priority(rows: List[Dict[str, Any]], debug_rows: List[Dict[str, Any]], cfg: Dict[str, Any],
+                    supported: List[bool]) -> Dict[str, Dict[str, Any]]:
+    """C1: {study_uid: главное действие на визит} — dicom_sr.study_priority_action (то же правило, что в SR).
+    Снимок вне поддерживаемых областей даёт только общее замечание (его критерии не оцениваются)."""
+    try:
+        from dicom_sr import study_priority_action
+        from inference import _criteria_for_priority, _roi_route_for_priority
+    except Exception as e:  # noqa: BLE001
+        LOG.warning("study priority unavailable: %s", e)
+        return {}
+    groups: Dict[str, List[Dict[str, Any]]] = {}
+    sep = cfg["output"]["violation_separator"]
+    for i, r in enumerate(rows):
+        dbg = debug_rows[i] if i < len(debug_rows) else {}
+        ok = supported[i] if i < len(supported) else True
+        groups.setdefault(str(r.get("study_uid") or ""), []).append({
+            "image_uid": str(r.get("image_uid") or ""),
+            "anatomical_region": str(r.get("anatomical_region") or ""),
+            "internal_region": (dbg or {}).get("internal_region") or "",
+            "quality_class": int(r.get("quality_class") or 0),
+            "violations": [v.strip() for v in str(r.get("violation_type") or "").split(sep) if v.strip()],
+            "processing_status": str(r.get("processing_status") or ""),
+            "criteria": _criteria_for_priority(cfg, dbg or {}) if ok else [],
+            "roi_route": _roi_route_for_priority(cfg, dbg or {}) if ok else "",
+        })
+    out: Dict[str, Dict[str, Any]] = {}
+    for suid, items in groups.items():
+        if not suid:
+            continue
+        try:
+            out[suid] = study_priority_action(items)
+        except Exception as e:  # noqa: BLE001
+            LOG.warning("study priority failed for %s: %s", suid, e)
+    return out
 
 
 def _json_safe(d: Dict[str, Any]) -> Dict[str, Any]:
@@ -570,9 +711,11 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
             expert_save_frames(rows, tmp, job_dir)
         except Exception as e:  # noqa: BLE001
             LOG.warning("expert frames failed: %s", e)
+        supported: List[bool] = []
         for i, r in enumerate(rows):
             dbg = debug_rows[i] if i < len(debug_rows) else {}
             reg_ok, reg_reason = _region_support(r, dbg, tmp)
+            supported.append(bool(reg_ok))
             if not reg_ok:
                 n_unsupported += 1
                 _mark_unsupported(r, eng.cfg)
@@ -606,9 +749,22 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
                 rb["details"] = _details(r, dbg, eng.cfg)
                 if i < len(extras_rows) and isinstance(extras_rows[i], dict):
                     rb["details"]["extras"] = _json_safe(extras_rows[i])
+                    # C1 (З2): уникальные предупреждения исследования с числом (study_warnings не меняется)
+                    try:
+                        import extras as _ex
+                        rb["details"]["study_warnings_unique"] = _ex.study_warning_items(
+                            extras_rows[i].get("study_warnings") or "")
+                    except Exception as e:  # noqa: BLE001
+                        LOG.warning("study_warning_items failed for row %d: %s", i, e)
             except Exception as e:  # noqa: BLE001 — детали не должны ломать ответ
                 LOG.warning("details failed for row %d: %s", i, e)
             rows_out.append(rb)
+        # C1: главное действие на визит — по исследованию и в каждой строке исследования
+        study_priority = _study_priority(rows, debug_rows, eng.cfg, supported)
+        for rb in rows_out:
+            sp = study_priority.get(str(rb.get("study_uid") or ""))
+            if sp is not None:
+                rb["study_priority"] = sp
         xlsx_path = out_csv.with_suffix(".xlsx")
         has_xlsx = bool(xlsx and xlsx_path.exists())
         if n_unsupported:
@@ -638,6 +794,9 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
             # полнота исследования по областям: {study_uid: {"spine": bool, "hip": bool, "note": str|null}};
             # note заполнено, когда представлена только одна область из двух (тот же текст, что в SR)
             "study_completeness": study_completeness,
+            # C1: главное действие на визит {study_uid: {status, action_code, text, others, ...}};
+            # правило — максимальный относительный запас над порогом (то же, что «Приоритетное действие» в SR)
+            "study_priority": study_priority,
             "result_extras_csv_url": (f"/api/results/{job}/results_extras.csv"
                                       if (out_csv.parent / "results_extras.csv").exists() else None),
             # идея 23: решения специалиста по предложенной области интереса (POST/GET, CSV)

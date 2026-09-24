@@ -50,7 +50,8 @@ good = {"path_to_study": "a/b.dcm", "study_uid": "1.2.3", "image_uid": "1.2.3.4"
 check(validate_instance(coerce_csv_row(good), schema) == [], "корректная строка проходит схему")
 normal = dict(good, quality_class="0", violation_type="", quality_prob="0.12")
 check(validate_instance(coerce_csv_row(normal), schema) == [], "строка нормы проходит схему")
-failure = dict(good, quality_class="0", violation_type="", quality_prob="0.5", processing_status="Failure")
+failure = dict(good, quality_class="0", violation_type="", quality_prob=str(cfg["output"]["fallback_quality_prob"]),
+               processing_status="Failure")
 check(validate_instance(coerce_csv_row(failure), schema) == [], "строка Failure проходит схему")
 
 bad_cases = {
@@ -65,10 +66,58 @@ bad_cases = {
     "Failure с нарушением": dict(good, processing_status="Failure"),
     "лишняя колонка": dict(good, extra="1"),
     "пустой image_uid": dict(good, image_uid=""),
+    # инвариант quality_class 1 <=> quality_prob >= 0.5 (в т. ч. Failure)
+    "Failure с quality_prob 0.5": dict(failure, quality_prob="0.5"),
+    "class=0 при quality_prob 0.6": dict(normal, quality_prob="0.6"),
+    "class=1 при quality_prob 0.3": dict(good, quality_prob="0.3"),
+    # нарушения по области (schema/official_dictionary.json)
+    "бедро + нарушение оси позвоночника": dict(good, anatomical_region=cfg["regions"]["hip"],
+                                                violation_type=cfg["violations"]["sp_axis"]),
+    "бедро + посторонние предметы": dict(good, anatomical_region=cfg["regions"]["hip"],
+                                         violation_type=cfg["violations"]["sp_art"]),
+    "позвоночник + некорректная область интереса": dict(good, violation_type=cfg["violations"]["rh_roi"]),
 }
 for name, row in bad_cases.items():
     errs = validate_instance(coerce_csv_row(row), schema)
     check(bool(errs), f"отклонено: {name}" + (f" -> {errs[0][:80]}" if errs else ""))
+
+# 1b. «Некорректная укладка» законна для обеих областей; область интереса — для бедра
+for reg in ("spine", "hip"):
+    row = dict(good, anatomical_region=cfg["regions"][reg], violation_type=cfg["violations"]["sp_pos"])
+    check(validate_instance(coerce_csv_row(row), schema) == [], f"«Некорректная укладка» проходит для {reg}")
+hip_ok = dict(good, anatomical_region=cfg["regions"]["hip"],
+              violation_type=cfg["violations"]["rh_pos"] + ";" + cfg["violations"]["rh_roi"])
+check(validate_instance(coerce_csv_row(hip_ok), schema) == [], "бедро: укладка;область интереса проходит схему")
+check(validate_instance(coerce_csv_row(dict(good, quality_prob="0.5")), schema) == [], "class=1 при prob ровно 0.5 проходит")
+check(0.0 <= float(cfg["output"]["fallback_quality_prob"]) < 0.5, "config.yaml output.fallback_quality_prob < 0.5")
+
+# 1c. validate_output_csv (правила без схемы) ловит те же нарушения по области и инварианту
+tmpd = Path(tempfile.mkdtemp(prefix="densito_schema_neg_"))
+cols = cfg["output"]["columns"]
+csv_cases = {
+    "бедро + ось позвоночника": (dict(good, anatomical_region=cfg["regions"]["hip"],
+                                      violation_type=cfg["violations"]["sp_axis"]), "not allowed for region"),
+    "позвоночник + область интереса": (dict(good, violation_type=cfg["violations"]["rh_roi"]), "not allowed for region"),
+    "Failure 0.5": (dict(failure, quality_prob="0.5"), "quality_prob 0.5 >= 0.5"),
+    "class=1 при 0.3": (dict(good, quality_prob="0.3"), "< 0.5"),
+}
+for name, (row, needle) in csv_cases.items():
+    pth = tmpd / (str(abs(hash(name))) + ".csv")
+    with open(pth, "w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=cols)
+        w.writeheader()
+        w.writerow({c: row[c] for c in cols})
+    probs = validate_output_csv(pth, cfg)
+    check(any(needle in p for p in probs), f"validate_output_csv отклоняет: {name}" + (f" -> {probs[:1]}" if probs else ""))
+pth = tmpd / "ok.csv"
+with open(pth, "w", encoding="utf-8", newline="") as f:
+    w = csv.DictWriter(f, fieldnames=cols)
+    w.writeheader()
+    for row in (good, normal, failure, hip_ok,
+                dict(good, anatomical_region=cfg["regions"]["hip"], violation_type=cfg["violations"]["sp_pos"])):
+        w.writerow({c: row[c] for c in cols})
+probs = validate_output_csv(pth, cfg)
+check(probs == [], "validate_output_csv: корректные строки обеих областей и Failure проходят" + (f" -> {probs[:2]}" if probs else ""))
 
 # 2. согласованность со config.yaml
 check(set(schema["properties"]["anatomical_region"]["enum"]) == {cfg["regions"]["spine"], cfg["regions"]["hip"]},
@@ -129,8 +178,8 @@ try:
             break
         check(all("study_sr_download" in r for r in j["rows"] if r["processing_status"] == "Success"),
               "у каждой Success-строки есть study_sr_download")
-except ImportError:
-    print("SKIP FastAPI не установлен — проверка ответа API пропущена")
+except (ImportError, RuntimeError) as e:  # RuntimeError: starlette.testclient без httpx
+    print(f"SKIP FastAPI/TestClient недоступен ({str(e)[:60]}) — проверка ответа API пропущена")
 
 print(f"\n{'ВСЕ ПРОВЕРКИ ПРОЙДЕНЫ' if not fails else f'ПРОВАЛЕНО: {len(fails)}'}")
 sys.exit(1 if fails else 0)

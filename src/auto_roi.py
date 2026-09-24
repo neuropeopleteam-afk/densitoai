@@ -65,6 +65,57 @@ ROI_SHAFT_BELOW_TROCH_MIN_MM = 75.0
 # медиана 278мм (217-366) — почти без пересечения ниже 220мм.
 ROI_SCAN_LENGTH_MIN_MM = 220.0
 
+# Развилка по области интереса бедра (C1, только объяснение; класс и 9 колонок не меняются).
+# Модель hip_roi решает по длине скана и длине диафиза ниже вертела (feature_cols модели) и по контуру B;
+# здесь только сверка тех же измерений с откалиброванными порогами выше, чтобы предложить маршрут:
+#   field_incomplete — поле сканирования неполное (короткий скан / мало диафиза / кость у края) →
+#                      обсудить повторное сканирование;
+#   field_complete   — поле по измерениям полное, вопрос к области анализа → проверить анализ на аппарате,
+#                      повторно не облучать;
+#   insufficient_data — нужных измерений нет, различить нельзя → решение врача.
+FIELD_INCOMPLETE = "field_incomplete"
+FIELD_COMPLETE = "field_complete"
+FIELD_UNKNOWN = "insufficient_data"
+
+
+def _finite(v: Any) -> Optional[float]:
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    return f if np.isfinite(f) else None
+
+
+def hip_field_status(feats: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Полнота поля сканирования бедра по измерениям (без изображения, ничего не бросает).
+
+    feats — признаки снимка (scan_length_mm, shaft_len_below_troch_mm, lateral_margin_mm; допускаются и
+    debug-ключи с префиксом feat_). Возвращает {status, reasons: [...], measured: {...}}.
+    Порог 20 мм до края — ориентир из разъяснений, он учитывается только как признак «кость у края кадра»."""
+    f = feats or {}
+
+    def g(k):
+        return _finite(f.get(k, f.get(f"feat_{k}")))
+
+    scan = g("scan_length_mm")
+    shaft = g("shaft_len_below_troch_mm")
+    lat = g("lateral_margin_mm")
+    reasons = []
+    if scan is not None and scan < ROI_SCAN_LENGTH_MIN_MM:
+        reasons.append("scan_too_short")
+    if shaft is not None and shaft < ROI_SHAFT_BELOW_TROCH_MIN_MM:
+        reasons.append("shaft_below_trochanter_too_short")
+    if lat is not None and lat < ROI_LATERAL_MARGIN_MIN_MM:
+        reasons.append("lateral_margin_below_threshold")
+    if reasons:
+        status = FIELD_INCOMPLETE
+    elif scan is None or shaft is None:
+        status = FIELD_UNKNOWN
+    else:
+        status = FIELD_COMPLETE
+    return {"status": status, "reasons": reasons,
+            "measured": {"scan_length_mm": scan, "shaft_len_below_troch_mm": shaft, "lateral_margin_mm": lat}}
+
 
 def suggest_hip_roi(img_u8: np.ndarray, feats: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     h, w = img_u8.shape
@@ -83,6 +134,7 @@ def suggest_hip_roi(img_u8: np.ndarray, feats: Optional[Dict[str, Any]] = None) 
     out: Dict[str, Any] = {
         "needs_correction": False, "reason": None, "suggested_box_px": None,
         "deficit_mm": None, "note": "", "side_detected": side,
+        "field_status": hip_field_status(f)["status"],  # C1: добавочное поле, остальное без изменений
     }
 
     lateral_bad = lateral_margin_mm is not None and lateral_margin_mm < ROI_LATERAL_MARGIN_MIN_MM

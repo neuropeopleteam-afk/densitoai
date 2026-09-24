@@ -16,6 +16,8 @@
 #             VERIFY_SKIP_TRANSFER=1 / VERIFY_SKIP_STRESS=1 (пропустить прогон-двойник / стресс-набор),
 #             VERIFY_STRESS_HUGE (размер огромного кадра стресс-набора, по умолчанию 4000x3000).
 # Результат: <VERIFY_OUT>/verify_results.json, verification_report.html, run1/, run2/, stress/, data/; код 0/1.
+# Fail-closed: код каждого этапа (прогоны, transfer_check, stress_set, hash_weights --check, данные, проверки,
+#             отчёт) сохраняется; любой сбой -> ненулевой выход и строка «VERIFY: FAIL — <этапы>».
 # Совместимость: POSIX sh + bash; используются только printf/test/case, без массивов.
 # =============================================================================
 set -eu
@@ -39,7 +41,7 @@ while [ $# -gt 0 ]; do
     --expected-sha)  EXPECTED_SHA=$2; shift 2 ;;
     --update-expected) UPDATE_EXPECTED=1; shift ;;
     --out)           VERIFY_OUT=$2; shift 2 ;;
-    -h|--help)       sed -n '2,18p' "$0"; exit 0 ;;
+    -h|--help)       sed -n '2,20p' "$0"; exit 0 ;;
     *) printf 'verify.sh: неизвестный аргумент %s\n' "$1" >&2; exit 2 ;;
   esac
 done
@@ -62,11 +64,18 @@ printf -- '-- прогон 2 на фантомах\n'
 "$PYTHON" "$ROOT/src/inference.py" --input "$PHANTOMS" --output "$OUT/run2/results.csv" >"$OUT/run2/stdout.log" 2>&1 || RC2=$?
 T3=$(now_s)
 RC1=${RC1:-0}; RC2=${RC2:-0}
+# Fail-closed: код каждого обязательного этапа сохраняется, в конце любой сбой -> ненулевой выход.
+FAILED_STAGES=""
+stage_fail() { FAILED_STAGES="${FAILED_STAGES:+$FAILED_STAGES, }$1 (код $2)"; }
+[ "$RC1" = 0 ] || stage_fail "прогон 1 на фантомах" "$RC1"
+[ "$RC2" = 0 ] || stage_fail "прогон 2 на фантомах" "$RC2"
 [ -f "$OUT/run1/results.csv" ] || { printf 'verify.sh: прогон 1 не создал CSV (код %s); см. %s/run1/stdout.log\n' "$RC1" "$OUT" >&2; tail -20 "$OUT/run1/stdout.log" >&2; exit 1; }
 [ -f "$OUT/run2/results.csv" ] || { printf 'verify.sh: прогон 2 не создал CSV (код %s)\n' "$RC2" >&2; exit 1; }
 
 if [ "$UPDATE_EXPECTED" = 1 ]; then
-  "$PYTHON" "$ROOT/tools/verify_checks.py" update-expected --run1 "$OUT/run1/results.csv" --phantoms "$PHANTOMS"
+  RC_UPD=0
+  "$PYTHON" "$ROOT/tools/verify_checks.py" update-expected --run1 "$OUT/run1/results.csv" --phantoms "$PHANTOMS" || RC_UPD=$?
+  [ "$RC_UPD" = 0 ] || stage_fail "update-expected" "$RC_UPD"
 fi
 
 # --- 1б. инвариантность к форме подачи (имена, порядок, zip) -----------------
@@ -76,7 +85,12 @@ if [ "${VERIFY_SKIP_TRANSFER:-0}" = "1" ]; then
 else
   printf -- '-- проверка инвариантности: переименование, zip, перемешивание, смешанный вход (побитово)\n'
   TRANSFER_JSON="$OUT/transfer_check.json"
-  "$PYTHON" "$ROOT/tools/transfer_check.py" --input "$PHANTOMS" --baseline "$OUT/run1/results.csv" --out "$TRANSFER_JSON" --modes rename,zip,shuffle,mixed --bitwise --workdir "$OUT/transfer" --python "$PYTHON" >"$OUT/transfer_check.log" 2>&1 || printf 'verify.sh: transfer_check завершился с ошибкой, см. %s/transfer_check.log\n' "$OUT" >&2
+  "$PYTHON" "$ROOT/tools/transfer_check.py" --input "$PHANTOMS" --baseline "$OUT/run1/results.csv" --out "$TRANSFER_JSON" --modes rename,zip,shuffle,mixed --bitwise --workdir "$OUT/transfer" --python "$PYTHON" >"$OUT/transfer_check.log" 2>&1 || RC_TRANSFER=$?
+  RC_TRANSFER=${RC_TRANSFER:-0}
+  if [ "$RC_TRANSFER" != 0 ]; then
+    printf 'verify.sh: transfer_check завершился с ошибкой (код %s), см. %s/transfer_check.log\n' "$RC_TRANSFER" "$OUT" >&2
+    stage_fail "transfer_check" "$RC_TRANSFER"
+  fi
   rm -rf "$OUT/transfer/renamed" "$OUT/transfer/renamed_bundle.zip" "$OUT/transfer/shuffle" "$OUT/transfer/mixed" "$OUT/transfer/var_rename" "$OUT/transfer/var_zip" "$OUT/transfer/var_shuffle" "$OUT/transfer/var_mixed" 2>/dev/null || true
 fi
 
@@ -87,13 +101,23 @@ if [ "${VERIFY_SKIP_STRESS:-0}" = "1" ]; then
 else
   printf -- '-- стресс-набор: битые и нестандартные входы, смешанный пакет норма+битые (побитово)\n'
   STRESS_JSON="$OUT/stress_check.json"
-  "$PYTHON" "$ROOT/tools/stress_set.py" --phantoms "$PHANTOMS" --baseline "$OUT/run1/results.csv" --out "$STRESS_JSON" --workdir "$OUT/stress" --python "$PYTHON" --huge "${VERIFY_STRESS_HUGE:-4000x3000}" >"$OUT/stress_check.log" 2>&1 || printf 'verify.sh: stress_set завершился с ошибкой, см. %s/stress_check.log\n' "$OUT" >&2
+  "$PYTHON" "$ROOT/tools/stress_set.py" --phantoms "$PHANTOMS" --baseline "$OUT/run1/results.csv" --out "$STRESS_JSON" --workdir "$OUT/stress" --python "$PYTHON" --huge "${VERIFY_STRESS_HUGE:-4000x3000}" >"$OUT/stress_check.log" 2>&1 || RC_STRESS=$?
+  RC_STRESS=${RC_STRESS:-0}
+  if [ "$RC_STRESS" != 0 ]; then
+    printf 'verify.sh: stress_set завершился с ошибкой (код %s), см. %s/stress_check.log\n' "$RC_STRESS" "$OUT" >&2
+    stage_fail "stress_set" "$RC_STRESS"
+  fi
   rm -rf "$OUT/stress/input" 2>/dev/null || true
 fi
 
 # --- 2. sha256 весов ----------------------------------------------------------
 printf -- '-- sha256 весов моделей\n'
-"$PYTHON" "$ROOT/tools/hash_weights.py" --check --root "$ROOT" --json "$OUT/weights_check.json" >"$OUT/weights_check.log" 2>&1 || true
+RC_WEIGHTS=0
+"$PYTHON" "$ROOT/tools/hash_weights.py" --check --root "$ROOT" --json "$OUT/weights_check.json" >"$OUT/weights_check.log" 2>&1 || RC_WEIGHTS=$?
+if [ "$RC_WEIGHTS" != 0 ]; then
+  printf 'verify.sh: hash_weights --check завершился с ошибкой (код %s), см. %s/weights_check.log\n' "$RC_WEIGHTS" "$OUT" >&2
+  stage_fail "hash_weights --check" "$RC_WEIGHTS"
+fi
 
 # --- 3. данные пользователя (опционально) ------------------------------------
 DATA_ARGS=""
@@ -102,7 +126,12 @@ if [ -n "$DATA_DIR" ]; then
   printf -- '-- прогон на данных пользователя: %s\n' "$DATA_DIR"
   mkdir -p "$OUT/data"
   T4=$(now_s)
-  "$PYTHON" "$ROOT/src/inference.py" --input "$DATA_DIR" --output "$OUT/data/results.csv" --debug-csv --xlsx >"$OUT/data/stdout.log" 2>&1 || printf 'verify.sh: инференс на данных завершился с ошибкой, см. %s/data/stdout.log\n' "$OUT" >&2
+  "$PYTHON" "$ROOT/src/inference.py" --input "$DATA_DIR" --output "$OUT/data/results.csv" --debug-csv --xlsx >"$OUT/data/stdout.log" 2>&1 || RC_DATA=$?
+  RC_DATA=${RC_DATA:-0}
+  if [ "$RC_DATA" != 0 ]; then
+    printf 'verify.sh: инференс на данных завершился с ошибкой (код %s), см. %s/data/stdout.log\n' "$RC_DATA" "$OUT" >&2
+    stage_fail "инференс на данных" "$RC_DATA"
+  fi
   T5=$(now_s)
   DATA_ARGS="--data-csv $OUT/data/results.csv --data-dir $DATA_DIR"
   [ -n "$EXPECTED_SHA" ] && DATA_ARGS="$DATA_ARGS --expected-sha $EXPECTED_SHA"
@@ -113,14 +142,25 @@ printf '{"run1_s": %s, "run2_s": %s, "data_s": %s, "started": "%s"}\n' \
   "$((T2 - T1))" "$((T3 - T2))" "$((T5 - T4))" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$OUT/timings.json"
 
 RC=0
+RC_CHECKS=0
 # shellcheck disable=SC2086
 "$PYTHON" "$ROOT/tools/verify_checks.py" checks \
   --run1 "$OUT/run1/results.csv" --run2 "$OUT/run2/results.csv" --phantoms "$PHANTOMS" \
   --expected "$PHANTOMS/expected_results.csv" --weights-json "$OUT/weights_check.json" \
   --timings "$OUT/timings.json" --out "$OUT/verify_results.json" \
-  --transfer "$TRANSFER_JSON" --debug-csv "$OUT/run1/results_debug.csv" --stress "$STRESS_JSON" $DATA_ARGS || RC=$?
+  --transfer "$TRANSFER_JSON" --debug-csv "$OUT/run1/results_debug.csv" --stress "$STRESS_JSON" $DATA_ARGS || RC_CHECKS=$?
+[ "$RC_CHECKS" = 0 ] || stage_fail "verify_checks" "$RC_CHECKS"
 
-"$PYTHON" "$ROOT/tools/verification_report.py" --json "$OUT/verify_results.json" --html "$OUT/verification_report.html" || RC=1
+RC_REPORT=0
+"$PYTHON" "$ROOT/tools/verification_report.py" --json "$OUT/verify_results.json" --html "$OUT/verification_report.html" || RC_REPORT=$?
+[ "$RC_REPORT" = 0 ] || stage_fail "verification_report" "$RC_REPORT"
+[ -z "$FAILED_STAGES" ] || RC=1
+[ "$RC_CHECKS" = 0 ] || RC=$RC_CHECKS
 printf 'Отчёт: %s/verification_report.html (JSON: %s/verify_results.json), всего %s с, код возврата %s\n' \
   "$OUT" "$OUT" "$(( $(now_s) - T0 ))" "$RC"
+if [ "$RC" = 0 ]; then
+  printf 'VERIFY: OK\n'
+else
+  printf 'VERIFY: FAIL — %s\n' "${FAILED_STAGES:-verify_checks}"
+fi
 exit "$RC"

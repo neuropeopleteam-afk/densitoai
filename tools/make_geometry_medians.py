@@ -21,16 +21,22 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 CSV = ROOT / "data" / "geometry_features.csv"
 OUT = ROOT / "models" / "geometry_medians.json"
 
 
+# Столбцы медиан — фиксированный набор 2.4.0 (= src/inference.py: IMPUTATION_MEDIAN_COLS; сверка —
+# tests/test_feature_contract.py). Не выводится из config.yaml: geometry_cols после сверки с feature_cols
+# моделей (A1, 24.09) шире, а расширение набора медиан изменило бы импутацию NaN у any-моделей бедра.
+IMPUTATION_MEDIAN_COLS = ["axis_angle_deg", "bone_area_ratio", "bone_width_ratio", "center_offset_ratio",
+                          "edge_distance_ratio", "metal_metal_area_mm2", "metal_metal_max_intensity_gap",
+                          "shaft_angle_deg"]
+
+
 def feature_cols() -> list[str]:
-    cfg = yaml.safe_load((ROOT / "config.yaml").read_text(encoding="utf-8"))
-    return sorted({c for cs in cfg["geometry_cols"].values() for c in cs})
+    return sorted(IMPUTATION_MEDIAN_COLS)
 
 
 def compute() -> dict:

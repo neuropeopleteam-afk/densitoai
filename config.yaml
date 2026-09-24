@@ -33,8 +33,10 @@ output:
   status_success: "Success"
   status_failure: "Failure"
   violation_separator: ";"
-  # Вероятность, записываемая в строку-заглушку при сбое обработки файла.
-  fallback_quality_prob: 0.5
+  # Вероятность, записываемая в строку-заглушку при сбое обработки файла. Строго < 0.5: у строки Failure
+  # quality_class 0, а инвариант выгрузки — «quality_class 1 <=> quality_prob >= 0.5» (CSV/XLSX/API пишут
+  # число без округления, 0.499999). Значение >= 0.5 инференс не запишет — будет взято 0.499999.
+  fallback_quality_prob: 0.499999
   # Как записывать path_to_study: relative (к входной папке) | absolute | name
   path_mode: relative
   csv_encoding: "utf-8"
@@ -69,15 +71,17 @@ criteria_by_region:
   right_hip: [rh_pos, rh_roi]
   left_hip: [lh_pos, lh_roi]
 
-# Признаки контура A для каждого критерия (должны совпадать с train_stacked.py).
+# Признаки контура A для каждого критерия. Истина для боя — feature_cols внутри models/model_*_geom.pkl
+# (инференс берёт их оттуда); этот список обязан с ними совпадать и с CRITERION_GEOMETRY_COLS в
+# train_stacked.py (бедро: rh_/lh_pos = hip_pos, rh_/lh_roi = hip_roi). Сверка — tests/test_feature_contract.py.
 geometry_cols:
   sp_pos: [center_offset_ratio, bone_width_ratio]
   sp_axis: [axis_angle_deg]
   sp_art: [metal_metal_area_mm2, metal_metal_max_intensity_gap]
-  rh_pos: [shaft_angle_deg]
-  rh_roi: [edge_distance_ratio, bone_area_ratio]
-  lh_pos: [shaft_angle_deg]
-  lh_roi: [edge_distance_ratio, bone_area_ratio]
+  rh_pos: [femur_solidity, shaft_width_mm, abs_shaft_angle_deg, merge_height_mm, medial_neck_extent_mm]
+  rh_roi: [scan_length_mm, shaft_len_below_troch_mm]
+  lh_pos: [femur_solidity, shaft_width_mm, abs_shaft_angle_deg, merge_height_mm, medial_neck_extent_mm]
+  lh_roi: [scan_length_mm, shaft_len_below_troch_mm]
 
 # H2 (2.4.0): признаки контура A, считаемые не из геометрии, а из канонического эмбеддинга кадра
 # (только позвоночник). sp_pos: synth_pos_logit — логит головы «дефект укладки»
@@ -113,7 +117,8 @@ stacking:
   # quality_prob = w * any-модель + (1-w) * агрегат по критериям (OOF: смесь лучше каждого по отдельности)
   any_blend_weight_model: 0.5
   # Согласовать quality_prob с quality_class: class=1 -> prob в [0.5,1], class=0 -> prob в [0,0.5).
-  # Монотонно внутри класса; OOF ROC-AUC spine 0.735->0.771, hip 0.704->0.777.
+  # Монотонно внутри класса. OOF ROC-AUC смеси до/после согласования (models/metrics_oof_full.json,
+  # by_region_binary.*.roc_auc_components, файл от 23.09.2026): spine 0.823 -> 0.813, hip 0.759 -> 0.760.
   consistent_quality_prob: true
 
 thresholds:
@@ -219,8 +224,18 @@ actions:
     reason: "Бедро повёрнуто или диафиз наклонён"
     hint: "Развернуть стопу внутрь с фиксатором, диафиз бедра параллельно оси стола; малый вертел должен быть почти не виден; повторить сканирование."
   hip_roi:
-    reason: "Кость слишком близко к краю кадра или поле сканирования короткое"
-    hint: "Сместить поле сканирования: от кости до бокового края не менее 20 мм, в кадр должен войти проксимальный отдел бедра с участком диафиза ниже вертелов; повторить сканирование."
+    reason: "Область интереса бедра: поле сканирования короткое или вопрос к области анализа"
+    hint: "Проверить, вошёл ли в кадр проксимальный отдел бедра с участком диафиза ниже вертелов; дальнейшее действие зависит от того, полное ли поле сканирования."
+  # C1: развилка по области интереса бедра (код причины extras.hip_roi_reason; класс не меняется)
+  hip_roi_field_incomplete:
+    reason: "Поле сканирования неполное: скан короткий или диафиза ниже вертела в кадре мало"
+    hint: "Обсудить повторное сканирование: в поле должен войти проксимальный отдел бедра с участком диафиза ниже вертелов. Предложение системы, исходное измерение не меняется."
+  hip_roi_field_complete:
+    reason: "Поле сканирования полное, вопрос к области анализа"
+    hint: "Проверить область анализа на аппарате и при необходимости поправить её там; повторно не облучать. Предложение системы, исходное измерение не меняется."
+  hip_roi_insufficient_data:
+    reason: "Измерений поля недостаточно, чтобы выбрать между повторным сканированием и проверкой анализа"
+    hint: "Решение врача по снимку. Предложение системы, исходное измерение не меняется."
   ok:
     reason: "Отклонений от требований не выявлено"
     hint: "Повторное сканирование не требуется."
@@ -230,18 +245,26 @@ actions:
   review:
     reason: "Оценка на границе допуска"
     hint: "Показать снимок врачу до решения о повторном сканировании."
-# Допуски ТЗ и справочные диапазоны для блока «Измерено против нормы».
-# tz — требование ТЗ (норма); ref_q95 считается скриптом build_actions_json.py по размеченным
-# нормальным кадрам data/geometry_features.csv (95 % квантиль модуля признака) — только справочно.
+# Ориентиры и справочные диапазоны для блока «Измерено против нормы».
+# guide_* — ориентир из требований и разъяснений; модель решает не по нему (C1: карточка не выдаёт его
+# за порог системы). ref_q95 считается скриптом build_actions_json.py по размеченным нормальным кадрам
+# data/geometry_features.csv (95 % квантиль модуля признака); ref_range — диапазон 5–95 % — только справочно.
 measurement_norms:
-  axis_angle_deg:         {label: "Угол оси позвоночника", unit: "°", tz_max: 5.0, source: "ТЗ: отклонение оси не более 5°"}
+  axis_angle_deg:         {label: "Угол оси позвоночника", unit: "°", guide_max: 5.0, ref: true, source: "ориентир требований: отклонение оси не более 5°"}
   center_offset_ratio:    {label: "Смещение центра позвоночника", unit: "% ширины кадра", mult: 100, ref: true}
   metal_metal_area_mm2:   {label: "Площадь плотных объектов", unit: "мм²", ref: true}
   abs_shaft_angle_deg:    {label: "Угол диафиза бедра", unit: "°", ref: true}
-  edge_distance_mm:       {label: "Расстояние от кости до края кадра", unit: "мм", tz_min: 20.0, source: "ТЗ: не менее 2 см от края"}
+  edge_distance_mm:       {label: "Расстояние от кости до края кадра", unit: "мм", guide_min: 20.0, source: "ориентир из разъяснений: не менее 2 см от края"}
   scan_length_mm:         {label: "Длина скана", unit: "мм", ref: true, ref_low: true}
   shaft_len_below_troch_mm: {label: "Диафиз ниже вертелов", unit: "мм", ref: true, ref_low: true}
   lesser_troch_prominence_mm: {label: "Выступ малого вертела", unit: "мм", ref: true}
+  # C1: признаки моделей контура A (feature_cols) без собственной нормы — справочный диапазон 5–95 %
+  femur_solidity:         {label: "Компактность контура бедра", unit: "", ref: true, ref_range: true}
+  shaft_width_mm:         {label: "Ширина диафиза", unit: "мм", ref: true, ref_range: true}
+  merge_height_mm:        {label: "Высота слияния диафиза с тазом", unit: "мм", ref: true, ref_range: true}
+  medial_neck_extent_mm:  {label: "Медиальный выступ шейки бедра", unit: "мм", ref: true, ref_range: true}
+  bone_width_ratio:       {label: "Ширина костной области", unit: "% ширины кадра", mult: 100, ref: true, ref_range: true}
+  metal_metal_max_intensity_gap: {label: "Контраст включений к кости", unit: "сигм", ref: true}
 
 # Правило порога по критерию (К3). Значения: f1_optimal (F1-оптимум на OOF при >= 15 позитивах, иначе
 # prevalence), prevalence (квантиль 1 - доля позитивов), prevalence_x<k> (квантиль 1 - k*доля позитивов).

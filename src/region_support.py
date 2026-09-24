@@ -1,8 +1,15 @@
 # -*- coding: utf-8 -*-
-"""Проверка поддерживаемой области исследования — только для слоя API и веба.
+"""Проверка поддерживаемой области исследования и аппарата — для пакетного пути, API и веба.
 
-Пакетный путь (CLI, CSV для организаторов) этот модуль НЕ вызывает: формат, порядок колонок и
-числа поставки не меняются по построению.
+Пакетный путь (CLI и API, `DensitoInference.process_file`) вызывает `check_tags` после чтения файла и
+до классификации. Явное противоречие в тегах DICOM (модальность, производитель и модель аппарата,
+описание области и проекции) — строка Failure в тех же 9 колонках (quality_class 0, violation_type
+пустой, quality_prob = output.fallback_quality_prob < 0.5) и в CLI, и в API. Геометрия декодированного
+кадра вне наблюдаемого диапазона — только запись в debug CSV (`region_supported` = 0,
+`region_support_scope` = geometry): в CLI строка обрабатывается как обычно (кадр того же аппарата
+другого размера на закрытом тесте не теряем), API и кабинет по этой записи выдают отказ. Причина —
+в debug CSV (`region_support_reason`, `error`). Слой API дополнительно проверяет заголовок строк, у которых этого
+итога нет (`api_server._region_support`). На 499 файлах заказчика правило не срабатывает ни разу.
 
 Зачем. `classify_region` в `inference.py` по построению всегда возвращает одну из трёх областей
 (spine / right_hip / left_hip): широкий кадр считается позвоночником, узкий — бедром. Для
@@ -21,6 +28,7 @@
 """
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
@@ -77,6 +85,17 @@ def _text_of(tags: Dict[str, Any]) -> str:
     return " ".join(parts).upper()
 
 
+# Маркеры, которые ищутся только отдельным словом: «LATERAL» не должен срабатывать внутри
+# «BILATERAL» (двусторонний протокол бедра) или «CONTRALATERAL».
+WORD_MARKERS = ("LATERAL",)
+
+
+def _has_marker(text: str, marker: str) -> bool:
+    if marker in WORD_MARKERS:
+        return re.search(r"(?<![A-ZА-ЯЁ])" + re.escape(marker) + r"(?![A-ZА-ЯЁ])", text) is not None
+    return marker in text
+
+
 def check_tags(tags: Dict[str, Any], cols: int = 0, rows: int = 0) -> Tuple[bool, str]:
     """Возвращает (поддерживается, причина). Причина заполнена только при отказе."""
     low = {str(k).lower(): v for k, v in (tags or {}).items()}
@@ -87,7 +106,7 @@ def check_tags(tags: Dict[str, Any], cols: int = 0, rows: int = 0) -> Tuple[bool
             return False, (f"в описании исследования указано «{marker}» ({human}); {SUPPORTED_SCOPE}")
 
     for marker, human in UNSUPPORTED_PROJECTION:
-        if marker in text:
+        if _has_marker(text, marker):
             return False, (f"в описании исследования указано «{marker}» ({human}); {SUPPORTED_SCOPE}")
 
     mod = str(low.get("modality") or "").strip().upper()

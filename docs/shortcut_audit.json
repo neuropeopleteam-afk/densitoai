@@ -1,0 +1,811 @@
+{
+ "protocol": {
+  "cv": "StratifiedGroupKFold(5), группы = исследование + хэш пикселей, 10 повторов разбиения",
+  "model": "LogisticRegression C=1, balanced, StandardScaler",
+  "null": "50 перестановок меток между уникальными кадрами, 95-й перцентиль",
+  "software_versions": [
+   "18.41.005",
+   "18.50.082"
+  ],
+  "n_files": 499
+ },
+ "spine": {
+  "n": 166,
+  "n_studies": 99,
+  "n_groups": 99,
+  "groups_equal_studies": true,
+  "binary": {
+   "n_pos": 60,
+   "production_oof_auc": 0.8127358490566038,
+   "controls": {
+    "C1_metadata": {
+     "auc_mean": 0.5899606918238994,
+     "auc_min": 0.5408018867924528,
+     "auc_max": 0.6190251572327043,
+     "null_mean": 0.5083729779152398,
+     "null_p95": 0.6114030798966124,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "SoftwareVersions=18.41.005": 0.5665094339622643,
+      "SoftwareVersions=18.50.082": 0.4334905660377359,
+      "SeriesNumber": 0.5221698113207548,
+      "InstanceNumber": 0.5897798742138365,
+      "has_OperatorsName": 0.5283018867924528,
+      "has_PerformingPhysicianName": 0.5283018867924528,
+      "uid_root_2_25": 0.5283018867924528
+     },
+     "null_p05": 0.36518782470591404
+    },
+    "C2_exposure": {
+     "auc_mean": 0.3573349056603773,
+     "auc_min": 0.2547955974842767,
+     "auc_max": 0.45102201257861635,
+     "null_mean": 0.46586137098458136,
+     "null_p95": 0.5654457006127513,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "TotalNumberOfExposures": 0.519496855345912,
+      "ExposedArea_0": 0.48553459119496856,
+      "ExposedArea_1": 0.5346698113207548,
+      "EntranceDoseInmGy": 0.5257861635220126
+     },
+     "null_p05": 0.3235214311947065
+    },
+    "C3_frame_size": {
+     "auc_mean": 0.32576257861635216,
+     "auc_min": 0.2886006289308176,
+     "auc_max": 0.39276729559748425,
+     "null_mean": 0.4532228616704618,
+     "null_p95": 0.5844482758620689,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "Rows": 0.4761792452830188,
+      "Columns": 0.5
+     },
+     "null_p05": 0.31771375264289603
+    },
+    "C4_files_in_study": {
+     "auc_mean": 0.5638993710691824,
+     "auc_min": 0.5468553459119496,
+     "auc_max": 0.5767295597484277,
+     "null_mean": 0.5186612644156807,
+     "null_p95": 0.6593667800169075,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "n_files_study": 0.6169811320754717,
+      "n_frames_region_study": 0.614937106918239
+     },
+     "null_p05": 0.3339622848568937
+    },
+    "C5_row_order": {
+     "auc_mean": 0.5519496855345911,
+     "auc_min": 0.5187106918238993,
+     "auc_max": 0.5762578616352201,
+     "null_mean": 0.5023508983868505,
+     "null_p95": 0.5821235371619002,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "row_no": 0.5820754716981132,
+      "file_no": 0.5797169811320755
+     },
+     "null_p05": 0.40357576588962807
+    },
+    "C6_uid_hash": {
+     "auc_mean": 0.570251572327044,
+     "auc_min": 0.5158805031446541,
+     "auc_max": 0.5949685534591195,
+     "null_mean": 0.48669518841526105,
+     "null_p95": 0.6214729182019159,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "uid_hash_study": 0.39418238993710697,
+      "uid_hash_sop": 0.500314465408805
+     },
+     "null_p05": 0.3566984239002588
+    }
+   }
+  },
+  "sp_pos": {
+   "n_pos": 10,
+   "production_oof_auc": 0.8929487179487179,
+   "controls": {
+    "C1_metadata": {
+     "auc_mean": 0.2581410256410256,
+     "auc_min": 0.20256410256410257,
+     "auc_max": 0.321474358974359,
+     "null_mean": 0.46285730361387983,
+     "null_p95": 0.7101562499999997,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "SoftwareVersions=18.41.005": 0.46538461538461534,
+      "SoftwareVersions=18.50.082": 0.5346153846153846,
+      "SeriesNumber": 0.4846153846153846,
+      "InstanceNumber": 0.5381410256410256,
+      "has_OperatorsName": 0.5192307692307692,
+      "has_PerformingPhysicianName": 0.5192307692307692,
+      "uid_root_2_25": 0.5192307692307692
+     },
+     "null_p05": 0.23507292680947747
+    },
+    "C2_exposure": {
+     "auc_mean": 0.5357051282051283,
+     "auc_min": 0.5064102564102565,
+     "auc_max": 0.5573717948717949,
+     "null_mean": 0.45415029480778907,
+     "null_p95": 0.6764989588437041,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "TotalNumberOfExposures": 0.5512820512820513,
+      "ExposedArea_0": 0.4525641025641025,
+      "ExposedArea_1": 0.6096153846153846,
+      "EntranceDoseInmGy": 0.7249999999999999
+     },
+     "null_p05": 0.2517505650297925
+    },
+    "C3_frame_size": {
+     "auc_mean": 0.4787820512820513,
+     "auc_min": 0.38108974358974357,
+     "auc_max": 0.5375000000000001,
+     "null_mean": 0.4445270643898416,
+     "null_p95": 0.7347453404438699,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "Rows": 0.6176282051282052,
+      "Columns": 0.5
+     },
+     "null_p05": 0.20542778028933092
+    },
+    "C4_files_in_study": {
+     "auc_mean": 0.43009615384615385,
+     "auc_min": 0.41057692307692306,
+     "auc_max": 0.451923076923077,
+     "null_mean": 0.45107079413101997,
+     "null_p95": 0.6855234941658782,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "n_files_study": 0.5445512820512821,
+      "n_frames_region_study": 0.4814102564102564
+     },
+     "null_p05": 0.2340985023041475
+    },
+    "C5_row_order": {
+     "auc_mean": 0.3603205128205128,
+     "auc_min": 0.3205128205128205,
+     "auc_max": 0.3782051282051282,
+     "null_mean": 0.41863179549639645,
+     "null_p95": 0.6895937499999999,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "row_no": 0.6647435897435897,
+      "file_no": 0.5644230769230769
+     },
+     "null_p05": 0.2159922978139297
+    },
+    "C6_uid_hash": {
+     "auc_mean": 0.40435897435897433,
+     "auc_min": 0.36282051282051286,
+     "auc_max": 0.4602564102564103,
+     "null_mean": 0.47175600624441605,
+     "null_p95": 0.7431964809384163,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "uid_hash_study": 0.39743589743589747,
+      "uid_hash_sop": 0.5294871794871795
+     },
+     "null_p05": 0.1979224683544304
+    }
+   },
+   "stack_inputs": {
+    "geom_variant": "canonical",
+    "emb_source": "densito",
+    "emb_variant": "canonical",
+    "geom_cols": [
+     "center_offset_ratio",
+     "bone_width_ratio",
+     "synth_pos_logit"
+    ],
+    "missing_cols": []
+   },
+   "simplified_stack": {
+    "real_auc_mean": 0.9365384615384614,
+    "perm_between_groups_mean": 0.48280816329992476,
+    "perm_between_groups_p95": 0.6889459793351304,
+    "perm_between_groups_max": 0.7708333333333334,
+    "perm_within_study_mean": 0.942275641025641,
+    "perm_within_study_p95": 0.9585256410256411,
+    "labels_vary_within_study": 0
+   }
+  },
+  "sp_axis": {
+   "n_pos": 17,
+   "production_oof_auc": 0.8888669561784445,
+   "controls": {
+    "C1_metadata": {
+     "auc_mean": 0.46425187524674294,
+     "auc_min": 0.3955783655744177,
+     "auc_max": 0.5327674694038689,
+     "null_mean": 0.46391285812212063,
+     "null_p95": 0.6290230558612911,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "SoftwareVersions=18.41.005": 0.4670351362021319,
+      "SoftwareVersions=18.50.082": 0.5329648637978681,
+      "SeriesNumber": 0.42953020134228187,
+      "InstanceNumber": 0.536517962889854,
+      "has_OperatorsName": 0.5201342281879195,
+      "has_PerformingPhysicianName": 0.5201342281879195,
+      "uid_root_2_25": 0.5201342281879195
+     },
+     "null_p05": 0.2567494736767897
+    },
+    "C2_exposure": {
+     "auc_mean": 0.46587050927753654,
+     "auc_min": 0.42597710225029606,
+     "auc_max": 0.503750493485985,
+     "null_mean": 0.5038932713541014,
+     "null_p95": 0.7069905491169979,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "TotalNumberOfExposures": 0.4283458349782866,
+      "ExposedArea_0": 0.47118041847611525,
+      "ExposedArea_1": 0.4828266877220687,
+      "EntranceDoseInmGy": 0.4370311883142519
+     },
+     "null_p05": 0.2875946671113267
+    },
+    "C3_frame_size": {
+     "auc_mean": 0.37313462297670746,
+     "auc_min": 0.1630477694433478,
+     "auc_max": 0.4806553493880774,
+     "null_mean": 0.48988683594775706,
+     "null_p95": 0.6581639549724458,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "Rows": 0.5260560600078957,
+      "Columns": 0.5
+     },
+     "null_p05": 0.2844385435019716
+    },
+    "C4_files_in_study": {
+     "auc_mean": 0.3094551914725622,
+     "auc_min": 0.2599684168969601,
+     "auc_max": 0.341492301618634,
+     "null_mean": 0.4527597391219526,
+     "null_p95": 0.656778891043597,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "n_files_study": 0.4828266877220687,
+      "n_frames_region_study": 0.5001973943939992
+     },
+     "null_p05": 0.23412500000000003
+    },
+    "C5_row_order": {
+     "auc_mean": 0.45124358468219505,
+     "auc_min": 0.39597315436241604,
+     "auc_max": 0.4851954204500592,
+     "null_mean": 0.4748502156391494,
+     "null_p95": 0.7031926406926406,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "row_no": 0.5898144492696407,
+      "file_no": 0.5082905645479668
+     },
+     "null_p05": 0.2719018100150856
+    },
+    "C6_uid_hash": {
+     "auc_mean": 0.6363995262534544,
+     "auc_min": 0.6174496644295302,
+     "auc_max": 0.6494275562574023,
+     "null_mean": 0.4896187029987252,
+     "null_p95": 0.6766885231823052,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "uid_hash_study": 0.32135807343071454,
+      "uid_hash_sop": 0.5712593762337149
+     },
+     "null_p05": 0.27098951772864815
+    }
+   },
+   "stack_inputs": {
+    "geom_variant": "baseline",
+    "emb_source": "densito_inv",
+    "emb_variant": "baseline",
+    "geom_cols": [
+     "axis_angle_deg"
+    ],
+    "missing_cols": []
+   },
+   "simplified_stack": {
+    "real_auc_mean": 0.8618239242005528,
+    "perm_between_groups_mean": 0.41481591397735534,
+    "perm_between_groups_p95": 0.5503987761686439,
+    "perm_between_groups_max": 0.5810439560439561,
+    "perm_within_study_mean": 0.8528227398341887,
+    "perm_within_study_p95": 0.8757204895380971,
+    "labels_vary_within_study": 0
+   }
+  },
+  "sp_art": {
+   "n_pos": 35,
+   "production_oof_auc": 0.8236641221374046,
+   "controls": {
+    "C1_metadata": {
+     "auc_mean": 0.7017448200654307,
+     "auc_min": 0.6910577971646673,
+     "auc_max": 0.7101417666303163,
+     "null_mean": 0.48827984433105476,
+     "null_p95": 0.6173717350746268,
+     "above_null_p95": true,
+     "univariate_auc": {
+      "SoftwareVersions=18.41.005": 0.630752453653217,
+      "SoftwareVersions=18.50.082": 0.3692475463467829,
+      "SeriesNumber": 0.5703380588876772,
+      "InstanceNumber": 0.6018538713195202,
+      "has_OperatorsName": 0.5229007633587786,
+      "has_PerformingPhysicianName": 0.5229007633587786,
+      "uid_root_2_25": 0.5229007633587786
+     },
+     "null_p05": 0.3592715856066913,
+     "drill_down": {
+      "univariate_auc": {
+       "SoftwareVersions=18.41.005": 0.630752453653217,
+       "SoftwareVersions=18.50.082": 0.3692475463467829,
+       "SeriesNumber": 0.5703380588876772,
+       "InstanceNumber": 0.6018538713195202,
+       "has_OperatorsName": 0.5229007633587786,
+       "has_PerformingPhysicianName": 0.5229007633587786,
+       "uid_root_2_25": 0.5229007633587786
+      },
+      "top_feature": "SoftwareVersions=18.50.082",
+      "strata_of_top": {
+       "0.0": {
+        "n": 127,
+        "n_studies": 74,
+        "n_pos": 34,
+        "prevalence": 0.2677165354330709,
+        "production_auc_in_stratum": 0.795224541429475
+       },
+       "1.0": {
+        "n": 39,
+        "n_studies": 25,
+        "n_pos": 1,
+        "prevalence": 0.02564102564102564,
+        "production_auc_in_stratum": 0.894736842105263
+       }
+      }
+     }
+    },
+    "C2_exposure": {
+     "auc_mean": 0.4664449291166849,
+     "auc_min": 0.41559432933478735,
+     "auc_max": 0.5004362050163577,
+     "null_mean": 0.4500647395058827,
+     "null_p95": 0.593902392896958,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "TotalNumberOfExposures": 0.5353326063249728,
+      "ExposedArea_0": 0.5010905125408941,
+      "ExposedArea_1": 0.5234460196292258,
+      "EntranceDoseInmGy": 0.47720828789531083
+     },
+     "null_p05": 0.2660650647872139
+    },
+    "C3_frame_size": {
+     "auc_mean": 0.2440458015267176,
+     "auc_min": 0.16390403489640132,
+     "auc_max": 0.30926935659760085,
+     "null_mean": 0.47000131527818323,
+     "null_p95": 0.6555420102853966,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "Rows": 0.4278080697928026,
+      "Columns": 0.5
+     },
+     "null_p05": 0.2445764097653291
+    },
+    "C4_files_in_study": {
+     "auc_mean": 0.36957470010905125,
+     "auc_min": 0.28287895310796074,
+     "auc_max": 0.5352235550708834,
+     "null_mean": 0.47448420126616075,
+     "null_p95": 0.6271848966490018,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "n_files_study": 0.6378407851690294,
+      "n_frames_region_study": 0.641875681570338
+     },
+     "null_p05": 0.2455892641571554
+    },
+    "C5_row_order": {
+     "auc_mean": 0.47978189749182115,
+     "auc_min": 0.40610687022900765,
+     "auc_max": 0.5448200654307525,
+     "null_mean": 0.4863742787555399,
+     "null_p95": 0.662029951360615,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "row_no": 0.5297709923664122,
+      "file_no": 0.5789531079607416
+     },
+     "null_p05": 0.31790269086357953
+    },
+    "C6_uid_hash": {
+     "auc_mean": 0.4616139585605234,
+     "auc_min": 0.37688113413304253,
+     "auc_max": 0.5256270447110141,
+     "null_mean": 0.4596859556526291,
+     "null_p95": 0.6071904359665982,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "uid_hash_study": 0.47808069792802615,
+      "uid_hash_sop": 0.4512540894220283
+     },
+     "null_p05": 0.30327751176984835
+    }
+   },
+   "stack_inputs": {
+    "geom_variant": "baseline",
+    "emb_source": "imagenet",
+    "emb_variant": "baseline",
+    "geom_cols": [
+     "metal_metal_area_mm2",
+     "metal_metal_max_intensity_gap"
+    ],
+    "missing_cols": []
+   },
+   "simplified_stack": {
+    "real_auc_mean": 0.8498727735368957,
+    "perm_between_groups_mean": 0.48635215685497946,
+    "perm_between_groups_p95": 0.6177880049337034,
+    "perm_between_groups_max": 0.7217021276595745,
+    "perm_within_study_mean": 0.8468702290076336,
+    "perm_within_study_p95": 0.8755616139585606,
+    "labels_vary_within_study": 0
+   }
+  }
+ },
+ "hip": {
+  "n": 329,
+  "n_studies": 78,
+  "n_groups": 78,
+  "groups_equal_studies": true,
+  "binary": {
+   "n_pos": 92,
+   "production_oof_auc": 0.7600898917629793,
+   "controls": {
+    "C1_metadata": {
+     "auc_mean": 0.5423018712162906,
+     "auc_min": 0.5063520454962392,
+     "auc_max": 0.6031691432764631,
+     "null_mean": 0.4824243568883184,
+     "null_p95": 0.5638976599177772,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "SoftwareVersions=18.41.005": 0.4207714180884241,
+      "SoftwareVersions=18.50.082": 0.5792285819115759,
+      "SeriesNumber": 0.45991561181434604,
+      "InstanceNumber": 0.516923500275179,
+      "has_OperatorsName": 0.4951385066960191,
+      "has_PerformingPhysicianName": 0.4951385066960191,
+      "uid_root_2_25": 0.4951385066960191
+     },
+     "null_p05": 0.3953894813337323
+    },
+    "C2_exposure": {
+     "auc_mean": 0.4817923316822602,
+     "auc_min": 0.41432764630343055,
+     "auc_max": 0.5372179416620803,
+     "null_mean": 0.47412822200039423,
+     "null_p95": 0.5810878934264296,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "TotalNumberOfExposures": 0.5454962392221611,
+      "ExposedArea_0": 0.5381810676940011,
+      "ExposedArea_1": 0.5278847917813245,
+      "EntranceDoseInmGy": 0.5420774759875325
+     },
+     "null_p05": 0.3852677087070158
+    },
+    "C3_frame_size": {
+     "auc_mean": 0.5923546138323245,
+     "auc_min": 0.5701706108970832,
+     "auc_max": 0.6116538249862411,
+     "null_mean": 0.49253172907464915,
+     "null_p95": 0.596571196777673,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "Rows": 0.3897679324894515,
+      "Columns": 0.5
+     },
+     "null_p05": 0.3583585698032392
+    },
+    "C4_files_in_study": {
+     "auc_mean": 0.45049532195927355,
+     "auc_min": 0.418042560997982,
+     "auc_max": 0.4778022381214456,
+     "null_mean": 0.4784798143777181,
+     "null_p95": 0.5875733432153665,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "n_files_study": 0.43725921849201976,
+      "n_frames_region_study": 0.43918547055586127
+     },
+     "null_p05": 0.3554485980285629
+    },
+    "C5_row_order": {
+     "auc_mean": 0.49593193909374433,
+     "auc_min": 0.41909741331865713,
+     "auc_max": 0.5361860209135938,
+     "null_mean": 0.4912422426028121,
+     "null_p95": 0.5921804356052263,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "row_no": 0.46353880022014304,
+      "file_no": 0.4620482480278848
+     },
+     "null_p05": 0.3608383946858962
+    },
+    "C6_uid_hash": {
+     "auc_mean": 0.5204733076499725,
+     "auc_min": 0.3964868831407082,
+     "auc_max": 0.558337919647771,
+     "null_mean": 0.48753252746837666,
+     "null_p95": 0.5875187179872945,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "uid_hash_study": 0.41561181434599154,
+      "uid_hash_sop": 0.4811043845166025
+     },
+     "null_p05": 0.3668208875464521
+    }
+   }
+  },
+  "hip_pos": {
+   "n_pos": 79,
+   "production_oof_auc": 0.7254177215189873,
+   "controls": {
+    "C1_metadata": {
+     "auc_mean": 0.540767088607595,
+     "auc_min": 0.5029873417721519,
+     "auc_max": 0.5827088607594938,
+     "null_mean": 0.49134804093219947,
+     "null_p95": 0.5723979862215156,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "SoftwareVersions=18.41.005": 0.39311392405063295,
+      "SoftwareVersions=18.50.082": 0.606886075949367,
+      "SeriesNumber": 0.46891139240506324,
+      "InstanceNumber": 0.5111139240506329,
+      "has_OperatorsName": 0.49068354430379746,
+      "has_PerformingPhysicianName": 0.49068354430379746,
+      "uid_root_2_25": 0.49068354430379746
+     },
+     "null_p05": 0.4078579270970575
+    },
+    "C2_exposure": {
+     "auc_mean": 0.510620253164557,
+     "auc_min": 0.45349367088607595,
+     "auc_max": 0.539873417721519,
+     "null_mean": 0.49873227537472153,
+     "null_p95": 0.593421963793866,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "TotalNumberOfExposures": 0.5743544303797468,
+      "ExposedArea_0": 0.5631139240506329,
+      "ExposedArea_1": 0.5679746835443038,
+      "EntranceDoseInmGy": 0.568927258858609
+     },
+     "null_p05": 0.4157879269888543
+    },
+    "C3_frame_size": {
+     "auc_mean": 0.4078050632911393,
+     "auc_min": 0.34865822784810124,
+     "auc_max": 0.47189873417721523,
+     "null_mean": 0.5069115748475452,
+     "null_p95": 0.6088901626815154,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "Rows": 0.4597721518987342,
+      "Columns": 0.5
+     },
+     "null_p05": 0.366004525925258
+    },
+    "C4_files_in_study": {
+     "auc_mean": 0.4866430379746835,
+     "auc_min": 0.44518987341772154,
+     "auc_max": 0.5301012658227848,
+     "null_mean": 0.4799755464776458,
+     "null_p95": 0.5948005946121961,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "n_files_study": 0.40746835443037976,
+      "n_frames_region_study": 0.40939240506329116
+     },
+     "null_p05": 0.350070538950948
+    },
+    "C5_row_order": {
+     "auc_mean": 0.4126227848101266,
+     "auc_min": 0.3712405063291139,
+     "auc_max": 0.4768101265822785,
+     "null_mean": 0.4772415137503612,
+     "null_p95": 0.6070977086765216,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "row_no": 0.4857215189873418,
+      "file_no": 0.47524050632911397
+     },
+     "null_p05": 0.33657045316351114
+    },
+    "C6_uid_hash": {
+     "auc_mean": 0.40642025316455693,
+     "auc_min": 0.31579746835443034,
+     "auc_max": 0.516253164556962,
+     "null_mean": 0.48889184318456236,
+     "null_p95": 0.5894291049222831,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "uid_hash_study": 0.43668354430379747,
+      "uid_hash_sop": 0.47437974683544304
+     },
+     "null_p05": 0.3704024511003688
+    }
+   },
+   "stack_inputs": {
+    "geom_variant": "canonical",
+    "emb_source": "imagenet",
+    "emb_variant": "baseline",
+    "geom_cols": [
+     "femur_solidity",
+     "shaft_width_mm",
+     "abs_shaft_angle_deg",
+     "merge_height_mm",
+     "medial_neck_extent_mm"
+    ],
+    "missing_cols": []
+   },
+   "simplified_stack": {
+    "real_auc_mean": 0.6782109704641349,
+    "perm_between_groups_mean": 0.5180725955075081,
+    "perm_between_groups_p95": 0.6141513713806442,
+    "perm_between_groups_max": 0.6292913385826772,
+    "perm_within_study_mean": 0.7252227848101267,
+    "perm_within_study_p95": 0.766813924050633,
+    "labels_vary_within_study": 11
+   }
+  },
+  "hip_roi": {
+   "n_pos": 16,
+   "production_oof_auc": 0.917332268370607,
+   "controls": {
+    "C1_metadata": {
+     "auc_mean": 0.385323482428115,
+     "auc_min": 0.2985223642172524,
+     "auc_max": 0.4454872204472844,
+     "null_mean": 0.45967750809748004,
+     "null_p95": 0.676875082150368,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "SoftwareVersions=18.41.005": 0.5285543130990416,
+      "SoftwareVersions=18.50.082": 0.47144568690095845,
+      "SeriesNumber": 0.4682507987220447,
+      "InstanceNumber": 0.5174720447284344,
+      "has_OperatorsName": 0.5191693290734825,
+      "has_PerformingPhysicianName": 0.5191693290734825,
+      "uid_root_2_25": 0.5191693290734825
+     },
+     "null_p05": 0.2916460844562475
+    },
+    "C2_exposure": {
+     "auc_mean": 0.556829073482428,
+     "auc_min": 0.5350439297124601,
+     "auc_max": 0.5836661341853034,
+     "null_mean": 0.5011315046138192,
+     "null_p95": 0.6917504016152501,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "TotalNumberOfExposures": 0.39756389776357826,
+      "ExposedArea_0": 0.4199281150159745,
+      "ExposedArea_1": 0.3323682108626198,
+      "EntranceDoseInmGy": 0.35312046444121914
+     },
+     "null_p05": 0.25504768698051666
+    },
+    "C3_frame_size": {
+     "auc_mean": 0.8709764376996805,
+     "auc_min": 0.8546325878594249,
+     "auc_max": 0.8909744408945687,
+     "null_mean": 0.4810444338332789,
+     "null_p95": 0.7211596831322225,
+     "above_null_p95": true,
+     "univariate_auc": {
+      "Rows": 0.08406549520766773,
+      "Columns": 0.5
+     },
+     "null_p05": 0.2265562238096272,
+     "drill_down": {
+      "univariate_auc": {
+       "Rows": 0.08406549520766773,
+       "Columns": 0.5
+      },
+      "top_feature": "Rows",
+      "strata_of_top": {
+       "0.0": {
+        "n": 187,
+        "n_studies": 47,
+        "n_pos": 16,
+        "prevalence": 0.0855614973262032,
+        "production_auc_in_stratum": 0.8633040935672515
+       },
+       "1.0": {
+        "n": 142,
+        "n_studies": 39,
+        "n_pos": 0,
+        "prevalence": 0.0,
+        "production_auc_in_stratum": null
+       }
+      }
+     }
+    },
+    "C4_files_in_study": {
+     "auc_mean": 0.2627396166134185,
+     "auc_min": 0.22104632587859427,
+     "auc_max": 0.2955271565495208,
+     "null_mean": 0.5217328672279937,
+     "null_p95": 0.7423195043103448,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "n_files_study": 0.5459265175718849,
+      "n_frames_region_study": 0.5473242811501597
+     },
+     "null_p05": 0.2636082268370607
+    },
+    "C5_row_order": {
+     "auc_mean": 0.6162340255591054,
+     "auc_min": 0.6000399361022364,
+     "auc_max": 0.6321884984025559,
+     "null_mean": 0.48038744924377313,
+     "null_p95": 0.7215180467091294,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "row_no": 0.32767571884984026,
+      "file_no": 0.44059504792332266
+     },
+     "null_p05": 0.2652730328124458
+    },
+    "C6_uid_hash": {
+     "auc_mean": 0.6295127795527156,
+     "auc_min": 0.5976437699680511,
+     "auc_max": 0.6551517571884984,
+     "null_mean": 0.4836971342150346,
+     "null_p95": 0.6586870680583895,
+     "above_null_p95": false,
+     "univariate_auc": {
+      "uid_hash_study": 0.3442492012779553,
+      "uid_hash_sop": 0.5609025559105432
+     },
+     "null_p05": 0.25400359424920127
+    }
+   },
+   "stack_inputs": {
+    "geom_variant": "baseline",
+    "emb_source": "imagenet",
+    "emb_variant": "baseline",
+    "geom_cols": [
+     "scan_length_mm",
+     "shaft_len_below_troch_mm"
+    ],
+    "missing_cols": []
+   },
+   "simplified_stack": {
+    "real_auc_mean": 0.8998935037273696,
+    "perm_between_groups_mean": 0.4801789424578371,
+    "perm_between_groups_p95": 0.7486062766438898,
+    "perm_between_groups_max": 0.9421083802191295,
+    "perm_within_study_mean": 0.7385583067092651,
+    "perm_within_study_p95": 0.8103534345047924,
+    "labels_vary_within_study": 5
+   },
+   "rows_vs_scan_length_mm_spearman": 1.0
+  }
+ }
+}

@@ -312,8 +312,12 @@ def nested_block_for(crit, emb_src, nested):
     К13 — источник эмбеддингов. Берём ту запись, которая относится к текущему источнику;
     если ни одной нет, поле остаётся пустым, а не заполняется числом от другого бэкбона.
     """
+    # 'mean' / 'ci' — ВСЕГДА оценка того, что стоит в продакшене (== 'production'); оценка отвергнутой
+    # (или заменённой) альтернативы — только в 'alternative' / 'alternative_ci' (A2, 24.09: до этого в ветке К2
+    # 'mean' / 'ci' брались от вентиля, который не принят, и для sp_art / hip_pos / hip_roi nested_auc_mean
+    # равнялся альтернативе).
     empty = {'protocol': None, 'mean': None, 'ci': None, 'base_mean': None, 'gain': None,
-             'production': None, 'alternative': None, 'alternative_what': None}
+             'production': None, 'alternative': None, 'alternative_ci': None, 'alternative_what': None}
     if nested is not None and nested.get('kind') == 'feature' and nested.get('accepted') \
             and str(nested.get('emb_source') or 'imagenet') == emb_src:
         # H2 (2.4.0), признак контура A принят: в продакшене стоит стэк С признаком (auc_cand_*),
@@ -325,15 +329,17 @@ def nested_block_for(crit, emb_src, nested):
                 'gain': nested.get('n_repeats_gain_ge_0.03'),
                 'production': nested.get('auc_cand_mean_over_repeats'),
                 'alternative': nested.get('auc_base_mean_over_repeats'),
+                'alternative_ci': nested.get('auc_base_ci'),
                 'alternative_what': str(nested.get('alternative_what') or 'контур A без synth_pos_logit (2.3.2)')}
     if nested is not None and str(nested.get('emb_source') or 'imagenet') == emb_src:
         # К2: в продакшене стоит базовый стэкинг 0.5/0.5 (вентиль не принят),
         # альтернатива — вес вентиля, выбранный внутри фолдов.
-        return {'protocol': 'nested_gate_K2', 'mean': nested.get('auc_gate_mean_over_repeats'),
-                'ci': nested.get('auc_gate_ci'), 'base_mean': nested.get('auc_base_mean_over_repeats'),
+        return {'protocol': 'nested_gate_K2', 'mean': nested.get('auc_base_mean_over_repeats'),
+                'ci': nested.get('auc_base_ci'), 'base_mean': nested.get('auc_base_mean_over_repeats'),
                 'gain': nested.get('n_repeats_gain_ge_0.03'),
                 'production': nested.get('auc_base_mean_over_repeats'),
                 'alternative': nested.get('auc_gate_mean_over_repeats'),
+                'alternative_ci': nested.get('auc_gate_ci'),
                 'alternative_what': 'вес вентиля по критерию (К2, не принят)'}
     g = emb_gate_decision_for(crit)
     fx = ((g or {}).get('fixed') or {}).get(emb_src)
@@ -344,6 +350,7 @@ def nested_block_for(crit, emb_src, nested):
                 'gain': fx.get('n_repeats_gain_ge_0.03'),
                 'production': fx.get('auc_mean_over_repeats'),
                 'alternative': (g or {}).get('auc_base_mean_over_repeats'),
+                'alternative_ci': (((g or {}).get('fixed') or {}).get((g or {}).get('base_source')) or {}).get('auc_ci'),
                 'alternative_what': f"прежний источник эмбеддингов '{(g or {}).get('base_source')}'"}
     print(f"  [warn] нет nested-записи для {crit} при источнике '{emb_src}' — поля nested_* пустые")
     return empty
@@ -574,8 +581,10 @@ def train_region_stacked(region, criteria):
             'nested_auc_production': nested_block['production'],
             'nested_auc_alternative': nested_block['alternative'],
             'nested_alternative_what': nested_block['alternative_what'],
+            # nested_auc_mean / nested_auc_ci — синонимы production (для старых потребителей), не альтернатива
             'nested_auc_mean': nested_block['mean'],
             'nested_auc_ci': nested_block['ci'],
+            'nested_auc_alternative_ci': nested_block['alternative_ci'],
             'nested_auc_base_mean': nested_block['base_mean'],
             'nested_repeats_gain_ge_0.03': nested_block['gain'],
         }

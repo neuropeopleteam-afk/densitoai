@@ -170,6 +170,12 @@ def main() -> int:
         fail = df[df["processing_status"] == "Failure"]
         if not (fail["quality_class"].astype(str) == "0").all() or not (fail["violation_type"] == "").all():
             problems.append("Failure rows must have quality_class=0 and empty violation_type")
+        # --- инвариант для ВСЕХ строк, включая Failure: quality_class 1 <=> quality_prob >= 0.5
+        inv = df[(df["quality_class"].astype(int) == 1) != (df["quality_prob"].astype(float) >= 0.5)]
+        if len(inv):
+            problems.append(f"class/prob invariant broken in {len(inv)} rows: {list(inv['path_to_study'])[:3]}")
+        if len(fail) and not (fail["quality_prob"].astype(float) < 0.5).all():
+            problems.append("Failure rows must have quality_prob < 0.5")
         # --- xlsx
         if not out_csv.with_suffix(".xlsx").exists():
             problems.append("xlsx not written")

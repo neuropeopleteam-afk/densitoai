@@ -538,14 +538,35 @@ body:not(.view-app) .topbar .topnav { display: flex; }
 .roi-dec .stage img { width: 100%; display: block; cursor: default; border: 0; border-radius: 0; }
 .roi-dec .stage canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; touch-action: none; }
 .roi-dec .stage.draw canvas { cursor: crosshair; }
+.roi-dec .fchip { border: 1.5px solid var(--primary); color: var(--primary); background: var(--surface); }
+.roi-dec .fchip:hover:not([disabled]):not(.active) { background: var(--primary-soft); }
+.roi-dec .fchip:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .roi-dec .fchip.active { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
-.roi-dec .fchip[disabled] { opacity: .45; cursor: not-allowed; }
+.roi-dec .fchip.active::before { content: '✓ '; }
+.roi-dec .fchip[disabled] { border: 1px dashed var(--border); color: var(--muted); background: var(--surface-2); cursor: not-allowed; }
+.roi-dec .why-off { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
 .roi-dec .msg { font-size: 13px; color: var(--muted); }
 .roi-dec .msg.ok { color: var(--success); font-weight: 600; }
 .roi-dec .msg.err { color: var(--error); font-weight: 600; }
 .badge.roidec { background: var(--primary-soft); color: var(--primary); margin-left: 6px; margin-top: 4px; white-space: normal; line-height: 1.25; font-size: 12px; }
 .badge.roidec.done { background: var(--success-soft); color: var(--success); }
 /* ROI-DECISION:END */
+/* C1:BEGIN — измерения модели, источник решения, маршрут области интереса, главное действие на визит */
+.dc-source { margin-top: 10px; font-size: 14px; line-height: 1.45; padding: 8px 12px; border-radius: 8px; background: var(--surface-2); }
+.dc-source.image { background: var(--warning-soft); color: var(--warning); font-weight: 600; }
+.dc-route { margin-top: 12px; border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 10px; padding: 10px 14px; font-size: 14.5px; line-height: 1.5; }
+.dc-route .k { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; }
+.dc-route .note { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+.mtable .guide { font-size: 12px; color: var(--muted); }
+.wbadge .cnt { font-variant-numeric: tabular-nums; opacity: .8; }
+.vplate { padding: 10px 16px 12px 52px; background: var(--surface-2); border-bottom: 1px solid var(--border); font-size: 14px; line-height: 1.45; }
+.vplate .main { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.vplate .k { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; white-space: nowrap; }
+.vplate .t { font-weight: 600; }
+.vplate.action .t { color: var(--error); } .vplate.files .t { color: var(--warning); } .vplate.ok .t { color: var(--success); }
+.vplate details { margin-top: 4px; } .vplate summary { cursor: pointer; color: var(--primary); font-size: 13px; }
+.vplate ul { margin: 6px 0 0 18px; padding: 0; } .vplate li { margin: 2px 0; }
+/* C1:END */
 /* DEPT-SUMMARY:BEGIN — сводка по партии (только когда в задаче больше одного исследования) */
 .dept-summary .body { display: block; }
 .dept-summary.collapsed .body { display: none; }
@@ -754,7 +775,7 @@ body.view-registry .app-head .sub { display: none; }
 
 <footer>
   <div class="wrap">
-    <div>DensitoAI · версия сервиса 2.4.0 · хэш конфигурации 1f12392d7373</div>
+    <div>DensitoAI · версия сервиса 2.4.0 · хэш конфигурации d97d54aaacd2</div>
     <div><a href="docs.html">Документы и проверка</a></div>
   </div>
 </footer>
@@ -914,20 +935,29 @@ const CARD_FALLBACK = {
     sp_axis: { reason: 'Ось позвоночника наклонена относительно оси стола', hint: 'Выровнять пациента вдоль продольной оси стола по лазерной метке, без поворота таза и плеч; повторить сканирование.' },
     sp_art: { reason: 'В кадре плотные посторонние предметы', hint: 'Убрать из области сканирования металл и плотные предметы: пуговицы, молнии, ремень, содержимое карманов; если предмет убрать нельзя, отметить это в протоколе.' },
     hip_pos: { reason: 'Бедро повёрнуто или диафиз наклонён', hint: 'Развернуть стопу внутрь с фиксатором, диафиз бедра параллельно оси стола; малый вертел должен быть почти не виден; повторить сканирование.' },
-    hip_roi: { reason: 'Кость слишком близко к краю кадра или поле сканирования короткое', hint: 'Сместить поле сканирования: от кости до бокового края не менее 20 мм, в кадр должен войти проксимальный отдел бедра с участком диафиза ниже вертелов; повторить сканирование.' },
+    hip_roi: { reason: 'Область интереса бедра: поле сканирования короткое или вопрос к области анализа', hint: 'Проверить, вошёл ли в кадр проксимальный отдел бедра с участком диафиза ниже вертелов; дальнейшее действие зависит от того, полное ли поле сканирования.' },
+    hip_roi_field_incomplete: { reason: 'Поле сканирования неполное: скан короткий или диафиза ниже вертела в кадре мало', hint: 'Обсудить повторное сканирование: в поле должен войти проксимальный отдел бедра с участком диафиза ниже вертелов. Предложение системы, исходное измерение не меняется.' },
+    hip_roi_field_complete: { reason: 'Поле сканирования полное, вопрос к области анализа', hint: 'Проверить область анализа на аппарате и при необходимости поправить её там; повторно не облучать. Предложение системы, исходное измерение не меняется.' },
+    hip_roi_insufficient_data: { reason: 'Измерений поля недостаточно, чтобы выбрать между повторным сканированием и проверкой анализа', hint: 'Решение врача по снимку. Предложение системы, исходное измерение не меняется.' },
     ok: { reason: 'Отклонений от требований не выявлено', hint: 'Повторное сканирование не требуется.' },
     fail: { reason: 'Файл не обработан', hint: 'Проверить, что файл является DICOM-снимком с денситометра, и передать врачу или инженеру.' },
     review: { reason: 'Оценка на границе допуска', hint: 'Показать снимок врачу до решения о повторном сканировании.' },
   },
   measurement_norms: {
-    axis_angle_deg: { label: 'Угол оси позвоночника', unit: '°', tz_max: 5.0 },
+    axis_angle_deg: { label: 'Угол оси позвоночника', unit: '°', guide_max: 5.0, source: 'ориентир требований: отклонение оси не более 5°' },
     center_offset_ratio: { label: 'Смещение центра позвоночника', unit: '% ширины кадра', mult: 100 },
     metal_metal_area_mm2: { label: 'Площадь плотных объектов', unit: 'мм²' },
     abs_shaft_angle_deg: { label: 'Угол диафиза бедра', unit: '°' },
-    edge_distance_mm: { label: 'Расстояние от кости до края кадра', unit: 'мм', tz_min: 20.0 },
+    edge_distance_mm: { label: 'Расстояние от кости до края кадра', unit: 'мм', guide_min: 20.0, source: 'ориентир из разъяснений: не менее 2 см от края' },
     scan_length_mm: { label: 'Длина скана', unit: 'мм' },
     shaft_len_below_troch_mm: { label: 'Диафиз ниже вертелов', unit: 'мм' },
     lesser_troch_prominence_mm: { label: 'Выступ малого вертела', unit: 'мм' },
+    femur_solidity: { label: 'Компактность контура бедра', unit: '' },
+    shaft_width_mm: { label: 'Ширина диафиза', unit: 'мм' },
+    merge_height_mm: { label: 'Высота слияния диафиза с тазом', unit: 'мм' },
+    medial_neck_extent_mm: { label: 'Медиальный выступ шейки бедра', unit: 'мм' },
+    bone_width_ratio: { label: 'Ширина костной области', unit: '% ширины кадра', mult: 100 },
+    metal_metal_max_intensity_gap: { label: 'Контраст включений к кости', unit: 'сигм' },
   },
 };
 let CARD_TEXT = CARD_FALLBACK;
@@ -1002,62 +1032,119 @@ function decision(r) {
   // К3: needs_review приходит из API details (зона «не уверен» по запасу до порога, запасы в models/calibration.pkl)
   const borderline = (d && d.needs_review === true) || (REVIEW_MARGIN !== null && margin !== null && margin < REVIEW_MARGIN);
   const code = (doctor || borderline || !group) ? 'review' : 'retake';
-  const a = group ? acts[group] : null;
-  return { code, label: VERDICT[code], group: group || 'review', reason: a?.reason || acts.review?.reason || 'Оценка на границе допуска', hint: a?.hint || acts.review?.hint || '', crit: main, margin, doctor, borderline };
+  // C1: для hip_roi текст берётся по коду причины из API (поле полное / неполное / данных мало); класс не меняется
+  const route = (group === 'hip_roi' && d.hip_roi_reason && typeof d.hip_roi_reason === 'object') ? d.hip_roi_reason : null;
+  const a = group ? ((route && acts[route.action_key]) || acts[group]) : null;
+  return { code, label: VERDICT[code], group: group || 'review', reason: a?.reason || acts.review?.reason || 'Оценка на границе допуска', hint: a?.hint || acts.review?.hint || '', crit: main, margin, doctor, borderline, route };
 }
-// Измеренное против нормы — только те величины, для которых есть норма ТЗ или справочный диапазон
+// откуда ориентир — по полю source из config.yaml (требования или разъяснения); ориентир не является порогом системы
+function guideFrom(n) { const src = String((n && n.source) || ''); return (/разъяснен/.test(src) ? ' из разъяснений' : /требован/.test(src) ? ' из требований' : '') + ', не порог системы'; }
+// C1: оценка одного измерения. guide_* — ориентир из требований и разъяснений (не порог системы: решает модель);
+// ref_* — обычный диапазон нормальных снимков обучающей выборки. Старые поля tz_* читаются как ориентир.
+function normEval(key, v, hip, unitFallback, d) {
+  const n = (CARD_TEXT.measurement_norms || {})[key] || null;
+  const dec = key === 'femur_solidity' ? 2 : (/deg|ratio|prominence|gap|width_mm|height_mm|extent_mm/.test(key) ? 1 : 0);
+  const absv = Math.abs(v);
+  const unit = (n && n.unit) || unitFallback || '';
+  let valueText = `${fmtNum(absv, dec)} ${unit}`.trim();
+  if (key === 'center_offset_ratio' && d) {
+    const cols = Array.isArray(d.image_size) ? Number(d.image_size[1]) : NaN;
+    const psx = Array.isArray(d.pixel_spacing_mm_default) ? Number(d.pixel_spacing_mm_default[1]) : 0.6;
+    if (Number.isFinite(cols) && cols > 0) valueText = `${fmtNum(absv / 100 * cols * psx, 0)} мм · ${fmtNum(absv, 1)} % ширины ${v > 0 ? '(вправо по снимку)' : v < 0 ? '(влево по снимку)' : ''}`.trim();
+  }
+  const out = { key, label: (n && n.label) || null, valueText, normText: '—', guideText: '', status: 'ref', statusText: 'справочно', value: v };
+  if (!n) return out;
+  // Если после округления измерение выглядит равным границе, а по сырому значению за ней —
+  // показываем на один знак точнее, чтобы подпись и оценка не противоречили друг другу.
+  const refineValue = (nv, ok) => {
+    if (ok || key === 'center_offset_ratio' || !Number.isFinite(nv)) return;
+    if (fmtNum(absv, dec) === fmtNum(nv, dec) && Math.abs(absv - nv) > 1e-9) out.valueText = `${fmtNum(absv, Math.max(dec, 1))} ${unit}`.trim();
+  };
+  const ref = n.ref_q95 ?? (hip ? n.ref_q95_hip : n.ref_q95_spine);
+  const refOk = ref !== undefined && ref !== null;
+  let refText = '', typical = null, low = false, range = false;
+  if (refOk) {
+    low = n.ref_kind === 'q05_normal';
+    range = n.ref_kind === 'q05_q95_normal' && n.ref_q05 !== undefined && n.ref_q05 !== null;
+    if (range) { refText = `обычно ${fmtNum(n.ref_q05, dec)}–${fmtNum(ref, dec)} ${unit}`.trim(); typical = absv >= Number(n.ref_q05) && absv <= Number(ref); }
+    else { refText = `${low ? 'обычно не менее' : 'обычно до'} ${fmtNum(ref, dec)} ${unit}`.trim(); typical = low ? absv >= Number(ref) : absv <= Number(ref); }
+  }
+  const gmax = n.guide_max ?? n.tz_max, gmin = n.guide_min ?? n.tz_min;
+  if (gmax !== undefined && gmax !== null) {
+    const ok = absv <= Number(gmax); refineValue(Number(gmax), ok);
+    out.normText = `ориентир${guideFrom(n)}: до ${fmtNum(gmax, 0)} ${unit}`.trim() + (refText ? ` · ${refText}` : '');
+    out.status = ok ? 'ok' : 'hi'; out.statusText = ok ? 'в пределах ориентира' : 'больше ориентира';
+  } else if (gmin !== undefined && gmin !== null) {
+    const ok = absv >= Number(gmin); refineValue(Number(gmin), ok);
+    out.normText = `ориентир${guideFrom(n)}: не менее ${fmtNum(gmin, 0)} ${unit}`.trim() + (refText ? ` · ${refText}` : '');
+    out.status = ok ? 'ok' : 'hi'; out.statusText = ok ? 'в пределах ориентира' : 'меньше ориентира';
+  } else if (refOk) {
+    refineValue(Number(ref), typical);
+    out.normText = refText;
+    out.status = typical ? 'ok' : 'hi';
+    out.statusText = typical ? 'в обычном диапазоне' : (range ? (absv < Number(n.ref_q05) ? 'меньше обычного' : 'больше обычного') : (low ? 'меньше обычного' : 'больше обычного'));
+  }
+  return out;
+}
+// Измеренное против нормы — только те величины, для которых есть ориентир или обычный диапазон
 function measuredRows(r) {
   const d = r.details || {};
   const norms = CARD_TEXT.measurement_norms || {};
   const hip = isHip(d);
-  const cols = Array.isArray(d.image_size) ? Number(d.image_size[1]) : NaN;
-  const psx = Array.isArray(d.pixel_spacing_mm_default) ? Number(d.pixel_spacing_mm_default[1]) : 0.6;
   const out = [];
   (Array.isArray(d.measurements) ? d.measurements : []).forEach(m => {
     const key = m.key || MEAS_TITLE_KEY[m.title];
-    const n = key ? norms[key] : null;
-    if (!n) return;
-    const v = Number(m.value);
+    if (!key || !norms[key]) return;
+    let v = Number(m.value), label = null;
+    // C1/З3: ориентир «не менее 20 мм от края» относится к латеральному краю кости. edge_distance_mm — минимум
+    // по всему контуру (медиальная сторона и таз обычно у края кадра), с ориентиром его сравнивать нельзя:
+    // показываем расстояние от латерального края кости (details.lateral_margin_mm), а без него строку не выводим.
+    if (key === 'edge_distance_mm') {
+      if (!hip || d.lateral_margin_mm === null || d.lateral_margin_mm === undefined || !Number.isFinite(Number(d.lateral_margin_mm))) return;
+      v = Number(d.lateral_margin_mm); label = 'Расстояние от латерального края кости до края кадра';
+    }
     if (!Number.isFinite(v)) return;
-    const dec = /deg|ratio|prominence/.test(key) ? 1 : 0;
-    const absv = Math.abs(v);
-    let valueText = `${fmtNum(absv, dec)} ${n.unit || m.unit || ''}`.trim();
-    if (key === 'center_offset_ratio' && Number.isFinite(cols) && cols > 0) {
-      const mm = absv / 100 * cols * psx;
-      valueText = `${fmtNum(mm, 0)} мм · ${fmtNum(absv, 1)} % ширины ${v > 0 ? '(вправо по снимку)' : v < 0 ? '(влево по снимку)' : ''}`.trim();
-    }
-    let normText = '—', status = 'ref', statusText = 'справочно';
-    // Если после округления измерение выглядит равным норме, а по сырому значению оно её не
-    // выполняет (19.8 мм при норме 20 мм округлялось в «20 мм» и рядом стояло «меньше допуска»),
-    // показываем на один знак точнее — подпись и оценка перестают противоречить друг другу.
-    const refineValue = (nv, ok) => {
-      if (ok || key === 'center_offset_ratio' || !Number.isFinite(nv)) return;
-      if (fmtNum(absv, dec) === fmtNum(nv, dec) && Math.abs(absv - nv) > 1e-9) {
-        valueText = `${fmtNum(absv, Math.max(dec, 1))} ${n.unit || m.unit || ''}`.trim();
-      }
-    };
-    if (n.tz_max !== undefined && n.tz_max !== null) {
-      normText = `до ${fmtNum(n.tz_max, 0)} ${n.unit || ''} (ТЗ)`; const ok = absv <= Number(n.tz_max);
-      refineValue(Number(n.tz_max), ok);
-      status = ok ? 'ok' : 'bad'; statusText = ok ? 'в допуске' : 'выше допуска';
-    } else if (n.tz_min !== undefined && n.tz_min !== null) {
-      normText = `не менее ${fmtNum(n.tz_min, 0)} ${n.unit || ''} (ТЗ)`; const ok = absv >= Number(n.tz_min);
-      refineValue(Number(n.tz_min), ok);
-      status = ok ? 'ok' : 'bad'; statusText = ok ? 'в допуске' : 'меньше допуска';
-    } else {
-      const ref = n.ref_q95 ?? (hip ? n.ref_q95_hip : n.ref_q95_spine);
-      if (ref !== undefined && ref !== null) {
-        const low = n.ref_kind === 'q05_normal';
-        normText = `${low ? 'обычно не менее' : 'обычно до'} ${fmtNum(ref, dec)} ${n.unit || ''}`;
-        const typical = low ? absv >= Number(ref) : absv <= Number(ref);
-        refineValue(Number(ref), typical);
-        normText = `${low ? 'обычно не менее' : 'обычно до'} ${fmtNum(ref, dec)} ${n.unit || ''}`;
-        status = typical ? 'ok' : 'hi'; statusText = typical ? 'в обычном диапазоне' : (low ? 'меньше обычного' : 'больше обычного');
-      }
-    }
-    out.push({ key, label: n.label || m.title, valueText, normText, status, statusText, value: v });
+    const e = normEval(key, v, hip, m.unit, d);
+    e.label = label || e.label || m.title;
+    out.push(e);
   });
   return out;
+}
+// C1: признаки, по которым решает модель контура A по критерию (feature_cols файла модели, приходят из API)
+function modelFeatureRows(r, crit) {
+  const d = r.details || {};
+  const items = crit && crit.model_features && Array.isArray(crit.model_features.items) ? crit.model_features.items : [];
+  const hip = isHip(d);
+  return items.map(it => {
+    const v = Number(it.value);
+    if (it.value === null || it.value === undefined || !Number.isFinite(v)) return { key: it.key, label: it.title || it.key, valueText: 'не измерено', normText: 'модель подставила типичное значение', guideText: '', status: 'ref', statusText: 'нет измерения', value: null };
+    const e = normEval(String(it.key), v, hip, it.unit, d);
+    e.label = it.title || e.label || it.key;
+    if (!(CARD_TEXT.measurement_norms || {})[it.key]) { e.valueText = `${fmtNum(v, Math.abs(v) < 10 ? 2 : 1)} ${it.unit || ''}`.trim(); e.normText = 'диапазон не задан'; }
+    return e;
+  });
+}
+// C1: строка источника решения; при решении по изображению — без противоречия с таблицей измерений
+function decisionSourceLine(crit, frows) {
+  if (!crit || !crit.decision_source) return null;
+  const src = String(crit.decision_source);
+  let text = String(crit.decision_source_text || '');
+  if (src === 'image') {
+    const atyp = frows.filter(f => f.status === 'hi').length;
+    text = atyp ? 'решение по изображению; по совокупности измерений модель нарушения не видит, хотя отдельные значения вне обычного диапазона — проверьте снимок визуально'
+      : 'решение по изображению, измерения в норме — проверьте снимок визуально';
+  }
+  if (!text) return null;
+  return { cls: src === 'image' ? 'image' : '', text: 'Источник решения: ' + text + '.' };
+}
+function mtable(rows) {
+  const t = el('table', { class: 'mtable' });
+  rows.forEach(m => t.appendChild(el('tr', {}, [
+    el('td', { text: m.label }),
+    el('td', {}, [el('div', { class: 'val', text: `измерено ${m.valueText}` }), el('div', { class: 'norm', text: m.normText === '—' ? 'диапазон не задан' : m.normText }), m.guideText ? el('div', { class: 'guide', text: m.guideText + ' — не порог системы' }) : null]),
+    el('td', { class: 'st' }, [el('span', { class: 'pill ' + m.status, text: m.statusText })]),
+  ])));
+  return t;
 }
 // Предупреждения из details.extras человеческим языком (жёлтые бейджи)
 function extrasBadges(r) {
@@ -1069,19 +1156,34 @@ function extrasBadges(r) {
   if (x.endoprosthesis_suspected === true || x.endoprosthesis_suspected === 'True' || x.endoprosthesis_suspected === 1) b.push({ text: 'подозрение на эндопротез' });
   if (x.white_lines_flag === true || x.white_lines_flag === 'True' || x.white_lines_flag === 1) b.push({ text: 'на снимке служебная графика аппарата' });
   if (x.axis_curved_flag === true || x.axis_curved_flag === 'True' || x.axis_curved_flag === 1) b.push({ text: 'заметное искривление оси столба' });
-  String(x.study_warnings || '').split('|').map(s => s.trim()).filter(Boolean).forEach(w => {
-    if (/дубликат/i.test(w)) b.push({ text: 'в исследовании дубликаты кадров' });
-    else if (/нет позвоночника/i.test(w)) b.push({ text: 'в исследовании нет снимка позвоночника' });
-    else if (/нет бедра/i.test(w)) b.push({ text: 'в исследовании нет снимка бедра' });
-    else if (/StudyDate/i.test(w)) b.push({ text: 'в исследовании разные даты' });
-    else if (/PatientID/i.test(w)) b.push({ text: 'в исследовании разные идентификаторы пациента' });
-    else if (/x\d/.test(w)) b.push({ text: 'в исследовании несколько снимков одной области' });
-    else b.push({ text: 'предупреждение по исследованию' });
-  });
+  // C2/З2: предупреждения по исследованию — уникальные, с числом; сервер отдаёт их уже сведёнными
+  // (details.study_warnings_unique), для старых ответов сводим на клиенте
+  const uniq = Array.isArray(d.study_warnings_unique) ? d.study_warnings_unique : studyWarningsClient(x.study_warnings);
+  uniq.forEach(w => b.push({ text: String(w.text || 'предупреждение по исследованию') + (w.detail ? ': ' + w.detail : ''), count: Number(w.count) > 1 && !w.detail ? Number(w.count) : 0 }));
   if (/hip_all_features failed/i.test(String(d.warnings || ''))) b.push({ text: 'часть измерений бедра недоступна' });
-  return b;
+  const seen = new Map();
+  b.forEach(x2 => { const k = x2.text; if (seen.has(k)) seen.get(k).count = Math.max(seen.get(k).count || 1, 1) + Math.max(x2.count || 1, 1); else seen.set(k, Object.assign({}, x2)); });
+  return Array.from(seen.values());
 }
-const ROI_REASON = { scan_too_short: 'поле сканирования короче требуемого', shaft_below_trochanter_too_short: 'в кадр вошло мало диафиза ниже вертелов', lateral_margin_below_threshold: 'кость ближе к краю кадра, чем требует ТЗ (не менее 20 мм)' };
+const STUDY_REGION_RU = { spine: 'позвоночник', right_hip: 'правое бедро', left_hip: 'левое бедро' };
+function studyWarningsClient(raw) {
+  const out = new Map(); const reps = [];
+  String(raw || '').split('|').map(s => s.trim()).filter(Boolean).forEach(w => {
+    let code, text;
+    if (/дубликат/i.test(w)) { code = 'pixel_duplicates'; text = 'в исследовании дубликаты кадров'; }
+    else if (/нет позвоночника/i.test(w)) { code = 'missing_spine'; text = 'в исследовании нет снимка позвоночника'; }
+    else if (/нет бедра/i.test(w)) { code = 'missing_hip'; text = 'в исследовании нет снимка бедра'; }
+    else if (/StudyDate/i.test(w)) { code = 'study_dates'; text = 'в исследовании разные даты'; }
+    else if (/PatientID/i.test(w)) { code = 'patients'; text = 'в исследовании разные идентификаторы пациента'; }
+    else if (/x\d/.test(w)) { const m = w.match(/^(\w+)\s+x(\d+)/); if (m) reps.push(`${STUDY_REGION_RU[m[1]] || m[1]} ×${m[2]}`); return; }
+    else { code = 'other'; text = 'предупреждение по исследованию'; }
+    if (out.has(code)) out.get(code).count += 1; else out.set(code, { code, text, count: 1, detail: '' });
+  });
+  const res = [];
+  if (reps.length) res.push({ code: 'region_repeat', text: 'в исследовании несколько снимков одной области', count: reps.length, detail: reps.join(', ') });
+  return res.concat(Array.from(out.values()));
+}
+const ROI_REASON = { scan_too_short: 'поле сканирования короче обычного', shaft_below_trochanter_too_short: 'в кадр вошло мало диафиза ниже вертелов', lateral_margin_below_threshold: 'кость ближе к краю кадра, чем ориентир из разъяснений (не менее 20 мм)' };
 function roiHintText(d) {
   const roi = d.roi || {};
   if (!roi.needs_correction) return null;
@@ -1169,23 +1271,44 @@ function decisionCard(r, opts) {
   ]));
   const badges = extrasBadges(r);
   if (dec.borderline && !badges.some(b => b.cls === 'doctor')) badges.unshift({ text: 'оценка на границе допуска — показать врачу', cls: 'doctor' });
-  if (badges.length) card.appendChild(el('div', { class: 'badges' }, badges.map(b => el('span', { class: 'wbadge ' + (b.cls || ''), text: b.text }))));
-  if (rows.length) {
-    card.appendChild(el('h4', { text: 'Измерено против нормы' }));
-    const t = el('table', { class: 'mtable' });
-    rows.forEach(m => t.appendChild(el('tr', {}, [
-      el('td', { text: m.label }),
-      el('td', {}, [el('div', { class: 'val', text: `измерено ${m.valueText}` }), el('div', { class: 'norm', text: `норма ${m.normText}` })]),
-      el('td', { class: 'st' }, [el('span', { class: 'pill ' + m.status, text: m.statusText })]),
-    ])));
-    card.appendChild(t);
-    card.appendChild(el('div', { class: 'dc-note', text: 'Статус измерения — сравнение с допуском ТЗ или с обычным диапазоном нормальных снимков обучающей выборки (95 % квантиль). Решение принимает модель по совокупности признаков, поэтому оно может не совпадать со статусом отдельного измерения.' }));
-  } else if (dec.code !== 'fail') {
+  if (badges.length) card.appendChild(el('div', { class: 'badges' }, badges.map(b => el('span', { class: 'wbadge ' + (b.cls || '') }, [b.text, b.count > 1 ? el('span', { class: 'cnt', text: '×' + b.count }) : null]))));
+  // C1/З3: сначала — измерения, по которым модель решает по главному критерию (признаки контура A)
+  const frows = dec.crit ? modelFeatureRows(r, dec.crit) : [];
+  if (frows.length) {
+    card.appendChild(el('h4', { text: `Измерения, по которым решает модель: ${String(dec.crit.title || dec.crit.code).toLowerCase()}` }));
+    card.appendChild(mtable(frows));
+  }
+  const srcLine = dec.code !== 'ok' ? decisionSourceLine(dec.crit, frows) : null;
+  if (srcLine) card.appendChild(el('div', { class: 'dc-source ' + srcLine.cls, text: srcLine.text }));
+  const shown = new Set(frows.map(f => f.key));
+  const rest = rows.filter(m => !shown.has(m.key));
+  if (rest.length) {
+    card.appendChild(el('h4', { text: frows.length ? 'Другие измерения' : 'Измерено против нормы' }));
+    card.appendChild(mtable(rest));
+  } else if (!frows.length && dec.code !== 'fail') {
     card.appendChild(el('div', { class: 'dc-note', text: 'Измерения для этого снимка недоступны.' }));
   }
-  if (dec.hint) card.appendChild(el('div', { class: 'dc-hint' }, [el('b', { text: dec.code === 'ok' ? 'Действие: ' : 'Что сделать: ' }), document.createTextNode(dec.hint)]));
+  if (frows.length || rest.length) card.appendChild(el('div', { class: 'dc-note', text: 'Статус измерения — сравнение с обычным диапазоном нормальных снимков обучающей выборки (5–95 %) или с ориентиром из требований и разъяснений. Ориентир не является порогом системы: решение принимает модель по совокупности признаков и по изображению, поэтому оно может не совпадать со статусом отдельного измерения.' }));
+  // решение только по изображению: сначала визуальная проверка, действие — при подтверждении
+  const hintTxt = (dec.hint && srcLine && srcLine.cls === 'image') ? 'Если нарушение на снимке подтверждается: ' + dec.hint.replace(/^./, ch => ch.toLowerCase()) : dec.hint;
+  if (hintTxt) card.appendChild(el('div', { class: 'dc-hint' }, [el('b', { text: dec.code === 'ok' ? 'Действие: ' : 'Что сделать: ' }), document.createTextNode(hintTxt)]));
+  // C1: развилка по области интереса бедра — поле неполное (обсудить повторное сканирование) или полное (проверить анализ)
+  const route = dec.route || (roiFlagged(r) && d.hip_roi_reason) || null;
+  if (route && route.title && isHip(d)) {
+    const meas = [];
+    const mm = route.measured || {};
+    if (Number.isFinite(Number(mm.scan_length_mm))) meas.push(`длина скана ${fmtNum(mm.scan_length_mm, 0)} мм`);
+    if (Number.isFinite(Number(mm.shaft_len_below_troch_mm))) meas.push(`диафиз ниже вертела ${fmtNum(mm.shaft_len_below_troch_mm, 0)} мм`);
+    if (Number.isFinite(Number(mm.lateral_margin_mm))) meas.push(`от кости до края ${fmtNum(mm.lateral_margin_mm, 0)} мм`);
+    card.appendChild(el('div', { class: 'dc-route' }, [
+      el('div', { class: 'k', text: 'Область интереса бедра' }),
+      el('div', {}, [el('b', { text: String(route.title) + (route.action ? ': ' : '') }), document.createTextNode(String(route.action || ''))]),
+      meas.length ? el('div', { class: 'note', text: 'Измерено: ' + meas.join(', ') + '.' }) : null,
+      el('div', { class: 'note', text: String(route.note || 'Предложение системы, исходное измерение не меняется.').replace(/^./, c => c.toUpperCase()).replace(/\.?$/, '.') }),
+    ]));
+  }
   const roiTxt = roiHintText(d);
-  if (roiTxt && isHip(d) && dec.code !== 'ok') card.appendChild(el('div', { class: 'dc-hint' }, [el('b', { text: 'Положение области интереса: ' }), document.createTextNode(roiTxt)]));
+  if (roiTxt && isHip(d) && dec.code !== 'ok' && !(route && route.code === 'field_complete')) card.appendChild(el('div', { class: 'dc-hint' }, [el('b', { text: 'Положение области интереса: ' }), document.createTextNode(roiTxt)]));
   const cen = centeringHint(r, rows);
   if (cen && dec.group === 'sp_pos') card.appendChild(el('div', { class: 'dc-hint' }, [el('b', { text: 'Центрирование: ' }), document.createTextNode(cen)]));
   if (d.error) card.appendChild(el('div', { class: 'warn', text: 'Ошибка обработки: ' + String(d.error) }));
@@ -1477,7 +1600,7 @@ function visibleRows() {
 }
 
 function refresh() {
-  document.querySelectorAll('.fchip').forEach(c => c.classList.toggle('active', c.dataset.f === state.filter));
+  document.querySelectorAll('.fchip[data-f]').forEach(c => c.classList.toggle('active', c.dataset.f === state.filter));
   const queue = document.getElementById('queue');
   if (!queue) return;
   queue.textContent = '';
@@ -1499,9 +1622,57 @@ function refresh() {
         el('span', { class: 'badge ' + (nf ? 'fail' : nv ? 'violation' : 'ok'), text: nf ? `${nf} не обработано` : nv ? `${nv} с нарушением` : 'все в норме' }),
         (() => { const nu = rs.filter(r => needsDoctor(r.details || {})).length; return nu ? el('span', { class: 'badge uncertain', text: `${nu} на просмотр` }) : null; })(),
       ]));
+      const vp = visitPlate(uid, rs); if (vp) queue.appendChild(vp);
       rs.forEach(r => queue.appendChild(queueRow(r)));
     }
   } else rows.forEach(r => queue.appendChild(queueRow(r)));
+}
+// C1: главное действие на визит — одно действие по исследованию (максимальный относительный запас над
+// порогом (скор − порог) / (1 − порог)); остальные замечания свёрнуты, не скрыты. Правило то же, что в SR
+// исследования («Приоритетное действие»); сервер отдаёт его в study_priority, для старых ответов — расчёт здесь.
+function visitPlate(uid, rs) {
+  const all = state.rows.filter(r => (r.study_uid || '—') === uid);
+  const p = (all.find(r => r.study_priority && typeof r.study_priority === 'object') || {}).study_priority || clientPriority(all);
+  if (!p || !p.text) return null;
+  const others = Array.isArray(p.others) ? p.others : [];
+  const box = el('div', { class: 'vplate ' + (p.status || '') }, [
+    el('div', { class: 'main' }, [el('span', { class: 'k', text: 'Главное действие на визит' }), el('span', { class: 't', text: String(p.text) })]),
+  ]);
+  if (others.length) box.appendChild(el('details', {}, [
+    el('summary', { text: `Остальные замечания (${others.length})` }),
+    el('ul', {}, others.map(o => el('li', { text: String(o.text || '') }))),
+  ]));
+  return box;
+}
+const PRIO_SIDE = { spine: 'Позвоночник', right_hip: 'Правое бедро', left_hip: 'Левое бедро' };
+const PRIO_TAIL = { 'RETAKE-CHECK': 'проверить снимок, при подтверждении переснять', 'RESCAN-DISCUSS': 'поле сканирования неполное, обсудить повторное сканирование', 'ANALYSIS-CHECK': 'поле полное, вопрос к области анализа: проверить анализ на аппарате, повторно не облучать', DOCTOR: 'измерений поля недостаточно, решение врача по снимку', REVIEW: 'нарушение по общей оценке снимка, проверить снимок' };
+const PRIO_CRIT = { sp_pos: 'укладка позвоночника', sp_axis: 'ось позвоночника', sp_art: 'посторонние предметы в поле', rh_pos: 'укладка бедра', lh_pos: 'укладка бедра', rh_roi: 'область интереса бедра', lh_roi: 'область интереса бедра' };
+const PRIO_ROUTE = { field_incomplete: 'RESCAN-DISCUSS', field_complete: 'ANALYSIS-CHECK', insufficient_data: 'DOCTOR' };
+function clientPriority(rs) {
+  const cands = new Map(), general = new Map(); let nFail = 0;
+  rs.forEach(r => {
+    const d = r.details || {};
+    if (String(r.processing_status || '').toLowerCase() === 'failure') { nFail++; return; }
+    if (regionUnsupported(r)) return;
+    const reg = String(d.internal_region || '');
+    let any = false;
+    (Array.isArray(d.criteria) ? d.criteria : []).forEach(c => {
+      if (!c.flag) return; any = true;
+      const sc = Number(c.score), th = Number(c.threshold);
+      const rm = Number.isFinite(sc) && Number.isFinite(th) && th < 1 ? (sc - th) / (1 - th) : null;
+      const act = /_roi$/.test(String(c.code)) ? (PRIO_ROUTE[(d.hip_roi_reason || {}).code] || 'DOCTOR') : 'RETAKE-CHECK';
+      const k = reg + '|' + c.code, cur = cands.get(k);
+      const e = { region: reg, criterion: String(c.code), title: PRIO_CRIT[c.code] || '', rm, uncertain: !!c.uncertain, act, n: 1, uid: String(r.image_uid || '') };
+      if (!cur) cands.set(k, e); else { const better = (rm ?? -9) > (cur.rm ?? -9) || ((rm ?? -9) === (cur.rm ?? -9) && e.uid < cur.uid); cands.set(k, Object.assign(better ? e : cur, { n: cur.n + 1 })); }
+    });
+    if (!any && String(r.quality_class) === '1') { const g = general.get(reg); general.set(reg, { region: reg, criterion: '', title: '', rm: null, act: 'REVIEW', n: g ? g.n + 1 : 1, uid: String(r.image_uid || '') }); }
+  });
+  const text = e => { let s = `${PRIO_SIDE[e.region] || 'Снимок'}: ` + (e.title ? `${e.title}, ` : '') + PRIO_TAIL[e.act]; if (e.n > 1) s += ` (снимков: ${e.n})`; if (e.uncertain) s += '; оценка у порога'; return s; };
+  const ranked = Array.from(cands.values()).sort((a, b) => ((b.rm ?? -9) - (a.rm ?? -9)) || a.criterion.localeCompare(b.criterion) || a.region.localeCompare(b.region) || a.uid.localeCompare(b.uid))
+    .concat(Array.from(general.values()).sort((a, b) => a.region.localeCompare(b.region))).map(e => ({ text: text(e) }));
+  if (nFail) ranked.push({ text: `Проверить необработанные файлы (Failure): ${nFail}`, files: true });
+  if (!ranked.length) return { status: 'ok', text: 'Нарушений не выявлено, действий по качеству не требуется', others: [] };
+  return { status: ranked[0].files ? 'files' : 'action', text: ranked[0].text, others: ranked.slice(1) };
 }
 
 function queueRow(r) {
@@ -1657,8 +1828,10 @@ function roiDecBlock(r) {
   const comment = el('textarea', { rows: '2', maxlength: '500', placeholder: 'комментарий (необязательно)', 'aria-label': 'Комментарий' });
   let choice = null;
   const btns = {};
-  const setChoice = c => { choice = c; Object.entries(btns).forEach(([k, b]) => b.classList.toggle('active', k === c)); state2.mode = c === 'своя' ? 'draw' : 'view'; stage.classList.toggle('draw', state2.mode === 'draw'); if (c === 'своя') msg(state2.cur ? 'Своя область: ' + roiDecBoxText(state2.cur, toMm(state2.cur)) : 'Растяните прямоугольник мышью по снимку — от одного угла области до другого.', ''); else msg('', ''); };
-  const mk = (c, label, disabled) => { const b = el('button', { type: 'button', class: 'fchip', disabled: disabled ? 'disabled' : null, onclick: () => setChoice(c) }, [label]); btns[c] = b; return b; };
+  const setChoice = c => { choice = c; Object.entries(btns).forEach(([k, b]) => { b.classList.toggle('active', k === c); b.setAttribute('aria-pressed', k === c ? 'true' : 'false'); }); state2.mode = c === 'своя' ? 'draw' : 'view'; stage.classList.toggle('draw', state2.mode === 'draw'); if (c === 'своя') msg(state2.cur ? 'Своя область: ' + roiDecBoxText(state2.cur, toMm(state2.cur)) : 'Растяните прямоугольник мышью по снимку — от одного угла области до другого.', ''); else msg('', ''); };
+  // З1: кнопки решения — отдельный класс roi-choice (не фильтр партии), выбранная закрашена и отмечена aria-pressed;
+  // «Подтвердить» и «Отклонить» заблокированы только когда системе нечего предложить (сервер не примет подтверждение без рамки)
+  const mk = (c, label, disabled) => { const b = el('button', { type: 'button', class: 'fchip roi-choice', 'aria-pressed': 'false', disabled: disabled ? 'disabled' : null, title: disabled ? 'Система не предложила область — подтверждать или отклонять нечего' : null, onclick: e => { e.stopPropagation(); setChoice(c); } }, [label]); btns[c] = b; return b; };
   const row1 = el('div', { class: 'row' }, [
     mk('подтверждено', 'Подтвердить', !s.needs_correction),
     mk('отклонено', 'Отклонить', !s.needs_correction),
@@ -1666,6 +1839,8 @@ function roiDecBlock(r) {
     el('label', { class: 'lbl' }, ['Специалист ', specialist]),
   ]);
   box.appendChild(row1);
+  if (!s.needs_correction) box.appendChild(el('div', { class: 'why-off', text: '«Подтвердить» и «Отклонить» недоступны: система не предложила область для этого снимка. Можно задать свою область кнопкой «Своя».' }));
+  else box.appendChild(el('div', { class: 'why-off', text: 'Выберите одно решение; выбранная кнопка закрашена, выбор можно сменить до отправки.' }));
   box.appendChild(comment);
   const send = el('button', { type: 'button', class: 'btn sm', text: 'Отправить решение', onclick: async () => {
     if (!choice) { msg('Выберите решение: «Подтвердить», «Отклонить» или «Своя».', 'err'); return; }

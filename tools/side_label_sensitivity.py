@@ -10,7 +10,11 @@
 считает те же AUC и F1 на двух вариантах мишени —
 
   A. «сторона детектора» (как в поставке): метка стороны, которую определил детектор;
-  B. «сторона разметки»: метка той стороны, которая записана в `data/labels_full.csv`.
+  B. «сторона старой плотностной эвристики»: метка той стороны, которая была записана в
+     `data/labels_full.csv` до К5 (файл сохранён как `data/labels_full_v1_density_side.csv`).
+     Это не сторона, указанная рентгенологом: в разметке организаторов стороны снимка нет,
+     есть только колонки «правое / левое бедро» по исследованию. С 24.09 (A2) колонка region
+     в `data/labels_full.csv` перегенерирована анатомическим детектором и совпадает с A.
 
 Разность A − B — цена доверия детектору стороны; она публикуется в
 `docs/METRICS_REPORT.md` (раздел «Чувствительность к переносу метки по стороне»).
@@ -43,10 +47,10 @@ def main() -> int:
     ap.add_argument("--json", default=str(ROOT / "docs" / "metrics_side_label.json"))
     a = ap.parse_args()
 
-    labels = pd.read_csv(ROOT / "data" / "labels_full.csv", low_memory=False)
+    labels = pd.read_csv(ROOT / "data" / "labels_full_v1_density_side.csv", low_memory=False)
     summary = json.loads((ROOT / "models" / "metrics_summary.json").read_text(encoding="utf-8"))
     out = {"note": "A — метка стороны, определённой детектором (как в поставке); "
-                   "B — метка стороны, записанной в разметке data/labels_full.csv",
+                   "B — метка стороны по старой плотностной эвристике (data/labels_full_v1_density_side.csv, колонка region до К5); это не сторона, указанная рентгенологом",
            "criteria": {}}
 
     for crit, fname, rcol, lcol in CRITERIA:

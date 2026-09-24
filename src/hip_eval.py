@@ -2,7 +2,8 @@
 Быстрая диагностика признаков бедра (sanity-check без CV + честный GroupKFold).
 
 Метки берутся из разметка.xlsx ПО СТОРОНЕ, ОПРЕДЕЛЁННОЙ ПО ИЗОБРАЖЕНИЮ
-(hip_features.hip_side_score), а не по колонке region из labels_full.csv:
+(hip_features.hip_side_score), а не по колонке region старой версии labels_full.csv
+(data/labels_full_v1_density_side.csv; с 24.09 labels_full.csv перегенерирован детектором):
 старая эвристика стороны (плотность по половинам) ошибалась на ~24% снимков.
 Смена стороны меняет метку только там, где у исследования rh_* != lh_*
 (~4% снимков), поэтому это не главный источник низкого AUC, но корректность
@@ -34,7 +35,7 @@ def compute_hip_table(recompute=False):
     if CACHE.exists() and not recompute:
         return pd.read_csv(CACHE)
     xl = load_labels()
-    df = pd.read_csv(DATA / 'labels_full.csv')
+    df = pd.read_csv(DATA / 'labels_full_v1_density_side.csv')  # pos_old — сторона старой эвристики
     h = df[df['region'].isin(['right_hip', 'left_hip'])].copy()
     rows = []
     for _, r in h.iterrows():

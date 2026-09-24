@@ -10,13 +10,13 @@ signed16_negative,CR000000.dcm,study_03/CR000000.dcm,Success,same_class,"16 би
 bits8_explicit_le,CR000000.dcm,study_01/CR000002.dcm,Success,same_class,"8 бит, Explicit VR Little Endian"
 rgb,CR000000.dcm,study_03/CR000000.dcm,Success,same_class,"RGB, SamplesPerPixel 3, три одинаковых канала"
 tiny_8x8,CR000000.dcm,study_01/CR000000.dcm,Failure,failure_row,Кадр 8×8 (меньше validation.min_rows/min_cols = 64)
-huge_frame,CR000000.dcm,study_01/CR000000.dcm,Success,success,"Кадр 4000×3000 (в пределах validation.max 4096), 8 бит"
+huge_frame,CR000000.dcm,study_01/CR000000.dcm,Success,success,"Кадр 4000×3000 (в пределах validation.max 4096), 8 бит; в API — отказ по геометрии"
 explicit_be,CR000000.dcm,study_02/CR000001.dcm,Success,same_class,Explicit VR Big Endian (retired)
 deflated_le,CR000000.dcm,study_03/CR000000.dcm,Success,same_class,Deflated Explicit VR Little Endian
 rle_lossless,CR000000.dcm,study_04/CR000000.dcm,Success,same_class,RLE Lossless (кодировщик pydicom)
 jpeg_baseline,CR000000.dcm,study_01/CR000000.dcm,Success,success,"JPEG Baseline: Success, если у pydicom есть декодер (Pillow); иначе Failure с причиной"
 bits12_of_16,CR000000.dcm,study_03/CR000002.dcm,Success,same_class,BitsAllocated 16 / BitsStored 12 / HighBit 11
-modality_ct,CR000000.dcm,study_03/CR000000.dcm,Success,same_class,"Чужая модальность (Modality CT, SOP Class CT Image Storage)"
+modality_ct,CR000000.dcm,study_03/CR000000.dcm,Failure,failure_row,"Чужая модальность (Modality CT, SOP Class CT Image Storage): вне области применения src/region_support.py"
 constant_frame,CR000000.dcm,study_01/CR000000.dcm,Failure,failure_row,Все пиксели одинаковые (постоянный кадр)
 zip_with_broken,Выгрузка (битый внутри).zip/norm/CR000000.dcm,study_01/CR000001.dcm,Success,same_class,zip: исправный фантом рядом с обрезанным файлом
 zip_with_broken,Выгрузка (битый внутри).zip/broken/CR000001.dcm,study_01/CR000000.dcm,Failure,failure_row,zip: обрезанный файл внутри архива

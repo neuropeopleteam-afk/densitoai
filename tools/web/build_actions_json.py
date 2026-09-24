@@ -22,6 +22,9 @@ REGION_OF = {
     "metal_metal_area_mm2": None,  # считается отдельно для spine и hip
     "abs_shaft_angle_deg": "hip", "edge_distance_mm": "hip", "scan_length_mm": "hip",
     "shaft_len_below_troch_mm": "hip", "lesser_troch_prominence_mm": "hip",
+    # C1: признаки моделей контура A без собственной нормы
+    "femur_solidity": "hip", "shaft_width_mm": "hip", "merge_height_mm": "hip", "medial_neck_extent_mm": "hip",
+    "bone_width_ratio": "spine", "metal_metal_max_intensity_gap": None,
 }
 
 
@@ -53,7 +56,7 @@ def main() -> None:
 
     out_norms = {}
     for key, spec in norms.items():
-        item = {k: v for k, v in spec.items() if k not in ("ref", "ref_col", "ref_low")}
+        item = {k: v for k, v in spec.items() if k not in ("ref", "ref_col", "ref_low", "ref_range")}
         if spec.get("ref"):
             col = spec.get("ref_col", key)
             low = bool(spec.get("ref_low"))
@@ -65,7 +68,12 @@ def main() -> None:
                 item["ref_q95"] = ref_quantile(spine if reg == "spine" else hip, col, low)
             item["ref_kind"] = "q05_normal" if low else "q95_normal"
             mult = float(spec.get("mult", 1))
-            for k in ("ref_q95", "ref_q95_spine", "ref_q95_hip"):
+            if spec.get("ref_range") and reg is not None:
+                # C1: диапазон 5–95 % нормальных кадров (для признаков без направления «больше — хуже»)
+                sub = spine if reg == "spine" else hip
+                item["ref_q05"] = ref_quantile(sub, col, True)
+                item["ref_kind"] = "q05_q95_normal"
+            for k in ("ref_q95", "ref_q95_spine", "ref_q95_hip", "ref_q05"):
                 if item.get(k) is not None:
                     item[k] = round(item[k] * mult, 2)
         out_norms[key] = item

@@ -580,3 +580,107 @@ def write_extras_csv(extras_rows: List[Dict[str, Any]], path: Path) -> None:
     df = df.reindex(columns=cols) if len(df) else pd.DataFrame(columns=EXTRAS_COLUMNS)
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(path, index=False)
+
+
+# --------------------------------------------------------------------------- #
+# 8. C1: уникальные предупреждения исследования и код причины для области интереса бедра
+#    (только объяснение в API/кабинете; результаты, класс и 9 колонок CSV не меняются)
+# --------------------------------------------------------------------------- #
+REGION_TITLES_RU = {"spine": "позвоночник", "right_hip": "правое бедро", "left_hip": "левое бедро"}
+
+STUDY_WARNING_TEXTS = {
+    "region_repeat": "в исследовании несколько снимков одной области",
+    "missing_spine": "в исследовании нет снимка позвоночника",
+    "missing_hip": "в исследовании нет снимка бедра",
+    "pixel_duplicates": "в исследовании есть повторные копии одного кадра",
+    "study_dates": "снимки исследования с разными датами",
+    "patients": "снимки исследования с разными идентификаторами пациента",
+}
+
+
+def study_warning_items(warnings: Any) -> List[Dict[str, Any]]:
+    """Предупреждения study_coherence (строка через « | » или список) -> уникальные элементы с числом.
+
+    study_coherence пишет по строке на каждую повторённую область («spine x3», «right_hip x5», ...);
+    для врача это одно замечание «несколько снимков одной области», поэтому такие строки сворачиваются
+    в один элемент: count — число областей с повтором, detail — «позвоночник ×3, правое бедро ×5».
+    Остальные коды — по одному элементу; count — число лишних кадров / разных дат / разных ID.
+    Порядок кодов фиксирован (как в study_coherence). Неизвестные строки сохраняются как code='other'."""
+    if isinstance(warnings, str):
+        parts = [p.strip() for p in warnings.split("|")]
+    else:
+        parts = [str(p).strip() for p in (warnings or [])]
+    parts = [p for p in parts if p]
+    items: Dict[str, Dict[str, Any]] = {}
+    other: List[str] = []
+    repeats: List[Tuple[str, int]] = []
+    import re as _re
+    for p in parts:
+        m = _re.match(r"^(spine|right_hip|left_hip) x(\d+)", p)
+        if m:
+            if m.group(1) not in [r for r, _ in repeats]:
+                repeats.append((m.group(1), int(m.group(2))))
+            continue
+        if p == "нет позвоночника":
+            items.setdefault("missing_spine", {"count": 1, "detail": ""})
+            continue
+        if p == "нет бедра":
+            items.setdefault("missing_hip", {"count": 1, "detail": ""})
+            continue
+        m = _re.match(r"^дубликаты кадров \(pixel hash\): (\d+) лишних, (\d+) групп", p)
+        if m:
+            items.setdefault("pixel_duplicates", {"count": int(m.group(1)),
+                                                  "detail": f"лишних кадров: {m.group(1)}, групп: {m.group(2)}"})
+            continue
+        m = _re.match(r"^разные StudyDate: (\d+)", p)
+        if m:
+            items.setdefault("study_dates", {"count": int(m.group(1)), "detail": ""})
+            continue
+        m = _re.match(r"^разные PatientID: (\d+)", p)
+        if m:
+            items.setdefault("patients", {"count": int(m.group(1)), "detail": ""})
+            continue
+        if p not in other:
+            other.append(p)
+    if repeats:
+        items["region_repeat"] = {"count": len(repeats),
+                                  "detail": ", ".join(f"{REGION_TITLES_RU.get(r, r)} ×{n}" for r, n in repeats)}
+    out: List[Dict[str, Any]] = []
+    for code in ("region_repeat", "missing_spine", "missing_hip", "pixel_duplicates", "study_dates", "patients"):
+        if code in items:
+            out.append({"code": code, "text": STUDY_WARNING_TEXTS[code], **items[code]})
+    for p in other:
+        out.append({"code": "other", "text": p, "count": 1, "detail": ""})
+    return out
+
+
+HIP_ROI_ROUTES = {
+    # код -> (ключ действия в config.yaml actions, заголовок, что делать)
+    "field_incomplete": ("hip_roi_field_incomplete", "Поле сканирования неполное",
+                         "обсудить повторное сканирование"),
+    "field_complete": ("hip_roi_field_complete", "Поле сканирования полное, вопрос к области анализа",
+                       "проверить область анализа на аппарате, повторно не облучать"),
+    "insufficient_data": ("hip_roi_insufficient_data", "Измерений поля недостаточно для выбора маршрута",
+                          "решение врача по снимку"),
+}
+HIP_ROI_ROUTE_NOTE = "предложение системы, исходное измерение не меняется"
+
+
+def hip_roi_reason(dbg: Optional[Dict[str, Any]], flagged: bool = True) -> Optional[Dict[str, Any]]:
+    """Код причины по области интереса бедра (развилка «поле неполное» / «поле полное, вопрос к области
+    анализа»). Считается только для снимка бедра с флагом hip_roi (flagged=True); класс не меняется.
+    dbg — debug-словарь снимка (feat_scan_length_mm, feat_shaft_len_below_troch_mm, feat_lateral_margin_mm).
+    Возвращает {code, action_key, title, action, reasons, measured, note} или None."""
+    if not flagged:
+        return None
+    try:
+        from auto_roi import hip_field_status
+    except Exception:  # noqa: BLE001
+        try:
+            from src.auto_roi import hip_field_status  # type: ignore
+        except Exception:  # noqa: BLE001
+            return None
+    st = hip_field_status(dbg or {})
+    key, title, action = HIP_ROI_ROUTES[st["status"]]
+    return {"code": st["status"], "action_key": key, "title": title, "action": action,
+            "reasons": st["reasons"], "measured": st["measured"], "note": HIP_ROI_ROUTE_NOTE}

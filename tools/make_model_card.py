@@ -64,8 +64,11 @@ def f3(x, nd=3):
 
 
 def nested_line(block: dict) -> str:
-    if isinstance(block, dict) and block.get("nested_auc_mean") is not None:
-        s = f"nested AUC = {f3(block['nested_auc_mean'])}"
+    # оценка поставки: nested_auc_production; nested_auc_mean — синоним для старых файлов (A2: до 24.09 у sp_art,
+    # hip_pos, hip_roi в nested_auc_mean стояла отвергнутая альтернатива, поэтому production — первым)
+    val = block.get("nested_auc_production", block.get("nested_auc_mean")) if isinstance(block, dict) else None
+    if val is not None:
+        s = f"nested AUC = {f3(val)}"
         if block.get("nested_auc_std") is not None:
             s += f" ± {f3(block['nested_auc_std'])}"
         if block.get("nested_note"):
@@ -110,6 +113,8 @@ def main(argv=None) -> int:
       f"«{cfg['regions']['spine']}» и «{cfg['regions']['hip']}». Для каждого снимка выдаётся quality_class (0 — норма, "
       "1 — есть нарушение), закрытый список нарушений и quality_prob. Инструмент поддержки контроля качества "
       "укладки; не является медицинским изделием и не ставит диагноз. Решение принимает оператор/врач.")
+    w("")
+    w('**Лицензии.** Исследовательский прототип: бэкбоны `sp_pos` (`densito`) и `sp_axis` (`densito_inv`) дообучены на пуле с некоммерческими лицензиями (Arak — CC BY-NC, BUU-LSPINE — EULA). Для передачи заказчику — вариант `densito_inv_free` (`models/backbone_densito_inv_free.pth`, без этих наборов), цена измерена на nested-протоколе: `sp_axis` AUC стэка 0.860 → 0.773 (`docs/EMB_GATE_REPORT.md`); для `sp_pos` `densito_inv_free` не измерен, замена на `imagenet` стоила 0.759 → 0.672 (К13, до H2).')
     w("")
     w("Официальные строки нарушений (config.yaml → violations): " +
       "; ".join(sorted(set(cfg["violations"].values()))) + ".")

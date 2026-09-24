@@ -87,6 +87,15 @@ logging.getLogger("pydicom").setLevel(logging.ERROR)
 # --------------------------------------------------------------------------- #
 # Конфиг (с жёстко зашитыми значениями по умолчанию на случай отсутствия yaml)
 # --------------------------------------------------------------------------- #
+HIP_POS_COLS = ["femur_solidity", "shaft_width_mm", "abs_shaft_angle_deg", "merge_height_mm",
+                "medial_neck_extent_mm"]
+HIP_ROI_COLS = ["scan_length_mm", "shaft_len_below_troch_mm"]
+# Набор медиан для импутации NaN (ключи models/geometry_medians.json, версия 2.4.0). Не выводится
+# из geometry_cols: список признаков бедра приведён к моделям, а поведение импутации не меняется.
+IMPUTATION_MEDIAN_COLS = ["axis_angle_deg", "bone_area_ratio", "bone_width_ratio", "center_offset_ratio",
+                          "edge_distance_ratio", "metal_metal_area_mm2", "metal_metal_max_intensity_gap",
+                          "shaft_angle_deg"]
+
 DEFAULT_CONFIG: Dict[str, Any] = {
     "version": "2.4.0",
     "output": {
@@ -94,7 +103,8 @@ DEFAULT_CONFIG: Dict[str, Any] = {
                     "quality_class", "violation_type", "quality_prob",
                     "processing_status", "time_of_processing"],
         "status_success": "Success", "status_failure": "Failure",
-        "violation_separator": ";", "fallback_quality_prob": 0.5,
+        # строго < 0.5: строка Failure имеет quality_class 0, инвариант «класс 1 <=> prob >= 0.5»
+        "violation_separator": ";", "fallback_quality_prob": 0.499999,
         "path_mode": "relative", "csv_encoding": "utf-8",
     },
     "regions": {"spine": "Поясничный отдел позвоночника",
@@ -108,11 +118,13 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "criteria_by_region": {"spine": ["sp_pos", "sp_axis", "sp_art"],
                            "right_hip": ["rh_pos", "rh_roi"],
                            "left_hip": ["lh_pos", "lh_roi"]},
+    # Совпадает с feature_cols внутри models/model_*_geom.pkl и CRITERION_GEOMETRY_COLS в
+    # src/train_stacked.py (бедро: hip_pos / hip_roi); сверка — tests/test_feature_contract.py.
     "geometry_cols": {"sp_pos": ["center_offset_ratio", "bone_width_ratio"],
                       "sp_axis": ["axis_angle_deg"],
                       "sp_art": ["metal_metal_area_mm2", "metal_metal_max_intensity_gap"],
-                      "rh_pos": ["shaft_angle_deg"], "rh_roi": ["edge_distance_ratio", "bone_area_ratio"],
-                      "lh_pos": ["shaft_angle_deg"], "lh_roi": ["edge_distance_ratio", "bone_area_ratio"]},
+                      "rh_pos": HIP_POS_COLS, "rh_roi": HIP_ROI_COLS,
+                      "lh_pos": HIP_POS_COLS, "lh_roi": HIP_ROI_COLS},
     # H2 (2.4.0): признаки контура A из канонического эмбеддинга кадра (src/sppos_head.py); только позвоночник
     "features": {"sp_pos": ["synth_pos_logit"]},
     "stacking": {"weight_geom": 0.5, "weight_emb": 0.5, "weights_by_criterion": {},
@@ -194,20 +206,66 @@ def _deep_update(base: Dict[str, Any], upd: Dict[str, Any]) -> Dict[str, Any]:
     return base
 
 
+FAILURE_PROB_MAX = 0.499999
+
+
+def failure_quality_prob(cfg_out: Dict[str, Any]) -> float:
+    """quality_prob строки Failure: output.fallback_quality_prob, но строго < 0.5.
+
+    У Failure quality_class 0, а инвариант выгрузки — «класс 1 <=> quality_prob >= 0.5».
+    Значение конфига >= 0.5 (или нечисловое) заменяется на 0.499999 с предупреждением.
+    """
+    try:
+        val = float(cfg_out.get("fallback_quality_prob", FAILURE_PROB_MAX))
+    except (TypeError, ValueError):
+        val = float("nan")
+    if not (0.0 <= val < 0.5):
+        LOG.warning("output.fallback_quality_prob=%r вне [0, 0.5) -> %s", cfg_out.get("fallback_quality_prob"),
+                    FAILURE_PROB_MAX)
+        return FAILURE_PROB_MAX
+    return val
+
+
+class ConfigError(RuntimeError):
+    """config.yaml есть, но не читается (или нет PyYAML), либо его нет без явного разрешения."""
+
+
+ALLOW_DEFAULT_CONFIG_ENV = "DENSITO_ALLOW_DEFAULT_CONFIG"
+
+
 def load_config(path: Optional[Path] = None) -> Dict[str, Any]:
+    """config.yaml поверх встроенных значений. Fail-closed: файл есть, но не читается (нет PyYAML,
+    ошибка синтаксиса, не словарь, нет доступа) -> ConfigError с понятным текстом. Встроенные значения
+    без файла — только при DENSITO_ALLOW_DEFAULT_CONFIG=1 (иначе ConfigError): молча работать на
+    умолчаниях при сломанной поставке нельзя."""
     cfg = json.loads(json.dumps(DEFAULT_CONFIG))  # deep copy
     path = Path(path) if path else CONFIG_PATH
-    if path.exists():
-        try:
-            import yaml  # PyYAML
-            with open(path, "r", encoding="utf-8") as f:
-                user_cfg = yaml.safe_load(f) or {}
-            cfg = _deep_update(cfg, user_cfg)
-            LOG.info("Config loaded: %s", path)
-        except Exception as e:  # noqa: BLE001
-            LOG.warning("Config %s not loaded (%s). Using built-in defaults.", path, e)
-    else:
-        LOG.warning("Config %s not found. Using built-in defaults.", path)
+    allow_defaults = os.environ.get(ALLOW_DEFAULT_CONFIG_ENV, "").strip() == "1"
+    if not path.exists():
+        if allow_defaults:
+            LOG.warning("Config %s not found. Using built-in defaults (%s=1).", path, ALLOW_DEFAULT_CONFIG_ENV)
+            return cfg
+        raise ConfigError(f"файл конфигурации {path} не найден; укажите путь (--config или DENSITO_CONFIG) "
+                          f"или, только для отладки, разрешите встроенные значения: {ALLOW_DEFAULT_CONFIG_ENV}=1")
+    try:
+        import yaml  # PyYAML
+    except ImportError as e:
+        raise ConfigError(f"файл конфигурации {path} есть, но PyYAML не установлен ({e}); "
+                          f"установите PyYAML (requirements.txt)") from e
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            user_cfg = yaml.safe_load(f)
+    except Exception as e:  # noqa: BLE001
+        raise ConfigError(f"файл конфигурации {path} не прочитан: {type(e).__name__}: {e}") from e
+    if user_cfg is None:  # пустой файл — тоже сломанная поставка, а не повод молча взять умолчания
+        if not allow_defaults:
+            raise ConfigError(f"файл конфигурации {path} пуст; для отладки на встроенных значениях: "
+                              f"{ALLOW_DEFAULT_CONFIG_ENV}=1")
+        user_cfg = {}
+    if not isinstance(user_cfg, dict):
+        raise ConfigError(f"файл конфигурации {path}: ожидался словарь YAML, получено {type(user_cfg).__name__}")
+    cfg = _deep_update(cfg, user_cfg)
+    LOG.info("Config loaded: %s", path)
     return cfg
 
 
@@ -398,6 +456,11 @@ def _find_zips(root: Path) -> List[Path]:
     return sorted(p for p in root.rglob("*") if p.is_file() and p.suffix.lower() == ".zip")
 
 
+# Причины отказа распаковки по пути архива (верхнего уровня и вложенных): read_and_validate пишет
+# их в строку Failure вместо общей фразы.
+_BROKEN_ARCHIVES: Dict[Path, str] = {}
+
+
 def discover_files(input_path: Path, tmp_holder: List[Path],
                    display: Optional[Dict[Path, str]] = None) -> Tuple[Path, List[Path]]:
     """Возвращает (корень, отсортированный список DICOM-кандидатов).
@@ -412,15 +475,23 @@ def discover_files(input_path: Path, tmp_holder: List[Path],
         tmp_holder.append(tmp_dir)
         try:
             extracted = safe_extract_zip(input_path, tmp_dir)
-        except zipfile.BadZipFile as e:
-            raise ValueError(f"Архив «{input_path.name}» повреждён или не является zip-файлом "
-                             f"({e}). Пересоздайте архив и загрузите снова.") from e
+        except Exception as e:  # noqa: BLE001
+            # Как у вложенного битого архива: пакет не обрывается, архив даёт одну строку Failure
+            # (read_and_validate), причина — в debug CSV (error).
+            LOG.warning("Input archive %s is broken: %s", input_path, e)
+            _BROKEN_ARCHIVES[input_path.resolve()] = (
+                f"Архив «{input_path.name}» повреждён, не является zip-файлом или превышает пределы "
+                f"распаковки ({e}). Пересоздайте архив и загрузите снова.")
+            display[input_path.resolve()] = input_path.name
+            return input_path.parent, [input_path]
         for target, rel in extracted:
             display[target.resolve()] = rel
         LOG.info("Archive %s extracted to %s", input_path, tmp_dir)
         root = tmp_dir
     elif input_path.is_file():
-        return input_path.parent, [input_path]
+        # Единое правило discovery: одиночный файл отбирается тем же is_dicom_candidate, что и файл
+        # в папке (не-DICOM — например, .txt — строк не создаёт).
+        return input_path.parent, ([input_path] if is_dicom_candidate(input_path) else [])
     else:
         root = input_path
     if not root.exists():
@@ -461,6 +532,8 @@ def discover_files(input_path: Path, tmp_holder: List[Path],
         except Exception as e:  # noqa: BLE001
             # битый архив не пропускаем молча: он попадёт в результаты строкой Failure
             LOG.warning("Nested archive %s is broken: %s", z, e)
+            _BROKEN_ARCHIVES[z.resolve()] = (f"Архив «{z.name}» повреждён, не является zip-файлом или превышает "
+                                             f"пределы распаковки ({e}). Пересоздайте архив и загрузите снова.")
             files.append(z)
     return root, files
 
@@ -548,11 +621,45 @@ def normalize_pixels(ds) -> np.ndarray:
     return normalize_pixels_ex(ds)[0]
 
 
+class UnsupportedInputError(ValueError):
+    """Снимок вне области применения (src/region_support.py); строка уходит в Failure."""
+
+
+REGION_SUPPORT_TAGS = ("Modality", "Manufacturer", "ManufacturerModelName", "BodyPartExamined",
+                       "SeriesDescription", "ProtocolName", "StudyDescription")
+
+
+def region_support_of(info: "DicomInfo") -> Tuple[bool, str]:
+    """Проверка области применения по тегам DICOM и геометрии декодированного кадра (rows/cols
+    пиксельного массива). Правила — src/region_support.check_tags; сомнение — в пользу обработки."""
+    ok_tags, why_tags = region_support_tags_of(info)
+    if not ok_tags:
+        return ok_tags, why_tags
+    return region_support_geometry_of(info)
+
+
+def region_support_tags_of(info: "DicomInfo") -> Tuple[bool, str]:
+    """Только явные противоречия в тегах: чужой аппарат, модальность, область или проекция."""
+    from region_support import check_tags  # noqa: E402
+    tags = {t: _tag(info.ds, t) for t in REGION_SUPPORT_TAGS}
+    return check_tags({k: v for k, v in tags.items() if v}, cols=0, rows=0)
+
+
+def region_support_geometry_of(info: "DicomInfo") -> Tuple[bool, str]:
+    """Только геометрия кадра (наблюдаемый диапазон исследований заказчика)."""
+    from region_support import check_tags  # noqa: E402
+    return check_tags({}, cols=int(info.cols), rows=int(info.rows))
+
+
 def read_and_validate(path: Path, cfg: Dict[str, Any]) -> DicomInfo:
     """Валидатор входа. Любая проблема -> исключение (обрабатывается выше как Failure)."""
     v = cfg["validation"]
     if path.suffix.lower() == ".zip":
-        raise ValueError("Архив повреждён или не является zip-файлом; пересоздайте архив и загрузите снова")
+        try:
+            reason = _BROKEN_ARCHIVES.get(Path(path).resolve())
+        except OSError:
+            reason = None
+        raise ValueError(reason or "Архив повреждён или не является zip-файлом; пересоздайте архив и загрузите снова")
     ds = pydicom.dcmread(str(path), force=True)
     if not hasattr(ds, "PixelData") and "PixelData" not in ds:
         raise ValueError("DICOM has no PixelData")
@@ -653,9 +760,13 @@ def classify_region(info: DicomInfo, path: Path, cfg: Dict[str, Any]) -> Tuple[s
     text = " ".join([info.tags.get("BodyPartExamined", ""), info.tags.get("SeriesDescription", ""),
                      info.tags.get("ProtocolName", ""), info.tags.get("StudyDescription", "")]).upper()
     lat = (info.tags.get("Laterality") or info.tags.get("ImageLaterality") or "").upper()
-    if any(k in text for k in ("SPINE", "LUMBAR", "LSPINE", "L-SPINE", "ПОЗВОНОЧ", "ПОП")):
+    has_spine = any(k in text for k in ("SPINE", "LUMBAR", "LSPINE", "L-SPINE", "ПОЗВОНОЧ", "ПОП"))
+    has_hip = any(k in text for k in ("HIP", "FEMUR", "БЕДР", "ПОБ"))
+    # В описании маркеры обеих областей (например, «SPINE+HIP» в протоколе сеанса) -> теги не решают,
+    # решает ширина кадра (300 px — позвоночник, 280/248 px — бедро), как без тегов.
+    if has_spine and not has_hip:
         return "spine", "dicom_tags"
-    if any(k in text for k in ("HIP", "FEMUR", "БЕДР", "ПОБ")):
+    if has_hip and not has_spine:
         if lat.startswith("R"):
             return "right_hip", "dicom_tags+laterality"
         if lat.startswith("L"):
@@ -948,7 +1059,10 @@ class ModelRegistry:
         на машине разработки, если JSON ещё не собран. Оба пути дают одни и те же числа
         (сверка: `python tools/make_geometry_medians.py --check`).
         """
-        cols = sorted({c for cs in self.cfg["geometry_cols"].values() for c in cs})
+        # Набор столбцов фиксирован (IMPUTATION_MEDIAN_COLS), а не берётся из geometry_cols: после
+        # сверки geometry_cols с feature_cols моделей (A1, 24.09) импутация должна остаться прежней.
+        # Контур A критерия импутирует по medians внутри pkl; здесь — только any-модели и запас.
+        cols = list(IMPUTATION_MEDIAN_COLS)
         j = MODELS_DIR / "geometry_medians.json"
         if j.exists():
             try:
@@ -1295,10 +1409,9 @@ class DensitoInference:
             return crit_agg
         if crit_agg is None:
             return any_model
-        # 3) смесь двух оценок. Валидация OOF (StratifiedGroupKFold по исследованиям, 3 сида):
-        #    ROC-AUC any-модель 0.766/0.702 (spine/hip), max по критериям 0.681/0.761,
-        #    смесь 0.5/0.5 -> 0.781/0.747, после согласования с классом 0.783/0.773 при F1-опт. порогах, 0.764/0.732 при nested-правилах К3 (19.09);
-        #    см. docs/METRICS_REPORT.md (src/eval_oof_metrics.py).
+        # 3) смесь двух оценок. OOF ROC-AUC по models/metrics_oof_full.json (by_region_binary.*.roc_auc_components,
+        #    файл от 23.09.2026): any-модель 0.766/0.702 (spine/hip), смесь 0.5/0.5 0.823/0.759,
+        #    после согласования с классом (consistent_quality_prob) 0.813/0.760; src/eval_oof_metrics.py.
         w = float(self.cfg["stacking"].get("any_blend_weight_model", 0.5))
         return clip01(w * any_model + (1.0 - w) * crit_agg)
 
@@ -1309,8 +1422,9 @@ class DensitoInference:
         смесью моделей. Чтобы строка была непротиворечивой (class=1 <=> prob>=0.5)
         и ROC-AUC учитывал решение по критериям, вероятность монотонно сжимается
         в [0.5, 1] при нарушении и в [0, 0.5) при норме (порядок внутри класса
-        сохраняется). OOF ROC-AUC при этом растёт: spine 0.735 -> 0.783 (при F1-опт. порогах),
-        hip 0.704 -> 0.773 (см. docs/METRICS_REPORT.md)."""
+        сохраняется). OOF ROC-AUC смеси до/после согласования (models/metrics_oof_full.json,
+        23.09.2026): spine 0.823 -> 0.813, hip 0.759 -> 0.760 — согласование нужно для
+        непротиворечивости строки, а не для роста AUC."""
         p = clip01(prob)
         return 0.5 + 0.5 * p if quality_class else min(0.5 * p, 0.499999)
 
@@ -1322,6 +1436,26 @@ class DensitoInference:
         debug: Dict[str, Any] = {"file": str(path)}
         try:
             info = read_and_validate(path, self.cfg)
+            # Область применения (src/region_support.py): чужой аппарат, неподдерживаемая область или
+            # проекция, чужая модальность, геометрия кадра вне диапазона -> строка Failure с причиной
+            # в debug CSV (region_supported = 0, region_support_reason). До классификации: вердикт
+            # вне области применения не выдаётся. На 499 файлах заказчика не срабатывает.
+            # Явное противоречие в тегах -> Failure и в пакетном пути, и в API. Геометрия кадра вне
+            # наблюдаемого диапазона -> в пакетном пути строка обрабатывается как обычно (кадр того же
+            # аппарата с другим размером не теряем на закрытом тесте), а отказ фиксируется в debug:
+            # API и кабинет по нему выдают «вне области применения».
+            reg_ok, reg_reason = region_support_tags_of(info)
+            if reg_ok:
+                geo_ok, geo_reason = region_support_geometry_of(info)
+                if not geo_ok:
+                    reg_ok, reg_reason = geo_ok, geo_reason
+                    debug["region_support_scope"] = "geometry"
+            else:
+                debug["region_support_scope"] = "tags"
+            debug["region_supported"] = int(reg_ok)
+            debug["region_support_reason"] = reg_reason
+            if not reg_ok and debug.get("region_support_scope") == "tags":
+                raise UnsupportedInputError(reg_reason)
             region, region_src = classify_region(info, path, self.cfg)
             std_cols = set(int(c) for c in self.cfg["regions"].get("standard_cols", [300, 280, 248]))
             if (region_src.startswith("dims") and info.cols not in std_cols
@@ -1434,6 +1568,14 @@ class DensitoInference:
             for c, r in crit_results.items():
                 for k in ("p_geom", "p_emb", "w_geom", "score", "threshold", "flag", "method", "margin", "uncertain", "p_cal"):
                     debug[f"{c}_{k}"] = r.get(k)
+            # C1 (только debug/API): значения признаков, которые реально подаются в модель контура A
+            # критерия (feature_cols модели, вариант предобработки критерия), и ранги контуров A/B.
+            for c in crit_results:
+                debug[f"{c}_model_features"] = _model_features_json(
+                    self.registry.geom.get((region, c)), feats_by_variant.get(crit_preproc[c]["geom"], feats),
+                    crit_preproc[c]["geom"])
+                debug[f"{c}_rank_geom"] = crit_results[c].get("rank_geom")
+                debug[f"{c}_rank_emb"] = crit_results[c].get("rank_emb")
             # К3: строка «не уверен», если не уверен хотя бы один критерий региона; risk_level — правило
             # calibration_utils.risk_level (высокий: class=1 и уверен; средний: не уверен; низкий: class=0 и уверен)
             needs_review = int(any(int(r.get("uncertain", 0)) for r in crit_results.values()))
@@ -1459,7 +1601,7 @@ class DensitoInference:
                 "anatomical_region": official_region_name(region, self.cfg),
                 "quality_class": 0,
                 "violation_type": "",
-                "quality_prob": float(cfg_out["fallback_quality_prob"]),
+                "quality_prob": failure_quality_prob(cfg_out),
                 "processing_status": cfg_out["status_failure"],
                 "time_of_processing": 0.0,
             }
@@ -1639,6 +1781,10 @@ class DensitoInference:
                 "sha256_file": dbg.get("sha256_file") or "",
                 "sha256_pixels": dbg.get("sha256_pixels") or "",
                 "path_to_study": str(r.get("path_to_study") or ""),
+                # C1: для «Приоритетного действия» (на 9 колонок и дайджест SOP UID не влияет)
+                "internal_region": dbg.get("internal_region") or "",
+                "criteria": _criteria_for_priority(self.cfg, dbg),
+                "roi_route": _roi_route_for_priority(self.cfg, dbg),
             })
         written: Dict[str, str] = {}
         for study_uid, items in groups.items():
@@ -1864,7 +2010,8 @@ def write_xlsx(rows: List[Dict[str, Any]], xlsx_path: Path, cfg: Dict[str, Any])
                     viols.append(v.strip())
         nv = sum(1 for r in sub if str(r.get("quality_class")) == "1")
         ws3.append([uid, len(sub), nv, sum(1 for r in sub if r.get("processing_status") == fail),
-                    round(max(float(x.get("quality_prob") or 0) for x in sub), 3), "; ".join(viols)])
+                    # 6 знаков, как в CSV: при 3 знаках 0.499999 (Failure/норма) показывалось бы как 0.5
+                    round(max(float(x.get("quality_prob") or 0) for x in sub), 6), "; ".join(viols)])
         if nv:
             for c in ws3[ws3.max_row]:
                 c.fill = fill_viol
@@ -1884,6 +2031,55 @@ def _box_to_str(box) -> str:
     try:
         return ",".join(str(int(round(float(v)))) for v in box)
     except (TypeError, ValueError):
+        return ""
+
+
+def _criteria_for_priority(cfg: Dict[str, Any], dbg: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """C1: критерии снимка из debug-словаря для dicom_sr.study_priority_action."""
+    reg = str((dbg or {}).get("internal_region") or "")
+    out = []
+    for c in cfg.get("criteria_by_region", {}).get(reg, []):
+        if dbg.get(f"{c}_flag") is None:
+            continue
+        out.append({"code": c, "score": dbg.get(f"{c}_score"), "threshold": dbg.get(f"{c}_threshold"),
+                    "flag": dbg.get(f"{c}_flag"), "uncertain": dbg.get(f"{c}_uncertain")})
+    return out
+
+
+def _roi_route_for_priority(cfg: Dict[str, Any], dbg: Dict[str, Any]) -> str:
+    """C1: код развилки hip_roi (extras.hip_roi_reason) для снимка бедра с флагом *_roi, иначе ''."""
+    reg = str((dbg or {}).get("internal_region") or "")
+    if reg not in ("right_hip", "left_hip"):
+        return ""
+    crit = "rh_roi" if reg == "right_hip" else "lh_roi"
+    try:
+        if int(dbg.get(f"{crit}_flag") or 0) != 1:
+            return ""
+        import extras as _ex
+        rr = _ex.hip_roi_reason(dbg, True)
+        return rr["code"] if rr else ""
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def _model_features_json(mb, feats: Dict[str, Any], variant: str) -> str:
+    """C1: {"variant": ..., "values": {признак: значение}} по feature_cols модели контура A (JSON-строка).
+    Пустая строка, если модели нет. Значение None — признак не посчитан (модель подставила медиану)."""
+    if mb is None:
+        return ""
+    try:
+        cols = list(mb.meta.get("feature_cols") or [])
+        vals = {}
+        for c in cols:
+            v = feats.get(c)
+            try:
+                v = float(v)
+                v = round(v, 4) if np.isfinite(v) else None
+            except (TypeError, ValueError):
+                v = None
+            vals[c] = v
+        return json.dumps({"variant": str(variant), "values": vals}, ensure_ascii=False)
+    except Exception:  # noqa: BLE001
         return ""
 
 
@@ -1917,6 +2113,24 @@ def write_debug(debug_rows: List[Dict[str, Any]], path: Path):
         LOG.warning("Debug CSV not written: %s", e)
 
 
+def allowed_violations_by_region(cfg: Dict[str, Any]) -> Dict[str, set]:
+    """{официальная строка области: допустимые нарушения}. Источник — словарь организаторов
+    schema/official_dictionary.json (violation_type по области); если файла нет — то же из
+    config.yaml (criteria_by_region + violations). «Некорректная укладка» законна для обеих областей."""
+    p = PROJECT_ROOT / "schema" / "official_dictionary.json"
+    try:
+        d = json.loads(p.read_text(encoding="utf-8"))
+        return {str(k): set(v) for k, v in (d.get("violation_type") or {}).items()}
+    except Exception as e:  # noqa: BLE001
+        LOG.warning("official dictionary %s not read (%s): violations by region from config", p, e)
+    out: Dict[str, set] = {}
+    viol = cfg["violations"]
+    for internal, crits in cfg["criteria_by_region"].items():
+        name = cfg["regions"]["spine"] if internal == "spine" else cfg["regions"]["hip"]
+        out.setdefault(name, set()).update(viol[c] for c in crits if c in viol)
+    return out
+
+
 def validate_output_csv(path: Path, cfg: Optional[Dict[str, Any]] = None,
                         schema_check: bool = True) -> List[str]:
     """Проверка выходного файла на соответствие официальному формату (правила из config.yaml
@@ -1926,6 +2140,7 @@ def validate_output_csv(path: Path, cfg: Optional[Dict[str, Any]] = None,
     rows_for_schema: List[Dict[str, str]] = []
     allowed_regions = {cfg["regions"]["spine"], cfg["regions"]["hip"]}
     allowed_viol = set(cfg["violations"].values())
+    viol_by_region = allowed_violations_by_region(cfg)
     sep = cfg["output"]["violation_separator"]
     with open(path, "r", encoding=cfg["output"].get("csv_encoding", "utf-8"), newline="") as f:
         reader = csv.DictReader(f)
@@ -1940,14 +2155,23 @@ def validate_output_csv(path: Path, cfg: Optional[Dict[str, Any]] = None,
                 p = float(r["quality_prob"])
                 if not 0.0 <= p <= 1.0:
                     problems.append(f"line {i}: quality_prob out of [0,1]: {p}")
+                # инвариант строки (в т. ч. Failure): quality_class 1 <=> quality_prob >= 0.5
+                elif r["quality_class"] == "1" and p < 0.5:
+                    problems.append(f"line {i}: quality_class=1 but quality_prob {p} < 0.5")
+                elif r["quality_class"] == "0" and p >= 0.5:
+                    problems.append(f"line {i}: quality_class=0 but quality_prob {p} >= 0.5")
             except ValueError:
                 problems.append(f"line {i}: quality_prob not float: '{r['quality_prob']}'")
             if r["processing_status"] not in (cfg["output"]["status_success"], cfg["output"]["status_failure"]):
                 problems.append(f"line {i}: bad processing_status '{r['processing_status']}'")
             if r["violation_type"]:
+                region_viol = viol_by_region.get(r["anatomical_region"])
                 for v in r["violation_type"].split(sep):
                     if v.strip() not in allowed_viol:
                         problems.append(f"line {i}: unknown violation '{v}'")
+                    elif region_viol is not None and v.strip() not in region_viol:
+                        problems.append(f"line {i}: violation '{v}' not allowed for region "
+                                        f"'{r['anatomical_region']}'")
                 if r["quality_class"] != "1":
                     problems.append(f"line {i}: violations listed but quality_class != 1")
             elif r["quality_class"] == "1":
@@ -2021,7 +2245,12 @@ def main(argv: Optional[List[str]] = None) -> int:
         args.xlsx = True
         output_csv = output_csv.with_suffix(".csv")
     setup_logging(Path(args.log_file) if args.log_file else output_csv.with_suffix(".log"), args.verbose)
-    cfg = load_config(Path(args.config) if args.config else None)
+    try:
+        cfg = load_config(Path(args.config) if args.config else None)
+    except ConfigError as e:
+        LOG.critical("%s", e)
+        print(f"Ошибка конфигурации: {e}", file=sys.stderr)
+        return 2
     if args.path_mode:
         cfg["output"]["path_mode"] = args.path_mode
 
@@ -2043,12 +2272,20 @@ def main(argv: Optional[List[str]] = None) -> int:
         if args.debug_csv:
             debug_csv = (output_csv.with_name(output_csv.stem + "_debug.csv") if args.debug_csv == "auto"
                          else Path(args.debug_csv))
-        engine.run(Path(args.input), output_csv, debug_csv=debug_csv, xlsx=args.xlsx, limit=args.limit)
+        rows = engine.run(Path(args.input), output_csv, debug_csv=debug_csv, xlsx=args.xlsx, limit=args.limit)
         problems = validate_output_csv(output_csv, cfg)
         if problems:
             LOG.error("Output format problems: %s", problems[:10])
         else:
             LOG.info("Output format check: OK")
+        if not rows:
+            # Пустая папка, пустой zip или только не-DICOM файлы: CSV с одним заголовком уже записан,
+            # но пустой результат — не успех пакета (код 2, как у фатальной ошибки).
+            msg = (f"Во входе «{args.input}» не найдено ни одного DICOM-файла (папка или архив пусты либо "
+                   f"содержат только не-DICOM файлы). Записан CSV только с заголовком: {output_csv}")
+            LOG.error(msg)
+            print(msg, file=sys.stderr)
+            return 2
         return 0
     except Exception as e:  # noqa: BLE001  — последний рубеж: файл с заголовком всё равно должен быть
         LOG.critical("Fatal error in batch: %s\n%s", e, traceback.format_exc())

@@ -36,12 +36,12 @@
     "study_uid": {
       "type": "string",
       "minLength": 1,
-      "description": "StudyInstanceUID; при отсутствии тега — 'hash-<sha1 папки>'."
+      "description": "StudyInstanceUID; при отсутствии тега — 'hash-<первые 32 hex SHA-1 от отсортированных SHA-256 содержимого файлов папки>' (inference.dir_content_hash; для папки > 500 файлов или > 1 ГБ — по отсортированным размерам файлов): не зависит от имён и пути."
     },
     "image_uid": {
       "type": "string",
       "minLength": 1,
-      "description": "SOPInstanceUID; при отсутствии тега — 'hash-<sha1 пути>'."
+      "description": "SOPInstanceUID; при отсутствии тега — 'hash-<первые 32 hex SHA-256 содержимого файла>' (inference.content_hash; не путь и не имя: переименование и упаковка в zip UID не меняют). Только если файл не читается — первые 32 hex SHA-1 относительного пути."
     },
     "anatomical_region": {
       "type": "string",
@@ -60,7 +60,7 @@
     },
     "violation_type": {
       "type": "string",
-      "description": "Пустая строка или официальные названия нарушений через ';' без повторов. Разрешённые значения: config.yaml violations.",
+      "description": "Пустая строка или официальные названия нарушений через ';' без повторов. Разрешённые значения — по области (schema/official_dictionary.json: violation_type): позвоночник — «Некорректная укладка», «Не выравнена ось позвоночника», «Присутствуют посторонние предметы»; бедро — «Некорректная укладка», «Некорректная область интереса». Проверка по области — в allOf (if anatomical_region).",
       "pattern": "^$|^(Некорректная укладка|Не выравнена ось позвоночника|Присутствуют посторонние предметы|Некорректная область интереса)(;(Некорректная укладка|Не выравнена ось позвоночника|Присутствуют посторонние предметы|Некорректная область интереса))*$",
       "x-allowed-values": [
         "Некорректная укладка",
@@ -74,7 +74,7 @@
       "type": "number",
       "minimum": 0.0,
       "maximum": 1.0,
-      "description": "Оценка риска нарушения в шкале [0,1] — ранговый скор стэкинга, согласованный с классом (class=1 <=> prob >= 0.5, config stacking.consistent_quality_prob), а НЕ калиброванная вероятность: порог критерия не равен 0.5, монотонного соответствия скора частоте не гарантируется. Калиброванная величина по критерию — <crit>_p_cal в debug-CSV и details API. При Failure — output.fallback_quality_prob."
+      "description": "Оценка риска нарушения в шкале [0,1] — ранговый скор стэкинга, согласованный с классом (class=1 <=> prob >= 0.5, config stacking.consistent_quality_prob), а НЕ калиброванная вероятность: порог критерия не равен 0.5, монотонного соответствия скора частоте не гарантируется. Калиброванная величина по критерию — <crit>_p_cal в debug-CSV и details API. При Failure — output.fallback_quality_prob (0.499999, строго < 0.5, так как quality_class 0). Инвариант для всех строк, включая Failure: quality_class 1 <=> quality_prob >= 0.5 (allOf)."
     },
     "processing_status": {
       "type": "string",
@@ -137,6 +137,70 @@
           },
           "violation_type": {
             "const": ""
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "anatomical_region": {
+            "const": "Поясничный отдел позвоночника"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "violation_type": {
+            "pattern": "^$|^(Некорректная укладка|Не выравнена ось позвоночника|Присутствуют посторонние предметы)(;(Некорректная укладка|Не выравнена ось позвоночника|Присутствуют посторонние предметы))*$"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "anatomical_region": {
+            "const": "Проксимальный отдел бедра"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "violation_type": {
+            "pattern": "^$|^(Некорректная укладка|Некорректная область интереса)(;(Некорректная укладка|Некорректная область интереса))*$"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "quality_class": {
+            "const": 1
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "quality_prob": {
+            "minimum": 0.5
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "quality_class": {
+            "const": 0
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "quality_prob": {
+            "exclusiveMaximum": 0.5
           }
         }
       }

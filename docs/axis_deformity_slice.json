@@ -1,0 +1,263 @@
+{
+ "source": {
+  "xlsx": "dataset/разметка.xlsx, лист «Калибровка», колонка «Комментарий»",
+  "oof": "models/oof_stacked_spine_{sp_pos,sp_axis,sp_art}.csv (pred_label = решение сервиса)",
+  "bootstrap": "кластерный по исследованиям, 2000 повторов, 95 %, отдельно в срезе и в прочих нормах",
+  "perm": "5000 случайных наборов из того же числа исследований норм"
+ },
+ "n_studies_xlsx": 14,
+ "n_studies_with_spine_oof": 14,
+ "n_frames": 18,
+ "labels_in_slice": {
+  "sp_pos": 0,
+  "sp_axis": 0,
+  "sp_art": 1
+ },
+ "xlsx_labels_in_slice": {
+  "sp_pos": 0,
+  "sp_axis": 0,
+  "sp_art": 1
+ },
+ "sp_axis_norm_axis_pos": {
+  "n_slice_frames": 18,
+  "n_slice_studies": 14,
+  "n_other_frames": 121,
+  "n_other_studies": 69,
+  "fp_slice": 5,
+  "fp_other": 8,
+  "fp_total": 13,
+  "fpr_slice": 0.2777777777777778,
+  "fpr_other": 0.06611570247933884,
+  "fp_studies_slice": 4,
+  "fp_studies_total": 8,
+  "ci_slice": [
+   0.05555555555555555,
+   0.5555555555555556
+  ],
+  "ci_other": [
+   0.008264462809917356,
+   0.14285714285714285
+  ],
+  "ci_diff": [
+   -0.02346002993605045,
+   0.5026307443572976
+  ],
+  "p_diff_le_0": 0.043,
+  "unique_frames": {
+   "n_slice": 14,
+   "n_other": 69,
+   "fp_slice": 4,
+   "fp_other": 4,
+   "fpr_slice": 0.2857142857142857,
+   "fpr_other": 0.057971014492753624
+  },
+  "perm_random_studies": {
+   "null_mean_fp": 2.1498,
+   "null_p95_fp": 5.0,
+   "p_value_ge_observed": 0.1132
+  },
+  "score_mean_slice": 0.6420682730923696,
+  "score_mean_other": 0.4634322413621427,
+  "auc_score_slice_vs_other_norms": 0.7281910009182736
+ },
+ "sp_axis_all_axis_norms": {
+  "n_slice_frames": 18,
+  "n_slice_studies": 14,
+  "n_other_frames": 131,
+  "n_other_studies": 75,
+  "fp_slice": 5,
+  "fp_other": 8,
+  "fp_total": 13,
+  "fpr_slice": 0.2777777777777778,
+  "fpr_other": 0.061068702290076333,
+  "fp_studies_slice": 4,
+  "fp_studies_total": 8,
+  "ci_slice": [
+   0.05555555555555555,
+   0.5294117647058824
+  ],
+  "ci_other": [
+   0.008,
+   0.12903774412990998
+  ],
+  "ci_diff": [
+   -0.014558690275942164,
+   0.4837685330347144
+  ],
+  "p_diff_le_0": 0.035,
+  "unique_frames": {
+   "n_slice": 14,
+   "n_other": 75,
+   "fp_slice": 4,
+   "fp_other": 4,
+   "fpr_slice": 0.2857142857142857,
+   "fpr_other": 0.05333333333333334
+  },
+  "perm_random_studies": {
+   "null_mean_fp": 2.029,
+   "null_p95_fp": 5.0,
+   "p_value_ge_observed": 0.0988
+  },
+  "score_mean_slice": 0.6420682730923696,
+  "score_mean_other": 0.44684079830773477,
+  "auc_score_slice_vs_other_norms": 0.7438507209499575
+ },
+ "sp_axis_fp_total_all_norms": 13,
+ "binary_spine_norm_all": {
+  "n_slice_frames": 17,
+  "n_slice_studies": 13,
+  "n_other_frames": 89,
+  "n_other_studies": 55,
+  "fp_slice": 7,
+  "fp_other": 24,
+  "fp_total": 31,
+  "fpr_slice": 0.4117647058823529,
+  "fpr_other": 0.2696629213483146,
+  "fp_studies_slice": 6,
+  "fp_studies_total": 22,
+  "ci_slice": [
+   0.15789473684210525,
+   0.7222222222222222
+  ],
+  "ci_other": [
+   0.14444444444444443,
+   0.4023023549201009
+  ],
+  "ci_diff": [
+   -0.14920153405626685,
+   0.46878063725490177
+  ],
+  "p_diff_le_0": 0.1825,
+  "unique_frames": {
+   "n_slice": 13,
+   "n_other": 55,
+   "fp_slice": 6,
+   "fp_other": 16,
+   "fpr_slice": 0.46153846153846156,
+   "fpr_other": 0.2909090909090909
+  },
+  "perm_random_studies": {
+   "null_mean_fp": 5.9466,
+   "null_p95_fp": 10.0,
+   "p_value_ge_observed": 0.3894
+  }
+ },
+ "sp_pos_norm": {
+  "n_slice_frames": 18,
+  "n_slice_studies": 14,
+  "n_other_frames": 138,
+  "n_other_studies": 79,
+  "fp_slice": 0,
+  "fp_other": 11,
+  "fp_total": 11,
+  "fpr_slice": 0.0,
+  "fpr_other": 0.07971014492753623,
+  "fp_studies_slice": 0,
+  "fp_studies_total": 2,
+  "ci_slice": [
+   0.0,
+   0.0
+  ],
+  "ci_other": [
+   0.0,
+   0.21380541871921177
+  ],
+  "ci_diff": [
+   -0.21380541871921183,
+   0.0
+  ],
+  "p_diff_le_0": 1.0,
+  "unique_frames": {
+   "n_slice": 14,
+   "n_other": 79,
+   "fp_slice": 0,
+   "fp_other": 2,
+   "fpr_slice": 0.0,
+   "fpr_other": 0.02531645569620253
+  },
+  "perm_random_studies": {
+   "null_mean_fp": 1.6318,
+   "null_p95_fp": 10.0,
+   "p_value_ge_observed": 1.0
+  },
+  "score_mean_slice": 0.3639558232931726,
+  "score_mean_other": 0.49714073686048543,
+  "auc_score_slice_vs_other_norms": 0.34219001610305955
+ },
+ "sp_art_norm": {
+  "n_slice_frames": 17,
+  "n_slice_studies": 13,
+  "n_other_frames": 114,
+  "n_other_studies": 69,
+  "fp_slice": 4,
+  "fp_other": 24,
+  "fp_total": 28,
+  "fpr_slice": 0.23529411764705882,
+  "fpr_other": 0.21052631578947367,
+  "fp_studies_slice": 4,
+  "fp_studies_total": 20,
+  "ci_slice": [
+   0.05263157894736842,
+   0.4667647058823524
+  ],
+  "ci_other": [
+   0.11569453273998728,
+   0.3197078508046321
+  ],
+  "ci_diff": [
+   -0.19021388216303473,
+   0.2982786978221414
+  ],
+  "p_diff_le_0": 0.4215,
+  "unique_frames": {
+   "n_slice": 13,
+   "n_other": 69,
+   "fp_slice": 4,
+   "fp_other": 16,
+   "fpr_slice": 0.3076923076923077,
+   "fpr_other": 0.2318840579710145
+  },
+  "perm_random_studies": {
+   "null_mean_fp": 4.5344,
+   "null_p95_fp": 9.0,
+   "p_value_ge_observed": 0.633
+  },
+  "score_mean_slice": 0.46084337349397586,
+  "score_mean_other": 0.4539473684210525,
+  "auc_score_slice_vs_other_norms": 0.49097007223942213
+ },
+ "slice_flags_by_criterion": {
+  "sp_pos": 0,
+  "sp_axis": 5,
+  "sp_art": 4
+ },
+ "slice_binary_flags": 7,
+ "abs_axis_angle_deg_median": {
+  "slice": 1.9257955260439827,
+  "other_norms": 1.181034825713012,
+  "axis_positives": 2.883127945121833
+ },
+ "sag_mm": {
+  "slice": {
+   "median": 8.3383472133678,
+   "q25": 5.360477457060835,
+   "q75": 9.45610682882606,
+   "n": 18
+  },
+  "other_norms": {
+   "median": 4.610921849070006,
+   "q25": 3.3000821184545157,
+   "q75": 6.36979870530374,
+   "n": 131
+  },
+  "axis_positives": {
+   "median": 6.232878032210842,
+   "q25": 5.1475044958368095,
+   "q75": 6.8993386118546285,
+   "n": 17
+  }
+ },
+ "sag_auc_slice_vs_other_norms": 0.7540288379983037,
+ "sag_auc_slice_vs_axis_positives": 0.7058823529411765,
+ "sag_note": "отчётная величина, не признак модели; в CSV сервиса и в карточке не выводится"
+}

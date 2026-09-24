@@ -1,0 +1,685 @@
+{
+ "n_rows_input": 495,
+ "n_rows_labelled": 495,
+ "n_rows_not_success": 0,
+ "n_studies": 100,
+ "n_unique_frames": 249,
+ "files": {
+  "n_rows": 495,
+  "point": {
+   "bin_f1/spine": 0.6617647058823529,
+   "bin_auc/spine": 0.8127358490566038,
+   "bin_f1/hip": 0.5161290322580645,
+   "bin_auc/hip": 0.7600898917629793,
+   "bin_f1/pooled": 0.577639751552795,
+   "bin_auc/pooled": 0.7811301212214209,
+   "f1/sp_pos": 0.5,
+   "f1/sp_axis": 0.6046511627906976,
+   "f1/sp_art": 0.5348837209302325,
+   "f1/hip_pos": 0.43209876543209874,
+   "f1/hip_roi": 0.5142857142857142,
+   "macro/spine": 0.5465116279069767,
+   "macro/hip": 0.47319223985890646,
+   "macro/regions_mean": 0.5098519338829416,
+   "macro/5_criteria": 0.5171838726877487,
+   "f1_dict/Некорректная укладка (обе области)": 0.4421052631578947,
+   "macro/4_dictionary_rows": 0.5239814652911348,
+   "visit/sensitivity": 0.7291666666666666,
+   "visit/specificity": 0.5
+  },
+  "ci95": {
+   "bin_f1/spine": [
+    0.49056603773584906,
+    0.7906976744186046
+   ],
+   "bin_f1/spine#share_skipped": 0.0,
+   "bin_auc/spine": [
+    0.6990615975989624,
+    0.9068558785503298
+   ],
+   "bin_auc/spine#share_skipped": 0.0,
+   "bin_f1/hip": [
+    0.32254082039028276,
+    0.6785768398268398
+   ],
+   "bin_f1/hip#share_skipped": 0.0,
+   "bin_auc/hip": [
+    0.6420213836730865,
+    0.8657288613232247
+   ],
+   "bin_auc/hip#share_skipped": 0.0,
+   "bin_f1/pooled": [
+    0.4535266418835192,
+    0.6869324114248591
+   ],
+   "bin_f1/pooled#share_skipped": 0.0,
+   "bin_auc/pooled": [
+    0.6894996391635116,
+    0.8641456799788294
+   ],
+   "bin_auc/pooled#share_skipped": 0.0,
+   "f1/sp_pos": [
+    0.13758620689655174,
+    1.0
+   ],
+   "f1/sp_pos#share_skipped": 0.0010000000000000009,
+   "f1/sp_axis": [
+    0.2999074074074074,
+    0.8182190760059611
+   ],
+   "f1/sp_axis#share_skipped": 0.0,
+   "f1/sp_art": [
+    0.23727698483496878,
+    0.7419437978051213
+   ],
+   "f1/sp_art#share_skipped": 0.0,
+   "f1/hip_pos": [
+    0.2318840579710145,
+    0.6000326797385619
+   ],
+   "f1/hip_pos#share_skipped": 0.0,
+   "f1/hip_roi": [
+    0.0,
+    0.8730113636363636
+   ],
+   "f1/hip_roi#share_skipped": 0.0020000000000000018,
+   "macro/spine": [
+    0.39047207655478966,
+    0.7032321528222528
+   ],
+   "macro/spine#share_skipped": 0.0,
+   "macro/hip": [
+    0.2049628307331149,
+    0.6735064804533444
+   ],
+   "macro/hip#share_skipped": 0.0,
+   "macro/regions_mean": [
+    0.3546125931226082,
+    0.6312831622772229
+   ],
+   "macro/regions_mean#share_skipped": 0.0,
+   "macro/5_criteria": [
+    0.37408783647025307,
+    0.6356233659117677
+   ],
+   "macro/5_criteria#share_skipped": 0.0,
+   "f1_dict/Некорректная укладка (обе области)": [
+    0.2552695035460993,
+    0.6086956521739131
+   ],
+   "f1_dict/Некорректная укладка (обе области)#share_skipped": 0.0,
+   "macro/4_dictionary_rows": [
+    0.3586244298189396,
+    0.6343863310225502
+   ],
+   "macro/4_dictionary_rows#share_skipped": 0.0,
+   "visit/sensitivity": [
+    0.6,
+    0.851063829787234
+   ],
+   "visit/sensitivity#share_skipped": 0.0,
+   "visit/specificity": [
+    0.36,
+    0.6444444444444445
+   ],
+   "visit/specificity#share_skipped": 0.0
+  },
+  "binary": {
+   "spine": {
+    "n": 166,
+    "n_pos": 60,
+    "n_flag": 76,
+    "tp": 45,
+    "fp": 31,
+    "fn": 15,
+    "tn": 75,
+    "sensitivity": 0.75,
+    "specificity": 0.7075471698113207,
+    "precision": 0.5921052631578947,
+    "f1": 0.6617647058823529,
+    "roc_auc": 0.8127358490566038
+   },
+   "hip": {
+    "n": 329,
+    "n_pos": 92,
+    "n_flag": 94,
+    "tp": 48,
+    "fp": 46,
+    "fn": 44,
+    "tn": 191,
+    "sensitivity": 0.5217391304347826,
+    "specificity": 0.8059071729957806,
+    "precision": 0.5106382978723404,
+    "f1": 0.5161290322580645,
+    "roc_auc": 0.7600898917629793
+   },
+   "pooled": {
+    "n": 495,
+    "n_pos": 152,
+    "n_flag": 170,
+    "tp": 93,
+    "fp": 77,
+    "fn": 59,
+    "tn": 266,
+    "sensitivity": 0.6118421052631579,
+    "specificity": 0.7755102040816326,
+    "precision": 0.5470588235294118,
+    "f1": 0.577639751552795,
+    "roc_auc": 0.7811301212214209
+   }
+  },
+  "by_type": {
+   "sp_pos": {
+    "violation_type": "Некорректная укладка",
+    "region": "Поясничный отдел позвоночника",
+    "n": 166,
+    "n_pos": 10,
+    "n_flag": 18,
+    "tp": 7,
+    "fp": 11,
+    "fn": 3,
+    "tn": 145,
+    "sensitivity": 0.7,
+    "specificity": 0.9294871794871795,
+    "precision": 0.3888888888888889,
+    "f1": 0.5
+   },
+   "sp_axis": {
+    "violation_type": "Не выравнена ось позвоночника",
+    "region": "Поясничный отдел позвоночника",
+    "n": 166,
+    "n_pos": 17,
+    "n_flag": 26,
+    "tp": 13,
+    "fp": 13,
+    "fn": 4,
+    "tn": 136,
+    "sensitivity": 0.7647058823529411,
+    "specificity": 0.912751677852349,
+    "precision": 0.5,
+    "f1": 0.6046511627906976
+   },
+   "sp_art": {
+    "violation_type": "Присутствуют посторонние предметы",
+    "region": "Поясничный отдел позвоночника",
+    "n": 166,
+    "n_pos": 35,
+    "n_flag": 51,
+    "tp": 23,
+    "fp": 28,
+    "fn": 12,
+    "tn": 103,
+    "sensitivity": 0.6571428571428571,
+    "specificity": 0.7862595419847328,
+    "precision": 0.45098039215686275,
+    "f1": 0.5348837209302325
+   },
+   "hip_pos": {
+    "violation_type": "Некорректная укладка",
+    "region": "Проксимальный отдел бедра",
+    "n": 329,
+    "n_pos": 79,
+    "n_flag": 83,
+    "tp": 35,
+    "fp": 48,
+    "fn": 44,
+    "tn": 202,
+    "sensitivity": 0.4430379746835443,
+    "specificity": 0.808,
+    "precision": 0.42168674698795183,
+    "f1": 0.43209876543209874
+   },
+   "hip_roi": {
+    "violation_type": "Некорректная область интереса",
+    "region": "Проксимальный отдел бедра",
+    "n": 329,
+    "n_pos": 16,
+    "n_flag": 19,
+    "tp": 9,
+    "fp": 10,
+    "fn": 7,
+    "tn": 303,
+    "sensitivity": 0.5625,
+    "specificity": 0.9680511182108626,
+    "precision": 0.47368421052631576,
+    "f1": 0.5142857142857142
+   }
+  },
+  "visit": {
+   "n": 100,
+   "n_pos": 48,
+   "n_flag": 61,
+   "tp": 35,
+   "fp": 26,
+   "fn": 13,
+   "tn": 26,
+   "sensitivity": 0.7291666666666666,
+   "specificity": 0.5,
+   "precision": 0.5737704918032787,
+   "f1": 0.6422018348623854
+  },
+  "multi_type_rows": {
+   "spine": {
+    "rows": 166,
+    "true_rows_ge2_types": 2,
+    "pred_rows_ge2_types": 19,
+    "true_positive_rows": 60,
+    "pred_flagged_rows": 76
+   },
+   "hip": {
+    "rows": 329,
+    "true_rows_ge2_types": 3,
+    "pred_rows_ge2_types": 8,
+    "true_positive_rows": 92,
+    "pred_flagged_rows": 94
+   }
+  }
+ },
+ "unique_frames": {
+  "n_rows": 249,
+  "point": {
+   "bin_f1/spine": 0.6052631578947368,
+   "bin_auc/spine": 0.8040796963946868,
+   "bin_f1/hip": 0.4883720930232558,
+   "bin_auc/hip": 0.7453569031103155,
+   "bin_f1/pooled": 0.5432098765432098,
+   "bin_auc/pooled": 0.7674984306340239,
+   "f1/sp_pos": 0.7692307692307693,
+   "f1/sp_axis": 0.56,
+   "f1/sp_art": 0.425531914893617,
+   "f1/hip_pos": 0.41025641025641024,
+   "f1/hip_roi": 0.5714285714285714,
+   "macro/spine": 0.5849208947081287,
+   "macro/hip": 0.4908424908424908,
+   "macro/regions_mean": 0.5378816927753097,
+   "macro/5_criteria": 0.5472895331618736,
+   "f1_dict/Некорректная укладка (обе области)": 0.46153846153846156,
+   "macro/4_dictionary_rows": 0.5046247369651625,
+   "visit/sensitivity": 0.7291666666666666,
+   "visit/specificity": 0.5
+  },
+  "ci95": {
+   "bin_f1/spine": [
+    0.4657037919396466,
+    0.7250068681318681
+   ],
+   "bin_f1/spine#share_skipped": 0.0,
+   "bin_auc/spine": [
+    0.702541695655535,
+    0.8908221798615618
+   ],
+   "bin_auc/spine#share_skipped": 0.0,
+   "bin_f1/hip": [
+    0.3098507712944332,
+    0.6346153846153846
+   ],
+   "bin_f1/hip#share_skipped": 0.0,
+   "bin_auc/hip": [
+    0.6338806273156372,
+    0.852683541263614
+   ],
+   "bin_auc/hip#share_skipped": 0.0,
+   "bin_f1/pooled": [
+    0.43135212418300656,
+    0.6395348837209303
+   ],
+   "bin_f1/pooled#share_skipped": 0.0,
+   "bin_auc/pooled": [
+    0.6892613511883695,
+    0.8429764561778288
+   ],
+   "bin_auc/pooled#share_skipped": 0.0,
+   "f1/sp_pos": [
+    0.4,
+    1.0
+   ],
+   "f1/sp_pos#share_skipped": 0.0010000000000000009,
+   "f1/sp_axis": [
+    0.2857142857142857,
+    0.7693548387096768
+   ],
+   "f1/sp_axis#share_skipped": 0.0,
+   "f1/sp_art": [
+    0.22857142857142856,
+    0.5925925925925926
+   ],
+   "f1/sp_art#share_skipped": 0.0,
+   "f1/hip_pos": [
+    0.2277970600244998,
+    0.5714285714285714
+   ],
+   "f1/hip_pos#share_skipped": 0.0,
+   "f1/hip_roi": [
+    0.0,
+    0.8571428571428571
+   ],
+   "f1/hip_roi#share_skipped": 0.0020000000000000018,
+   "macro/spine": [
+    0.4202811841942277,
+    0.7007108640557671
+   ],
+   "macro/spine#share_skipped": 0.0,
+   "macro/hip": [
+    0.19752680311890838,
+    0.6500193498452012
+   ],
+   "macro/hip#share_skipped": 0.0,
+   "macro/regions_mean": [
+    0.37090655998863364,
+    0.6352120407134907
+   ],
+   "macro/regions_mean#share_skipped": 0.0,
+   "macro/5_criteria": [
+    0.391774086241998,
+    0.6414136108989049
+   ],
+   "macro/5_criteria#share_skipped": 0.0,
+   "f1_dict/Некорректная укладка (обе области)": [
+    0.2857142857142857,
+    0.614068825910931
+   ],
+   "f1_dict/Некорректная укладка (обе области)#share_skipped": 0.0,
+   "macro/4_dictionary_rows": [
+    0.3358255981848185,
+    0.6077802666452186
+   ],
+   "macro/4_dictionary_rows#share_skipped": 0.0,
+   "visit/sensitivity": [
+    0.6,
+    0.851063829787234
+   ],
+   "visit/sensitivity#share_skipped": 0.0,
+   "visit/specificity": [
+    0.36,
+    0.6444444444444445
+   ],
+   "visit/specificity#share_skipped": 0.0
+  },
+  "binary": {
+   "spine": {
+    "n": 99,
+    "n_pos": 31,
+    "n_flag": 45,
+    "tp": 23,
+    "fp": 22,
+    "fn": 8,
+    "tn": 46,
+    "sensitivity": 0.7419354838709677,
+    "specificity": 0.6764705882352942,
+    "precision": 0.5111111111111111,
+    "f1": 0.6052631578947368,
+    "roc_auc": 0.8040796963946868
+   },
+   "hip": {
+    "n": 150,
+    "n_pos": 41,
+    "n_flag": 45,
+    "tp": 21,
+    "fp": 24,
+    "fn": 20,
+    "tn": 85,
+    "sensitivity": 0.5121951219512195,
+    "specificity": 0.7798165137614679,
+    "precision": 0.4666666666666667,
+    "f1": 0.4883720930232558,
+    "roc_auc": 0.7453569031103155
+   },
+   "pooled": {
+    "n": 249,
+    "n_pos": 72,
+    "n_flag": 90,
+    "tp": 44,
+    "fp": 46,
+    "fn": 28,
+    "tn": 131,
+    "sensitivity": 0.6111111111111112,
+    "specificity": 0.7401129943502824,
+    "precision": 0.4888888888888889,
+    "f1": 0.5432098765432098,
+    "roc_auc": 0.7674984306340239
+   }
+  },
+  "by_type": {
+   "sp_pos": {
+    "violation_type": "Некорректная укладка",
+    "region": "Поясничный отдел позвоночника",
+    "n": 99,
+    "n_pos": 6,
+    "n_flag": 7,
+    "tp": 5,
+    "fp": 2,
+    "fn": 1,
+    "tn": 91,
+    "sensitivity": 0.8333333333333334,
+    "specificity": 0.978494623655914,
+    "precision": 0.7142857142857143,
+    "f1": 0.7692307692307693
+   },
+   "sp_axis": {
+    "violation_type": "Не выравнена ось позвоночника",
+    "region": "Поясничный отдел позвоночника",
+    "n": 99,
+    "n_pos": 10,
+    "n_flag": 15,
+    "tp": 7,
+    "fp": 8,
+    "fn": 3,
+    "tn": 81,
+    "sensitivity": 0.7,
+    "specificity": 0.9101123595505618,
+    "precision": 0.4666666666666667,
+    "f1": 0.56
+   },
+   "sp_art": {
+    "violation_type": "Присутствуют посторонние предметы",
+    "region": "Поясничный отдел позвоночника",
+    "n": 99,
+    "n_pos": 17,
+    "n_flag": 30,
+    "tp": 10,
+    "fp": 20,
+    "fn": 7,
+    "tn": 62,
+    "sensitivity": 0.5882352941176471,
+    "specificity": 0.7560975609756098,
+    "precision": 0.3333333333333333,
+    "f1": 0.425531914893617
+   },
+   "hip_pos": {
+    "violation_type": "Некорректная укладка",
+    "region": "Проксимальный отдел бедра",
+    "n": 150,
+    "n_pos": 36,
+    "n_flag": 42,
+    "tp": 16,
+    "fp": 26,
+    "fn": 20,
+    "tn": 88,
+    "sensitivity": 0.4444444444444444,
+    "specificity": 0.7719298245614035,
+    "precision": 0.38095238095238093,
+    "f1": 0.41025641025641024
+   },
+   "hip_roi": {
+    "violation_type": "Некорректная область интереса",
+    "region": "Проксимальный отдел бедра",
+    "n": 150,
+    "n_pos": 7,
+    "n_flag": 7,
+    "tp": 4,
+    "fp": 3,
+    "fn": 3,
+    "tn": 140,
+    "sensitivity": 0.5714285714285714,
+    "specificity": 0.9790209790209791,
+    "precision": 0.5714285714285714,
+    "f1": 0.5714285714285714
+   }
+  },
+  "visit": {
+   "n": 100,
+   "n_pos": 48,
+   "n_flag": 61,
+   "tp": 35,
+   "fp": 26,
+   "fn": 13,
+   "tn": 26,
+   "sensitivity": 0.7291666666666666,
+   "specificity": 0.5,
+   "precision": 0.5737704918032787,
+   "f1": 0.6422018348623854
+  },
+  "multi_type_rows": {
+   "spine": {
+    "rows": 99,
+    "true_rows_ge2_types": 2,
+    "pred_rows_ge2_types": 7,
+    "true_positive_rows": 31,
+    "pred_flagged_rows": 45
+   },
+   "hip": {
+    "rows": 150,
+    "true_rows_ge2_types": 2,
+    "pred_rows_ge2_types": 4,
+    "true_positive_rows": 41,
+    "pred_flagged_rows": 45
+   }
+  }
+ },
+ "tie_blocks": {
+  "sp_pos": {
+   "threshold": 0.8614457831325302,
+   "rows_on_threshold": 10,
+   "rows_on_threshold_positive": 0,
+   "unique_frames_on_threshold": 1,
+   "studies_on_threshold": 1,
+   "flags_total": 18,
+   "positives_total": 10
+  },
+  "sp_axis": {
+   "threshold": 0.7771084337349398,
+   "rows_on_threshold": 3,
+   "rows_on_threshold_positive": 3,
+   "unique_frames_on_threshold": 1,
+   "studies_on_threshold": 1,
+   "flags_total": 26,
+   "positives_total": 17
+  },
+  "sp_art": {
+   "threshold": 0.6024096385542168,
+   "rows_on_threshold": 4,
+   "rows_on_threshold_positive": 0,
+   "unique_frames_on_threshold": 2,
+   "studies_on_threshold": 2,
+   "flags_total": 51,
+   "positives_total": 35
+  },
+  "hip_pos": {
+   "threshold": 0.6580547112462006,
+   "rows_on_threshold": 5,
+   "rows_on_threshold_positive": 0,
+   "unique_frames_on_threshold": 1,
+   "studies_on_threshold": 1,
+   "flags_total": 83,
+   "positives_total": 79
+  },
+  "hip_roi": {
+   "threshold": 0.9179331306990881,
+   "rows_on_threshold": 4,
+   "rows_on_threshold_positive": 0,
+   "unique_frames_on_threshold": 1,
+   "studies_on_threshold": 1,
+   "flags_total": 19,
+   "positives_total": 16
+  }
+ },
+ "oof_label_mismatch_vs_markup": 0,
+ "oof_check": {
+  "ok": true,
+  "max_abs_diff": 0.0,
+  "items": [
+   {
+    "what": "bin_f1/spine",
+    "reference": 0.6617647058823529,
+    "recomputed": 0.6617647058823529
+   },
+   {
+    "what": "bin_auc/spine",
+    "reference": 0.8127358490566038,
+    "recomputed": 0.8127358490566038
+   },
+   {
+    "what": "macro/spine",
+    "reference": 0.5465116279069767,
+    "recomputed": 0.5465116279069767
+   },
+   {
+    "what": "f1/sp_pos",
+    "reference": 0.5,
+    "recomputed": 0.5
+   },
+   {
+    "what": "f1/sp_axis",
+    "reference": 0.6046511627906976,
+    "recomputed": 0.6046511627906976
+   },
+   {
+    "what": "f1/sp_art",
+    "reference": 0.5348837209302325,
+    "recomputed": 0.5348837209302325
+   },
+   {
+    "what": "n/spine",
+    "reference": 166,
+    "recomputed": 166
+   },
+   {
+    "what": "n_pos/spine",
+    "reference": 60,
+    "recomputed": 60
+   },
+   {
+    "what": "bin_f1/hip",
+    "reference": 0.5161290322580645,
+    "recomputed": 0.5161290322580645
+   },
+   {
+    "what": "bin_auc/hip",
+    "reference": 0.7600898917629793,
+    "recomputed": 0.7600898917629793
+   },
+   {
+    "what": "macro/hip",
+    "reference": 0.47319223985890646,
+    "recomputed": 0.47319223985890646
+   },
+   {
+    "what": "f1/hip_pos",
+    "reference": 0.43209876543209874,
+    "recomputed": 0.43209876543209874
+   },
+   {
+    "what": "f1/hip_roi",
+    "reference": 0.5142857142857142,
+    "recomputed": 0.5142857142857142
+   },
+   {
+    "what": "n/hip",
+    "reference": 329,
+    "recomputed": 329
+   },
+   {
+    "what": "n_pos/hip",
+    "reference": 92,
+    "recomputed": 92
+   }
+  ]
+ },
+ "meta": {
+  "source": "OOF (`models/oof_stacked_*.csv`; quality_prob — как в `src/eval_oof_metrics.py`)",
+  "markup": "разметка.xlsx",
+  "side": "анатомический детектор (`hip_features.detect_hip_side`)",
+  "n_boot": 2000,
+  "in_sample_warning": false
+ }
+}

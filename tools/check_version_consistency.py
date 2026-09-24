@@ -71,8 +71,7 @@ def hash_from_local() -> str:
     import importlib.util
 
     if importlib.util.find_spec("yaml") is None:
-        # без PyYAML load_config молча берёт встроенные значения по умолчанию —
-        # это был бы хэш не того конфига, а не эталон
+        # без PyYAML load_config падает с ConfigError (fail-closed); здесь — понятный текст заранее
         raise RuntimeError("нет PyYAML: хэш рабочего дерева был бы посчитан от значений по умолчанию")
     sys.path.insert(0, str(ROOT / "src"))
     from inference import load_config, config_hash as _ch  # noqa: E402

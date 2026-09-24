@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Тесты проверки поддерживаемой области (слой API) и гарантии, что пакетный путь не затронут.
-Запуск: python tests/test_region_support.py — зависимостей кроме стандартной библиотеки нет.
+"""Тесты проверки поддерживаемой области (пакетный путь и API), маркера LATERAL и classify_region
+при маркерах обеих областей. Запуск: python tests/test_region_support.py.
 """
 import sys
 from pathlib import Path
@@ -82,12 +82,46 @@ for tags, what in (({"Manufacturer": "GE Healthcare", "ManufacturerModelName": "
     ok, reason = check_tags(tags, cols=300, rows=300)
     check(ok, f"аппарат допускается: {what} {reason}")
 
-# 5. Главная гарантия: пакетный путь (CSV для организаторов) проверку области не вызывает,
-#    поэтому числа поставки не могут измениться из-за неё.
+# 5. Пакетный путь (CLI и API, DensitoInference.process_file) вызывает фильтр до классификации
+#    (A1, 24.09.2026): отказ — строка Failure; на формате 499 файлов заказчика правило не срабатывает
+#    (раздел 1; прогон 499 сверяется compare_regressions). Сквозной CLI-тест — tests/test_output_contract.py.
 src = (ROOT / "src" / "inference.py").read_text(encoding="utf-8")
-check("region_support" not in src, "inference.py не импортирует region_support")
+check("from region_support import check_tags" in src and "region_support_tags_of(info)" in src
+      and "region_support_geometry_of(info)" in src,
+      "inference.py вызывает region_support в process_file (теги — отказ, геометрия — отметка в debug)")
 api = (ROOT / "src" / "api_server.py").read_text(encoding="utf-8")
 check("region_support" in api, "api_server.py использует region_support")
+
+# 5б. «LATERAL» — только отдельным словом: BILATERAL / CONTRALATERAL не отказ.
+for text, exp, what in (("DualFemur BILATERAL", True, "BILATERAL"), ("Contralateral hip", True, "CONTRALATERAL"),
+                        ("BILATERAL_HIP", True, "BILATERAL_HIP"), ("LATERAL", False, "LATERAL"),
+                        ("Lateral Spine", False, "Lateral Spine"), ("L-SPINE_LATERAL", False, "_LATERAL"),
+                        ("AP/LATERAL", False, "AP/LATERAL"), ("Боковая проекция", False, "боковая по-русски")):
+    ok, reason = check_tags({"SeriesDescription": text, "Modality": "CR"}, cols=280, rows=300)
+    check(ok == exp, f"проекция «{text}»: {'проходит' if exp else 'отказ'} ({what}) {reason[:40]}")
+
+# 5в. classify_region: маркеры обеих областей в описании -> решает ширина кадра (300 / 280 / 248).
+import numpy as np  # noqa: E402
+import inference as inf  # noqa: E402
+
+cfg = inf.load_config()
+
+
+def _info(cols, desc, lat=""):
+    img = np.zeros((300, cols), np.uint8)
+    img[40:260, cols // 2 - 20:cols // 2 + 20] = 200
+    return inf.DicomInfo(ds=None, img_u8=img, rows=300, cols=cols, study_uid="1", image_uid="1",
+                         pixel_spacing=(1.0, 1.0), tags={"SeriesDescription": desc, "Laterality": lat})
+
+
+for cols, desc, lat, exp in ((300, "SPINE + HIP", "", "spine"), (280, "SPINE + HIP", "R", "right_hip"),
+                             (248, "Позвоночник и бедро", "L", "left_hip"), (280, "L-SPINE / DualFemur HIP", "L", "left_hip"),
+                             (300, "Lumbar spine", "", "spine"), (280, "Lumbar spine", "", "spine"),
+                             (300, "HIP", "R", "right_hip")):
+    reg, how = inf.classify_region(_info(cols, desc, lat), Path("x.dcm"), cfg)
+    check(reg == exp, f"classify_region({cols} px, «{desc}») -> {reg} ({how}), ожидается {exp}")
+reg, how = inf.classify_region(_info(280, "SPINE HIP", ""), Path("x.dcm"), cfg)
+check(reg in ("right_hip", "left_hip") and how.startswith("dims"), f"обе области, 280 px -> бедро по ширине ({how})")
 
 # 6. Запрещённые формулировки не просочились в тексты отказов.
 # собирается из частей, чтобы сами слова не лежали в репозитории

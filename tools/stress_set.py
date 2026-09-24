@@ -17,7 +17,7 @@ BitsStored 12 при BitsAllocated 16, чужая модальность CT, п�
   2. на каждый входной файл (в том числе внутри zip) — ровно одна строка, лишних строк нет;
   3. у каждого случая processing_status равен ожидаемому (tests/stress/expected_stress.csv);
   4. строка Failure оформлена как в src/inference.py: quality_class 0, violation_type пустой,
-     quality_prob = output.fallback_quality_prob (0.5), в debug CSV записана причина (error);
+     quality_prob = output.fallback_quality_prob (0.499999), в debug CSV записана причина (error);
   5. для случаев с правилом same_class (кодирование без потерь) регион, класс и тип нарушения
      совпадают со строкой исходного фантома в эталонном прогоне, |Δ quality_prob| ≤ --tol;
   6. строки исходных фантомов в смешанном пакете побитово равны строкам одиночного прогона
@@ -102,13 +102,15 @@ def sha256_bytes(b: bytes) -> str:
 
 
 def fallback_prob() -> str:
-    """output.fallback_quality_prob из config.yaml в том виде, в каком его печатает CSV (0.5)."""
+    """output.fallback_quality_prob из config.yaml в том виде, в каком его печатает CSV (0.499999)."""
     try:
         import yaml
         cfg = yaml.safe_load((ROOT / "config.yaml").read_text(encoding="utf-8")) or {}
-        val = float((cfg.get("output") or {}).get("fallback_quality_prob", 0.5))
+        val = float((cfg.get("output") or {}).get("fallback_quality_prob", 0.499999))
     except Exception:  # noqa: BLE001
-        val = 0.5
+        val = 0.499999
+    if not 0.0 <= val < 0.5:  # как inference.failure_quality_prob: строка Failure строго < 0.5
+        val = 0.499999
     return repr(val) if val != int(val) else f"{val:.1f}"
 
 
@@ -318,9 +320,17 @@ def c_copy(src: Path, out: Path) -> None:
 
 
 # Случай: (id, файл внутри stress/<id>/, исходный фантом, ожидаемый статус, правило, описание).
-# Правила: failure_row — строка Failure по правилам inference.py (class 0, violation пустой, prob 0.5, причина);
+# Правила: failure_row — строка Failure по правилам inference.py (class 0, violation пустой, prob = fallback_quality_prob < 0.5, причина);
 #          same_class — Success, регион/класс/нарушение равны исходному фантому, |Δprob| ≤ tol;
 #          success — Success (содержимое кадра изменено, класс не сравнивается).
+def _frame_supported(rows: int, cols: int) -> bool:
+    """Геометрия кадра в пределах области применения (src/region_support.py: COLS_*/ROWS_*)."""
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT / "src"))
+    import region_support as _rs  # noqa: E402
+    return _rs.COLS_MIN <= cols <= _rs.COLS_MAX and _rs.ROWS_MIN <= rows <= _rs.ROWS_MAX
+
+
 def case_table(huge: tuple[int, int], jpeg_ok: Optional[bool] = None) -> list[dict]:
     """jpeg_ok=None — определить по окружению; True — ожидание для образа (Pillow есть в requirements.txt)."""
     if jpeg_ok is None:
@@ -353,8 +363,12 @@ def case_table(huge: tuple[int, int], jpeg_ok: Optional[bool] = None) -> list[di
              rule="same_class", description="RGB, SamplesPerPixel 3, три одинаковых канала", build=c_rgb),
         dict(case="tiny_8x8", file="CR000000.dcm", source=SRC_SPINE_OK, expected_status="Failure",
              rule="failure_row", description="Кадр 8×8 (меньше validation.min_rows/min_cols = 64)", build=c_tiny_8x8),
+        # Кадр вне геометрии области применения (src/region_support.py: ширина 200–400, высота 120–600 px):
+        # в пакетном пути строка обрабатывается (кадр того же аппарата другого размера не теряем), отказ
+        # «вне области применения» фиксируется в debug CSV и выдаётся в API/кабинете (24.09.2026).
         dict(case="huge_frame", file="CR000000.dcm", source=SRC_SPINE_OK, expected_status="Success",
-             rule="success", description=f"Кадр {hr}×{hc} (в пределах validation.max 4096), 8 бит",
+             rule="success",
+             description=f"Кадр {hr}×{hc} (в пределах validation.max 4096), 8 бит; в API — отказ по геометрии",
              build=make_huge(hr, hc)),
         dict(case="explicit_be", file="CR000000.dcm", source=SRC_HIP_2, expected_status="Success",
              rule="same_class", description="Explicit VR Big Endian (retired)", build=c_explicit_be),
@@ -369,8 +383,9 @@ def case_table(huge: tuple[int, int], jpeg_ok: Optional[bool] = None) -> list[di
              build=c_jpeg_baseline),
         dict(case="bits12_of_16", file="CR000000.dcm", source=SRC_HIP_3, expected_status="Success",
              rule="same_class", description="BitsAllocated 16 / BitsStored 12 / HighBit 11", build=c_bits12_of_16),
-        dict(case="modality_ct", file="CR000000.dcm", source=SRC_SPINE_ART, expected_status="Success",
-             rule="same_class", description="Чужая модальность (Modality CT, SOP Class CT Image Storage)",
+        dict(case="modality_ct", file="CR000000.dcm", source=SRC_SPINE_ART, expected_status="Failure",
+             rule="failure_row", description="Чужая модальность (Modality CT, SOP Class CT Image Storage): "
+                                             "вне области применения src/region_support.py",
              build=c_modality_ct),
         dict(case="constant_frame", file="CR000000.dcm", source=SRC_SPINE_OK, expected_status="Failure",
              rule="failure_row", description="Все пиксели одинаковые (постоянный кадр)", build=c_constant),

@@ -41,12 +41,17 @@ fallback-правило по геометрии, без падения.
 }
 ```
 
-### Признаки контура A (порядок как в `config.yaml: geometry_cols`)
-- `sp_pos`: `center_offset_ratio, bone_width_ratio`
+### Признаки контура A (порядок как в `feature_cols` внутри pkl и в `config.yaml: geometry_cols`)
+Истина для боя — `feature_cols`, сохранённые в `models/model_*_geom.pkl`; `config.yaml: geometry_cols`
+(+ `features`), умолчания в `src/inference.py` и `CRITERION_GEOMETRY_COLS` / `CRITERION_EXTRA_COLS` в
+`src/train_stacked.py` обязаны с ними совпадать (сверка: `tests/test_feature_contract.py`, 24.09.2026).
+- `sp_pos`: `center_offset_ratio, bone_width_ratio` + `synth_pos_logit` (`config.yaml: features.sp_pos`)
 - `sp_axis`: `axis_angle_deg`
 - `sp_art`: `metal_metal_area_mm2, metal_metal_max_intensity_gap`
-- `rh_pos` / `lh_pos`: `shaft_angle_deg`
-- `rh_roi` / `lh_roi`: `edge_distance_ratio, bone_area_ratio`
+- `rh_pos` / `lh_pos` (единая модель `model_hip_pos_geom.pkl`): `femur_solidity, shaft_width_mm, abs_shaft_angle_deg, merge_height_mm, medial_neck_extent_mm`
+- `rh_roi` / `lh_roi` (единая модель `model_hip_roi_geom.pkl`): `scan_length_mm, shaft_len_below_troch_mm`
+- any-модели региона (`model_<region>_any_geom.pkl`): отсортированное объединение признаков критериев
+  региона без `synth_pos_logit`
 
 Признаки вычисляются `geometry_features.py` из uint8-изображения (нормализация как в
 `read_dicom_normalized`). Если при обучении использовались **другие** признаки — положите их
@@ -84,8 +89,11 @@ OOF-скоров ≤ текущего (эквивалент `rank(pct=True)` п�
 скор равен `rank_geom`, при `w_geom=0` — `rank_emb`. Тот же вес используется в `train_stacked.py`
 при подборе порога и записывается в `metrics_summary.json` (`weight_geom`, `weight_emb`,
 `gate_selected_by`: `nested` — вес прошёл приёмку nested CV из `models/nested_gate_decisions.json`,
-`default` — вес из конфига без подтверждения; `nested_auc_mean`, `nested_auc_ci` — outer-OOF AUC
-вентиля в nested-протоколе, если файл решений есть). Вес выбирается ТОЛЬКО в nested repeated
+`default` — вес из конфига без подтверждения; `nested_auc_production` (синоним `nested_auc_mean`) и
+`nested_auc_ci` — outer-OOF AUC того, что стоит в поставке; `nested_auc_alternative` /
+`nested_auc_alternative_ci` — отвергнутой или заменённой альтернативы, например веса вентиля К2; до 24.09 (A2)
+у `sp_art`, `hip_pos`, `hip_roi` в `nested_auc_mean` стояла альтернатива, исправлено в `train_stacked.py`
+и `tools/refresh_nested_fields.py`). Вес выбирается ТОЛЬКО в nested repeated
 GroupKFold (`tools/nested_gate.py`), не в `train_stacked.py`. После любого изменения веса
 обязательно перезапустить `train_stacked.py` (порог) и `train_final_models.py` (OOF-референсы в pkl).
 Если референс недоступен — используется сырая вероятность. Если обучаете иначе — обновите
