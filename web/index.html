@@ -2226,6 +2226,14 @@ function regDetail(host, d) {
   }
   right.appendChild(stBox);
   if (d.status_log && d.status_log.length) right.appendChild(el('div', { class: 'reg-log', text: d.status_log.slice(-4).map(x => `${x.at.replace('T', ' ').slice(0, 16)} — ${x.status_title} (${x.author}, ${x.role_title})`).join('\n') }));
+  const exBox = el('div', {});
+  right.appendChild(exBox);
+  regFetch('/api/expert/study/' + encodeURIComponent(d.study_uid)).then(x => {
+    if (!x || !x.reviews || !x.reviews.length) return;
+    exBox.appendChild(el('h3', { text: 'Экспертная оценка' }));
+    for (const rv of x.reviews) exBox.appendChild(el('div', { class: 'reg-msg' }, [el('div', { class: 'who', text: `${rv.reviewer} · проверка № ${rv.set_id}, снимок ${rv.pos} · ${rv.at.replace('T', ' ').slice(0, 16)}` }),
+      el('div', { class: 'txt', text: Object.entries(rv.answers).map(([k, v]) => k + ': ' + v).join('; ') + (rv.comment ? ' — ' + rv.comment : '') })]));
+  }).catch(() => {});
   right.appendChild(el('h3', { text: 'Комментарии врача и лаборанта' }));
   const thread = el('div', { class: 'reg-thread' });
   if (!d.comments.length) thread.appendChild(el('div', { class: 'sub2', text: 'Комментариев пока нет.' }));

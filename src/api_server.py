@@ -566,6 +566,10 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
         except Exception as e:  # noqa: BLE001
             LOG.warning("registry tags failed: %s", e)
             reg_tags = {}
+        try:  # чистые кадры для слепой экспертной проверки (src/expert_review.py)
+            expert_save_frames(rows, tmp, job_dir)
+        except Exception as e:  # noqa: BLE001
+            LOG.warning("expert frames failed: %s", e)
         for i, r in enumerate(rows):
             dbg = debug_rows[i] if i < len(debug_rows) else {}
             reg_ok, reg_reason = _region_support(r, dbg, tmp)
@@ -1316,6 +1320,21 @@ def _registry_job_token(job: str) -> Optional[str]:
 
 
 registry_mount(app, REGISTRY, _registry_job_token, LOG)
+
+# Экспертная проверка сервиса в отделении (слепая оценка врачом выборки из журнала, отчёт о совпадении)
+from expert_review import ExpertReview, mount as expert_mount, save_frames as expert_save_frames  # noqa: E402
+
+EXPERT = ExpertReview(REGISTRY, JOBS_DIR)
+expert_mount(app, REGISTRY, EXPERT)
+
+
+@app.get("/expert/", include_in_schema=False)
+def web_expert():
+    """Страница экспертной проверки (на демо-стенде — отдельный поддомен)."""
+    p = WEB_DIR / "expert" / "index.html"
+    if not p.is_file():
+        raise HTTPException(404, "expert UI not bundled in this image")
+    return FileResponse(str(p), media_type="text/html; charset=utf-8")
 
 
 @app.post("/api/review")
