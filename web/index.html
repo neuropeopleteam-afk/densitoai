@@ -1645,16 +1645,13 @@ function roiDecBlock(r) {
   cv.addEventListener('pointerup', e => { if (state2.mode !== 'draw' || !state2.start) return; state2.start = null; if (state2.cur && (state2.cur[2] - state2.cur[0] < 4 || state2.cur[3] - state2.cur[1] < 4)) state2.cur = null; roiDec.draft[r.image_uid] = state2.cur; draw(); msg(state2.cur ? 'Своя область: ' + roiDecBoxText(state2.cur, toMm(state2.cur)) + '. Нажмите «Отправить решение».' : 'Растяните прямоугольник мышью по снимку.', ''); });
   box.appendChild(stage);
   box.appendChild(el('div', { class: 'roi-legend' }, [
-    s.needs_correction ? el('span', {}, [el('i', { class: 'dash' }), 'предложение системы (пунктир)']) : null,
+    s.needs_correction ? el('span', {}, [el('i', { class: 'dash', style: 'border-color:#5FB3BE' }), 'предложение системы (пунктир)']) : null,
     el('span', {}, [el('i', { class: 'cur', style: 'border-color:#F2C94C' }), 'своя область — растянуть мышью после кнопки «Своя»']),
   ]));
   const msgEl = el('div', { class: 'msg' });
   const msg = (t, cls) => { msgEl.textContent = t; msgEl.className = 'msg ' + (cls || ''); };
-  if (!roiDec.job) {
-    box.appendChild(el('div', { class: 'm', text: 'Запись решения доступна только для задач, обработанных на сервере (нужен код доступа задачи).' }));
-    box.appendChild(msgEl);
-    return box;
-  }
+  const demoDec = !roiDec.job; // демо-пример: решение показывается в карточке, но на сервер не отправляется
+  if (demoDec) box.appendChild(el('div', { class: 'm', text: 'Демо-пример: решение можно принять и нарисовать свою область, но оно не сохраняется. Для загруженных снимков оно записывается в выгрузку решений и отдельный SR решений.' }));
   if (!roiDec.specialist) roiDec.specialist = lsGet('densito_specialist') || '';
   const specialist = el('input', { type: 'text', maxlength: '80', placeholder: 'должность или инициалы, без персональных данных', 'aria-label': 'Специалист', value: roiDec.specialist, oninput: e => { roiDec.specialist = e.target.value; lsSet('densito_specialist', roiDec.specialist); } });
   const comment = el('textarea', { rows: '2', maxlength: '500', placeholder: 'комментарий (необязательно)', 'aria-label': 'Комментарий' });
@@ -1675,6 +1672,13 @@ function roiDecBlock(r) {
     if (!specialist.value.trim()) { msg('Укажите специалиста (должность или инициалы).', 'err'); specialist.focus(); return; }
     const body = { image_uid: r.image_uid, decision: choice, specialist: specialist.value.trim(), comment: comment.value.trim() };
     if (choice === 'своя') { if (!state2.cur) { msg('Для решения «Своя» растяните прямоугольник мышью по снимку.', 'err'); return; } body.roi_box_px = state2.cur; }
+    if (demoDec) {
+      const mmB = choice === 'своя' ? toMm(state2.cur) : (choice === 'подтверждено' ? s.box_mm : null);
+      roiDec.byImage[r.image_uid] = Object.assign({}, body, { roi_box_px: choice === 'своя' ? state2.cur : (choice === 'подтверждено' ? s.box_px : null), roi_box_mm: mmB, created_at: new Date().toLocaleString('ru-RU') });
+      roiDec.draft[r.image_uid] = null;
+      roiDec.flash = { uid: r.image_uid, text: 'Решение принято (демо, не сохраняется).' };
+      refresh(); return;
+    }
     send.disabled = true; msg('Отправка…', '');
     try {
       const resp = await fetch(roiDecUrl('decisions'), { method: 'POST', headers: roiDecHeaders(), body: JSON.stringify(body) });
