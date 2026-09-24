@@ -214,8 +214,15 @@ class Registry:
                 out[str(u["login"])] = u
         return out
 
+    @property
+    def open_mode(self) -> bool:
+        """Открытый режим (DENSITO_REGISTRY_OPEN=1): без учётных записей, доступ ограничивает внешний контур
+        (basic auth на обратном прокси, сеть учреждения). Автор комментария — роль из переключателя кабинета
+        и необязательное имя; в журнал доступа пишется «open:<роль>»."""
+        return os.environ.get("DENSITO_REGISTRY_OPEN", "").strip() in ("1", "true", "yes")
+
     def enabled(self) -> bool:
-        return bool(self.users())
+        return self.open_mode or bool(self.users())
 
     def add_user(self, login: str, password: str, name: str, role: str) -> None:
         if role not in ROLES:
@@ -262,6 +269,13 @@ class Registry:
                 "role_title": ROLES[u["role"]]}
 
     def check_session(self, token: Optional[str]) -> Dict[str, Any]:
+        if self.open_mode:
+            # «open|<doctor|lab>|<имя в URL-кодировке>»; роль admin в открытом режиме недоступна
+            from urllib.parse import unquote
+            parts = (token or "").split("|")
+            role = parts[1] if len(parts) > 1 and parts[1] in ("doctor", "lab") else "doctor"
+            name = re.sub(r"[\x00-\x1f<>]", "", unquote(parts[2]) if len(parts) > 2 else "").strip()[:60]
+            return {"login": f"open:{role}", "name": name or ROLES[role].capitalize(), "role": role}
         try:
             login, exp, sig = base64.urlsafe_b64decode((token or "").encode()).decode().split("|")
             good = hmac.new(self._secret, f"{login}|{exp}".encode(), hashlib.sha256).hexdigest()
@@ -556,7 +570,7 @@ def mount(app, reg: Registry, job_token_reader, log=None) -> None:
     @app.get("/api/registry/status")
     def registry_status():
         """Включён ли журнал (есть ли учётные записи). Без персональных данных."""
-        return {"enabled": reg.enabled(), "roles": ROLES, "statuses": STATUSES}
+        return {"enabled": reg.enabled(), "open": reg.open_mode, "roles": ROLES, "statuses": STATUSES}
 
     @app.post("/api/registry/login")
     async def registry_login(request: Request):

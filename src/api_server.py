@@ -560,6 +560,12 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
         extras_rows = list(getattr(eng, "last_extras_rows", []) or [])
         rows_out = []
         n_unsupported = 0
+        # теги для журнала и для поиска в кабинете (ФИО — только маской «Иванова М. П.», дата исследования)
+        try:
+            reg_tags = registry_read_tags(rows, tmp)
+        except Exception as e:  # noqa: BLE001
+            LOG.warning("registry tags failed: %s", e)
+            reg_tags = {}
         for i, r in enumerate(rows):
             dbg = debug_rows[i] if i < len(debug_rows) else {}
             reg_ok, reg_reason = _region_support(r, dbg, tmp)
@@ -571,6 +577,9 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
                     dbg["region_support_reason"] = reg_reason
                 LOG.info("область не поддерживается: %s -> %s", r.get("path_to_study"), reg_reason)
             rb = _attach_bonus(r, job, i)
+            _t = reg_tags.get(i, {})
+            rb["patient"] = registry_mask_name(_t.get("PatientName", "")) if _t else None
+            rb["study_date"] = registry_fmt_date(_t.get("StudyDate", "")) or None if _t else None
             rb["region_supported"] = bool(reg_ok)
             rb["region_support_reason"] = reg_reason
             if not reg_ok:
@@ -647,7 +656,7 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
         # журнал исследований отделения (src/registry.py): теги DICOM для поиска читаем, пока загрузка ещё на диске.
         # Ошибка журнала не влияет на ответ и на CSV по ТЗ.
         try:
-            REGISTRY.index_rows(job, rows_out, registry_read_tags(rows_out, tmp), card.get("created_at"))
+            REGISTRY.index_rows(job, rows_out, reg_tags, card.get("created_at"))
         except Exception as e:  # noqa: BLE001
             LOG.warning("registry index failed: %s", e)
         return _with_token(resp, job, job_token)
@@ -1290,6 +1299,7 @@ WEB_DIR = Path(os.environ.get("DENSITO_WEB_DIR", PROJECT_ROOT / "web")).resolve(
 # Выключен, пока нет учётных записей (OUTPUT_DIR/registry_users.json); подробности — src/registry.py.
 # --------------------------------------------------------------------------- #
 from registry import Registry, mount as registry_mount, read_tags as registry_read_tags  # noqa: E402
+from registry import mask_name as registry_mask_name, fmt_date as registry_fmt_date  # noqa: E402
 
 REGISTRY = Registry(OUTPUT_DIR, users_file=Path(os.environ["DENSITO_USERS_FILE"]) if os.environ.get("DENSITO_USERS_FILE") else None)
 

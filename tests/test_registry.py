@@ -139,6 +139,25 @@ def main() -> int:
     check("история статусов", [x["status"] for x in st["status_log"]] == ["retake", "retaken"])
     check("выгрузка CSV без полного ФИО", "Мария" not in reg.export_csv(reg.search("")["studies"]))
 
+    print("5б. открытый режим (DENSITO_REGISTRY_OPEN=1)")
+    d2 = Path(tempfile.mkdtemp(prefix="densito_reg_open_"))
+    os.environ["DENSITO_REGISTRY_OPEN"] = "1"
+    try:
+        ro = R.Registry(d2)
+        check("открытый режим включает журнал без учётных записей", ro.enabled() and ro.open_mode)
+        u = ro.check_session("open|lab|%D0%A1%D0%B8%D0%B4%D0%BE%D1%80%D0%BE%D0%B2")
+        check("роль и имя из заголовка", u["role"] == "lab" and u["name"] == "Сидоров", str(u))
+        check("admin в открытом режиме недоступен", ro.check_session("open|admin|x")["role"] == "doctor")
+        check("пустой заголовок — врач", ro.check_session("")["role"] == "doctor")
+        check("управляющие символы и теги из имени убраны", "<" not in ro.check_session("open|doctor|%3Cb%3E%00x")["name"])
+        ro.index_rows("20260915_100000_dddddd", rows("9.9.1", [("z.dcm", "1", "Некорректная укладка", "0.9", "spine")]),
+                      {0: {"PatientName": "Петров^Иван", "StudyDate": "20260915"}})
+        ro.add_comment("9.9.1", u, "проверка")
+        check("комментарий в открытом режиме подписан", ro.study("9.9.1", u)["comments"][0]["author"] == "Сидоров")
+        check("лаборант в открытом режиме не может «принять»", raises(PermissionError, ro.set_status, "9.9.1", u, "accepted"))
+    finally:
+        os.environ.pop("DENSITO_REGISTRY_OPEN", None)
+
     print("6. маршруты API")
     try:
         os.environ["DENSITO_OUTPUT_DIR"] = str(Path(tempfile.mkdtemp(prefix="densito_reg_api_")))
