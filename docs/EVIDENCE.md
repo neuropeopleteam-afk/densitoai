@@ -286,6 +286,6 @@ nested AUC 0.748 → 0.860, nested F1(+) 0.223 → 0.433. Бинарная ме�
 ## 7. Воспроизводимость
 
 - Модели и хэши: `models/models_manifest.json`, `models/MODEL_CARD.md` §8 (sha256[:12] каждого .pkl и бэкбона).
-- Версия 2.4.0, config_hash d97d54aaacd2 — пишется в ответ API и в каждый DICOM SR (`src/inference.py: config_hash`).
+- Версия 2.4.0, config_hash b17b7951447d — пишется в ответ API и в каждый DICOM SR (`src/inference.py: config_hash`).
 - Проверки: `python tests/test_inference_format.py`, `python tests/test_api_isolation.py` (88 проверок, фактический прогон 23.09),
   `python tests/test_schema.py` (схема результата, SR на исследование, детерминизм UID, ответ API по схеме).
