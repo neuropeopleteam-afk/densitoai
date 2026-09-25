@@ -11,9 +11,9 @@
 
 | Что | Где |
 |---|---|
-| Публичный репозиторий (код, веса, документация) | `git clone https://neuropeople.pro/git/densitoai.git` — просмотр: https://neuropeople.pro/git/browse?p=densitoai.git;a=summary |
-| Работающая демонстрация (веб-интерфейс + API) | https://neuropeople.pro (логин `demo`, пароль `Hakaton`) |
-| Swagger API | https://neuropeople.pro/docs |
+| Публичный репозиторий (код, веса, документация) | `git clone https://densito.ru/git/densitoai.git` — просмотр: https://densito.ru/git/browse?p=densitoai.git;a=summary |
+| Работающая демонстрация (веб-интерфейс + API) | https://densito.ru (логин `demo`, пароль `Hakaton`) |
+| Swagger API | https://densito.ru/docs |
 
 Все веса моделей лежат в репозитории (`models/`, включая офлайн-веса EfficientNet-B0 в
 `models/torch_home`); внешние сервисы, сеть и GPU для работы не требуются.
@@ -21,7 +21,7 @@
 ## Как проверить за 3 команды
 
 ```bash
-git clone https://neuropeople.pro/git/densitoai.git && cd densitoai
+git clone https://densito.ru/git/densitoai.git && cd densitoai
 ./build_and_run.sh build                      # docker build + самопроверка на образце «Для теста.zip»
 ./build_and_run.sh run /path/to/test_dicoms ./outputs   # → outputs/results.csv и results.xlsx
 ```

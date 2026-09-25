@@ -120,7 +120,7 @@ def build(out):
     st.append(Spacer(1, 4))
     st.append(P("Источники чисел: models/metrics_summary.json, docs/METRICS_REPORT.md, docs/NESTED_GATE_REPORT.md (часть 5), "
                 "docs/MEASUREMENT_CHECK.md, docs/PERFORMANCE.md, docs/EXTERNAL_DXA.md, docs/EMB_GATE_REPORT.md — в репозитории решения; "
-                "демо-стенд https://neuropeople.pro, экспертная проверка https://expert.neuropeople.pro.", s_note))
+                "демо-стенд https://densito.ru, экспертная проверка https://expert.neuropeople.pro.", s_note))
     doc.build(st)
 
 

@@ -8,8 +8,8 @@
 Работает **полностью локально** (CPU, без внешних сервисов), обрабатывает каждый файл
 независимо и **никогда не прерывает пакет** из-за одного плохого файла.
 
-Версия **2.4.0**. Демо: [neuropeople.pro](https://neuropeople.pro) (логин `demo` / `Hakaton`),
-публичный репозиторий: `git clone https://neuropeople.pro/git/densitoai.git`
+Версия **2.4.0**. Демо: [densito.ru](https://densito.ru) (логин `demo` / `Hakaton`),
+публичный репозиторий: `git clone https://densito.ru/git/densitoai.git`
 
 > **Назначение и ограничения.** Программа не является медицинским изделием и не предназначена
 > для диагностики, профилактики, лечения или мониторинга заболеваний. Сервис оценивает
@@ -18,7 +18,7 @@
 > поясничного отдела позвоночника и проксимального отдела бедра, оборудование GE Lunar Prodigy;
 > вне этой области применения результат не определён. Источник формулировки —
 > `config.yaml → intended_use`, та же строка отдаётся в `/api/health` и показана в веб-интерфейсе.
-([gitweb](https://neuropeople.pro/git/browse?p=densitoai.git;a=summary)).
+([gitweb](https://densito.ru/git/browse?p=densitoai.git;a=summary)).
 Ключевые документы: `docs/METRICS_REPORT.md` (метрики ТЗ §8.4 с 95 % ДИ),
 `docs/ENGINEERING_REPORT.md`, `docs/qa/` (ответы организаторов и их учёт).
 
@@ -981,7 +981,7 @@ lh_pos, lh_roi`) и повторить шаги 2–5. Случайные зёр
 | п.3.2 API пакетной обработки | выполнено: `/api/batch`, `/api/analyze`, `/api/health`, `/api/jobs/{job_id}`, `/api/jobs` (по админскому ключу), `/api/results/{job_id}/{name}`, `/api/results/{name}`, `/api/review`, Swagger `/docs` |
 | п.5 README (назначение/ограничения, структура, требования, сборка, API, форматы, модель/пре-/постобработка, ошибки) + руководства пользователя, развёртывания, обучения | выполнено: §1–§13 этого файла, `docs/EXPERT_TESTING_GUIDE.md` |
 | п.8.4 метрики по областям и типам с 95 % ДИ | выполнено: `docs/METRICS_REPORT.md`, `src/eval_oof_metrics.py` |
-| Публичный репозиторий (Q&A организаторов) | выполнено: `https://neuropeople.pro/git/densitoai.git` |
+| Публичный репозиторий (Q&A организаторов) | выполнено: `https://densito.ru/git/densitoai.git` |
 | Материалы защиты | `docs/qa/JURY_QA.md` (вопросы жюри, ответы с источниками, раздел «Слабые места»), `docs/qa/DEMO_SCRIPT.md` (питч, демонстрация, ролик), `docs/presentation/DensitoAI_2.4.0_jury.pptx` |
 
 **Бонусы п.2.6 (все реализованы, опциональны, не влияют на основной CSV даже при внутренней ошибке):**
@@ -1037,7 +1037,7 @@ lh_pos, lh_roi`) и повторить шаги 2–5. Случайные зёр
 - [x] **Веб-интерфейс** — `web/index.html`: загрузка DICOM перетаскиванием, таблица результатов,
       оверлей и рекомендация по полю сканирования по клику, скачивание CSV, DICOM SR и серии
       визуализации. Развёрнут на
-      [neuropeople.pro](https://neuropeople.pro).
+      [densito.ru](https://densito.ru).
 
 **Известные резервы качества (не блокируют сдачу):**
 
