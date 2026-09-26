@@ -3,7 +3,7 @@
 """
 test_transfer_syntax.py — матрица transfer syntax / вариантов кодирования DICOM.
 
-Из реальных файлов tests/sample_test_zip/ (3 снимка организаторов, вне репозитория-релиза они
+Из файлов tests/sample_test_zip/ (3 снимка организаторов; в публичном репозитории их нет — тогда фантомы; вне репозитория-релиза они
 заменяются любыми DICOM того же аппарата) создаются варианты кодирования, прогоняется
 src/inference.py и сравнивается с оригиналом: processing_status=Success, anatomical_region и
 quality_class совпадают. Дополнительно фиксируются violation_type и |Δ quality_prob|.

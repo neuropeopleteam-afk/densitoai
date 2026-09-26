@@ -73,6 +73,10 @@ textarea { width: 100%; min-height: 64px; resize: vertical; }
 .kpi .l { font-size: 13px; color: var(--muted); }
 .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700; }
 .pill.bad { background: var(--bad-soft); color: var(--bad); } .pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.mute { background: var(--surface-2); color: var(--muted); }
+.panel.own { border: 2px solid var(--accent); }
+.done-banner { background: var(--accent-soft); border-radius: 12px; padding: 12px 14px; font-weight: 700; margin-bottom: 12px; }
+@media (min-width: 901px) { .form.up { grid-template-columns: 2fr 2fr auto; } }
 .empty { padding: 26px; text-align: center; color: var(--muted); }
 .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.9); display: none; align-items: center; justify-content: center; z-index: 50; cursor: zoom-out; }
 .lightbox.open { display: flex; }
@@ -97,7 +101,7 @@ textarea { width: 100%; min-height: 64px; resize: vertical; }
       <label class="who">Эксперт <input id="reviewer" maxlength="60" placeholder="ФИО врача, например Петрова А. В."></label>
     </div>
     <h1>Экспертная проверка сервиса</h1>
-    <p>Врач отделения оценивает случайную выборку снимков из журнала исследований, не видя решения сервиса. Отчёт показывает, насколько сервис совпадает с врачом по каждому критерию. Ответы хранятся в журнале и не меняют модель.</p>
+    <p>Проверьте сервис сами, вслепую: загрузите свои снимки или возьмите выборку из журнала исследований. Эксперт оценивает каждый снимок, не видя решения сервиса; отчёт показывает, где сервис совпал с врачом, а где нет. Ответы хранятся в журнале и не меняют модель.</p>
     <div class="tabs"><button id="tSets" class="on" type="button">Проверки</button><button id="tRev" type="button">Оценка снимков</button><button id="tRep" type="button">Отчёт</button><a class="btn ghost" id="toJournal" style="border-color:rgba(255,255,255,.35);color:var(--ink-text)" href="/#app/registry">Журнал исследований</a></div>
   </div>
 </header>
@@ -144,8 +148,41 @@ function render() {
   if (st.tab === 'rev') return renderReview();
   return renderReport();
 }
+function renderUpload() {
+  const p = el('div', { class: 'panel own' }, [el('h2', { text: 'Проверить сервис на своих снимках' }),
+    el('div', { class: 'hint', text: 'Загрузите свои DICOM — файлы или zip-архив. Сервис обработает их сразу, но решение не покажет: вы оцениваете каждый снимок сами и нажимаете «Завершить» — только тогда откроется, где сервис совпал с вами, а где нет. Отбора нет: в проверку идут все снимки поддерживаемой области. Нечитаемые файлы и снимки с чужого аппарата перечисляются отдельно и в расчёт не входят. Снимки и ваши оценки попадают в журнал исследований.' })]);
+  const title = el('input', { placeholder: 'Название, например «Тест организаторов»' });
+  const files = el('input', { type: 'file', multiple: '' });
+  const stat = el('div', { class: 'hint', style: 'margin-top:8px' });
+  const err = el('div', { class: 'err' });
+  const go = el('button', { class: 'btn', type: 'button', text: 'Загрузить и начать оценку', onclick: async () => {
+    err.textContent = ''; stat.textContent = '';
+    if (!rv.value.trim()) { err.textContent = 'Укажите ФИО эксперта в правом верхнем углу — им подписываются оценки.'; rv.focus(); return; }
+    if (!files.files.length) { err.textContent = 'Выберите файлы DICOM или zip-архив.'; return; }
+    const fd = new FormData();
+    for (const f of files.files) fd.append('files', f, f.name);
+    fd.append('title', title.value);
+    go.disabled = true;
+    stat.textContent = `Загрузка и обработка: ${files.files.length} файл(ов). Решение сервиса пока скрыто.`;
+    try {
+      const r = await fetch('/api/expert/upload', { method: 'POST', headers: { 'X-Registry-Session': session() }, body: fd });
+      const t = await r.text(); let d = null; try { d = JSON.parse(t); } catch (e) { /* не JSON */ }
+      if (!r.ok) throw new Error((d && typeof d.detail === 'string' && d.detail) || ('Ошибка ' + r.status));
+      const sk = d.skipped || {};
+      const out = [sk.failure ? `не прочитано: ${sk.failure}` : '', sk.unsupported ? `вне области или чужой аппарат: ${sk.unsupported}` : '', sk.duplicate ? `повторы: ${sk.duplicate}` : ''].filter(Boolean).join(', ');
+      st.uploadNote = `В проверку вошло снимков: ${d.n}` + (out ? `. Не вошли — ${out}` : '') + '.';
+      try { st.sets = (await api('/api/expert/sets')).sets; } catch (e) { /* список обновится позже */ }
+      openSet(d.set_id, 1);
+    } catch (e) { err.textContent = e.message; stat.textContent = ''; } finally { go.disabled = false; }
+  } });
+  p.appendChild(el('div', { class: 'form up' }, [el('label', {}, ['Название', title]), el('label', {}, ['Файлы DICOM или zip', files]), go]));
+  p.appendChild(stat); p.appendChild(err);
+  view.appendChild(p);
+}
+const isOwn = s => s && s.params && s.params.mode === 'own_upload';
 function renderSets() {
-  const p = el('div', { class: 'panel' }, [el('h2', { text: 'Новая проверка' }),
+  renderUpload();
+  const p = el('div', { class: 'panel' }, [el('h2', { text: 'Выборка из журнала' }),
     el('div', { class: 'hint', text: 'Снимки выбираются случайно из журнала исследований: примерно половина с нарушением по решению сервиса и половина в норме, чтобы оценить и пропуски, и ложные срабатывания. Эксперт этого разделения не видит.' })]);
   const title = el('input', { placeholder: 'Название, например «Сентябрь, отделение 1»' });
   const n = el('select', {}, [20, 40, 60, 100].map(v => el('option', { value: String(v), text: v + ' снимков' })));
@@ -166,14 +203,15 @@ function renderSets() {
   else {
     const t = el('table', {}, [el('tr', {}, ['Проверка', 'Снимков', 'Эксперты и прогресс', ''].map(h => el('th', { text: h })))]);
     for (const s of st.sets) {
+      const own = isOwn(s), closed = own && !(s.finished || []).includes(s.created_by);
       const prog = el('div', {}, s.reviewers.length ? s.reviewers.map(r => el('div', {}, [el('span', { class: 'bar' }, [el('i', { style: `width:${Math.round(r.n / s.n * 100)}%` })]), `${r.reviewer}: ${r.n} из ${s.n}`])) : [el('span', { class: 'sub', text: 'ещё никто не оценивал' })]);
       t.appendChild(el('tr', {}, [
-        el('td', {}, [el('div', { text: s.title }), el('div', { class: 'sub', text: `${s.created_at.replace('T', ' ').slice(0, 16)} · ${s.created_by || ''} · ${REG[s.params.region || '']}` })]),
+        el('td', {}, [el('div', { text: s.title }), el('div', { class: 'sub', text: `${s.created_at.replace('T', ' ').slice(0, 16)} · ${s.created_by || ''} · ` + (own ? (closed ? 'свои снимки, решение скрыто до «Завершить»' : 'свои снимки, оценка завершена') : REG[s.params.region || '']) })]),
         el('td', { text: String(s.n) }), el('td', {}, [prog]),
         el('td', {}, [el('div', { style: 'display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end' }, [
           el('button', { class: 'btn', type: 'button', text: 'Оценивать', onclick: () => openSet(s.id, 1) }),
-          el('button', { class: 'btn ghost', type: 'button', text: 'Отчёт', onclick: () => { st.tab = 'rep'; mark(); loadReport(s.id); } }),
-          el('a', { class: 'btn ghost', href: '#', text: 'CSV', onclick: e => { e.preventDefault(); dl(s.id); } })])]),
+          el('button', { class: 'btn ghost', type: 'button', text: 'Отчёт', disabled: closed ? '' : null, title: closed ? 'откроется после «Завершить»' : null, onclick: () => { st.tab = 'rep'; mark(); loadReport(s.id); } }),
+          closed ? null : el('a', { class: 'btn ghost', href: '#', text: 'CSV', onclick: e => { e.preventDefault(); dl(s.id); } })])]),
       ]));
     }
     l.appendChild(t);
@@ -196,6 +234,7 @@ function renderReview() {
   const s = st.set;
   if (!s) { view.appendChild(el('div', { class: 'panel' }, [el('div', { class: 'empty', text: 'Выберите проверку на вкладке «Проверки».' })])); return; }
   if (!rv.value.trim()) { view.appendChild(el('div', { class: 'panel' }, [el('div', { class: 'empty', text: 'Укажите ФИО эксперта в правом верхнем углу — им подписываются ответы.' })])); rv.focus(); return; }
+  const own = isOwn(s), fin = !!s.my_finished;
   const it = s.items.find(x => x.pos === st.pos) || s.items[0];
   const saved = (st.mine[it.pos] || {}).answers || {};
   const cur = Object.assign({}, saved, st.draft);
@@ -203,15 +242,17 @@ function renderReview() {
     el('div', { class: 'frame' }, [el('img', { src: `${it.frame_url}?s=${encodeURIComponent(session())}`, alt: 'снимок', onclick: e => { const lb = document.getElementById('lb'); lb.querySelector('img').src = e.target.src; lb.classList.add('open'); } })]),
     el('div', { class: 'hint', style: 'margin-top:8px', text: 'Изображение без отметок сервиса. Клик — увеличить.' })]);
   const right = el('div', {});
+  if (own && fin) right.appendChild(el('div', { class: 'done-banner', text: 'Оценка завершена: ответы зафиксированы и больше не меняются. Решение сервиса — в отчёте.' }));
+  else if (own && st.uploadNote) right.appendChild(el('div', { class: 'hint', style: 'margin-bottom:10px', text: st.uploadNote }));
   for (const c of it.criteria) {
     const box = el('div', { class: 'crit' }, [el('div', { class: 't', text: c.title })]);
     const opts = el('div', { class: 'opts' });
     for (const [k, t] of [['ok', 'Норма'], ['violation', 'Нарушение'], ['unsure', 'Не могу оценить']]) {
-      opts.appendChild(el('button', { type: 'button', class: k + (cur[c.code] === k ? ' on' : ''), text: t, onclick: () => { st.draft[c.code] = k; render(); } }));
+      opts.appendChild(el('button', { type: 'button', class: k + (cur[c.code] === k ? ' on' : ''), text: t, disabled: fin ? '' : null, onclick: () => { st.draft[c.code] = k; render(); } }));
     }
     box.appendChild(opts); right.appendChild(box);
   }
-  const cm = el('textarea', { maxlength: '1000', placeholder: 'Комментарий (необязательно)' });
+  const cm = el('textarea', { maxlength: '1000', placeholder: 'Комментарий (необязательно)', disabled: fin ? '' : null });
   cm.value = st.draftComment !== undefined ? st.draftComment : ((st.mine[it.pos] || {}).comment || '');
   cm.addEventListener('input', () => { st.draftComment = cm.value; });
   right.appendChild(cm);
@@ -223,18 +264,26 @@ function renderReview() {
       await api(`/api/expert/sets/${s.id}/answers`, { method: 'POST', body: JSON.stringify({ pos: it.pos, answers: cur, comment: cm.value }) });
       st.mine[it.pos] = { answers: cur, comment: cm.value }; st.draft = {}; st.draftComment = undefined;
       const next = s.items.find(x => x.pos > it.pos && !st.mine[x.pos]) || s.items.find(x => !st.mine[x.pos]);
-      if (step && next) st.pos = next.pos; else if (step && !next) { st.tab = 'rep'; mark(); return loadReport(s.id); }
+      if (step && next) st.pos = next.pos; else if (step && !next && !own) { st.tab = 'rep'; mark(); return loadReport(s.id); }
       render();
     } catch (e) { err.textContent = e.message; }
   };
   right.appendChild(el('div', { class: 'nav' }, [
     el('button', { class: 'btn ghost', type: 'button', text: 'Предыдущий', disabled: it.pos <= 1 ? '' : null, onclick: () => { st.pos = it.pos - 1; st.draft = {}; st.draftComment = undefined; render(); } }),
-    el('button', { class: 'btn', type: 'button', text: 'Сохранить и дальше', disabled: complete ? null : '', onclick: () => save(true) }),
+    el('button', { class: 'btn', type: 'button', text: 'Сохранить и дальше', disabled: complete && !fin ? null : '', onclick: () => save(true) }),
   ]));
+  const doneN = Object.keys(st.mine).length;
+  if (own && !fin && doneN >= s.n) {
+    right.appendChild(el('div', { class: 'nav' }, [el('button', { class: 'btn', type: 'button', text: 'Завершить и открыть результат', onclick: async () => {
+      if (!confirm('После завершения ответы нельзя будет изменить. Завершить?')) return;
+      try { await api(`/api/expert/sets/${s.id}/finish`, { method: 'POST' }); s.my_finished = true; st.tab = 'rep'; mark(); loadReport(s.id); }
+      catch (e) { err.textContent = e.message; }
+    } })]));
+  }
   right.appendChild(err);
   right.appendChild(el('div', { class: 'nums' }, s.items.map(x => el('button', { type: 'button', class: (st.mine[x.pos] ? 'done' : '') + (x.pos === it.pos ? ' cur' : ''), text: String(x.pos), title: st.mine[x.pos] ? 'оценено' : 'не оценено', onclick: () => { st.pos = x.pos; st.draft = {}; st.draftComment = undefined; render(); } }))));
   const done = Object.keys(st.mine).length;
-  right.appendChild(el('div', { class: 'hint', style: 'margin-top:10px', text: `Оценено ${done} из ${s.n}. Решение сервиса показывается только в отчёте.` }));
+  right.appendChild(el('div', { class: 'hint', style: 'margin-top:10px', text: own ? (fin ? `Оценено ${done} из ${s.n}.` : `Оценено ${done} из ${s.n}. Решение сервиса откроется после «Завершить»; после этого ответы не меняются.`) : `Оценено ${done} из ${s.n}. Решение сервиса показывается только в отчёте.` }));
   view.appendChild(el('div', { class: 'panel' }, [el('div', { class: 'rev' }, [left, right])]));
 }
 async function loadReport(id) { try { st.report = await api(`/api/expert/sets/${id}/report`); } catch (e) { st.report = { error: e.message }; } render(); }
@@ -260,8 +309,31 @@ function renderReport() {
     el('td', {}, [el('div', { text: pct(c.specificity) }), el('div', { class: 'sub', text: ci(c.specificity_ci) + (c.tn + c.fp ? ` · ${c.tn} из ${c.tn + c.fp}` : '') })]),
     el('td', { text: c.kappa === null ? '—' : String(c.kappa).replace('.', ',') }), el('td', { text: String(c.unsure) })]));
   p.appendChild(t);
-  p.appendChild(el('div', { class: 'hint', style: 'margin-top:10px', text: r.note }));
+  const sp = r.set.params || {};
+  p.appendChild(el('div', { class: 'hint', style: 'margin-top:10px', text: r.note + (sp.set_hash ? ` Набор ${sp.set_hash} · версия ${sp.model_version || '—'} · конфигурация ${sp.config_hash || '—'}.` : '') }));
   view.appendChild(p);
+  if (r.per_image && r.per_image.length) {
+    const pi = el('div', { class: 'panel' }, [el('h2', { text: 'Каждый снимок: вы и сервис' })]);
+    const tt = el('table', {}, [el('tr', {}, ['Снимок', 'Ваша оценка', 'Сервис', 'Что нашёл сервис'].map(h => el('th', { text: h })))]);
+    const cls = v => v === 'нарушение' ? 'bad' : (v === 'норма' ? 'ok' : 'mute');
+    for (const x of r.per_image) tt.appendChild(el('tr', {}, [
+      el('td', {}, [el('a', { href: '#', text: '№ ' + x.pos, onclick: e => { e.preventDefault(); openSet(r.set.id, x.pos); } }), el('div', { class: 'sub', text: REG[x.region] })]),
+      el('td', {}, [el('span', { class: 'pill ' + cls(x.expert), text: x.expert })]),
+      el('td', {}, [el('span', { class: 'pill ' + cls(x.service), text: x.service })]),
+      el('td', { class: 'sub', text: (x.service_violations || []).join('; ') || '—' })]));
+    pi.appendChild(tt);
+    view.appendChild(pi);
+  }
+  if (r.inter_reader && r.inter_reader.length) {
+    const ir = el('div', { class: 'panel' }, [el('h2', { text: 'Согласие экспертов между собой' }),
+      el('div', { class: 'hint', text: 'По снимку целиком: «есть нарушение» или «норма». Ответы «не могу оценить» не входят. Врачи тоже расходятся между собой — это нормально и показывает, насколько задача спорная.' })]);
+    const tt = el('table', {}, [el('tr', {}, ['Эксперты', 'Общих снимков', 'Совпадение', 'Каппа'].map(h => el('th', { text: h })))]);
+    for (const x of r.inter_reader) tt.appendChild(el('tr', {}, [el('td', { text: `${x.a} и ${x.b}` }), el('td', { text: String(x.n) }),
+      el('td', {}, [el('div', { text: pct(x.agreement) }), el('div', { class: 'sub', text: ci(x.agreement_ci) })]),
+      el('td', { text: x.kappa === null ? '—' : String(x.kappa).replace('.', ',') })]));
+    ir.appendChild(tt);
+    view.appendChild(ir);
+  }
   const d = el('div', { class: 'panel' }, [el('h2', { text: 'Расхождения врача и сервиса' })]);
   if (!r.disagreements.length) d.appendChild(el('div', { class: 'empty', text: 'Расхождений нет.' }));
   else {

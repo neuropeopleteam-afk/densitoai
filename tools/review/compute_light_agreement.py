@@ -319,6 +319,9 @@ def main():
     L.append(f"- {len(frames)} уникальных кадров одного аппарата, набор составлен намеренно (половина — нарушения по разметке); проценты не переносить на поток отделения.")
     L.append(f"- {len(docs)} врач(а/ей); мнение каждого — одно прохождение без обсуждения. Ни модель, ни пороги по этим мнениям не менялись: оценка организаторов идёт по их разметке.")
     L.append("- Сервис показан в режиме OOF (вне обучающего фолда) той же версии, что в бою.")
+    notes = Path(__file__).with_name("review_notes.md")  # ручные оговорки к конкретному раунду (консилиум 26.09)
+    if notes.is_file():
+        L += [x for x in notes.read_text(encoding="utf-8").splitlines() if x.strip()]
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text("\n".join(L) + "\n", encoding="utf-8")
     print(f"готово: {args.out} — врачей {len(docs)}, дубликатов {len(dups)}, пропущено {len(skipped)}")

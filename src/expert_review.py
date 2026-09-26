@@ -13,8 +13,16 @@
 Кадр для слепой оценки — чистое изображение без отметок сервиса (bonus/rowNNNN_frame.png), сохраняется при
 загрузке (save_frames). Для задач, загруженных до появления этой функции, кадра нет — такие снимки в выборку не
 попадают.
+
+Проверка на своих снимках (режим own_upload). Врач или организатор загружает свои DICOM на странице проверки;
+сервис обрабатывает их тем же конвейером, снимки сразу попадают в журнал, но решение сервиса скрыто и в проверке, и
+в журнале, пока загрузивший не оценит все снимки и не нажмёт «Завершить». После завершения ответы не меняются,
+открывается отчёт, а в журнале — вердикты сервиса и оценки эксперта. В набор входят все загруженные снимки
+поддерживаемой области без отбора по решению сервиса; ошибки чтения и чужие аппараты перечисляются отдельно и в
+знаменатель не входят.
 """
 import csv
+import hashlib
 import io
 import json
 import math
@@ -34,6 +42,7 @@ CRITERIA = {
 ANSWERS = {"ok": "норма", "violation": "нарушение", "unsure": "не могу оценить"}
 MAX_SET = 200
 FRAME_SUFFIX = "_frame.png"
+OWN = "own_upload"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS expert_sets (
@@ -46,6 +55,9 @@ CREATE TABLE IF NOT EXISTS expert_items (
 CREATE TABLE IF NOT EXISTS expert_answers (
   id INTEGER PRIMARY KEY, set_id INTEGER, pos INTEGER, reviewer TEXT, role TEXT, answers TEXT, comment TEXT, at TEXT,
   UNIQUE (set_id, pos, reviewer)
+);
+CREATE TABLE IF NOT EXISTS expert_finish (
+  set_id INTEGER, reviewer TEXT, at TEXT, PRIMARY KEY (set_id, reviewer)
 );
 """
 
@@ -122,12 +134,15 @@ class ExpertReview:
             rows = [dict(r) for r in c.execute(
                 "SELECT job_id,row_idx,image_uid,study_uid,internal_region,quality_class,violation_type,study_date,created_at "
                 "FROM images WHERE processing_status='Success' AND region_supported=1 ORDER BY created_at DESC")]
+        hidden = self.hidden_jobs()
         seen, pool = set(), []
         for r in rows:  # последняя загрузка каждого снимка, только с сохранённым чистым кадром
             k = r["image_uid"] or f"{r['job_id']}:{r['row_idx']}"
             if k in seen:
                 continue
             seen.add(k)
+            if r["job_id"] in hidden:  # снимки чужой незавершённой слепой проверки не раскрываем через отчёт
+                continue
             if region in ("spine", "hip") and _region(r["internal_region"]) != region:
                 continue
             d = r["study_date"] or (r["created_at"] or "")[:10].replace("-", "")
@@ -160,6 +175,101 @@ class ExpertReview:
         self.reg.audit(user.get("login", "?"), "expert_set_create", str(sid), json.dumps(params, ensure_ascii=False))
         return self.get_set(sid, blind=True)
 
+    def create_set_from_job(self, user: Dict[str, Any], job_id: str, title: str = "", n_files: Optional[int] = None,
+                            seed: Optional[int] = None, versions: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Слепая проверка на своих снимках: набор — все снимки одной загрузки (job_id), без отбора по решению
+        сервиса. Решение сервиса скрыто, пока загрузивший не завершит оценку."""
+        reviewer = (user.get("name") or "").strip()[:60]
+        if not reviewer or reviewer == user.get("login") or reviewer.lower() in ("врач", "лаборант", "администратор"):
+            raise ValueError("укажите ФИО эксперта — им подписываются оценки")
+        with self.reg._conn() as c:
+            rows = [dict(r) for r in c.execute(
+                "SELECT job_id,row_idx,file_name,image_uid,study_uid,internal_region,quality_class,violation_type,"
+                "processing_status,region_supported FROM images WHERE job_id=? ORDER BY row_idx", (job_id,))]
+        skipped = {"failure": 0, "unsupported": 0, "duplicate": 0, "no_frame": 0}
+        seen, pick, hashes = set(), [], {}
+        for r in rows:
+            if r["processing_status"] != "Success":
+                skipped["failure"] += 1; continue
+            if not r["region_supported"]:
+                skipped["unsupported"] += 1; continue
+            k = r["image_uid"] or f"{r['job_id']}:{r['row_idx']}"
+            if k in seen:
+                skipped["duplicate"] += 1; continue
+            fp = self.frame_path(r["job_id"], r["row_idx"])
+            if not fp.is_file():
+                skipped["no_frame"] += 1; continue
+            h = hashlib.sha256(fp.read_bytes()).hexdigest()
+            if h in hashes:  # тот же кадр под другим именем
+                skipped["duplicate"] += 1; continue
+            seen.add(k); hashes[h] = 1; pick.append(r)
+        if not pick:
+            raise ValueError(f"нет снимков для оценки: из {len(rows)} строк ошибок чтения {skipped['failure']}, "
+                             f"вне поддерживаемой области или с чужого аппарата {skipped['unsupported']}")
+        if len(pick) > MAX_SET:
+            raise ValueError(f"в одной проверке не больше {MAX_SET} снимков, загружено {len(pick)}")
+        seed = seed if seed is not None else int(time.time())
+        random.Random(seed).shuffle(pick)
+        set_hash = hashlib.sha256("".join(sorted(hashes)).encode()).hexdigest()[:12]
+        params = {"mode": OWN, "job_id": job_id, "stratified": False, "seed": seed, "n_files": n_files,
+                  "n_rows": len(rows), "skipped": skipped, "set_hash": set_hash,
+                  "model_version": (versions or {}).get("model_version"), "config_hash": (versions or {}).get("config_hash")}
+        with self._lock, self.reg._conn() as c:
+            cur = c.execute("INSERT INTO expert_sets(title,created_at,created_by,params,n) VALUES(?,?,?,?,?)",
+                            (title.strip()[:120] if title and title.strip() else f"Свои снимки от {time.strftime('%d.%m.%Y %H:%M')}",
+                             _now(), reviewer, json.dumps(params, ensure_ascii=False), len(pick)))
+            sid = cur.lastrowid
+            c.executemany("INSERT INTO expert_items VALUES(?,?,?,?,?,?,?,?,?)",
+                          [(sid, i + 1, r["job_id"], r["row_idx"], r["image_uid"], r["study_uid"], _region(r["internal_region"]),
+                            r["quality_class"], r["violation_type"]) for i, r in enumerate(pick)])
+        self.reg.audit(user.get("login", "?"), "expert_own_upload", str(sid), json.dumps(params, ensure_ascii=False))
+        return self.get_set(sid, blind=True)
+
+    def _params(self, c, sid: int) -> Dict[str, Any]:
+        s = c.execute("SELECT created_by, params FROM expert_sets WHERE id=?", (sid,)).fetchone()
+        if not s:
+            raise KeyError(sid)
+        return {**json.loads(s["params"] or "{}"), "_creator": s["created_by"]}
+
+    def finished(self, sid: int, reviewer: str) -> bool:
+        with self.reg._conn() as c:
+            return bool(c.execute("SELECT 1 FROM expert_finish WHERE set_id=? AND reviewer=?", (sid, reviewer)).fetchone())
+
+    def finish(self, sid: int, user: Dict[str, Any]) -> Dict[str, Any]:
+        reviewer = (user.get("name") or user.get("login") or "").strip()[:60]
+        with self.reg._conn() as c:
+            s = c.execute("SELECT n FROM expert_sets WHERE id=?", (sid,)).fetchone()
+            if not s:
+                raise KeyError(sid)
+            done = c.execute("SELECT COUNT(*) FROM expert_answers WHERE set_id=? AND reviewer=?", (sid, reviewer)).fetchone()[0]
+        if done < s["n"]:
+            raise ValueError(f"оценены не все снимки: {done} из {s['n']}")
+        with self._lock, self.reg._conn() as c:
+            c.execute("INSERT OR IGNORE INTO expert_finish(set_id,reviewer,at) VALUES(?,?,?)", (sid, reviewer, _now()))
+        self.reg.audit(user.get("login", "?"), "expert_finish", str(sid), reviewer)
+        return {"ok": True, "set_id": sid, "reviewer": reviewer}
+
+    def report_allowed(self, sid: int, requester: str) -> bool:
+        """Отчёт своей слепой проверки открывается после завершения оценки загрузившим (или самим запрашивающим)."""
+        with self.reg._conn() as c:
+            p = self._params(c, sid)
+            if p.get("mode") != OWN:
+                return True
+            q = "SELECT 1 FROM expert_finish WHERE set_id=? AND reviewer IN (?, ?)"
+            return bool(c.execute(q, (sid, p["_creator"], requester or p["_creator"])).fetchone())
+
+    def hidden_jobs(self) -> set:
+        """Загрузки, решения по которым скрыты: своя слепая проверка ещё не завершена загрузившим."""
+        out = set()
+        with self.reg._conn() as c:
+            for s in c.execute("SELECT id, created_by, params FROM expert_sets WHERE params LIKE ?", (f'%"{OWN}"%',)):
+                p = json.loads(s["params"] or "{}")
+                if p.get("mode") != OWN:
+                    continue
+                if not c.execute("SELECT 1 FROM expert_finish WHERE set_id=? AND reviewer=?", (s["id"], s["created_by"])).fetchone():
+                    out.add(p.get("job_id"))
+        return out
+
     def list_sets(self) -> List[Dict[str, Any]]:
         with self.reg._conn() as c:
             sets = [dict(r) for r in c.execute("SELECT * FROM expert_sets ORDER BY id DESC")]
@@ -167,6 +277,7 @@ class ExpertReview:
                 s["params"] = json.loads(s["params"] or "{}")
                 s["reviewers"] = [dict(r) for r in c.execute(
                     "SELECT reviewer, COUNT(*) AS n FROM expert_answers WHERE set_id=? GROUP BY reviewer", (s["id"],))]
+                s["finished"] = [r[0] for r in c.execute("SELECT reviewer FROM expert_finish WHERE set_id=?", (s["id"],))]
         return sets
 
     def get_set(self, sid: int, blind: bool = True) -> Dict[str, Any]:
@@ -175,9 +286,11 @@ class ExpertReview:
             if not s:
                 raise KeyError(sid)
             items = [dict(r) for r in c.execute("SELECT * FROM expert_items WHERE set_id=? ORDER BY pos", (sid,))]
+        own = json.loads(s["params"] or "{}").get("mode") == OWN
         out = []
         for it in items:
-            x = {"pos": it["pos"], "region": it["region"], "study_uid": it["study_uid"],
+            # в своей слепой проверке идентификатор исследования не отдаём: по нему нельзя найти вердикт в журнале
+            x = {"pos": it["pos"], "region": it["region"], "study_uid": None if (blind and own) else it["study_uid"],
                  "criteria": [{"code": k, "title": t} for k, t, _ in CRITERIA[it["region"]]],
                  "frame_url": f"/api/expert/sets/{sid}/frame/{it['pos']}.png"}
             if not blind:
@@ -205,6 +318,8 @@ class ExpertReview:
             it = c.execute("SELECT region FROM expert_items WHERE set_id=? AND pos=?", (sid, pos)).fetchone()
         if not it:
             raise KeyError(pos)
+        if self.finished(sid, reviewer):
+            raise ValueError("оценка завершена: ответы зафиксированы и не меняются")
         allowed = {k for k, _, _ in CRITERIA[it["region"]]}
         clean = {k: v for k, v in (answers or {}).items() if k in allowed and v in ANSWERS}
         if set(clean) != allowed:
@@ -271,8 +386,37 @@ class ExpertReview:
                 cc = cells.get(f"{reg}:{code}")
                 if cc:
                     crit.append({"region": reg, "code": code, "title": title, **stats(cc)})
+        # согласие экспертов между собой («есть нарушение / норма» по снимку), если экспертов больше одного
+        by_rev: Dict[str, Dict[int, Optional[bool]]] = {}
+        for a in ans:
+            it = items.get(a["pos"])
+            if not it:
+                continue
+            v = json.loads(a["answers"]).values()
+            by_rev.setdefault(a["reviewer"], {})[a["pos"]] = (True if "violation" in v else (None if "unsure" in v else False))
+        pairs = []
+        revs = sorted(by_rev)
+        for i in range(len(revs)):
+            for j in range(i + 1, len(revs)):
+                a1, a2 = by_rev[revs[i]], by_rev[revs[j]]
+                common = [p for p in a1 if p in a2 and a1[p] is not None and a2[p] is not None]
+                if not common:
+                    continue
+                tp = sum(1 for p in common if a1[p] and a2[p]); tn = sum(1 for p in common if not a1[p] and not a2[p])
+                fp = sum(1 for p in common if not a1[p] and a2[p]); fn = sum(1 for p in common if a1[p] and not a2[p])
+                pairs.append({"a": revs[i], "b": revs[j], "n": len(common), "agreement": round((tp + tn) / len(common), 3),
+                              "agreement_ci": wilson(tp + tn, len(common)), "kappa": kappa(tp, fp, fn, tn)})
+        per_image = []
+        if s["params"].get("mode") == OWN:
+            for p, it in sorted(items.items()):
+                e = by_rev.get(reviewer or s["created_by"], {}).get(p, "нет ответа")
+                per_image.append({"pos": p, "region": it["region"],
+                                  "expert": "нет ответа" if e == "нет ответа" else ("не могу оценить" if e is None else ("нарушение" if e else "норма")),
+                                  "service": "нарушение" if it["service_class"] == "1" else "норма",
+                                  "service_violations": [v for v in (it["service_violations"] or "").split(";") if v]})
         return {"set": {k: s[k] for k in ("id", "title", "created_at", "created_by", "n", "params")},
                 "reviewers": sorted({a["reviewer"] for a in ans}), "n_answers": len(ans),
+                "inter_reader": pairs, "per_image": per_image,
                 "any_violation": stats(any_cell), "criteria": crit, "disagreements": disagreements[:300],
                 "note": "Чувствительность и специфичность сервиса считаются относительно оценки врача; «не могу оценить» "
                         "в расчёт не входит. Интервалы — Уилсона 95 %. Модель по этим ответам не дообучается."}
@@ -341,8 +485,20 @@ def mount(app, reg, er: ExpertReview) -> None:
             s = er.get_set(sid, blind=True)
         except KeyError:
             raise HTTPException(404, "проверка не найдена")
-        s["my_answers"] = er.my_answers(sid, (u.get("name") or u.get("login") or "").strip()[:60])
+        me = (u.get("name") or u.get("login") or "").strip()[:60]
+        s["my_answers"] = er.my_answers(sid, me)
+        s["my_finished"] = er.finished(sid, me)
         return s
+
+    @app.post("/api/expert/sets/{sid}/finish")
+    def expert_finish(sid: int, x_registry_session: Optional[str] = Header(None)):
+        u = need(x_registry_session)
+        try:
+            return er.finish(sid, u)
+        except KeyError:
+            raise HTTPException(404, "проверка не найдена")
+        except ValueError as e:
+            raise HTTPException(400, str(e))
 
     @app.get("/api/expert/sets/{sid}/frame/{pos}.png")
     def expert_frame(sid: int, pos: int, x_registry_session: Optional[str] = Header(None), s: str = ""):
@@ -365,16 +521,20 @@ def mount(app, reg, er: ExpertReview) -> None:
 
     @app.get("/api/expert/sets/{sid}/report")
     def expert_report(sid: int, reviewer: str = "", x_registry_session: Optional[str] = Header(None)):
-        need(x_registry_session)
+        u = need(x_registry_session)
         try:
+            if not er.report_allowed(sid, (u.get("name") or "").strip()[:60]):
+                raise HTTPException(403, "отчёт откроется, когда загрузивший оценит все снимки и нажмёт «Завершить»")
             return er.report(sid, reviewer)
         except KeyError:
             raise HTTPException(404, "проверка не найдена")
 
     @app.get("/api/expert/sets/{sid}/answers.csv")
     def expert_csv(sid: int, x_registry_session: Optional[str] = Header(None)):
-        need(x_registry_session)
+        u = need(x_registry_session)
         try:
+            if not er.report_allowed(sid, (u.get("name") or "").strip()[:60]):
+                raise HTTPException(403, "выгрузка откроется, когда загрузивший оценит все снимки и нажмёт «Завершить»")
             txt = er.export_csv(sid)
         except KeyError:
             raise HTTPException(404, "проверка не найдена")

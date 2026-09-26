@@ -163,7 +163,8 @@ def _render_spine_overlay(col: np.ndarray, img_u8: np.ndarray, feats: Dict[str, 
     if curvature is not None and curvature > 0.6:
         labels.append(("Кривизна оси повышена — анатомическая особенность, по оси не штрафуем", (0, 200, 200)))
     if boxes:
-        labels.append((f"Посторонние объекты: {len(boxes)}", COL_VIOLATION_TEXT))
+        # рамки — кандидаты в плотные включения (справочно); решение по критерию принимает модель, не их число
+        labels.append((f"Плотные участки (справочно): {len(boxes)}", (0, 200, 200)))
     return col, labels
 
 

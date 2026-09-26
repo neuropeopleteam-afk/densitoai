@@ -13,6 +13,8 @@ h1{font-size:21px;margin:0 0 12px;font-weight:650}
 h2{font-size:18px;margin:0 0 10px;font-weight:650}
 .card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:14px}
 .muted{color:#6b7280;font-size:14px}
+.own{margin-top:18px;padding-top:14px;border-top:1px solid #e5e7eb}
+.btnlink{display:inline-block;background:#1d4ed8;color:#fff;border-radius:10px;padding:10px 16px;text-decoration:none;font-weight:600;font-size:15px}
 ol.lines{margin:0 0 14px 20px;padding:0}
 ol.lines li{margin-bottom:6px}
 label.f{display:block;margin:14px 0 6px;font-size:14px;color:#374151}
@@ -77,6 +79,11 @@ button.sel{background:#111827;border-color:#111827;color:#fff}
     <div class="row" style="margin-top:14px">
       <button class="primary" id="btn-start">Начать</button>
       <button id="btn-restart" class="hidden">Начать с чистого листа</button>
+    </div>
+    <div class="own">
+      <div class="q" style="margin:0 0 6px">Хотите проверить сервис на своих снимках?</div>
+      <p class="muted" style="margin:0 0 10px">Этот набор составили мы. Можно и по-другому: загрузите свои DICOM — файлы или zip-архив, оцените каждый снимок вслепую, и только после этого увидите, что сказал сервис. Снимки и оценки попадут в журнал исследований.</p>
+      <a class="btnlink" href="/expert/">Загрузить свои снимки</a>
     </div>
   </section>
 
@@ -157,17 +164,17 @@ const PHRASES = [
   {
     "id": "sp_pos_reason",
     "src": "Причина: укладка позвоночника",
-    "text": "Нарушение укладки: позвоночник смещён или поясничный отдел не полностью в кадре"
+    "text": "Укладка позвоночника: поле смещено — проверьте, видны ли края подвздошных костей и половина Th12"
   },
   {
     "id": "sp_axis_reason",
     "src": "Причина: ось позвоночника",
-    "text": "Ось позвоночника наклонена относительно оси стола"
+    "text": "Ось позвоночника не выровнена по оси стола"
   },
   {
     "id": "hip_roi_reason",
     "src": "Причина: область интереса бедра",
-    "text": "Кость слишком близко к краю кадра или поле сканирования короткое"
+    "text": "Область интереса бедра: проверьте, вся ли зона интереса вошла в кадр"
   },
   {
     "id": "ok",

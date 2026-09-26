@@ -1,16 +1,16 @@
 {
  "demo": true,
- "demo_note": "Партия из 10 снимков обучающей выборки заказчика, обработана сервисом DensitoAI 2.4.0 без изменений: 5 с нарушениями по всем пяти критериям ТЗ, остальные — норма. Каждый кадр подписан: что отметил эксперт и что сказал сервис. Пропусков в партии: 1 — показаны намеренно, чтобы была видна граница возможностей. ФИО и даты исследований вымышленные, личных данных в файлах нет.",
+ "demo_note": "Партия из 10 снимков обучающей выборки заказчика, обработана сервисом DensitoAI 2.4.0 без изменений: 5 с нарушениями по всем пяти критериям ТЗ, остальные — норма. Каждый кадр подписан: что отметил эксперт и что сказал сервис. Пропусков в партии: 1 — показаны намеренно, чтобы была видна граница возможностей. Личных данных в файлах нет.",
  "job_id": "demo",
  "request_id": "demo",
  "model_version": "2.4.0",
- "config_hash": "d97d54aaacd2",
+ "config_hash": "b17b7951447d",
  "summary": {
   "n_files": 10,
   "n_failures": 0,
   "n_violations": 5,
-  "total_processing_time_s": 11.791,
-  "wall_time_s": 24.168,
+  "total_processing_time_s": 4.142,
+  "wall_time_s": 8.809,
   "n_studies": 10,
   "n_files_uploaded": 10,
   "bytes_uploaded": 826834
@@ -32,9 +32,11 @@
    "violation_type": "Некорректная укладка;Присутствуют посторонние предметы",
    "quality_prob": 0.934071,
    "processing_status": "Success",
-   "time_of_processing": 2.2271,
-   "bonus_overlay_dcm_download": "/api/results/20260923_150418_1ec248/row0000_overlay.dcm?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
-   "seg_png": "/api/results/20260923_150418_1ec248/row0000_seg.png?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
+   "time_of_processing": 0.917,
+   "bonus_overlay_dcm_download": "/api/results/20260926_081025_523ca0/row0000_overlay.dcm?t=4JxNSRVCGWajMHPaflafFvkzc4fwFDxs",
+   "seg_png": "/api/results/20260926_081025_523ca0/row0000_seg.png?t=4JxNSRVCGWajMHPaflafFvkzc4fwFDxs",
+   "patient": "Иванова М. П.",
+   "study_date": "02.09.2026",
    "region_supported": true,
    "region_support_reason": "",
    "study_completeness": {
@@ -271,11 +273,6 @@
      }
     ]
    },
-   "bonus_overlay_png_url": "assets/demo/01_poz.png",
-   "demo_role": "укладка позвоночника — эксперт отметил, сервис нашёл",
-   "demo_miss": false,
-   "patient": "Иванова М. П.",
-   "study_date": "02.09.2026",
    "study_priority": {
     "status": "action",
     "action_code": "PA-RETAKE",
@@ -301,7 +298,10 @@
     ],
     "n_others": 1,
     "rule": "максимальный относительный запас над порогом (score - threshold) / (1 - threshold)"
-   }
+   },
+   "bonus_overlay_png_url": "assets/demo/01_poz.png",
+   "demo_role": "укладка позвоночника — эксперт отметил, сервис нашёл",
+   "demo_miss": false
   },
   {
    "path_to_study": "02_POZ.dcm",
@@ -310,11 +310,13 @@
    "anatomical_region": "Поясничный отдел позвоночника",
    "quality_class": 1,
    "violation_type": "Не выравнена ось позвоночника",
-   "quality_prob": 0.93884,
+   "quality_prob": 0.938841,
    "processing_status": "Success",
-   "time_of_processing": 1.4627,
-   "bonus_overlay_dcm_download": "/api/results/20260923_150418_1ec248/row0001_overlay.dcm?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
-   "seg_png": "/api/results/20260923_150418_1ec248/row0001_seg.png?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
+   "time_of_processing": 0.4638,
+   "bonus_overlay_dcm_download": "/api/results/20260926_081025_523ca0/row0001_overlay.dcm?t=4JxNSRVCGWajMHPaflafFvkzc4fwFDxs",
+   "seg_png": "/api/results/20260926_081025_523ca0/row0001_seg.png?t=4JxNSRVCGWajMHPaflafFvkzc4fwFDxs",
+   "patient": "Смирнова О. В.",
+   "study_date": "04.09.2026",
    "region_supported": true,
    "region_support_reason": "",
    "study_completeness": {
@@ -551,11 +553,6 @@
      }
     ]
    },
-   "bonus_overlay_png_url": "assets/demo/02_poz.png",
-   "demo_role": "ось позвоночника — эксперт отметил, сервис нашёл",
-   "demo_miss": false,
-   "patient": "Смирнова О. В.",
-   "study_date": "04.09.2026",
    "study_priority": {
     "status": "action",
     "action_code": "PA-RETAKE",
@@ -570,7 +567,10 @@
     "others": [],
     "n_others": 0,
     "rule": "максимальный относительный запас над порогом (score - threshold) / (1 - threshold)"
-   }
+   },
+   "bonus_overlay_png_url": "assets/demo/02_poz.png",
+   "demo_role": "ось позвоночника — эксперт отметил, сервис нашёл",
+   "demo_miss": false
   },
   {
    "path_to_study": "03_POZ.dcm",
@@ -581,9 +581,11 @@
    "violation_type": "Присутствуют посторонние предметы",
    "quality_prob": 0.942169,
    "processing_status": "Success",
-   "time_of_processing": 1.4869,
-   "bonus_overlay_dcm_download": "/api/results/20260923_150418_1ec248/row0002_overlay.dcm?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
-   "seg_png": "/api/results/20260923_150418_1ec248/row0002_seg.png?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
+   "time_of_processing": 0.422,
+   "bonus_overlay_dcm_download": "/api/results/20260926_081025_523ca0/row0002_overlay.dcm?t=4JxNSRVCGWajMHPaflafFvkzc4fwFDxs",
+   "seg_png": "/api/results/20260926_081025_523ca0/row0002_seg.png?t=4JxNSRVCGWajMHPaflafFvkzc4fwFDxs",
+   "patient": "Кузнецова Н. С.",
+   "study_date": "08.09.2026",
    "region_supported": true,
    "region_support_reason": "",
    "study_completeness": {
@@ -820,11 +822,6 @@
      }
     ]
    },
-   "bonus_overlay_png_url": "assets/demo/03_poz.png",
-   "demo_role": "посторонние предметы — эксперт отметил, сервис нашёл",
-   "demo_miss": false,
-   "patient": "Кузнецова Н. С.",
-   "study_date": "08.09.2026",
    "study_priority": {
     "status": "action",
     "action_code": "PA-RETAKE",
@@ -839,7 +836,10 @@
     "others": [],
     "n_others": 0,
     "rule": "максимальный относительный запас над порогом (score - threshold) / (1 - threshold)"
-   }
+   },
+   "bonus_overlay_png_url": "assets/demo/03_poz.png",
+   "demo_role": "посторонние предметы — эксперт отметил, сервис нашёл",
+   "demo_miss": false
   },
   {
    "path_to_study": "04_BEDRO.dcm",
@@ -850,9 +850,11 @@
    "violation_type": "Некорректная укладка",
    "quality_prob": 0.990019,
    "processing_status": "Success",
-   "time_of_processing": 0.7188,
-   "bonus_overlay_dcm_download": "/api/results/20260923_150418_1ec248/row0003_overlay.dcm?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
-   "seg_png": "/api/results/20260923_150418_1ec248/row0003_seg.png?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
+   "time_of_processing": 0.2498,
+   "bonus_overlay_dcm_download": "/api/results/20260926_081025_523ca0/row0003_overlay.dcm?t=4JxNSRVCGWajMHPaflafFvkzc4fwFDxs",
+   "seg_png": "/api/results/20260926_081025_523ca0/row0003_seg.png?t=4JxNSRVCGWajMHPaflafFvkzc4fwFDxs",
+   "patient": "Попов А. Н.",
+   "study_date": "10.09.2026",
    "region_supported": true,
    "region_support_reason": "",
    "study_completeness": {
@@ -1086,11 +1088,6 @@
      }
     ]
    },
-   "bonus_overlay_png_url": "assets/demo/04_bedro.png",
-   "demo_role": "укладка бедра — эксперт отметил, сервис нашёл",
-   "demo_miss": false,
-   "patient": "Попов А. Н.",
-   "study_date": "10.09.2026",
    "study_priority": {
     "status": "action",
     "action_code": "PA-RETAKE",
@@ -1105,7 +1102,10 @@
     "others": [],
     "n_others": 0,
     "rule": "максимальный относительный запас над порогом (score - threshold) / (1 - threshold)"
-   }
+   },
+   "bonus_overlay_png_url": "assets/demo/04_bedro.png",
+   "demo_role": "укладка бедра — эксперт отметил, сервис нашёл",
+   "demo_miss": false
   },
   {
    "path_to_study": "05_BEDRO.dcm",
@@ -1116,9 +1116,11 @@
    "violation_type": "Некорректная укладка;Некорректная область интереса",
    "quality_prob": 0.981872,
    "processing_status": "Success",
-   "time_of_processing": 0.7305,
-   "bonus_overlay_dcm_download": "/api/results/20260923_150418_1ec248/row0004_overlay.dcm?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
-   "seg_png": "/api/results/20260923_150418_1ec248/row0004_seg.png?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
+   "time_of_processing": 0.2752,
+   "bonus_overlay_dcm_download": "/api/results/20260926_081025_523ca0/row0004_overlay.dcm?t=4JxNSRVCGWajMHPaflafFvkzc4fwFDxs",
+   "seg_png": "/api/results/20260926_081025_523ca0/row0004_seg.png?t=4JxNSRVCGWajMHPaflafFvkzc4fwFDxs",
+   "patient": "Иванова М. П.",
+   "study_date": "11.09.2026",
    "region_supported": true,
    "region_support_reason": "",
    "study_completeness": {
@@ -1388,11 +1390,6 @@
      }
     ]
    },
-   "bonus_overlay_png_url": "assets/demo/05_bedro.png",
-   "demo_role": "область интереса — эксперт отметил, сервис нашёл",
-   "demo_miss": false,
-   "patient": "Иванова М. П.",
-   "study_date": "11.09.2026",
    "study_priority": {
     "status": "action",
     "action_code": "PA-RESCAN",
@@ -1418,7 +1415,10 @@
     ],
     "n_others": 1,
     "rule": "максимальный относительный запас над порогом (score - threshold) / (1 - threshold)"
-   }
+   },
+   "bonus_overlay_png_url": "assets/demo/05_bedro.png",
+   "demo_role": "область интереса — эксперт отметил, сервис нашёл",
+   "demo_miss": false
   },
   {
    "path_to_study": "06_BEDRO.dcm",
@@ -1429,9 +1429,11 @@
    "violation_type": "",
    "quality_prob": 0.042674,
    "processing_status": "Success",
-   "time_of_processing": 0.9319,
-   "bonus_overlay_dcm_download": "/api/results/20260923_150418_1ec248/row0005_overlay.dcm?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
-   "seg_png": "/api/results/20260923_150418_1ec248/row0005_seg.png?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
+   "time_of_processing": 0.291,
+   "bonus_overlay_dcm_download": "/api/results/20260926_081025_523ca0/row0005_overlay.dcm?t=4JxNSRVCGWajMHPaflafFvkzc4fwFDxs",
+   "seg_png": "/api/results/20260926_081025_523ca0/row0005_seg.png?t=4JxNSRVCGWajMHPaflafFvkzc4fwFDxs",
+   "patient": "Соколова Е. А.",
+   "study_date": "15.09.2026",
    "region_supported": true,
    "region_support_reason": "",
    "study_completeness": {
@@ -1665,11 +1667,6 @@
      }
     ]
    },
-   "bonus_overlay_png_url": "assets/demo/06_bedro.png",
-   "demo_role": "норма — эксперт и сервис согласны",
-   "demo_miss": false,
-   "patient": "Соколова Е. А.",
-   "study_date": "15.09.2026",
    "study_priority": {
     "status": "ok",
     "action_code": "PA-NONE",
@@ -1684,7 +1681,10 @@
     "others": [],
     "n_others": 0,
     "rule": "максимальный относительный запас над порогом (score - threshold) / (1 - threshold)"
-   }
+   },
+   "bonus_overlay_png_url": "assets/demo/06_bedro.png",
+   "demo_role": "норма — эксперт и сервис согласны",
+   "demo_miss": false
   },
   {
    "path_to_study": "07_BEDRO.dcm",
@@ -1695,9 +1695,11 @@
    "violation_type": "",
    "quality_prob": 0.069782,
    "processing_status": "Success",
-   "time_of_processing": 0.9191,
-   "bonus_overlay_dcm_download": "/api/results/20260923_150418_1ec248/row0006_overlay.dcm?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
-   "seg_png": "/api/results/20260923_150418_1ec248/row0006_seg.png?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
+   "time_of_processing": 0.3117,
+   "bonus_overlay_dcm_download": "/api/results/20260926_081025_523ca0/row0006_overlay.dcm?t=4JxNSRVCGWajMHPaflafFvkzc4fwFDxs",
+   "seg_png": "/api/results/20260926_081025_523ca0/row0006_seg.png?t=4JxNSRVCGWajMHPaflafFvkzc4fwFDxs",
+   "patient": "Лебедева Т. И.",
+   "study_date": "16.09.2026",
    "region_supported": true,
    "region_support_reason": "",
    "study_completeness": {
@@ -1931,11 +1933,6 @@
      }
     ]
    },
-   "bonus_overlay_png_url": "assets/demo/07_bedro.png",
-   "demo_role": "норма — эксперт и сервис согласны",
-   "demo_miss": false,
-   "patient": "Лебедева Т. И.",
-   "study_date": "16.09.2026",
    "study_priority": {
     "status": "ok",
     "action_code": "PA-NONE",
@@ -1950,7 +1947,10 @@
     "others": [],
     "n_others": 0,
     "rule": "максимальный относительный запас над порогом (score - threshold) / (1 - threshold)"
-   }
+   },
+   "bonus_overlay_png_url": "assets/demo/07_bedro.png",
+   "demo_role": "норма — эксперт и сервис согласны",
+   "demo_miss": false
   },
   {
    "path_to_study": "08_POZ.dcm",
@@ -1961,9 +1961,11 @@
    "violation_type": "",
    "quality_prob": 0.125883,
    "processing_status": "Success",
-   "time_of_processing": 1.3472,
-   "bonus_overlay_dcm_download": "/api/results/20260923_150418_1ec248/row0007_overlay.dcm?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
-   "seg_png": "/api/results/20260923_150418_1ec248/row0007_seg.png?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
+   "time_of_processing": 0.5484,
+   "bonus_overlay_dcm_download": "/api/results/20260926_081025_523ca0/row0007_overlay.dcm?t=4JxNSRVCGWajMHPaflafFvkzc4fwFDxs",
+   "seg_png": "/api/results/20260926_081025_523ca0/row0007_seg.png?t=4JxNSRVCGWajMHPaflafFvkzc4fwFDxs",
+   "patient": "Семёнов П. В.",
+   "study_date": "17.09.2026",
    "region_supported": true,
    "region_support_reason": "",
    "study_completeness": {
@@ -2200,11 +2202,6 @@
      }
     ]
    },
-   "bonus_overlay_png_url": "assets/demo/08_poz.png",
-   "demo_role": "норма — эксперт и сервис согласны",
-   "demo_miss": false,
-   "patient": "Семёнов П. В.",
-   "study_date": "17.09.2026",
    "study_priority": {
     "status": "ok",
     "action_code": "PA-NONE",
@@ -2219,7 +2216,10 @@
     "others": [],
     "n_others": 0,
     "rule": "максимальный относительный запас над порогом (score - threshold) / (1 - threshold)"
-   }
+   },
+   "bonus_overlay_png_url": "assets/demo/08_poz.png",
+   "demo_role": "норма — эксперт и сервис согласны",
+   "demo_miss": false
   },
   {
    "path_to_study": "09_POZ.dcm",
@@ -2230,9 +2230,11 @@
    "violation_type": "",
    "quality_prob": 0.164376,
    "processing_status": "Success",
-   "time_of_processing": 1.334,
-   "bonus_overlay_dcm_download": "/api/results/20260923_150418_1ec248/row0008_overlay.dcm?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
-   "seg_png": "/api/results/20260923_150418_1ec248/row0008_seg.png?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
+   "time_of_processing": 0.4074,
+   "bonus_overlay_dcm_download": "/api/results/20260926_081025_523ca0/row0008_overlay.dcm?t=4JxNSRVCGWajMHPaflafFvkzc4fwFDxs",
+   "seg_png": "/api/results/20260926_081025_523ca0/row0008_seg.png?t=4JxNSRVCGWajMHPaflafFvkzc4fwFDxs",
+   "patient": "Морозова Г. Ф.",
+   "study_date": "18.09.2026",
    "region_supported": true,
    "region_support_reason": "",
    "study_completeness": {
@@ -2469,11 +2471,6 @@
      }
     ]
    },
-   "bonus_overlay_png_url": "assets/demo/09_poz.png",
-   "demo_role": "норма — эксперт и сервис согласны",
-   "demo_miss": false,
-   "patient": "Морозова Г. Ф.",
-   "study_date": "18.09.2026",
    "study_priority": {
     "status": "ok",
     "action_code": "PA-NONE",
@@ -2488,7 +2485,10 @@
     "others": [],
     "n_others": 0,
     "rule": "максимальный относительный запас над порогом (score - threshold) / (1 - threshold)"
-   }
+   },
+   "bonus_overlay_png_url": "assets/demo/09_poz.png",
+   "demo_role": "норма — эксперт и сервис согласны",
+   "demo_miss": false
   },
   {
    "path_to_study": "10_BEDRO.dcm",
@@ -2499,9 +2499,11 @@
    "violation_type": "",
    "quality_prob": 0.452654,
    "processing_status": "Success",
-   "time_of_processing": 0.6329,
-   "bonus_overlay_dcm_download": "/api/results/20260923_150418_1ec248/row0009_overlay.dcm?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
-   "seg_png": "/api/results/20260923_150418_1ec248/row0009_seg.png?t=OUo9ApMA-jic2SsfBATzA-zjadYZqY-i",
+   "time_of_processing": 0.256,
+   "bonus_overlay_dcm_download": "/api/results/20260926_081025_523ca0/row0009_overlay.dcm?t=4JxNSRVCGWajMHPaflafFvkzc4fwFDxs",
+   "seg_png": "/api/results/20260926_081025_523ca0/row0009_seg.png?t=4JxNSRVCGWajMHPaflafFvkzc4fwFDxs",
+   "patient": "Смирнова О. В.",
+   "study_date": "22.09.2026",
    "region_supported": true,
    "region_support_reason": "",
    "study_completeness": {
@@ -2758,11 +2760,6 @@
      }
     ]
    },
-   "bonus_overlay_png_url": "assets/demo/10_bedro.png",
-   "demo_role": "пропуск: эксперт отметил область интереса, сервис остался ниже порога",
-   "demo_miss": true,
-   "patient": "Смирнова О. В.",
-   "study_date": "22.09.2026",
    "study_priority": {
     "status": "ok",
     "action_code": "PA-NONE",
@@ -2777,7 +2774,10 @@
     "others": [],
     "n_others": 0,
     "rule": "максимальный относительный запас над порогом (score - threshold) / (1 - threshold)"
-   }
+   },
+   "bonus_overlay_png_url": "assets/demo/10_bedro.png",
+   "demo_role": "пропуск: эксперт отметил область интереса, сервис остался ниже порога",
+   "demo_miss": true
   }
  ],
  "study_priority": {

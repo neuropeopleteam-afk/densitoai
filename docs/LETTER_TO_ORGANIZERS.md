@@ -11,8 +11,9 @@
 
 | Что | Где |
 |---|---|
-| Публичный репозиторий (код, веса, документация) | `git clone https://densito.ru/git/densitoai.git` — просмотр: https://densito.ru/git/browse?p=densitoai.git;a=summary |
-| Работающая демонстрация (веб-интерфейс + API) | https://densito.ru (логин `demo`, пароль `Hakaton`) |
+| Публичный репозиторий (код, веса, документация) | `git clone https://github.com/neuropeopleteam-afk/densitoai.git` — просмотр: https://github.com/neuropeopleteam-afk/densitoai; образ Docker и исходники релиза 2.4.0 — https://github.com/neuropeopleteam-afk/densitoai/releases |
+| Работающая демонстрация (веб-интерфейс + API) | https://densito.ru |
+| Проверка сервиса вслепую на своих снимках | https://densito.ru/expert/ — загрузите DICOM, оцените сами, нажмите «Завершить» и сравните с сервисом |
 | Swagger API | https://densito.ru/docs |
 
 Все веса моделей лежат в репозитории (`models/`, включая офлайн-веса EfficientNet-B0 в
@@ -21,8 +22,8 @@
 ## Как проверить за 3 команды
 
 ```bash
-git clone https://densito.ru/git/densitoai.git && cd densitoai
-./build_and_run.sh build                      # docker build + самопроверка на образце «Для теста.zip»
+git clone https://github.com/neuropeopleteam-afk/densitoai.git && cd densitoai
+./build_and_run.sh build                      # docker build + самопроверка
 ./build_and_run.sh run /path/to/test_dicoms ./outputs   # → outputs/results.csv и results.xlsx
 ```
 

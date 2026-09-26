@@ -1052,7 +1052,7 @@ function normEval(key, v, hip, unitFallback, d) {
     const psx = Array.isArray(d.pixel_spacing_mm_default) ? Number(d.pixel_spacing_mm_default[1]) : 0.6;
     if (Number.isFinite(cols) && cols > 0) valueText = `${fmtNum(absv / 100 * cols * psx, 0)} мм · ${fmtNum(absv, 1)} % ширины ${v > 0 ? '(вправо по снимку)' : v < 0 ? '(влево по снимку)' : ''}`.trim();
   }
-  const out = { key, label: (n && n.label) || null, valueText, normText: '—', guideText: '', status: 'ref', statusText: 'справочно', value: v };
+  const out = { key, label: (n && n.label) ? n.label + (key === 'metal_metal_area_mm2' ? ' (справочно: решает модель по изображению, а не площадь)' : '') : null, valueText, normText: '—', guideText: '', status: 'ref', statusText: 'справочно', value: v };
   if (!n) return out;
   // Если после округления измерение выглядит равным границе, а по сырому значению за ней —
   // показываем на один знак точнее, чтобы подпись и оценка не противоречили друг другу.
@@ -1323,7 +1323,7 @@ function techDetails(r, dec) {
   const kvAdd = (k, v, mono) => { kv.appendChild(el('div', { text: k })); kv.appendChild(el('div', { class: mono ? 'mono' : '', text: v })); };
   kvAdd('Область', (r.anatomical_region || '—') + (SIDE[d.internal_region] ? `, ${SIDE[d.internal_region]} бедро` : '') + (d.region_source ? ` · определена: ${regionSource(d.region_source)}` : ''));
   kvAdd('quality_class', String(r.quality_class ?? '—'));
-  kvAdd('quality_prob', fmt(r.quality_prob) + (d.quality_prob_raw !== null && d.quality_prob_raw !== undefined && Math.abs(d.quality_prob_raw - r.quality_prob) > 0.0005 ? ` (до согласования с классом: ${fmt(d.quality_prob_raw)})` : ''));
+  kvAdd('quality_prob', fmt(r.quality_prob) + ' · ранг риска, не вероятность' + (d.quality_prob_raw !== null && d.quality_prob_raw !== undefined && Math.abs(d.quality_prob_raw - r.quality_prob) > 0.0005 ? ` (до согласования с классом: ${fmt(d.quality_prob_raw)})` : ''));
   if (dec && dec.margin !== null && dec.margin !== undefined) kvAdd('Запас над порогом', fmt(dec.margin, 3) + (dec.borderline ? ' (спорно)' : ''));
   if (d.risk_level !== undefined && d.risk_level !== null) kvAdd('risk_level', String(d.risk_level));
   if (d.needs_review !== undefined && d.needs_review !== null) kvAdd('needs_review', String(d.needs_review));
@@ -2325,7 +2325,7 @@ async function regExport() {
   } catch (e) { const m = document.getElementById('regMeta'); if (m) m.textContent = e.message; }
 }
 function regBadgeResult(s) {
-  const map = { violation: ['violation', 'нарушение'], ok: ['ok', 'норма'], fail: ['fail', 'ошибка'], unsupported: ['neutral', 'вне области'] };
+  const map = { violation: ['violation', 'нарушение'], ok: ['ok', 'норма'], fail: ['fail', 'ошибка'], unsupported: ['neutral', 'вне области'], hidden: ['neutral', 'скрыто до оценки'] };
   const [c, t] = map[s.verdict] || ['neutral', s.verdict];
   const box = el('span', {}, [el('span', { class: 'badge ' + c, text: t + (s.n_violation > 1 ? ' · ' + s.n_violation : '') })]);
   if ((s.flags || []).includes('uncertain')) box.appendChild(el('span', { class: 'badge uncertain', text: 'не уверен' }));
@@ -2367,7 +2367,8 @@ function regDetail(host, d) {
   const IMG_LIMIT = 5;
   d.images.forEach((im, idx) => {
     const res = im.processing_status && im.processing_status !== 'Success' ? el('span', { class: 'badge fail', text: 'ошибка' })
-      : (String(im.quality_class) === '1' ? el('span', { class: 'badge violation', text: 'нарушение' }) : el('span', { class: 'badge ok', text: 'норма' }));
+      : (im.hidden ? el('span', { class: 'badge neutral', text: 'скрыто до оценки', title: 'идёт слепая экспертная проверка: решение сервиса откроется после «Завершить»' })
+      : (String(im.quality_class) === '1' ? el('span', { class: 'badge violation', text: 'нарушение' }) : el('span', { class: 'badge ok', text: 'норма' })));
     imgs.appendChild(el('div', { class: 'reg-img' }, [
       el('div', {}, [el('div', { class: 'fn', text: im.file_name || im.image_uid }),
         el('div', { class: 'sub2', text: [REGION_SHORT[im.region] || im.region, im.violation_type ? im.violation_type.split(';').join(', ') : '', im.quality_prob !== null ? 'quality_prob ' + fmt(im.quality_prob) : '', im.uncertain ? 'не уверен' : ''].filter(Boolean).join(' · ') })]),
@@ -2377,7 +2378,9 @@ function regDetail(host, d) {
     if (idx >= IMG_LIMIT) imgs.lastChild.style.display = 'none';
   });
   const pii = el('div', { class: 'reg-pii', style: 'margin:0 0 14px' });
-  if (d.pii) {
+  if (d.pii && d.pii.note) {
+    pii.appendChild(el('div', { text: d.pii.note }));
+  } else if (d.pii) {
     pii.appendChild(el('div', { text: 'Персональные данные (просмотр записан в журнал доступа)' }));
     pii.appendChild(el('div', { class: 'kv' }, [['ФИО', d.pii.patient_name], ['ID пациента', d.pii.patient_id || '—'], ['Дата рождения', d.pii.birth_date || '—'], ['Пол', ({ F: 'Ж', M: 'М' })[d.pii.sex] || d.pii.sex || '—'], ['№ направления', d.pii.accession || '—']].flatMap(([k, v]) => [el('span', { text: k }), el('span', { text: v })])));
   } else if (d.has_pii) {

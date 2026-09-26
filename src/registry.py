@@ -186,6 +186,14 @@ class Registry:
         self._fails: Dict[str, Tuple[int, float]] = {}
         with self._conn() as c:
             c.executescript(SCHEMA)
+        # загрузки, решения по которым скрыты (своя слепая экспертная проверка не завершена); задаётся expert_review
+        self.hidden_jobs: Optional[Any] = None
+
+    def _hidden(self) -> set:
+        try:
+            return set(self.hidden_jobs()) if self.hidden_jobs else set()
+        except Exception:  # noqa: BLE001 — ошибка экспертной части не ломает журнал
+            return set()
 
     # ---- хранилище
     def _conn(self) -> sqlite3.Connection:
@@ -348,7 +356,10 @@ class Registry:
         # отбираем исследования, у которых хотя бы один снимок подходит под текст/дату/область
         with self._conn() as c:
             uids = [r[0] for r in c.execute(f"SELECT DISTINCT study_uid FROM images WHERE {base} AND study_uid!=''", args)]
-            studies = [self._study_summary(c, u) for u in uids]
+            hid = self._hidden()
+            studies = [self._study_summary(c, u, hid) for u in uids]
+        if violation:  # фильтр по типу нарушения не должен раскрывать скрытые решения
+            studies = [s for s in studies if s["verdict"] != "hidden"]
         if result:
             studies = [s for s in studies if result in s["flags"]]
         if status in STATUSES:
@@ -361,8 +372,13 @@ class Registry:
         page = studies[int(offset or 0): int(offset or 0) + limit]
         return {"total": total, "offset": int(offset or 0), "limit": limit, "studies": page}
 
-    def _study_summary(self, c: sqlite3.Connection, uid: str) -> Dict[str, Any]:
+    def _study_summary(self, c: sqlite3.Connection, uid: str, hid: Optional[set] = None) -> Dict[str, Any]:
         imgs = [dict(r) for r in c.execute("SELECT * FROM images WHERE study_uid=? ORDER BY created_at DESC, row_idx", (uid,))]
+        hid = self._hidden() if hid is None else hid
+        hidden = any(im["job_id"] in hid for im in imgs)
+        if hidden:  # идёт слепая проверка на этих снимках: решение сервиса не показываем нигде в журнале
+            for im in imgs:
+                im.update(quality_class="", violation_type="", quality_prob=None, uncertain=0)
         # последняя загрузка каждого снимка (повторная загрузка того же файла не дублирует строку)
         seen, latest = set(), []
         for im in imgs:
@@ -382,6 +398,8 @@ class Registry:
                 flags.add("fail")
             elif not im["region_supported"]:
                 flags.add("unsupported")
+            elif hidden:
+                flags.add("hidden")
             elif im["quality_class"] == "1":
                 flags.add("violation")
             else:
@@ -407,8 +425,9 @@ class Registry:
             "max_prob": round(max(probs), 3) if probs else None,
             "violations": viol,
             "flags": sorted(flags),
-            "verdict": "fail" if "fail" in flags else ("violation" if "violation" in flags else
-                        ("unsupported" if flags == {"unsupported"} else "ok")),
+            "verdict": "hidden" if hidden else ("fail" if "fail" in flags else ("violation" if "violation" in flags else
+                        ("unsupported" if flags == {"unsupported"} else "ok"))),
+            "hidden": hidden,
             "status": st["status"] if st else "new",
             "status_title": STATUSES[st["status"] if st else "new"],
             "status_by": (f"{st['author']} ({ROLES.get(st['role'], st['role'])})" if st else ""),
@@ -434,7 +453,16 @@ class Registry:
                 "SELECT id,image_uid,author,role,text,at FROM comments WHERE study_uid=? ORDER BY id", (uid,))]
             log = [dict(r) for r in c.execute(
                 "SELECT status,author,role,at FROM status_log WHERE study_uid=? ORDER BY id", (uid,))]
+        if s.get("hidden"):
+            for im in imgs:
+                im.update(quality_class="", violation_type="", quality_prob=None, uncertain=0, hidden=True)
         pii = None
+        if reveal and self.open_mode:
+            # открытый стенд без учётных записей: ФИО и данные пациента не раскрываются никому
+            pii = {"patient_name": "скрыто на открытом стенде", "patient_id": "", "birth_date": "", "sex": "", "accession": "",
+                   "note": "В открытом режиме без учётных записей ФИО не показываются. В больнице — по учётной записи врача, "
+                           "каждый просмотр пишется в журнал доступа."}
+            reveal = False
         if reveal:
             im = next((x for x in imgs if x["patient_name"] or x["patient_id"]), imgs[0])
             pii = {"patient_name": im["patient_name"] or "обезличено", "patient_id": im["patient_id"],
@@ -443,7 +471,7 @@ class Registry:
         for im in imgs:
             for k in ("patient_name", "patient_id", "birth_date", "sex", "accession"):
                 im.pop(k, None)
-            tok = job_token(im["job_id"]) if job_token else None
+            tok = job_token(im["job_id"]) if (job_token and not s.get("hidden")) else None
             im["card_url"] = f"/#app/job/{im['job_id']}/{tok}" if tok else None
         for x in com:
             x["role_title"] = ROLES.get(x["role"], x["role"])

@@ -93,6 +93,62 @@ def main():
     csvt = er.export_csv(s["id"])
     check("CSV: строка на критерий", csvt.count("\n") == 1 + 8 * 3)
     check("оценки видны в карточке исследования", len(er.for_study(items[1]["study_uid"])) == 1)
+    print("4. своя слепая проверка (загрузил — оценил — увидел решение)")
+    reg.hidden_jobs = er.hidden_jobs
+    org = reg.check_session("open|doctor|%D0%9E%D1%80%D0%B3%D0%B0%D0%BD%D0%B8%D0%B7%D0%B0%D1%82%D0%BE%D1%80")  # «Организатор»
+    job2 = "20260926_120000_ffffff"
+    rows2 = []
+    for i in range(6):
+        hip = i >= 3
+        rows2.append({"path_to_study": f"o{i}.dcm", "study_uid": f"9.9.{i}", "image_uid": f"9.9.{i}.1",
+                      "anatomical_region": "Проксимальный отдел бедра" if hip else "Поясничный отдел позвоночника",
+                      "quality_class": "1" if i in (0, 3) else "0", "violation_type": "Некорректная укладка" if i in (0, 3) else "",
+                      "quality_prob": "0.8", "processing_status": "Failure" if i == 5 else "Success", "region_supported": i != 4,
+                      "details": {"internal_region": "right_hip" if hip else "spine"}})
+    reg.index_rows(job2, rows2, {})
+    (jobs / job2 / "bonus").mkdir(parents=True)
+    for i in range(6):
+        (jobs / job2 / "bonus" / f"row{i:04d}_frame.png").write_bytes(b"\x89PNG" + bytes([i]))
+    check("без ФИО эксперта набор не создаётся", raises(ValueError, er.create_set_from_job, reg.check_session("open|doctor|"), job2))
+    o = er.create_set_from_job(org, job2, "Свои снимки", n_files=6, seed=3, versions={"model_version": "2.4.0", "config_hash": "abc"})
+    check("в набор вошли все 4 годных снимка, без отбора", o["n"] == 4, str(o["n"]))
+    check("отказ и чужая область посчитаны отдельно", o["params"]["skipped"]["failure"] == 1 and o["params"]["skipped"]["unsupported"] == 1)
+    check("хэш набора и версия записаны", len(o["params"]["set_hash"]) == 12 and o["params"]["config_hash"] == "abc")
+    check("слепая выдача: нет study_uid и решения", all(it["study_uid"] is None for it in o["items"]) and "service_class" not in str(o))
+    sr = reg.search()
+    mine = [x for x in sr["studies"] if x["study_uid"].startswith("9.9.")]
+    check("журнал: снимки загрузки видны", len(mine) == 6, str(len(mine)))
+    check("журнал: решение скрыто до завершения", all(x["verdict"] == "hidden" and not x["violations"] and x["n_violation"] == 0
+                                                     for x in mine if x["study_uid"] not in ("9.9.4", "9.9.5")))
+    check("журнал: фильтр по нарушению не раскрывает скрытое",
+          not [x for x in reg.search(violation="укладка")["studies"] if x["study_uid"].startswith("9.9.")])
+    d = reg.study("9.9.0", org, job_token=lambda j: "tok")
+    check("карточка: без вердикта и без ссылки на результат", all(im.get("hidden") and not im["quality_class"] and not im["card_url"]
+                                                                  for im in d["images"]))
+    check("отчёт до завершения закрыт", not er.report_allowed(o["id"], "Организатор"))
+    check("завершить, не оценив все, нельзя", raises(ValueError, er.finish, o["id"], org))
+    lg = er.create_set(doc, 8, seed=2)
+    check("выборка из журнала не берёт снимки незавершённой слепой проверки",
+          all(not it["study_uid"].startswith("9.9.") for it in er.get_set(lg["id"], blind=False)["items"]))
+    for it in o["items"]:
+        crit = {c["code"]: "violation" if it["pos"] == 1 else "ok" for c in it["criteria"]}
+        er.answer(o["id"], it["pos"], org, crit)
+    check("до завершения ответ можно поправить", er.answer(o["id"], 1, org, {c["code"]: "ok" for c in o["items"][0]["criteria"]})["ok"])
+    check("завершение", er.finish(o["id"], org)["ok"])
+    check("после завершения ответ не меняется", raises(ValueError, er.answer, o["id"], 1, org, {c["code"]: "ok" for c in o["items"][0]["criteria"]}))
+    check("отчёт открылся", er.report_allowed(o["id"], "Организатор"))
+    rp2 = er.report(o["id"])
+    check("отчёт: таблица по каждому снимку", len(rp2["per_image"]) == 4 and all(x["expert"] == "норма" for x in rp2["per_image"]))
+    sr2 = [x for x in reg.search()["studies"] if x["study_uid"] in ("9.9.0", "9.9.3")]
+    check("журнал после завершения показывает решение сервиса", sr2 and all(x["verdict"] == "violation" for x in sr2), str([x["verdict"] for x in sr2]))
+    check("журнал: оценки эксперта в карточке", len(er.for_study("9.9.0")) == 1)
+    doc2 = reg.check_session("open|doctor|%D0%98%D0%B2%D0%B0%D0%BD%D0%BE%D0%B2")  # «Иванов»
+    for it in o["items"]:
+        er.answer(o["id"], it["pos"], doc2, {c["code"]: "violation" for c in it["criteria"]})
+    ir = er.report(o["id"])["inter_reader"]
+    check("согласие экспертов между собой посчитано", len(ir) == 1 and ir[0]["n"] == 4 and ir[0]["agreement"] == 0.0, str(ir))
+    d2 = reg.study("9.9.0", org, reveal=True)
+    check("открытый стенд: ФИО не раскрываются", d2["pii"] and d2["pii"]["patient_name"] == "скрыто на открытом стенде")
     print("\nИТОГ:", "OK" if not FAILED else f"FAIL ({len(FAILED)})")
     return 0 if not FAILED else 1
 

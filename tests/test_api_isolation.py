@@ -23,7 +23,9 @@ sys.path.insert(0, str(ROOT / "src"))
 from fastapi.testclient import TestClient  # noqa: E402
 import api_server  # noqa: E402
 
-SAMPLES = sorted((ROOT / "tests" / "sample_test_zip" / "Для теста").glob("*.dcm"))
+# образец организаторов, если лежит рядом (в репозитории его нет), иначе синтетические фантомы tests/phantoms
+SAMPLES = sorted((ROOT / "tests" / "sample_test_zip" / "Для теста").glob("*.dcm")) or \
+    sorted((ROOT / "tests" / "phantoms" / "study_01").glob("*.dcm"))
 assert SAMPLES, "нет тестовых DICOM"
 
 client = TestClient(api_server.app)

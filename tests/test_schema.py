@@ -128,8 +128,10 @@ check(schema["x-column-order"] == cfg["output"]["columns"], "порядок 9 к
 check(set(schema["properties"]["processing_status"]["enum"]) == {cfg["output"]["status_success"], cfg["output"]["status_failure"]},
       "статусы = config.yaml")
 
-# 3. прогон на образце организаторов с --sr-study
+# 3. прогон с --sr-study: образец организаторов, если лежит рядом (в репозитории его нет), иначе синтетические фантомы
 sample = ROOT / "tests" / "sample_test_zip"
+if not sample.exists():
+    sample = ROOT / "tests" / "phantoms" / "study_01"
 if sample.exists():
     out = Path(tempfile.mkdtemp(prefix="densito_schema_test_")) / "results.csv"
     cmd = [sys.executable, str(ROOT / "src" / "inference.py"), "--input", str(sample), "--output", str(out), "--sr-study"]
@@ -157,7 +159,7 @@ if sample.exists():
              for p in sorted((out2.parent / "sr").glob("*_SR.dcm"))}
     check(uids1 == uids2, "UID SR детерминированы (повторный прогон -> те же Series/SOP UID)")
 else:
-    print("SKIP tests/sample_test_zip отсутствует")
+    print("SKIP нет ни образца организаторов, ни фантомов")
 
 # 4. API-ответ по схеме
 try:
@@ -165,7 +167,7 @@ try:
     os.environ["DENSITO_OUTPUT_DIR"] = tempfile.mkdtemp(prefix="densito_schema_api_")
     import api_server  # noqa: E402
     client = TestClient(api_server.app)
-    files = sorted((sample / "Для теста").glob("*.dcm"))[:2]
+    files = sorted(sample.rglob("*.dcm"))[:2]
     resp = client.post("/api/analyze", files=[("files", (p.name, p.read_bytes(), "application/dicom")) for p in files])
     check(resp.status_code == 200, f"/api/analyze -> {resp.status_code}")
     if resp.status_code == 200:

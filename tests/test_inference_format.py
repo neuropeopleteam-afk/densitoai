@@ -36,7 +36,8 @@ SRC = ROOT / "src"
 sys.path.insert(0, str(SRC))
 from inference import validate_output_csv, load_config  # noqa: E402
 
-SAMPLE_DIR = ROOT / "tests" / "sample_test_zip"
+SAMPLE_DIR = ROOT / "tests" / "sample_test_zip"   # образец организаторов: в репозитории его нет
+PHANTOM_DIR = ROOT / "tests" / "phantoms"
 LABELS = ROOT / "data" / "labels_full.csv"
 
 
@@ -72,6 +73,11 @@ def build_test_dir(tmp: Path) -> dict:
         for f in SAMPLE_DIR.rglob("*.dcm"):
             shutil.copy(f, tmp / f.name)
             expect[f.name] = "Success"
+    else:  # синтетические фантомы (tools/make_phantoms.py): по три снимка в четырёх исследованиях
+        for f in sorted(PHANTOM_DIR.glob("study_0*/*.dcm")):
+            name = f"{f.parent.name}_{f.name}"
+            shutil.copy(f, tmp / name)
+            expect[name] = "Success"
     # 2) 8 файлов из обучающей выборки (по регионам), если доступны
     if LABELS.exists():
         df = pd.read_csv(LABELS)

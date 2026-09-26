@@ -71,7 +71,7 @@ run_batch() {
 
 run_api() {
   local port="${1:-8000}"
-  local in="${2:-./tests/sample_test_zip}"
+  local in="${2:-./tests/phantoms}"
   local out="${3:-./outputs}"
   mkdir -p "${out}"
   echo ">>> API: http://localhost:${port}/docs  (Ctrl+C для остановки)"

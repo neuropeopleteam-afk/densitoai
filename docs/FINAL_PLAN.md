@@ -23,7 +23,7 @@
 4. Честная валидация: repeated GroupKFold (5×5), study-level bootstrap ДИ, пороги без
    подгонки на <10 позитивах (физические/prevalence-пороги для редких классов).
 5. Переписать inference.py: обработка каждого файла отдельно, try/except с fallback-строкой,
-   единый config.yaml (пороги, веса — используется и gradcam.py, и demo).
+   единый config.yaml (пороги, веса — используется и heatmap.py, и demo).
 6. Выходной формат строго по официальным ответам:
    `path_to_study, study_uid, image_uid, anatomical_region, quality_class, violation_type,
    quality_prob, processing_status, time_of_processing`.

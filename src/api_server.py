@@ -71,7 +71,7 @@ except Exception as _e:  # noqa: BLE001
     logging.getLogger("densito.api").warning("department_summary недоступен: %s", _e)
 
 try:
-    from fastapi import FastAPI, File, Header, HTTPException, Request, UploadFile
+    from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile
     from fastapi.responses import FileResponse, JSONResponse
     from starlette.concurrency import run_in_threadpool
     from pydantic import BaseModel
@@ -1484,7 +1484,32 @@ registry_mount(app, REGISTRY, _registry_job_token, LOG)
 from expert_review import ExpertReview, mount as expert_mount, save_frames as expert_save_frames  # noqa: E402
 
 EXPERT = ExpertReview(REGISTRY, JOBS_DIR)
+REGISTRY.hidden_jobs = EXPERT.hidden_jobs  # журнал скрывает решения сервиса по незавершённым своим слепым проверкам
 expert_mount(app, REGISTRY, EXPERT)
+
+
+@app.post("/api/expert/upload")
+async def expert_upload(files: List[UploadFile] = File(...), title: str = Form(""),
+                        x_registry_session: Optional[str] = Header(None)):
+    """Слепая проверка на своих снимках: те же правила загрузки и тот же конвейер, что у /api/analyze; снимки
+    попадают в журнал. В ответе нет решений сервиса и кода доступа к задаче — они откроются в отчёте и журнале после
+    того, как загрузивший оценит все снимки и нажмёт «Завершить»."""
+    if not REGISTRY.enabled():
+        raise HTTPException(503, "Журнал исследований не настроен — экспертная проверка работает поверх него.")
+    try:
+        user = REGISTRY.check_session(x_registry_session)
+    except PermissionError as e:
+        raise HTTPException(401, str(e))
+    res = await analyze(files=files, xlsx=False)
+    try:
+        s = EXPERT.create_set_from_job(user, res["job_id"], title, n_files=len(files),
+                                       versions={"model_version": res.get("model_version"), "config_hash": res.get("config_hash")})
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    p = s["params"]
+    return {"set_id": s["id"], "title": s["title"], "n": s["n"], "n_files": len(files), "n_rows": p.get("n_rows"),
+            "skipped": p.get("skipped"), "set_hash": p.get("set_hash"), "model_version": p.get("model_version"),
+            "config_hash": p.get("config_hash")}
 
 
 @app.get("/expert/", include_in_schema=False)

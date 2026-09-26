@@ -27,3 +27,10 @@ tools/review/out/
 
 # резервные копии рядом с файлами
 *.bak_*
+
+# Данные заказчика в репозиторий не кладём: DICOM и архивы — только синтетические фантомы tests/phantoms
+data/sample_test_zip/
+tests/sample_test_zip/
+*.zip
+*.dcm
+!tests/phantoms/**/*.dcm
