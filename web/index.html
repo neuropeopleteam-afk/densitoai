@@ -523,6 +523,8 @@ table.crit tr.flag td { background: var(--error-soft); }
 /* одна ссылка в шапке остаётся доступной на планшете и телефоне */
 body:not(.view-app) .topbar .topnav { display: flex; }
 @media (max-width: 560px) { body:not(.view-app) .topbar .topnav { display: none; } }
+/* остальные разделы в шапке — на широком экране; на планшете остаётся «Под капотом» */
+@media (max-width: 1099px) { .topnav .nav-more { display: none; } }
 
 /* ROI-DECISION:BEGIN — предложение коррекции области интереса с подтверждением специалистом */
 .roi-dec { margin-top: 14px; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; background: var(--surface); }
@@ -721,6 +723,10 @@ body.view-registry .app-head .sub { display: none; }
     <a class="brand" href="#top" data-nav="home"><span class="mark"><img src="assets/neuropeople_logo.png" alt="NEUROPEOPLE"></span>DensitoAI</a>
     <nav class="topnav" aria-label="Разделы">
       <a href="docs.html">Под капотом</a>
+      <a class="nav-more" href="expert/">Экспертная проверка</a>
+      <a class="nav-more" href="review/">Слепая ревизия</a>
+      <a class="nav-more" href="https://densito.ru/lct/">Материалы ЛЦТ</a>
+      <a class="nav-more" href="https://github.com/neuropeopleteam-afk/densitoai">GitHub</a>
     </nav>
     <span class="sp"></span>
     <a class="btn ghost sm topbar-back" href="#top">На главную</a>
