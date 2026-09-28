@@ -1,0 +1,12 @@
+DensitoAI — манифест версии поставки
+версия сервиса:      2.5.0
+config_hash:         cb4d9bc567e2
+образ:               densitoai:2.5.0
+файлов весов:        25
+sha256 списка весов: 517122772e181f8998645b953387b810907c3a9be54237e7701d2d4671d4ca51
+проверено:           config.yaml, src/inference.py, Dockerfile, docker-compose.yml,
+                     README.md, docs/VERIFICATION.md, docs/METRICS_REPORT.md,
+                     docs/DZM_CONFORMANCE.md, docs/EVIDENCE.md, models/MODEL_CARD.md,
+                     web/index.html, web/docs.html, web/review/index.html,
+                     tools/review/kit_light_manifest.json, tools/*.sh
+проверка получателем: docker run --rm --network none densitoai:2.5.0 verify
