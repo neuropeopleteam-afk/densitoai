@@ -42,7 +42,7 @@ docker run --rm -p 127.0.0.1:8000:8000 --user "$(id -u):$(id -g)" -e DENSITO_REG
 ```powershell
 # 1. Скачать образ (659 МБ), проверить контрольную сумму и загрузить
 curl.exe -LO https://github.com/neuropeopleteam-afk/densitoai/raw/release-2.5.0/densitoai-2.5.0-image.tar.gz
-(Get-FileHash .\densitoai-2.5.0-image.tar.gz -Algorithm SHA256).Hash -eq "3FEE1AE9D6D06D8D2ABF7CD80DF6F9C2818470DD663A65813E205D72ECE028FF"   # True
+(Get-FileHash .\densitoai-2.5.0-image.tar.gz -Algorithm SHA256).Hash -eq "2B89C5A52090CDAC20FED6FE1FED777B93ED2A88600CAB7C833B2FB477A18698"   # True
 docker load -i .\densitoai-2.5.0-image.tar.gz
 
 # 2. Самопроверка без сети: 18 из 18
