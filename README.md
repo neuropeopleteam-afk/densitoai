@@ -57,6 +57,7 @@ docker run --rm -p 127.0.0.1:8000:8000 -e DENSITO_REGISTRY_OPEN=1 -v "${PWD}\out
 
 - Образец организаторов «Для теста»: снимок `CR000000_ПОП.dcm` получает «Присутствуют посторонние предметы»
   (quality_prob 0.952) — концы рёбер в верхних углах попадают в зону измерения. Это известное ограничение (§10), не сбой.
+- Если GitHub не отдаёт образ (месячный лимит Git LFS), те же файлы есть на стенде: `curl -u demo:Hakaton -LO https://densito.ru/lct/release/densitoai-2.5.0-image.tar.gz` и `curl -u demo:Hakaton -LO https://densito.ru/lct/release/SHA256SUMS` (в Windows — `curl.exe`); контрольные суммы те же.
 - Сборка из исходников вместо готового образа: `git clone https://github.com/neuropeopleteam-afk/densitoai.git && cd densitoai && ./build_and_run.sh build`
   (5–10 минут, нужен интернет), дальше `NO_BUILD=1 ./build_and_run.sh run /path/to/dicom ./outputs` — без `NO_BUILD=1`
   команды `run`, `api` и `test` каждый раз пересобирают образ.
