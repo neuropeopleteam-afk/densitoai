@@ -1,25 +1,23 @@
 # DensitoAI — автоматический контроль качества DXA-снимков
 
-Сервис для ЛЦТ 2026 (задача Департамента здравоохранения Москвы): по DICOM-изображениям
-рентгеновской денситометрии (DXA) определяет анатомическую область (поясничный отдел
-позвоночника / проксимальный отдел бедра), оценивает, есть ли нарушения качества укладки и
-области интереса, и формирует табличный отчёт строго в формате ТЗ.
+Сервис для ЛЦТ 2026 (задача Департамента здравоохранения Москвы). По DICOM-снимкам рентгеновской
+денситометрии (поясничный отдел позвоночника, проксимальный отдел бедра) определяет область, оценивает
+качество укладки и области интереса и выдаёт таблицу `results.csv` строго в формате ТЗ (9 колонок).
+Работает **полностью локально** на CPU, без интернета; один плохой файл **не прерывает пакет**.
 
-Работает **полностью локально** (CPU, без внешних сервисов), обрабатывает каждый файл
-независимо и **никогда не прерывает пакет** из-за одного плохого файла.
-
-Версия **2.5.0**. Демо: [densito.ru](https://densito.ru) — сайт закрыт общим демо-паролем: логин `demo`, пароль `Hakaton`
-(он же показан на странице входа). Публичный репозиторий без пароля:
-`git clone https://github.com/neuropeopleteam-afk/densitoai.git`; релиз 2.5.0 — образ Docker и исходники — в
-[Releases](https://github.com/neuropeopleteam-afk/densitoai/releases) (файлы лежат в ветке `release-2.5.0`, Git LFS).
-Презентация для жюри — `docs/presentation/DensitoAI_LCT2026_prezentatsiya.pdf`.
+- **Версия:** 2.5.0
+- **Демо:** [densito.ru](https://densito.ru) — логин `demo`, пароль `Hakaton`
+- **Презентация:** [`docs/presentation/DensitoAI_LCT2026_prezentatsiya.pdf`](docs/presentation/DensitoAI_LCT2026_prezentatsiya.pdf)
+- **Образ Docker и исходники:** [релиз 2.5.0](https://github.com/neuropeopleteam-afk/densitoai/releases/tag/v2.5.0) (файлы в ветке `release-2.5.0`, Git LFS)
 
 ## Быстрый старт
 
-Готовый образ из релиза 2.5.0, Linux или WSL, нужен только Docker. Команды выполняются в пустой папке.
+Нужен только Docker. Снимки — папка или zip-архив (zip не распаковывать, сервис распакует сам).
+
+### Linux или WSL
 
 ```bash
-# 1. Скачать образ (659 МБ) и контрольные суммы, проверить и загрузить
+# 1. Скачать образ (659 МБ), проверить контрольную сумму и загрузить
 curl -LO https://github.com/neuropeopleteam-afk/densitoai/raw/release-2.5.0/densitoai-2.5.0-image.tar.gz
 curl -LO https://github.com/neuropeopleteam-afk/densitoai/raw/release-2.5.0/SHA256SUMS
 sha256sum -c SHA256SUMS --ignore-missing        # densitoai-2.5.0-image.tar.gz: OK
@@ -28,7 +26,7 @@ docker load -i densitoai-2.5.0-image.tar.gz      # Loaded image: densitoai:2.5.0
 # 2. Самопроверка без сети: 18 из 18
 docker run --rm --network none densitoai:2.5.0 verify
 
-# 3. Пакетная обработка: папка или zip со снимками -> outputs/results.csv (9 колонок ТЗ)
+# 3. Пакетная обработка -> outputs/results.csv (--user — чтобы контейнер мог писать в outputs)
 mkdir -p outputs
 docker run --rm --network none --user "$(id -u):$(id -g)" \
   -v /path/to/dicom:/data/input:ro -v "$PWD/outputs:/data/output" densitoai:2.5.0 batch
@@ -38,13 +36,31 @@ docker run --rm -p 127.0.0.1:8000:8000 --user "$(id -u):$(id -g)" -e DENSITO_REG
   -v "$PWD/outputs:/data/output" densitoai:2.5.0 api
 ```
 
-- `--user` нужен, чтобы контейнер мог писать в `outputs` (иначе на Linux — `PermissionError`, §13 п. 7).
+### Windows 11 (PowerShell, Docker Desktop запущен)
+
+```powershell
+# 1. Скачать образ (659 МБ), проверить контрольную сумму и загрузить
+curl.exe -LO https://github.com/neuropeopleteam-afk/densitoai/raw/release-2.5.0/densitoai-2.5.0-image.tar.gz
+(Get-FileHash .\densitoai-2.5.0-image.tar.gz -Algorithm SHA256).Hash -eq "3FEE1AE9D6D06D8D2ABF7CD80DF6F9C2818470DD663A65813E205D72ECE028FF"   # True
+docker load -i .\densitoai-2.5.0-image.tar.gz
+
+# 2. Самопроверка без сети: 18 из 18
+docker run --rm --network none densitoai:2.5.0 verify
+
+# 3. Создать папки, положить снимки в input, запустить -> outputs\results.csv
+mkdir input, outputs -Force
+docker run --rm --network none -v "${PWD}\input:/data/input:ro" -v "${PWD}\outputs:/data/output" densitoai:2.5.0 batch
+
+# 4. Веб-кабинет http://localhost:8000/ (остановка — Ctrl+C)
+docker run --rm -p 127.0.0.1:8000:8000 -e DENSITO_REGISTRY_OPEN=1 -v "${PWD}\outputs:/data/output" densitoai:2.5.0 api
+```
+
+- Образец организаторов «Для теста»: снимок `CR000000_ПОП.dcm` получает «Присутствуют посторонние предметы»
+  (quality_prob 0.952) — концы рёбер в верхних углах попадают в зону измерения. Это известное ограничение (§10), не сбой.
 - Сборка из исходников вместо готового образа: `git clone https://github.com/neuropeopleteam-afk/densitoai.git && cd densitoai && ./build_and_run.sh build`
   (5–10 минут, нужен интернет), дальше `NO_BUILD=1 ./build_and_run.sh run /path/to/dicom ./outputs` — без `NO_BUILD=1`
   команды `run`, `api` и `test` каждый раз пересобирают образ.
-- Windows 11 (Docker Desktop, PowerShell) — §4, «Запуск на Windows».
-- Образец организаторов «Для теста»: снимок `CR000000_ПОП.dcm` получает «Присутствуют посторонние предметы»
-  (quality_prob 0.952) — концы рёбер в верхних углах попадают в зону измерения. Это известное ограничение (§10), не сбой.
+- Подробнее о Windows — §4, «Запуск на Windows».
 
 > **Назначение и ограничения.** Программа не является медицинским изделием и не предназначена
 > для диагностики, профилактики, лечения или мониторинга заболеваний. Сервис оценивает
@@ -53,7 +69,7 @@ docker run --rm -p 127.0.0.1:8000:8000 --user "$(id -u):$(id -g)" -e DENSITO_REG
 > поясничного отдела позвоночника и проксимального отдела бедра, оборудование GE Lunar Prodigy;
 > вне этой области применения результат не определён. Источник формулировки —
 > `config.yaml → intended_use`, та же строка отдаётся в `/api/health` и показана в веб-интерфейсе.
-([код на GitHub](https://github.com/neuropeopleteam-afk/densitoai)).
+
 Ключевые документы: `docs/METRICS_REPORT.md` (метрики ТЗ §8.4 с 95 % ДИ),
 `docs/ENGINEERING_REPORT.md`, `docs/qa/` (ответы организаторов и их учёт).
 
