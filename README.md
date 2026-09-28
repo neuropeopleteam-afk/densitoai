@@ -7,6 +7,7 @@
 
 - **Версия:** 2.5.0
 - **Демо:** [densito.ru](https://densito.ru) — логин `demo`, пароль `Hakaton`
+- **Для жюри:** [densito.ru/lct/](https://densito.ru/lct/) — все материалы на одной странице: презентация, паспорт, метрики, проверка врачами, запасная копия образа (тот же логин и пароль)
 - **Презентация:** [`docs/presentation/DensitoAI_LCT2026_prezentatsiya.pdf`](docs/presentation/DensitoAI_LCT2026_prezentatsiya.pdf)
 - **Образ Docker и исходники:** [релиз 2.5.0](https://github.com/neuropeopleteam-afk/densitoai/releases/tag/v2.5.0) (файлы в ветке `release-2.5.0`, Git LFS)
 
