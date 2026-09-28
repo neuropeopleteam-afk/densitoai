@@ -14,6 +14,38 @@
 [Releases](https://github.com/neuropeopleteam-afk/densitoai/releases) (файлы лежат в ветке `release-2.5.0`, Git LFS).
 Презентация для жюри — `docs/presentation/DensitoAI_LCT2026_prezentatsiya.pdf`.
 
+## Быстрый старт
+
+Готовый образ из релиза 2.5.0, Linux или WSL, нужен только Docker. Команды выполняются в пустой папке.
+
+```bash
+# 1. Скачать образ (659 МБ) и контрольные суммы, проверить и загрузить
+curl -LO https://github.com/neuropeopleteam-afk/densitoai/raw/release-2.5.0/densitoai-2.5.0-image.tar.gz
+curl -LO https://github.com/neuropeopleteam-afk/densitoai/raw/release-2.5.0/SHA256SUMS
+sha256sum -c SHA256SUMS --ignore-missing        # densitoai-2.5.0-image.tar.gz: OK
+docker load -i densitoai-2.5.0-image.tar.gz      # Loaded image: densitoai:2.5.0
+
+# 2. Самопроверка без сети: 18 из 18
+docker run --rm --network none densitoai:2.5.0 verify
+
+# 3. Пакетная обработка: папка или zip со снимками -> outputs/results.csv (9 колонок ТЗ)
+mkdir -p outputs
+docker run --rm --network none --user "$(id -u):$(id -g)" \
+  -v /path/to/dicom:/data/input:ro -v "$PWD/outputs:/data/output" densitoai:2.5.0 batch
+
+# 4. Веб-кабинет http://localhost:8000/ и Swagger http://localhost:8000/docs (остановка — Ctrl+C)
+docker run --rm -p 127.0.0.1:8000:8000 --user "$(id -u):$(id -g)" -e DENSITO_REGISTRY_OPEN=1 \
+  -v "$PWD/outputs:/data/output" densitoai:2.5.0 api
+```
+
+- `--user` нужен, чтобы контейнер мог писать в `outputs` (иначе на Linux — `PermissionError`, §13 п. 7).
+- Сборка из исходников вместо готового образа: `git clone https://github.com/neuropeopleteam-afk/densitoai.git && cd densitoai && ./build_and_run.sh build`
+  (5–10 минут, нужен интернет), дальше `NO_BUILD=1 ./build_and_run.sh run /path/to/dicom ./outputs` — без `NO_BUILD=1`
+  команды `run`, `api` и `test` каждый раз пересобирают образ.
+- Windows 11 (Docker Desktop, PowerShell) — §4, «Запуск на Windows».
+- Образец организаторов «Для теста»: снимок `CR000000_ПОП.dcm` получает «Присутствуют посторонние предметы»
+  (quality_prob 0.952) — концы рёбер в верхних углах попадают в зону измерения. Это известное ограничение (§10), не сбой.
+
 > **Назначение и ограничения.** Программа не является медицинским изделием и не предназначена
 > для диагностики, профилактики, лечения или мониторинга заболеваний. Сервис оценивает
 > техническое качество укладки и области интереса исследования и не формирует медицинское
@@ -29,6 +61,7 @@
 
 ## Содержание
 
+0. [Быстрый старт](#быстрый-старт)
 1. [Назначение, возможности, ограничения](#1-назначение-возможности-ограничения)
 2. [Структура проекта](#2-структура-проекта)
 3. [Системные требования и зависимости](#3-системные-требования-и-зависимости)
@@ -42,7 +75,7 @@
 11. [Процедура обучения / дообучения](#11-процедура-обучения--дообучения)
 12. [Руководство пользователя (кратко)](#12-руководство-пользователя-кратко)
 13. [Руководство по развёртыванию](#13-руководство-по-развёртыванию)
-14. [Соответствие ТЗ и TODO](#14-соответствие-тз-и-todo)
+14. [Соответствие ТЗ и статус](#14-соответствие-тз-и-статус)
 
 ---
 
@@ -63,17 +96,19 @@
   - позвоночник: «Некорректная укладка», «Не выравнена ось позвоночника»,
     «Присутствуют посторонние предметы»;
   - бедро: «Некорректная укладка», «Некорректная область интереса».
-- Возвращает `quality_class` (0/1), список нарушений через `;`, вероятность нарушения
-  `quality_prob` ∈ [0, 1], статус обработки и время обработки каждого файла.
+- Возвращает `quality_class` (0/1), список нарушений через `;`, оценку риска нарушения
+  `quality_prob` ∈ [0, 1] (ранговая оценка, согласованная с классом, а не калиброванная вероятность — §7,
+  `docs/CALIBRATION.md`), статус обработки и время обработки каждого файла.
 - Пишет CSV (основной артефакт) + XLSX + отладочный CSV с промежуточными признаками и
   лог-файл.
 - Предоставляет HTTP API для пакетной обработки (ТЗ п.3.2) и CLI.
 
 **Что НЕ делает / ограничения.**
 - Не ставит диагноз и не оценивает МПК/T-score — только качество снимка.
-- Опциональные бонусы (визуализация, DICOM SR, рекомендация по полю сканирования — см. §14) не включены
-  по умолчанию и требуют явных CLI-флагов (`--visualize-dir`, `--sr-dir`, `--roi-autocorrect-dir`);
-  без них поведение не меняется.
+- Бонусы (§14): `additional_series.zip` (DICOM SR на исследование, наложение, SEG — ТЗ п. 2.7) пишется рядом с
+  CSV по умолчанию (отключить — `DENSITO_SERIES_ZIP=0`); отдельные PNG-визуализации, SR на снимок и предложение
+  по полю сканирования — по флагам (`--visualize-dir`, `--sr-dir`, `--roi-autocorrect-dir`). 9 колонок
+  `results.csv` бонусы не меняют.
 - Обучена на 499 изображениях (100 исследований) одного аппарата (GE Lunar, размеры кадра
   300×317 / 280×291 / 248×291 px). На снимках других аппаратов и разрешений качество не
   гарантируется — такие входы отмечаются в отладочном CSV как «нестандартные».
@@ -88,7 +123,7 @@
 ## 2. Структура проекта
 
 ```
-densito_rebuild/
+densitoai/
 ├── README.md                    ← этот файл
 ├── config.yaml                  ← единый конфиг: строки формата, пороги, веса, fallback-правила
 ├── requirements.txt             ← зафиксированные версии (pip freeze)
@@ -198,13 +233,14 @@ densito_rebuild/
 |---|---|---|
 | CPU | 2 ядра x86-64 | 8 ядер |
 | RAM | 4 ГБ | 8–16 ГБ |
-| Диск | 3 ГБ (образ ≈ 2.5 ГБ) | 5 ГБ |
+| Диск | 3 ГБ (образ 2,58 ГБ, архив релиза 659 МБ) | 5 ГБ |
 | GPU | **не требуется** | не используется (CPU-сборка torch) |
 | ОС | Linux x86-64 с Docker ≥ 20.10 (или Python 3.12 без Docker) | Ubuntu 22.04/24.04 |
 
 Производительность (измерено, CPU sandbox, 1 поток на файл): чтение + геометрия ≈ 5–15 мс на
 файл; с эмбеддингами EfficientNet-B0 ≈ 0.1 с на файл; инициализация backbone ≈ 3 с один раз.
-Исследование из 3–5 снимков обрабатывается за **< 1 с** (требование ТЗ п.2.7 — ≤ 3 мин).
+Исследование из 3–5 снимков обрабатывается за секунды: на боевом сервере медиана 0,54 с на файл, худшее
+исследование 8,1 с (требование ТЗ п.2.7 — ≤ 3 мин; `docs/PERFORMANCE.md`).
 
 Единый benchmark (`tests/robustness_suite.py`, 81 снимок разметки, 2 vCPU, без GPU, оба бэкбона):
 время на снимок **p50 0.04 с, p95 0.07 с** без бонус-файлов; на боевом контейнере с визуализациями,
@@ -232,13 +268,15 @@ fastapi 0.141.1, uvicorn 0.53.0. **Версию scikit-learn менять нел
 
 ## 4. Сборка и запуск контейнера
 
-Требуется Docker (BuildKit). Всё выполняется из корня проекта.
+Требуется Docker (BuildKit). Всё выполняется из корня проекта. Если образ уже загружен из релиза (`docker load`,
+«Быстрый старт»), запускайте с `NO_BUILD=1`: без него `run`, `api` и `test` сначала пересобирают образ
+(`docker build --pull`, нужен интернет).
 
 ```bash
 # 1) Собрать образ densitoai:2.5.0 (внутри сборки запускается самопроверка на образце)
 ./build_and_run.sh build
 
-# 2) Пакетная обработка: входная папка (или zip) → выходная папка
+# 2) Пакетная обработка: входная папка (или zip) → выходная папка (с готовым образом — NO_BUILD=1 ./build_and_run.sh run …)
 ./build_and_run.sh run /path/to/dicom_folder ./outputs
 #    результат: ./outputs/results.csv  (+ results.xlsx, results_debug.csv, results.log)
 #    с 2.4.1 рядом — additional_series.zip (дополнительные серии, ТЗ п. 2.7; см. ниже)
@@ -250,19 +288,20 @@ fastapi 0.141.1, uvicorn 0.53.0. **Версию scikit-learn менять нел
 ./build_and_run.sh test
 ```
 
-Эквивалент «руками»:
+Эквивалент «руками» (`--user` — чтобы контейнер мог писать в папку вывода, §13 п. 7):
 
 ```bash
 docker build -t densitoai:2.5.0 .
-docker run --rm -v /path/to/input:/data/input:ro -v $(pwd)/outputs:/data/output densitoai:2.5.0 batch
-docker run --rm -p 8000:8000 -v $(pwd)/outputs:/data/output densitoai:2.5.0 api
+mkdir -p outputs
+docker run --rm --user "$(id -u):$(id -g)" -v /path/to/input:/data/input:ro -v "$PWD/outputs:/data/output" densitoai:2.5.0 batch
+docker run --rm -p 8000:8000 --user "$(id -u):$(id -g)" -v "$PWD/outputs:/data/output" densitoai:2.5.0 api
 # после этого http://localhost:8000/ — рабочий кабинет (загрузка снимков, карточки решений,
 # история запросов), http://localhost:8000/docs — Swagger. Интерфейс лежит внутри образа,
 # ничего не тянет из интернета: ни одного внешнего src/href, шрифты и изображения локальные.
 # С 2.4.1 Swagger /docs тоже работает без интернета (файлы swagger-ui лежат в образе, web/assets/swagger/),
 # а страницы /docs.html и /index.html отдаёт и локальный контейнер, не только сайт.
 # любые аргументы inference.py можно передать после batch:
-docker run --rm -v ...:/data/input:ro -v ...:/data/output densitoai:2.5.0 batch --no-embeddings --limit 50
+docker run --rm --user "$(id -u):$(id -g)" -v ...:/data/input:ro -v ...:/data/output densitoai:2.5.0 batch --no-embeddings --limit 50
 ```
 
 **Журнал и «Проверить сервис на своих снимках» при запуске на своём компьютере (2.4.1).** Команда `api` выше
@@ -270,7 +309,7 @@ docker run --rm -v ...:/data/input:ro -v ...:/data/output densitoai:2.5.0 batch 
 отвечают 503 «Журнал исследований не настроен». Для проверки на своём компьютере включите открытый демо-режим:
 
 ```bash
-docker run --rm -p 8000:8000 -e DENSITO_REGISTRY_OPEN=1 -v $(pwd)/outputs:/data/output densitoai:2.5.0 api
+docker run --rm -p 8000:8000 --user "$(id -u):$(id -g)" -e DENSITO_REGISTRY_OPEN=1 -v "$PWD/outputs:/data/output" densitoai:2.5.0 api
 ```
 
 Открытый режим (`DENSITO_REGISTRY_OPEN` = `1`, `true` или `yes`, `src/registry.py: open_mode`) — только для локальной
@@ -305,7 +344,7 @@ docker compose up densito-api
 
 ```bash
 docker compose up -d densito-api densito-receiver          # API :8000 + приёмник DICOM :11112 (AE Title DENSITOAI)
-docker run -d -p 8000:8000 -p 11112:11112 -v $(pwd)/outputs:/data/output densitoai:2.5.0 api+receiver
+docker run -d -p 8000:8000 -p 11112:11112 --user "$(id -u):$(id -g)" -v "$PWD/outputs:/data/output" densitoai:2.5.0 api+receiver
 python -m pynetdicom echoscu  <ip> 11112 -aec DENSITOAI                      # проверка связи
 python -m pynetdicom storescu <ip> 11112 tests/phantoms/study_01 -r -aec DENSITOAI
 ```
@@ -321,7 +360,7 @@ python -m pynetdicom storescu <ip> 11112 tests/phantoms/study_01 -r -aec DENSITO
 Без TLS — только внутренняя сеть отделения.
 
 Переменные окружения контейнера: `DENSITO_INPUT` (по умолчанию `/data/input`),
-`DENSITO_OUTPUT` (`/data/output/results.csv`), `DENSITO_PORT` (8000), `OMP_NUM_THREADS` (4),
+`DENSITO_OUTPUT` (`/data/output/results.csv`), `DENSITO_PORT` (8000), `OMP_NUM_THREADS` (2),
 `DENSITO_NO_EMBEDDINGS=1` (отключить контур B); с 2.4.1 — `DENSITO_REGISTRY_OPEN=1` (открытый демо-режим журнала, только
 локально), `TZ` (по умолчанию `MSK-3`), `DENSITO_SERIES_ZIP=0` (не писать `additional_series.zip`).
 
@@ -926,7 +965,7 @@ python tools/organizer_metrics.py --results results.csv --markup <путь>/ра
 Режим `--results` на обучающих 499 файлах даёт in-sample числа (модель видела эти кадры) — скрипт об этом
 предупреждает; честная оценка — только `--oof` или закрытый тест. Тест: `python tests/test_organizer_metrics.py`.
 
-ROC-AUC OOF в таблице — `auc_stacked` из `models/metrics_summary.json`; `docs/METRICS_REPORT.md` пересчитывает тот же прогон `tools/eval_oof_metrics.py` по `models/metrics_oof_full.json`, расхождения возможны только в третьем знаке (для `sp_art` в 2.5.0 оба источника дают 0.899).
+ROC-AUC OOF в таблице — `auc_stacked` из `models/metrics_summary.json`; `docs/METRICS_REPORT.md` пересчитывает тот же прогон `src/eval_oof_metrics.py` по `models/metrics_oof_full.json`, расхождения возможны только в третьем знаке (для `sp_art` в 2.5.0 оба источника дают 0.899).
 
 Вывод: ранжирование (ROC-AUC) переносится почти без потерь, а F1 редких критериев (`sp_axis`, `hip_roi`: 16–17 позитивов)
 остаётся низким при любом правиле порога — это главный источник
@@ -980,16 +1019,19 @@ python tools/add_sppos_head_feature.py --check
 # 4) обучение + OOF-валидация GroupKFold(5) по исследованию + пороги + bootstrap-ДИ
 python src/train_stacked.py
 #    -> models/oof_stacked_*.csv, models/metrics_summary.json
-#    и (после доработки сохранения) models/model_<region>_<crit>_{geom,emb_pca}.pkl
-#       в формате models/MODEL_CONTRACT.md
+# 4b) финальные модели на 100 % данных -> models/model_<region>_<crit>_{geom,emb_pca}.pkl
+#     (формат models/MODEL_CONTRACT.md), метрики OOF и контрольные суммы весов
+python src/train_final_models.py
+python src/eval_oof_metrics.py
+python tools/hash_weights.py --root .
 # 5) проверить, что инференс подхватил модели (method = stacked_rank_avg) и формат в порядке
 python src/inference.py -i tests/phantoms -o outputs/check.csv --debug-csv -v
 python tests/test_inference_format.py
 ```
 
-> На момент подготовки документации `train_stacked.py` сохраняет OOF-скоры и метрики, но
-> **ещё не сериализует .pkl** — это делается параллельно (см. TODO в §14 и контракт в
-> `models/MODEL_CONTRACT.md`).
+> Порядок `train_stacked.py` → `train_final_models.py` → `eval_oof_metrics.py` — тот же, которым собраны модели 2.5.0
+> (`docs/NESTED_GATE_REPORT.md`, `docs/PREPROC_GATE_REPORT.md`). Таблицы в `data/` — производные от обучающего набора
+> организаторов (`data/README.md`); сами снимки в репозиторий не входят.
 
 Ключевые решения (см. `docs/FINAL_PLAN.md`): без поворотных аугментаций на реальных метках
 (портят критерий «ось»); синтетические позитивы для оси (поворот корректных снимков на
@@ -1007,8 +1049,8 @@ lh_pos, lh_roi`) и повторить шаги 2–5. Случайные зёр
 2. Запустите `./build_and_run.sh run /data/dxa_batch ./outputs` (или загрузите файлы через
    `/api/analyze`, или откройте `http://localhost:8000/docs`).
 3. Откройте `outputs/results.xlsx`. Строки с `quality_class = 1` — снимки, требующие
-   внимания; в `violation_type` — что именно не так; `quality_prob` — уверенность (чем выше,
-   тем вероятнее нарушение). Строки `Failure` — файлы, которые не удалось прочитать
+   внимания; в `violation_type` — что именно не так; `quality_prob` — оценка риска нарушения (чем выше,
+   тем вероятнее нарушение; ранговая оценка, а не калиброванная вероятность). Строки `Failure` — файлы, которые не удалось прочитать
    (причина — в `results.log` и `results_debug.csv`, колонка `error`).
 4. Для разбора спорных случаев смотрите `results_debug.csv`: измеренный угол оси
    (`feat_axis_angle_deg`), площадь плотных участков по кадру и в зоне измерения (`feat_metal_metal_area_mm2`,
@@ -1035,7 +1077,8 @@ lh_pos, lh_roi`) и повторить шаги 2–5. Случайные зёр
 
 1. Сервер Linux x86-64, Docker ≥ 20.10 с BuildKit, доступ к PyPI и
    `download.pytorch.org` **только на этапе сборки** (в работе сеть не нужна).
-2. `git clone … && cd densito_rebuild && ./build_and_run.sh build`.
+2. `git clone https://github.com/neuropeopleteam-afk/densitoai.git && cd densitoai && ./build_and_run.sh build`
+   или готовый образ из релиза — «Быстрый старт» в начале README.
    Офлайн-стенд: соберите образ на машине с интернетом и перенесите
    `docker save densitoai:2.5.0 | gzip > densitoai.tar.gz` → `docker load`.
 3. Пакетный режим: `./build_and_run.sh run <input> <output>`; сервисный режим:
@@ -1085,7 +1128,7 @@ lh_pos, lh_roi`) и повторить шаги 2–5. Случайные зёр
 | п.5 README (назначение/ограничения, структура, требования, сборка, API, форматы, модель/пре-/постобработка, ошибки) + руководства пользователя, развёртывания, обучения | выполнено: §1–§13 этого файла, `docs/EXPERT_TESTING_GUIDE.md` |
 | п.8.4 метрики по областям и типам с 95 % ДИ | выполнено: `docs/METRICS_REPORT.md`, `src/eval_oof_metrics.py` |
 | Публичный репозиторий (Q&A организаторов) | выполнено: `https://github.com/neuropeopleteam-afk/densitoai` |
-| Материалы защиты | `docs/qa/JURY_QA.md` (вопросы жюри, ответы с источниками, раздел «Слабые места»), `docs/qa/DEMO_SCRIPT.md` (питч, демонстрация, ролик), презентация для жюри — PDF https://densito.ru/lct/DensitoAI_LCT2026_prezentatsiya.pdf (23 слайда по шаблону организаторов; в репозитории не хранится) |
+| Материалы защиты | `docs/qa/JURY_QA.md` (вопросы жюри, ответы с источниками, раздел «Слабые места»), `docs/qa/DEMO_SCRIPT.md` (питч, демонстрация, ролик), презентация для жюри — PDF в репозитории `docs/presentation/DensitoAI_LCT2026_prezentatsiya.pdf` и на стенде https://densito.ru/lct/DensitoAI_LCT2026_prezentatsiya.pdf (23 слайда по шаблону организаторов) |
 
 **Бонусы п.2.6 (все реализованы, опциональны, не влияют на основной CSV даже при внутренней ошибке):**
 

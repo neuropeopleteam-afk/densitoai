@@ -84,12 +84,15 @@ textarea { width: 100%; min-height: 64px; resize: vertical; }
 @media (max-width: 900px) {
   .rev { grid-template-columns: 1fr; }
   .form { grid-template-columns: 1fr 1fr; }
+  .form > * { min-width: 0; }
+  .form input, .form select { min-width: 0; max-width: 100%; width: 100%; box-sizing: border-box; }
   .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .who { margin-left: 0; width: 100%; }
   .who input { flex: 1; }
   .wrap { padding: 0 16px; }
   table { font-size: 13px; }
 }
+@media (max-width: 600px) { .form, .form.up { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>

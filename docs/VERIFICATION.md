@@ -21,10 +21,12 @@
 
 ## Пять команд
 
-1. Проверить контрольные суммы и загрузить образ.
+1. Скачать из релиза 2.5.0 образ и контрольные суммы в одну папку, проверить и загрузить образ.
 
-        cd dist && sha256sum -c SHA256SUMS && cd ..
-        docker load -i dist/densitoai-2.5.0-image.tar.gz
+        curl -LO https://github.com/neuropeopleteam-afk/densitoai/raw/release-2.5.0/densitoai-2.5.0-image.tar.gz
+        curl -LO https://github.com/neuropeopleteam-afk/densitoai/raw/release-2.5.0/SHA256SUMS
+        sha256sum -c SHA256SUMS --ignore-missing
+        docker load -i densitoai-2.5.0-image.tar.gz
 
 2. Самопроверка образа без сети (фантомные DICOM внутри образа, два прогона, сравнение с эталоном, sha256 весов).
 
@@ -51,15 +53,21 @@
    (без столбца time_of_processing) и печатает его sha256. Повторный запуск с `--expected-sha <sha>` завершится
    кодом 0 только при точном совпадении предсказаний.
 
-        docker run --rm --network none -v /path/to/dicoms:/data/input:ro -v "$PWD/outputs:/data/output" \
-          densitoai:2.5.0 verify --data /data/input
-        docker run --rm --network none -v /path/to/dicoms:/data/input:ro -v "$PWD/outputs:/data/output" \
-          densitoai:2.5.0 verify --data /data/input --expected-sha <sha из предыдущего вывода>
+        docker run --rm --network none --user "$(id -u):$(id -g)" -v /path/to/dicoms:/data/input:ro \
+          -v "$PWD/outputs:/data/output" densitoai:2.5.0 verify --data /data/input
+        docker run --rm --network none --user "$(id -u):$(id -g)" -v /path/to/dicoms:/data/input:ro \
+          -v "$PWD/outputs:/data/output" densitoai:2.5.0 verify --data /data/input --expected-sha <sha из предыдущего вывода>
 
 5. Проверить, что веса модели в образе — те, что заявлены в поставке (`models/WEIGHTS_SHA256.txt`).
 
         docker run --rm --network none densitoai:2.5.0 bash -c "cd /app && sha256sum -c models/WEIGHTS_SHA256.txt"
         docker run --rm --network none densitoai:2.5.0 bash -c "cd /app && python tools/hash_weights.py --check"
+
+   Бэкбон контура B для оси позвоночника (`models/backbone_densito_inv.pth`, `config.yaml → emb_source.sp_axis`) в
+   `WEIGHTS_SHA256.txt` версии 2.5.0 не внесён (найдено при проверке 28.09, будет внесён в следующей версии). Его сумма:
+
+        docker run --rm --network none densitoai:2.5.0 sha256sum /app/models/backbone_densito_inv.pth
+        # 248dc5ce4408fcc79a3e6c308cae5bb4132b9ac5d40c19bdb7e025d53d8cd18b
 
 ## Что именно проверяет `verify`
 

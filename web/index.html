@@ -315,7 +315,7 @@ label.cb { font-size: 13.5px; color: var(--muted); display: inline-flex; gap: 6p
 .risk .bar > i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--primary); }
 .risk.hot .bar > i { background: var(--error); }
 .risk .bar > b { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--faint); }
-.ghead { display: flex; align-items: center; gap: 12px; padding: 9px 16px; background: var(--surface-2); border-bottom: 1px solid var(--border); font-size: 13.5px; }
+.ghead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 9px 16px; background: var(--surface-2); border-bottom: 1px solid var(--border); font-size: 13.5px; }
 .ghead .uid { font-family: var(--mono); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
 .ghead .sp { flex: 1; }
 .detail { grid-column: 1 / -1; display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 24px; padding: 20px; background: var(--surface-alt); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); cursor: default; }
@@ -573,7 +573,7 @@ body:not(.view-app) .topbar .topnav { display: flex; }
 .vplate .main { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
 .vplate .k { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; white-space: nowrap; }
 .vplate .t { font-weight: 600; }
-.vplate.action .t { color: var(--error); } .vplate.files .t { color: var(--warning); } .vplate.ok .t { color: var(--success); }
+.vplate.action .t { color: var(--error); } .vplate.files .t { color: var(--warning); } .vplate.review .t { color: var(--warning); } .vplate.ok .t { color: var(--success); }
 .vplate details { margin-top: 4px; } .vplate summary { cursor: pointer; color: var(--primary); font-size: 13px; }
 .vplate ul { margin: 6px 0 0 18px; padding: 0; } .vplate li { margin: 2px 0; }
 /* C1:END */
@@ -753,11 +753,11 @@ body.view-registry .app-head .sub { display: none; }
       <p class="lead">Формулировки нарушений — из закрытого перечня технического задания.</p>
     </div>
     <div class="crit-grid">
-      <div class="crit"><div class="reg">Позвоночник</div><h3>Укладка пациента</h3><div class="off">«Некорректная укладка»</div><p>Позвоночник смещён, поясничный отдел не полностью в кадре или костная область занимает неправильную долю ширины.</p><div class="sig"><b>Измеряем:</b> смещение от центра кадра, ширина костной области</div></div>
-      <div class="crit"><div class="reg">Позвоночник</div><h3>Ось позвоночника</h3><div class="off">«Не выравнена ось позвоночника»</div><p>Ось позвоночника наклонена относительно вертикали кадра.</p><div class="sig"><b>Измеряем:</b> угол оси к вертикали, градусы</div></div>
-      <div class="crit"><div class="reg">Позвоночник</div><h3>Посторонние предметы</h3><div class="off">«Присутствуют посторонние предметы»</div><p>В поле сканирования попали пуговицы, молнии, элементы одежды или другие объекты.</p><div class="sig"><b>Измеряем:</b> площадь плотных включений, контраст к кости</div></div>
+      <div class="crit"><div class="reg">Позвоночник</div><h3>Укладка пациента</h3><div class="off">«Некорректная укладка»</div><p>Поле смещено или позвоночник не по средней линии стола: проверьте, видны ли края подвздошных костей и половина Th12.</p><div class="sig"><b>Измеряем:</b> смещение от центра кадра, ширина костной области</div></div>
+      <div class="crit"><div class="reg">Позвоночник</div><h3>Ось позвоночника</h3><div class="off">«Не выравнена ось позвоночника»</div><p>Ось позвоночника не выровнена по оси стола.</p><div class="sig"><b>Измеряем:</b> угол оси к вертикали, градусы</div></div>
+      <div class="crit"><div class="reg">Позвоночник</div><h3>Посторонние предметы</h3><div class="off">«Присутствуют посторонние предметы»</div><p>В поле сканирования попали пуговицы, молнии, элементы одежды или другие объекты. На результат влияет предмет в зоне измерения L1–L4.</p><div class="sig"><b>Измеряем:</b> площадь плотных включений, контраст к кости</div></div>
       <div class="crit"><div class="reg">Бедро</div><h3>Укладка пациента</h3><div class="off">«Некорректная укладка»</div><p>Бедро недостаточно ротировано или отведено: диафиз наклонён, малый вертел выступает.</p><div class="sig"><b>Измеряем:</b> угол диафиза, признаки ротации</div></div>
-      <div class="crit"><div class="reg">Бедро</div><h3>Область интереса</h3><div class="off">«Некорректная область интереса»</div><p>Поле сканирования не захватывает нужную часть кости: кость упирается в край кадра или ниже вертела слишком мало диафиза.</p><div class="sig"><b>Измеряем:</b> расстояние от кости до края, длина диафиза ниже вертела, мм</div></div>
+      <div class="crit"><div class="reg">Бедро</div><h3>Область интереса</h3><div class="off">«Некорректная область интереса»</div><p>Проверьте, вся ли зона интереса вошла в кадр: проксимальный отдел бедра с участком диафиза ниже вертелов.</p><div class="sig"><b>Измеряем:</b> расстояние от кости до края, длина диафиза ниже вертела, мм</div></div>
     </div>
   </div>
 </section>
@@ -1068,11 +1068,11 @@ function evidenceBlock(r, dec) {
   const title = code => { const c = crits.find(x => String(x.code) === String(code)); return String((c && (c.title || c.code)) || code); };
   const rows = ev.items.map(i => el('li', {}, [
     el('b', { text: title(i.criterion) + ': ' }),
-    document.createTextNode(i.status === 'not_applicable' ? String(i.status_text || '') : (/^Проверить/.test(String(i.text || '')) ? String(i.text) : String(i.status_text || '') + (i.text ? ' — ' + String(i.text) : ''))),
+    document.createTextNode(i.status === 'not_applicable' ? String(i.status_text || '') : (/^Проверить/.test(String(i.text || '')) ? String(i.text) : (i.group === 'hip_pos' && i.status === 'confirmed') ? String(i.text || '') : String(i.status_text || '') + (i.text ? ' — ' + String(i.text) : ''))),
     i.role ? el('span', { class: 'role ' + i.role, text: ROLE_TEXT[i.role] || '' }) : null,
   ]));
   return el('div', { class: 'dc-evidence ' + (ev.command === 'check' ? 'check' : 'retake') }, [
-    el('div', { class: 'k', text: 'Основание команды: ' + (ev.command === 'check' ? '«Проверить» — измеримого основания для пересъёмки нет' : (ev.items.some(i => i.status === 'confirmed' || (i.status === 'not_applicable' && i.role === 'measured')) ? '«Переснять» — основание измерено' : '«Переснять» — как в версии 2.4.1')) }),
+    el('div', { class: 'k', text: 'Основание команды: ' + (ev.command === 'check' ? '«Проверить» — измеримого основания для пересъёмки нет' : (ev.items.some(i => (i.status === 'confirmed' && i.group !== 'hip_pos') || (i.status === 'not_applicable' && i.role === 'measured')) ? '«Переснять» после проверки снимка — основание измерено' : ev.items.some(i => i.status === 'confirmed' && i.group === 'hip_pos') ? '«Переснять» после проверки снимка — по оценке укладки; поле обычной ширины' : '«Переснять» — как в версии 2.4.1')) }),
     el('ul', {}, rows),
     el('div', { class: 'note', text: 'Флаг критерия, класс и выгрузка (9 колонок) не меняются; меняется только команда лаборанту.' }),
   ]);
@@ -1591,9 +1591,9 @@ function renderResults(data) {
   card.appendChild(el('div', { class: 'panel-head' }, [el('h2', { text: data.demo ? 'Результаты демо-партии' : 'Результаты партии' })]));
   card.appendChild(el('div', { class: 'kpis' }, [
     kpi(n, 'файлов'), kpi(nStudies, 'исследований'),
-    kpi(nv, `с нарушениями · ${n ? Math.round(nv / n * 100) : 0} %`, 'viol'),
+    kpi(nv, `с нарушениями · ${n ? Math.round(nv / n * 100) : 0}\u00a0%`, 'viol'),
     kpi(n - nv - nf, 'норма', 'ok'), kpi(nf, 'ошибок обработки', 'fail'),
-    kpi(fmt(s.total_processing_time_s, 1) + ' с', `время модели · ${fmt((s.total_processing_time_s || 0) / Math.max(n, 1), 2)} с/файл`),
+    kpi(fmt(s.total_processing_time_s, 1) + ' с', `время модели · ${fmt((s.total_processing_time_s || 0) / Math.max(n, 1), 2)}\u00a0с/файл`),
   ]));
   const dl = el('div', { class: 'actions', style: 'margin-top:0' });
   const jobOk = typeof data.job_id === 'string' && /^[0-9]{8}_[0-9]{6}_[0-9a-f]{6}$/.test(data.job_id);
@@ -1688,8 +1688,12 @@ function refresh() {
 // исследования («Приоритетное действие»); сервер отдаёт его в study_priority, для старых ответов — расчёт здесь.
 function visitPlate(uid, rs) {
   const all = state.rows.filter(r => (r.study_uid || '—') === uid);
-  const p = (all.find(r => r.study_priority && typeof r.study_priority === 'object') || {}).study_priority || clientPriority(all);
+  let p = (all.find(r => r.study_priority && typeof r.study_priority === 'object') || {}).study_priority || clientPriority(all);
   if (!p || !p.text) return null;
+  // 28.09 (консилиум, раунд 6): визит без нарушений, но с кадром в зоне «не уверен» — не «действий не требуется»,
+  // а показ врачу, как в карточке этого кадра. Выгрузка, класс и SR не меняются.
+  const nUnsure = all.filter(r => !regionUnsupported(r) && String(r.quality_class) !== '1' && needsDoctor(r.details || {})).length;
+  if (p.status === 'ok' && nUnsure) p = Object.assign({}, p, { status: 'review', text: `Показать врачу: оценка у порога (${plural(nUnsure, 'снимок', 'снимка', 'снимков')} в зоне «не уверен»); нарушений не выявлено` });
   const others = Array.isArray(p.others) ? p.others : [];
   const box = el('div', { class: 'vplate ' + (p.status || '') }, [
     el('div', { class: 'main' }, [el('span', { class: 'k', text: 'Главное действие на визит' }), el('span', { class: 't', text: String(p.text) })]),

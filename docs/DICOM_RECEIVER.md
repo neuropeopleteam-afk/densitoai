@@ -84,11 +84,12 @@ RLE Lossless `1.2.840.10008.1.2.5`. Экспорт GE Lunar — несжатый
 docker compose up -d densito-api densito-receiver
 
 # один контейнер: API и приёмник вместе (healthcheck по /api/health не меняется)
-docker run -d -p 8000:8000 -p 11112:11112 -v $(pwd)/outputs:/data/output densitoai:2.4.0 api+receiver
+mkdir -p outputs
+docker run -d -p 8000:8000 -p 11112:11112 --user "$(id -u):$(id -g)" -v "$PWD/outputs:/data/output" densitoai:2.5.0 api+receiver
 
 # только приёмник, API на другом хосте
-docker run -d -p 11112:11112 -e DENSITO_API_URL=http://densito-api:8000 \
-  -v $(pwd)/outputs:/data/output densitoai:2.4.0 receiver
+docker run -d -p 11112:11112 -e DENSITO_API_URL=http://densito-api:8000 --user "$(id -u):$(id -g)" \
+  -v "$PWD/outputs:/data/output" densitoai:2.5.0 receiver
 
 # без контейнера
 DENSITO_INBOX=./outputs/inbox DENSITO_API_URL=http://127.0.0.1:8000 python src/dicom_receiver.py

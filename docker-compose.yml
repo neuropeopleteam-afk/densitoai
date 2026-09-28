@@ -42,7 +42,7 @@ services:
     network_mode: none
     user: "${UID:-1000}:${GID:-1000}"
     volumes:
-      - ${INPUT_DIR:-./tests/sample_test_zip}:/data/input:ro
+      - ${INPUT_DIR:-./tests/phantoms}:/data/input:ro
       - ${OUTPUT_DIR:-./outputs}:/data/output
 
   densito-api:
@@ -55,7 +55,7 @@ services:
     ports:
       - "${API_PORT:-8000}:8000"
     volumes:
-      - ${INPUT_DIR:-./tests/sample_test_zip}:/data/input:ro
+      - ${INPUT_DIR:-./tests/phantoms}:/data/input:ro
       - ${OUTPUT_DIR:-./outputs}:/data/output
     restart: unless-stopped
 
