@@ -557,6 +557,14 @@ def compute_extras_for_rows(rows: List[Dict[str, Any]], debug_rows: List[Dict[st
             fx["axis_curved_flag"] = bool(region == "spine" and float((dbg or {}).get("feat_curvature")) > AXIS_CURVATURE_MAX_PX)
         except (TypeError, ValueError):
             fx["axis_curved_flag"] = False
+        # 2.5: команда с основанием и второе мнение по оси (src/action_evidence.py); класс и флаги не меняются
+        try:
+            import action_evidence as _ae
+            failed = str(row.get("processing_status", "")).lower() == "failure"
+            fx.update(_ae.extras_fields(None if failed else _ae.evidence_from_debug(dbg or {}),
+                                        None if failed else _ae.axis_from_debug(dbg or {})))
+        except Exception:  # noqa: BLE001 — объяснение не должно ронять выгрузку
+            pass
         fx["file"] = row.get("path_to_study", "")
         fx["image_uid"] = row.get("image_uid", "")
         per_file.append(fx)

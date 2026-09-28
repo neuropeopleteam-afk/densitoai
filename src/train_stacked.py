@@ -162,7 +162,9 @@ HIP_SIDE_REPORT = {('right', 'hip_pos'): ('right_hip', 'rh_pos'), ('right', 'hip
 CRITERION_GEOMETRY_COLS = {
     'sp_pos': ['center_offset_ratio', 'bone_width_ratio'],
     'sp_axis': ['axis_angle_deg'],
-    'sp_art': ['metal_metal_area_mm2', 'metal_metal_max_intensity_gap'],
+    # 2.5.0: предметы в верхних 70 % протяжённости кости (нижние 30 % кадра — крылья подвздошных
+    # костей, не предмет); выбор доли — tools/spart_position/spart_position_gate.py (band70 в 76/100 фолдов).
+    'sp_art': ['metal_metal_band70_area_log', 'metal_metal_band70_max_gap'],
     # --- бедро (hip_features.py, каноническая ориентация) ---
     # Позиционирование/ротация. Физика: при наружной ротации шейка укорачивается
     # в проекции (medial_neck_extent_mm ↓, merge_height_mm ↓), силуэт становится

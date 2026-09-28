@@ -65,9 +65,9 @@ def test_frozen_reproduced(p):
         assert abs(rb["rows"]["stack"]["f1"] - fb["f1"]) <= 1e-6, region
         assert abs(rb["rows"]["stack"]["roc_auc"] - fb["roc_auc_components"]["max_criteria_only"]) <= 1e-6, region
     assert p["all_frozen_ok"] is True
-    # известное расхождение sp_art описано, а не подогнано: metrics_summary 0.8227 против OOF 0.8237
+    # в 2.4.0 известное расхождение sp_art: metrics_summary 0.8227 против OOF 0.8237 (описано, не подогнано)
     d = p["criteria"]["sp_art"]["check"]["auc_stack_diff"]
-    assert 5e-4 < d < 1e-3, d
+    assert d < 1e-3, d  # 2.5.0: после переобучения sp_art расхождение 0.0 (в 2.4.0 было 0.0010)
 
 
 def test_trivial_baselines(p):

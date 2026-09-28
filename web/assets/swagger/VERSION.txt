@@ -1,0 +1,5 @@
+swagger-ui-dist 5.33.0 (https://www.npmjs.com/package/swagger-ui-dist), лицензия Apache 2.0 (LICENSE, NOTICE рядом).
+Источник: https://registry.npmjs.org/swagger-ui-dist/-/swagger-ui-dist-5.33.0.tgz
+npm integrity sha512-wpdK+m6BU5yj6pmUdMskZVTSWYG4DLglAx3sIhylloY37i8O37IrH+YEpqdXNfpaTGxILRBFzUqLF2jKqbfI7A==
+Из пакета взяты без изменений: swagger-ui-bundle.js, swagger-ui.css, favicon-32x32.png, LICENSE, NOTICE.
+Страница /docs (src/api_server.py) грузит их с /assets/swagger/ — без обращения к CDN.

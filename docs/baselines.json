@@ -313,7 +313,7 @@
    "n_pos_studies": 17,
    "prevalence": 0.21084337349397592,
    "threshold_rule": "prevalence_x1.4",
-   "threshold_frozen": 0.6024096385542168,
+   "threshold_frozen": 0.6239385251850776,
    "rows": {
     "always_normal": {
      "f1": 0.0,
@@ -352,15 +352,15 @@
      "score": "U(0,1)"
     },
     "contour_a": {
-     "f1": 0.30952380952380953,
-     "balanced_accuracy": 0.548309705561614,
+     "f1": 0.47619047619047616,
+     "balanced_accuracy": 0.6750272628135223,
      "n_flag": 49,
-     "roc_auc": 0.5598691384950927,
-     "pr_auc": 0.25817908441154236,
-     "threshold": 0.5374287156419715,
+     "roc_auc": 0.8038167938931297,
+     "pr_auc": 0.5484439089365271,
+     "threshold": 0.6438786639925508,
      "roc_auc_ci": {
-      "lo": 0.4130333182571989,
-      "hi": 0.7280727733237604,
+      "lo": 0.6554946729978525,
+      "hi": 0.9628225558343668,
       "share_skipped": 0.0
      }
     },
@@ -392,39 +392,39 @@
      }
     },
     "stack": {
-     "f1": 0.5348837209302325,
-     "balanced_accuracy": 0.721701199563795,
-     "n_flag": 51,
-     "roc_auc": 0.8236641221374046,
-     "pr_auc": 0.5459237275219789,
-     "threshold": 0.6024096385542168,
-     "threshold_by_rule_recomputed": 0.6024096385542168,
-     "roc_auc_published": 0.8226826608505997,
+     "f1": 0.6666666666666666,
+     "balanced_accuracy": 0.8198473282442749,
+     "n_flag": 49,
+     "roc_auc": 0.8991275899672846,
+     "pr_auc": 0.6675610640771095,
+     "threshold": 0.6239385251850776,
+     "threshold_by_rule_recomputed": 0.6239385251850776,
+     "roc_auc_published": 0.8991275899672846,
      "roc_auc_ci": {
-      "lo": 0.7001743412952475,
-      "hi": 0.9168421266946872,
+      "lo": 0.8063925684042872,
+      "hi": 0.9666489079703978,
       "share_skipped": 0.0
      }
     }
    },
    "frozen": {
-    "auc_geom": 0.5598691384950927,
+    "auc_geom": 0.8038167938931297,
     "auc_emb": 0.8970556161395856,
-    "auc_stacked": 0.8226826608505997,
-    "f1_oof": 0.5348837209302325,
-    "n_flag_oof": 51,
+    "auc_stacked": 0.8991275899672846,
+    "f1_oof": 0.6666666666666666,
+    "n_flag_oof": 49,
     "oof_full": {
-     "roc_auc": 0.8236641221374046,
-     "pr_auc": 0.5459237275219789,
-     "f1": 0.5348837209302325,
-     "balanced_accuracy": 0.721701199563795
+     "roc_auc": 0.8991275899672846,
+     "pr_auc": 0.6675610640771095,
+     "f1": 0.6666666666666666,
+     "balanced_accuracy": 0.8198473282442749
     }
    },
    "check": {
     "criterion": "sp_art",
     "n_ok": true,
     "n_pos_ok": true,
-    "auc_stack_diff": 0.0009814612868048744,
+    "auc_stack_diff": 0.0,
     "f1_stack_diff": 0.0,
     "auc_geom_diff": 0.0,
     "auc_emb_diff": 0.0,
@@ -749,14 +749,14 @@
      "n_draw": 2000
     },
     "contour_a": {
-     "f1": 0.5147058823529411,
-     "balanced_accuracy": 0.5982704402515724,
-     "n_flag": 76,
-     "roc_auc": 0.7312893081761006,
-     "pr_auc": 0.6577593653514316,
+     "f1": 0.7007299270072993,
+     "balanced_accuracy": 0.7632075471698113,
+     "n_flag": 77,
+     "roc_auc": 0.8311320754716981,
+     "pr_auc": 0.7444517157052742,
      "roc_auc_ci": {
-      "lo": 0.5682840129864619,
-      "hi": 0.8482717178053569,
+      "lo": 0.701070951132187,
+      "hi": 0.9192614969665751,
       "share_skipped": 0.0
      }
     },
@@ -785,24 +785,24 @@
      }
     },
     "stack": {
-     "f1": 0.6617647058823529,
-     "balanced_accuracy": 0.7287735849056604,
-     "n_flag": 76,
-     "roc_auc": 0.7715408805031446,
-     "pr_auc": 0.6705680415377759,
+     "f1": 0.7368421052631579,
+     "balanced_accuracy": 0.795125786163522,
+     "n_flag": 73,
+     "roc_auc": 0.8247641509433963,
+     "pr_auc": 0.7228595207726649,
      "roc_auc_ci": {
-      "lo": 0.6409026920381371,
-      "hi": 0.8663047411342866,
+      "lo": 0.7182528201348019,
+      "hi": 0.9152011102501986,
       "share_skipped": 0.0
      }
     }
    },
    "frozen": {
-    "f1": 0.6617647058823529,
-    "roc_auc_quality_prob": 0.8127358490566038,
-    "roc_auc_max_criteria_only": 0.7715408805031447,
-    "balanced_accuracy": 0.7287735849056604,
-    "pr_auc_quality_prob": 0.706253750244589
+    "f1": 0.7368421052631579,
+    "roc_auc_quality_prob": 0.8459119496855345,
+    "roc_auc_max_criteria_only": 0.8247641509433962,
+    "balanced_accuracy": 0.795125786163522,
+    "pr_auc_quality_prob": 0.7408380477680085
    },
    "check": {
     "criterion": "spine/binary",
@@ -959,7 +959,7 @@
    "criterion": "sp_art",
    "n_ok": true,
    "n_pos_ok": true,
-   "auc_stack_diff": 0.0009814612868048744,
+   "auc_stack_diff": 0.0,
    "f1_stack_diff": 0.0,
    "auc_geom_diff": 0.0,
    "auc_emb_diff": 0.0,

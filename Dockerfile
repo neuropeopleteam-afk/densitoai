@@ -5,8 +5,8 @@
 # сервисов и загрузок во время работы нет. Версии базового образа и пакетов
 # зафиксированы (ТЗ п.3.2).
 #
-# Сборка:   docker build --platform linux/amd64 -t densitoai:2.4.0 .
-# Проверка: docker run --rm --network none densitoai:2.4.0 verify   (tools/offline_check.sh)
+# Сборка:   docker build --platform linux/amd64 -t densitoai:2.5.0 .
+# Проверка: docker run --rm --network none densitoai:2.5.0 verify   (tools/offline_check.sh)
 # =============================================================================
 # Базовый образ закреплён по digest (multi-arch index python:3.12.8-slim-bookworm,
 # получен 2026-09-19 запросом к registry-1.docker.io; для linux/amd64 внутри индекса —
@@ -30,7 +30,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     OMP_NUM_THREADS=2 \
     MKL_NUM_THREADS=2 \
     OPENBLAS_NUM_THREADS=2 \
-    PYTHONHASHSEED=0
+    PYTHONHASHSEED=0 \
+    # местное время журнала, экспертной проверки и карточек запросов (time.strftime): Москва, UTC+3.
+    # POSIX-строка работает без tzdata в slim-образе; переопределяется `docker run -e TZ=...`
+    TZ=MSK-3
 
 # libgomp1 — OpenMP для torch/sklearn; libglib2.0-0 — OpenCV headless
 RUN apt-get update \

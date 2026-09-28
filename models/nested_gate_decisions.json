@@ -407,6 +407,216 @@
       ],
       "date": "2026-09-23",
       "version": "2.4.0"
+    },
+    {
+      "region": "spine",
+      "criterion": "sp_art",
+      "kind": "feature",
+      "candidate": "spart_zone_band70",
+      "candidate_what": "признаки контура A `metal_metal_band70_area_log`, `metal_metal_band70_max_gap` — площадь (log1p, мм²) и перепад яркости плотных участков вне кости в верхних 70 % вертикальной протяжённости маски кости (зона измерения L1–L4); те же компоненты, что у `metal_metal_area_mm2` (src/geometry_features.py: foreign_object_features)",
+      "alternative_what": "контур A 2.4.x: metal_metal_area_mm2 + metal_metal_max_intensity_gap (площадь по всему кадру)",
+      "protocol_id": "nested_spart_zone_2_5",
+      "protocol": "tools/spart_position/spart_position_gate.py (exp_spart): GroupKFold 5 внешних x 20 повторов x 3 внутренних; группы (study, pixel_hash); порог prevalence_x1.4 на inner-OOF; стек 0.5/0.5 с контуром B imagenet; отсечка c из {0.5, 0.6, 0.7, 0.8, 1.0} выбирается только на inner-OOF внешнего train",
+      "n": 166,
+      "n_pos": 35,
+      "n_groups": 99,
+      "n_pos_groups": 17,
+      "emb_source": "imagenet",
+      "preproc": {
+        "geom": "baseline",
+        "emb": "baseline"
+      },
+      "n_repeats": 20,
+      "n_repeats_gain_ge_0.03": 19,
+      "n_repeats_needed": 14,
+      "mean_delta_auc": 0.06612868047982552,
+      "sd_delta_auc": 0.03456104283315135,
+      "min_delta_auc": 0.028026172300981478,
+      "mean_delta_f1pos": 0.10622350335305505,
+      "mean_delta_macro_f1": 0.07359580557072598,
+      "n_repeats_macro_f1_not_worse": 20,
+      "auc_base_mean_over_repeats": 0.8174591057797164,
+      "auc_cand_mean_over_repeats": 0.8835877862595419,
+      "auc_cand_ci": null,
+      "auc_geom_base_mean": 0.6052562704471101,
+      "auc_geom_cand_mean": 0.7900981461286805,
+      "macro_f1_base_mean_over_repeats": 0.6832647557985967,
+      "macro_f1_cand_mean_over_repeats": 0.7568605613693227,
+      "selection_counts": {
+        "band70": 76,
+        "band80": 24
+      },
+      "score_variant": "gate: отсечка выбирается внутри фолда (основная ветка; в продакшене — фиксированная 70 %, см. production_variant_control)",
+      "accepted": true,
+      "accepted_by": "решение владельца (27.09.2026) по действующему правилу nested, как голова укладки H2 в 2.4.0: dAUC >= 0.03 в >= 14/20 повторов без потери macro-F1 — пройдено 19/20 (фиксированная отсечка 70 % — 20/20), Δmacro-F1 +0.074",
+      "calibrated_gate": {
+        "accepted": false,
+        "protocol": "tools/paired_gate.py (идея 11), партия 3 гипотез (gate, band70, gate3), поправка Холма",
+        "delta_auc_ci90": [
+          -0.009481336588424401,
+          0.15637170406648135
+        ],
+        "delta_auc_ci95": [
+          -0.02920155972009373,
+          0.17644085836591564
+        ],
+        "boot_se": 0.05131695531616644,
+        "p_boot_one_sided": 0.07223194201449637,
+        "p_combined_one_sided": 0.09195402298850575,
+        "signflip_p_one_sided": 0.09195402298850575,
+        "delta_macro_f1_vote": 0.07079804086154606,
+        "delta_macro_f1_ci90": [
+          -0.019082178656276254,
+          0.16850044810571133
+        ],
+        "jackknife_groups": {
+          "full": 0.04907306434023995,
+          "min": 0.0207538167938931,
+          "max": 0.08086832061068705,
+          "n_groups_flip_sign": 0
+        },
+        "conditions": {
+          "ci_low_gt_0": false,
+          "point_ge_minimal_effect": true,
+          "f1_ci_low_ge_floor": true,
+          "perm_p_lt_alpha": false
+        },
+        "old_rule": {
+          "accepted": true,
+          "n_repeats_gain": 19,
+          "n_repeats": 20,
+          "needed": 14,
+          "mean_delta_macro_f1": 0.07359580557072598
+        }
+      },
+      "calibrated_gate_m1": {
+        "accepted": false,
+        "protocol": "tools/paired_gate.py, m = 1 (без поправки), справочно",
+        "delta_auc_ci90": [
+          -0.009481336588424401,
+          0.15637170406648135
+        ],
+        "delta_auc_ci95": [
+          -0.02920155972009373,
+          0.17644085836591564
+        ],
+        "boot_se": 0.05131695531616644,
+        "p_boot_one_sided": 0.07223194201449637,
+        "p_combined_one_sided": 0.09195402298850575,
+        "signflip_p_one_sided": 0.09195402298850575,
+        "delta_macro_f1_vote": 0.07079804086154606,
+        "delta_macro_f1_ci90": [
+          -0.019082178656276254,
+          0.16850044810571133
+        ],
+        "jackknife_groups": {
+          "full": 0.04907306434023995,
+          "min": 0.0207538167938931,
+          "max": 0.08086832061068705,
+          "n_groups_flip_sign": 0
+        },
+        "conditions": {
+          "ci_low_gt_0": false,
+          "point_ge_minimal_effect": true,
+          "f1_ci_low_ge_floor": true,
+          "perm_p_lt_alpha": false
+        },
+        "old_rule": {
+          "accepted": true,
+          "n_repeats_gain": 19,
+          "n_repeats": 20,
+          "needed": 14,
+          "mean_delta_macro_f1": 0.07359580557072598
+        }
+      },
+      "calibrated_gate_note": "калиброванный гейт tools/paired_gate.py НЕ пройден: ДИ95 кластерного бутстрапа ΔAUC [−0.029; +0.176], p_boot 0.072, sign-flip p 0.092 (не проходит и без поправки Холма). Положительных исследований 17, поэтому это не нехватка мощности (в отличие от H2, где их было 6): прирост неоднороден по исследованиям. На 40 кадрах слепой проверки врачами эффекта нет: совпадение с разметкой 27 → 28 из 40, найдено с верной причиной 13 из 20 без изменений, ложных тревог 6 из 20 без изменений, с большинством врачей 31 → 30 из 40. Механизм: прежний признак в основном считал предметами крылья подвздошных костей внизу кадра. Признак включён в 2.5.0 решением владельца с этой оговоркой.",
+      "production_variant_control": {
+        "what": "band70: фиксированная отсечка 70 % — ровно то, что стоит в продакшене (config.yaml geometry_cols.sp_art)",
+        "n_repeats_gain_ge_0.03": 20,
+        "mean_delta_auc": 0.06622137404580151,
+        "sd_delta_auc": 0.033231722291444915,
+        "min_delta_auc": 0.030534351145037997,
+        "mean_delta_macro_f1": 0.07553571528211295,
+        "auc_base_mean_over_repeats": 0.8174591057797164,
+        "auc_cand_mean_over_repeats": 0.8836804798255178,
+        "calibrated_gate": {
+          "accepted": false,
+          "protocol": "tools/paired_gate.py (идея 11), партия 3 гипотез (gate, band70, gate3), поправка Холма",
+          "delta_auc_ci90": [
+            -0.00912112771597473,
+            0.15666082517124372
+          ],
+          "delta_auc_ci95": [
+            -0.029073858450552978,
+            0.17679076544128644
+          ],
+          "boot_se": 0.05143431643493007,
+          "p_boot_one_sided": 0.0709822544363909,
+          "p_combined_one_sided": 0.09245377311344327,
+          "signflip_p_one_sided": 0.09245377311344327,
+          "delta_macro_f1_vote": 0.07079804086154606,
+          "delta_macro_f1_ci90": [
+            -0.019082178656276254,
+            0.16850044810571133
+          ],
+          "jackknife_groups": {
+            "full": 0.048636859323882176,
+            "min": 0.02027671755725191,
+            "max": 0.07967557251908397,
+            "n_groups_flip_sign": 0
+          },
+          "conditions": {
+            "ci_low_gt_0": false,
+            "point_ge_minimal_effect": true,
+            "f1_ci_low_ge_floor": true,
+            "perm_p_lt_alpha": false
+          },
+          "old_rule": {
+            "accepted": true,
+            "n_repeats_gain": 20,
+            "n_repeats": 20,
+            "needed": 14,
+            "mean_delta_macro_f1": 0.07553571528211295
+          }
+        }
+      },
+      "doctors_40": {
+        "source": "exp_spart REPORT_spart_position.md, раздел 6 (OOF, кадры tools/review/kit_light_manifest.json)",
+        "agreement_with_markup": [
+          27,
+          28,
+          40
+        ],
+        "found_with_correct_reason": [
+          13,
+          13,
+          20
+        ],
+        "false_alarms": [
+          6,
+          6,
+          20
+        ],
+        "majority_of_doctors_agrees": [
+          31,
+          30,
+          40
+        ],
+        "changed_frames": [
+          23,
+          32,
+          44
+        ]
+      },
+      "sources": [
+        "work/exp_spart/REPORT_spart_position.md (разделы 3–6, 9)",
+        "work/exp_spart/B/outputs/spart_position/summary.json",
+        "work/exp_spart/B/outputs/spart_position/paired_gate_gate.json",
+        "work/exp_spart/B/outputs/spart_position/paired_gate_band70.json",
+        "docs/NESTED_GATE_REPORT.md, часть 8"
+      ],
+      "date": "2026-09-27",
+      "version": "2.5.0"
     }
   ],
   "any": [
@@ -477,6 +687,6 @@
       1.0
     ],
     "acceptance": "dAUC>=0.03 in >=7/10 repeats and mean macro-F1 not worse",
-    "feature_candidates": "записи kind == 'feature' — кандидаты-признаки контура A (H2: sppos_nested.py, 5 x 20 x 3, правило dAUC >= 0.03 в >= 14/20); принятая запись имеет приоритет для nested_* в metrics_summary.json (train_stacked.nested_decision_for)"
+    "feature_candidates": "записи kind == 'feature' — кандидаты-признаки контура A (H2 sp_pos, 2.4.0: sppos_nested.py; sp_art 2.5.0: spart_position_gate.py; 5 x 20 x 3, правило dAUC >= 0.03 в >= 14/20); принятая запись имеет приоритет для nested_* в metrics_summary.json (train_stacked.nested_decision_for)"
   }
 }

@@ -257,16 +257,20 @@ def device_tags_from_dataset(ds, salt: str = "") -> Dict[str, Any]:
     ])
 
 
-def read_device_tags_dicom(rows: Sequence[Dict[str, Any]], dicom_root: Path, salt: str = "") -> List[Dict[str, Any]]:
-    """Прочитать теги аппарата/даты по путям path_to_study (stop_before_pixels)."""
+def read_device_tags_dicom(rows: Sequence[Dict[str, Any]], dicom_root: Path, salt: str = "",
+                           files: Optional[Sequence[Any]] = None) -> List[Dict[str, Any]]:
+    """Прочитать теги аппарата/даты по путям path_to_study (stop_before_pixels).
+    `files[i]` (необязательно) — фактический файл строки i (DensitoInference.last_row_files; для zip — файл во
+    временном каталоге распаковки); если он есть на диске, берётся он, иначе поиск по path_to_study."""
     import pydicom  # локальный импорт: инструмент работает и без pydicom, если теги не нужны
     out: List[Dict[str, Any]] = []
     cache: Dict[str, Dict[str, Any]] = {}
-    for r in rows:
+    for i, r in enumerate(rows):
         rel = str(r.get("path_to_study") or "")
         if not rel:
             continue
-        cands = [dicom_root / rel, Path(rel)]
+        real = [Path(files[i])] if files is not None and i < len(files) and files[i] else []
+        cands = real + [dicom_root / rel, Path(rel)]
         src = next((c for c in cands if c.is_file()), None)
         if src is None:
             # относительный путь может включать имя корневой папки (Исследования/...): пробуем без первого сегмента

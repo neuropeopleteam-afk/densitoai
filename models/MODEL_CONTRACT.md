@@ -47,7 +47,7 @@ fallback-правило по геометрии, без падения.
 `src/train_stacked.py` обязаны с ними совпадать (сверка: `tests/test_feature_contract.py`, 24.09.2026).
 - `sp_pos`: `center_offset_ratio, bone_width_ratio` + `synth_pos_logit` (`config.yaml: features.sp_pos`)
 - `sp_axis`: `axis_angle_deg`
-- `sp_art`: `metal_metal_area_mm2, metal_metal_max_intensity_gap`
+- `sp_art`: `metal_metal_band70_area_log, metal_metal_band70_max_gap`
 - `rh_pos` / `lh_pos` (единая модель `model_hip_pos_geom.pkl`): `femur_solidity, shaft_width_mm, abs_shaft_angle_deg, merge_height_mm, medial_neck_extent_mm`
 - `rh_roi` / `lh_roi` (единая модель `model_hip_roi_geom.pkl`): `scan_length_mm, shaft_len_below_troch_mm`
 - any-модели региона (`model_<region>_any_geom.pkl`): отсортированное объединение признаков критериев
@@ -64,14 +64,18 @@ fallback-правило по геометрии, без падения.
 
 | `emb_source` | веса | кто использует |
 |---|---|---|
-| `imagenet` | torchvision IMAGENET1K_V1, `models/torch_home/` (offline) | sp_axis, sp_art, hip_pos, hip_roi, все `*_any_*`, `model_region_emb` |
-| `densito` | `models/backbone_densito.pth` — тот же B0, предобученный нами на GPU (RunPod, RTX PRO 4500, 60 эпох) на 15 633 фрагментах рентген/DXA кости (FracAtlas, Arak DXA, MTDDH, BUU-LSPINE, AASCE, DEXA-Osteo, свои без меток) прокси-задачами укладки: угол поворота, сдвиг, масштаб, синтетический металл | только `model_spine_sp_pos_emb_pca.pkl` |
+| `imagenet` | torchvision IMAGENET1K_V1, `models/torch_home/` (offline) | sp_art, hip_pos, hip_roi, все `*_any_*`, `model_region_emb` (поля `emb_source` нет — по умолчанию `imagenet`) |
+| `densito` | `models/backbone_densito.pth` — тот же B0, предобученный нами на GPU (RunPod, RTX PRO 4500, 60 эпох) на 15 633 фрагментах рентген/DXA кости (FracAtlas, Arak DXA, MTDDH, BUU-LSPINE, AASCE, DEXA-Osteo, свои без меток) прокси-задачами укладки: угол поворота, сдвиг, масштаб, синтетический металл | только sp_pos: `model_spine_sp_pos_emb_pca.pkl` и признак `synth_pos_logit` (`head_densito_synth.pth`) контура A |
+| `densito_inv` | `models/backbone_densito_inv.pth` — тот же пул, loss инвариантности эмбеддинга к гамме и шуму (К13, выбор — `docs/EMB_GATE_REPORT.md`) | только sp_axis: `model_spine_sp_axis_emb_pca.pkl` (исправлено в 2.4.1: раньше здесь ошибочно стояло `imagenet`) |
+| `densito_inv_free` | `models/backbone_densito_inv_free.pth` — то же без данных с несвободной лицензией | ни одна модель поставки его не использует; вариант без несвободных данных для передачи заказчику (`models/MODEL_CARD.md`) |
+
+Источник истины — `config.yaml → embeddings.source_by_criterion`; значения в таблице сверены с ним и с `models/models_manifest.json` (2.4.1).
 
 Почему так: на нашей разметке (OOF, GroupKFold по исследованиям) `densito` устойчиво лучше ImageNet
 только для укладки позвоночника (контур B 0.60 → 0.80 AUC, стек 0.60 → 0.72; в отдельной проверке
 `gpu/eval_embeddings.py` +0.13 AUC в 10 из 10 повторов) и хуже для посторонних предметов (−0.14):
 синтетический металл не похож на реальные пуговицы и молнии. Для бедра выигрыша на боевом протоколе
-нет. Инференс считает эмбеддинги обоих бэкбонов только для позвоночника (+~0.3 с/файл на CPU).
+нет. Инференс считает эмбеддинги обоих бэкбонов только для позвоночника (+~0.3 с/файл на CPU; с 2.4.0 для позвоночника считаются три источника — `imagenet`, `densito`, `densito_inv`, время бэкбонов по этапам в 2.4.0 — `docs/PERFORMANCE.md`, раздел 3.2).
 Скрипты: `gpu/prepare_cache.py`, `gpu/pretrain_proxy.py`, `gpu/eval_embeddings.py`; эмбеддинги
 для обучения — `python src/embeddings.py --source densito` → `data/embeddings_densito.npy`.
 

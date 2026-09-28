@@ -1,6 +1,6 @@
 # Сопроводительное письмо к сдаче решения — команда DensitoAI
 
-**Тема:** ЛЦТ 2026, задача №4 (Департамент здравоохранения Москвы) — решение DensitoAI, версия 2.1.0
+**Тема:** ЛЦТ 2026, задача №4 (Департамент здравоохранения Москвы) — решение DensitoAI, версия 2.5.0
 
 Здравствуйте!
 
@@ -11,10 +11,12 @@
 
 | Что | Где |
 |---|---|
-| Публичный репозиторий (код, веса, документация) | `git clone https://github.com/neuropeopleteam-afk/densitoai.git` — просмотр: https://github.com/neuropeopleteam-afk/densitoai; образ Docker и исходники релиза 2.4.0 — https://github.com/neuropeopleteam-afk/densitoai/releases |
-| Работающая демонстрация (веб-интерфейс + API) | https://densito.ru |
-| Проверка сервиса вслепую на своих снимках | https://densito.ru/expert/ — загрузите DICOM, оцените сами, нажмите «Завершить» и сравните с сервисом |
-| Swagger API | https://densito.ru/docs |
+| Публичный репозиторий (код, веса, документация), без пароля | `git clone https://github.com/neuropeopleteam-afk/densitoai.git` — просмотр: https://github.com/neuropeopleteam-afk/densitoai; документация — `README.md` |
+| Образ Docker и исходники релиза 2.5.0, без пароля | https://github.com/neuropeopleteam-afk/densitoai/releases (файлы лежат в ветке `release-2.5.0`, Git LFS) |
+| Презентация, без пароля | `docs/presentation/DensitoAI_LCT2026_prezentatsiya.pdf` в репозитории |
+| Работающая демонстрация (веб-интерфейс + API) | https://densito.ru — логин `demo`, пароль `Hakaton` (общий демо-пароль, он же показан на странице входа) |
+| Проверка сервиса вслепую на своих снимках | https://densito.ru/expert/ (тот же логин и пароль) — загрузите DICOM, оцените сами, нажмите «Завершить» и сравните с сервисом |
+| Swagger API | https://densito.ru/docs (тот же логин и пароль); в образе — `http://localhost:8000/docs` без пароля и без интернета |
 
 Все веса моделей лежат в репозитории (`models/`, включая офлайн-веса EfficientNet-B0 в
 `models/torch_home`); внешние сервисы, сеть и GPU для работы не требуются.
@@ -56,8 +58,11 @@ quality_prob, processing_status, time_of_processing`; одна строка на
 Серия визуализации по каждому снимку (измерения и оценки моделей по критериям) — как PNG и как
 DICOM Secondary Capture рядом с исходной серией (производное изображение со ссылкой на исходный
 снимок, детерминированными UID и предупреждением в пикселях), один DICOM Structured Report
-(Comprehensive SR) на исследование с вердиктом и измерениями, диагностика области интереса
-бедра с дефицитом скана в мм, веб-интерфейс.
+(Comprehensive SR) на исследование с вердиктом и измерениями, сегментация структур (PNG-маска и DICOM SEG),
+zip-архив дополнительных серий `additional_series.zip` (ТЗ п. 2.7), диагностика области интереса
+бедра с дефицитом скана в мм, команда лаборанту с измеренным основанием, приём снимков по DICOM
+(Storage SCP), веб-интерфейс с журналом исследований и проверкой вслепую. Подробно — `README.md`,
+`CHANGELOG.md`.
 
 ## Контакты
 

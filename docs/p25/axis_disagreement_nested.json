@@ -1,0 +1,379 @@
+{
+ "n": 166,
+ "errors": 17,
+ "fp": 13,
+ "fn": 4,
+ "n_groups": 99,
+ "auc_disagreement_vs_error": 0.562,
+ "insample_kimi": {
+  "0.4": {
+   "caught": 10,
+   "flag_correct": 33,
+   "load_all": 0.259
+  },
+  "0.5": {
+   "caught": 8,
+   "flag_correct": 24,
+   "load_all": 0.193
+  }
+ },
+ "grid": [
+  0.3,
+  0.35,
+  0.4,
+  0.45,
+  0.5,
+  0.55,
+  0.6,
+  0.65,
+  0.7,
+  0.75,
+  0.8
+ ],
+ "load_cap_correct_train": 0.2,
+ "criteria": {
+  "coverage_min": 0.47,
+  "coverage_share_repeats": 0.7,
+  "load_all_max": 0.25,
+  "load_correct_max": 0.2
+ },
+ "summary": {
+  "coverage_mean": 0.553,
+  "coverage_min": 0.471,
+  "coverage_max": 0.588,
+  "share_repeats_cov_ge_047": 1.0,
+  "share_repeats_cov_gt_load": 1.0,
+  "load_all_mean": 0.236,
+  "load_correct_mean": 0.199,
+  "caught_mean": 9.4,
+  "thresholds_seen": [
+   0.4,
+   0.45,
+   0.5,
+   0.55
+  ]
+ },
+ "accept": true,
+ "repeats": [
+  {
+   "repeat": 0,
+   "thresholds": [
+    0.45,
+    0.4,
+    0.45,
+    0.55,
+    0.45
+   ],
+   "caught": 10,
+   "errors": 17,
+   "coverage": 0.5882352941176471,
+   "load_all": 0.2289156626506024,
+   "load_correct": 0.18791946308724833,
+   "flagged": 38
+  },
+  {
+   "repeat": 1,
+   "thresholds": [
+    0.4,
+    0.55,
+    0.45,
+    0.4,
+    0.5
+   ],
+   "caught": 10,
+   "errors": 17,
+   "coverage": 0.5882352941176471,
+   "load_all": 0.2469879518072289,
+   "load_correct": 0.2080536912751678,
+   "flagged": 41
+  },
+  {
+   "repeat": 2,
+   "thresholds": [
+    0.45,
+    0.45,
+    0.5,
+    0.4,
+    0.5
+   ],
+   "caught": 10,
+   "errors": 17,
+   "coverage": 0.5882352941176471,
+   "load_all": 0.24096385542168675,
+   "load_correct": 0.20134228187919462,
+   "flagged": 40
+  },
+  {
+   "repeat": 3,
+   "thresholds": [
+    0.45,
+    0.45,
+    0.5,
+    0.4,
+    0.45
+   ],
+   "caught": 10,
+   "errors": 17,
+   "coverage": 0.5882352941176471,
+   "load_all": 0.25301204819277107,
+   "load_correct": 0.21476510067114093,
+   "flagged": 42
+  },
+  {
+   "repeat": 4,
+   "thresholds": [
+    0.45,
+    0.5,
+    0.4,
+    0.5,
+    0.45
+   ],
+   "caught": 8,
+   "errors": 17,
+   "coverage": 0.47058823529411764,
+   "load_all": 0.22289156626506024,
+   "load_correct": 0.19463087248322147,
+   "flagged": 37
+  },
+  {
+   "repeat": 5,
+   "thresholds": [
+    0.4,
+    0.45,
+    0.5,
+    0.45,
+    0.5
+   ],
+   "caught": 10,
+   "errors": 17,
+   "coverage": 0.5882352941176471,
+   "load_all": 0.23493975903614459,
+   "load_correct": 0.19463087248322147,
+   "flagged": 39
+  },
+  {
+   "repeat": 6,
+   "thresholds": [
+    0.4,
+    0.5,
+    0.5,
+    0.45,
+    0.45
+   ],
+   "caught": 8,
+   "errors": 17,
+   "coverage": 0.47058823529411764,
+   "load_all": 0.21686746987951808,
+   "load_correct": 0.18791946308724833,
+   "flagged": 36
+  },
+  {
+   "repeat": 7,
+   "thresholds": [
+    0.5,
+    0.4,
+    0.5,
+    0.4,
+    0.45
+   ],
+   "caught": 10,
+   "errors": 17,
+   "coverage": 0.5882352941176471,
+   "load_all": 0.25301204819277107,
+   "load_correct": 0.21476510067114093,
+   "flagged": 42
+  },
+  {
+   "repeat": 8,
+   "thresholds": [
+    0.5,
+    0.45,
+    0.45,
+    0.45,
+    0.45
+   ],
+   "caught": 10,
+   "errors": 17,
+   "coverage": 0.5882352941176471,
+   "load_all": 0.23493975903614459,
+   "load_correct": 0.19463087248322147,
+   "flagged": 39
+  },
+  {
+   "repeat": 9,
+   "thresholds": [
+    0.4,
+    0.45,
+    0.5,
+    0.45,
+    0.45
+   ],
+   "caught": 10,
+   "errors": 17,
+   "coverage": 0.5882352941176471,
+   "load_all": 0.24096385542168675,
+   "load_correct": 0.20134228187919462,
+   "flagged": 40
+  },
+  {
+   "repeat": 10,
+   "thresholds": [
+    0.5,
+    0.4,
+    0.5,
+    0.45,
+    0.45
+   ],
+   "caught": 8,
+   "errors": 17,
+   "coverage": 0.47058823529411764,
+   "load_all": 0.23493975903614459,
+   "load_correct": 0.2080536912751678,
+   "flagged": 39
+  },
+  {
+   "repeat": 11,
+   "thresholds": [
+    0.5,
+    0.4,
+    0.5,
+    0.4,
+    0.55
+   ],
+   "caught": 10,
+   "errors": 17,
+   "coverage": 0.5882352941176471,
+   "load_all": 0.21686746987951808,
+   "load_correct": 0.174496644295302,
+   "flagged": 36
+  },
+  {
+   "repeat": 12,
+   "thresholds": [
+    0.45,
+    0.4,
+    0.55,
+    0.45,
+    0.5
+   ],
+   "caught": 10,
+   "errors": 17,
+   "coverage": 0.5882352941176471,
+   "load_all": 0.2289156626506024,
+   "load_correct": 0.18791946308724833,
+   "flagged": 38
+  },
+  {
+   "repeat": 13,
+   "thresholds": [
+    0.45,
+    0.4,
+    0.45,
+    0.5,
+    0.5
+   ],
+   "caught": 10,
+   "errors": 17,
+   "coverage": 0.5882352941176471,
+   "load_all": 0.22289156626506024,
+   "load_correct": 0.18120805369127516,
+   "flagged": 37
+  },
+  {
+   "repeat": 14,
+   "thresholds": [
+    0.45,
+    0.45,
+    0.4,
+    0.5,
+    0.45
+   ],
+   "caught": 10,
+   "errors": 17,
+   "coverage": 0.5882352941176471,
+   "load_all": 0.2469879518072289,
+   "load_correct": 0.2080536912751678,
+   "flagged": 41
+  },
+  {
+   "repeat": 15,
+   "thresholds": [
+    0.45,
+    0.45,
+    0.5,
+    0.5,
+    0.4
+   ],
+   "caught": 8,
+   "errors": 17,
+   "coverage": 0.47058823529411764,
+   "load_all": 0.23493975903614459,
+   "load_correct": 0.2080536912751678,
+   "flagged": 39
+  },
+  {
+   "repeat": 16,
+   "thresholds": [
+    0.4,
+    0.4,
+    0.5,
+    0.45,
+    0.5
+   ],
+   "caught": 10,
+   "errors": 17,
+   "coverage": 0.5882352941176471,
+   "load_all": 0.2469879518072289,
+   "load_correct": 0.2080536912751678,
+   "flagged": 41
+  },
+  {
+   "repeat": 17,
+   "thresholds": [
+    0.5,
+    0.45,
+    0.4,
+    0.5,
+    0.45
+   ],
+   "caught": 8,
+   "errors": 17,
+   "coverage": 0.47058823529411764,
+   "load_all": 0.23493975903614459,
+   "load_correct": 0.2080536912751678,
+   "flagged": 39
+  },
+  {
+   "repeat": 18,
+   "thresholds": [
+    0.5,
+    0.45,
+    0.5,
+    0.5,
+    0.4
+   ],
+   "caught": 8,
+   "errors": 17,
+   "coverage": 0.47058823529411764,
+   "load_all": 0.21686746987951808,
+   "load_correct": 0.18791946308724833,
+   "flagged": 36
+  },
+  {
+   "repeat": 19,
+   "thresholds": [
+    0.4,
+    0.5,
+    0.45,
+    0.5,
+    0.4
+   ],
+   "caught": 10,
+   "errors": 17,
+   "coverage": 0.5882352941176471,
+   "load_all": 0.25301204819277107,
+   "load_correct": 0.21476510067114093,
+   "flagged": 42
+  }
+ ]
+}

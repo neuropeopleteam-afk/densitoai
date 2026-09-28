@@ -35,6 +35,7 @@ import hashlib
 import hmac
 import io
 import json
+import logging
 import os
 import re
 import secrets
@@ -175,6 +176,13 @@ def verify_password(pw: str, stored: str) -> bool:
         return False
 
 
+class _HideAll(set):
+    """Список скрытых загрузок не удалось получить: безопаснее скрыть решения всех загрузок, чем раскрыть чужую слепую проверку."""
+
+    def __contains__(self, item) -> bool:  # noqa: D401
+        return True
+
+
 class Registry:
     def __init__(self, output_dir: Path, users_file: Optional[Path] = None, secret: Optional[str] = None):
         self.dir = Path(output_dir)
@@ -192,8 +200,9 @@ class Registry:
     def _hidden(self) -> set:
         try:
             return set(self.hidden_jobs()) if self.hidden_jobs else set()
-        except Exception:  # noqa: BLE001 — ошибка экспертной части не ломает журнал
-            return set()
+        except Exception as e:  # noqa: BLE001 — ошибка экспертной части не ломает журнал, но и не раскрывает решения
+            logging.getLogger("densito.registry").warning("список скрытых загрузок недоступен (%s): решения в журнале скрыты", e)
+            return _HideAll()
 
     # ---- хранилище
     def _conn(self) -> sqlite3.Connection:
@@ -541,8 +550,11 @@ TAGS = ("PatientName", "PatientID", "PatientBirthDate", "PatientSex", "StudyDate
         "AccessionNumber", "StationName", "Manufacturer", "ManufacturerModelName", "SOPInstanceUID")
 
 
-def read_tags(rows: List[Dict[str, Any]], root: Path) -> Dict[int, Dict[str, str]]:
-    """Теги по строкам: сначала по path_to_study, затем по SOPInstanceUID среди файлов каталога загрузки."""
+def read_tags(rows: List[Dict[str, Any]], root: Path,
+              files: Optional[List[Any]] = None) -> Dict[int, Dict[str, str]]:
+    """Теги по строкам: сначала по фактическому файлу строки (`files[i]` — DensitoInference.last_row_files,
+    для zip это файл во временном каталоге распаковки), затем по path_to_study, затем по SOPInstanceUID
+    среди файлов каталога загрузки."""
     try:
         import pydicom
     except Exception:  # noqa: BLE001
@@ -560,8 +572,9 @@ def read_tags(rows: List[Dict[str, Any]], root: Path) -> Dict[int, Dict[str, str
     root = Path(root)
     for i, r in enumerate(rows):
         rel = str(r.get("path_to_study") or "")
-        cands = [root / rel] + ([root / Path(*Path(rel).parts[1:])] if len(Path(rel).parts) > 1 else [])
-        p = next((x for x in cands if rel and x.is_file()), None)
+        real = [Path(files[i])] if files and i < len(files) and files[i] else []
+        cands = ([root / rel] + ([root / Path(*Path(rel).parts[1:])] if len(Path(rel).parts) > 1 else [])) if rel else []
+        p = next((x for x in real + cands if x.is_file()), None)
         t = tags_of(p) if p else {}
         if not t or (r.get("image_uid") and t.get("SOPInstanceUID") and t["SOPInstanceUID"] != str(r.get("image_uid"))):
             if by_sop is None:

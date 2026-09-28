@@ -206,6 +206,63 @@ def spine_axis_features(img_u8, mask, mode=None):
     }
 
 
+# 2.5 (эксперимент sp_art): положение плотных участков относительно кости.
+# Полоса по вертикали = верхняя доля c протяжённости маски кости [y0, y0 + c*(y1 - y0)],
+# где y0/y1 — первая/последняя строка маски segment_bone (столб позвонков). Врач игнорирует
+# предмет вне зоны измерения L1–L4 (ТЗ, рис. 3); крылья подвздошных костей, отрезанные от
+# крупнейшей костной компоненты, лежат внизу протяжённости. Сетка c задана заранее
+# (anatomy-first, work/exp_spart/PREREG_spart_position.md); какая доля идёт в модель —
+# выбирается только внутри фолдов вложенной проверки (tools/spart_position/spart_position_gate.py).
+POSITION_BANDS = (0.5, 0.6, 0.7, 0.8, 1.0)
+
+
+def _band_key(c):
+    return f"band{int(round(c * 100))}"
+
+
+def _empty_position_features():
+    out = {'area_log': 0.0}
+    for c in POSITION_BANDS:
+        k = _band_key(c)
+        out.update({f'{k}_area_mm2': 0.0, f'{k}_area_log': 0.0, f'{k}_max_gap': 0.0, f'{k}_n': 0})
+    return out
+
+
+def _position_features(labels, kept, gaps, mask, px_area_mm2):
+    """Площадь / лог-площадь / максимальный перепад / число компонент плотных участков, попавших
+    (по пикселям, по строкам) в верхнюю долю c вертикальной протяжённости маски кости.
+    kept — номера компонент после отсева шума (как в суммарной площади), gaps — их перепады."""
+    out = _empty_position_features()
+    rows = np.nonzero(mask.any(axis=1))[0]
+    total_px = 0
+    comp_rows = {}
+    for i in kept:
+        ys = np.nonzero(labels == i)[0]
+        comp_rows[i] = ys
+        total_px += len(ys)
+    out['area_log'] = float(np.log1p(total_px * px_area_mm2))
+    if len(rows) == 0 or not kept:
+        return out
+    y0, y1 = float(rows.min()), float(rows.max())
+    for c in POSITION_BANDS:
+        k = _band_key(c)
+        hi = y0 + c * (y1 - y0)
+        area_px, n, g = 0, 0, 0.0
+        for i in kept:
+            ys = comp_rows[i]
+            inside = int(((ys >= y0) & (ys <= hi)).sum())
+            if inside < 4:  # тот же порог шума, что и у компоненты целиком
+                continue
+            area_px += inside
+            n += 1
+            g = max(g, gaps[i])
+        out[f'{k}_area_mm2'] = float(area_px * px_area_mm2)
+        out[f'{k}_area_log'] = float(np.log1p(area_px * px_area_mm2))
+        out[f'{k}_max_gap'] = float(g)
+        out[f'{k}_n'] = int(n)
+    return out
+
+
 def foreign_object_features(img_u8, mask):
     """
     Детектор посторонних объектов ВНЕ кости (застёжки, пуговицы, молнии,
@@ -232,8 +289,10 @@ def foreign_object_features(img_u8, mask):
     soft_tissue_pixels = soft_tissue_pixels[soft_tissue_pixels > body_thresh]
 
     if len(soft_tissue_pixels) < 20:
-        return {'metal_area_px': 0, 'metal_area_mm2': 0.0, 'metal_outside_bone_px': 0,
-                'metal_outside_bone_mm2': 0.0, 'has_metal': False, 'metal_max_intensity_gap': 0.0}
+        out = {'metal_area_px': 0, 'metal_area_mm2': 0.0, 'metal_outside_bone_px': 0,
+               'metal_outside_bone_mm2': 0.0, 'has_metal': False, 'metal_max_intensity_gap': 0.0}
+        out.update({f'metal_{k}': v for k, v in _empty_position_features().items()})
+        return out
 
     bg_mean = float(np.mean(soft_tissue_pixels))
     bg_std = float(np.std(soft_tissue_pixels)) + 1e-6
@@ -254,6 +313,7 @@ def foreign_object_features(img_u8, mask):
 
     total_area = 0
     max_gap = 0.0
+    kept, gaps = [], {}
     for i in range(1, n_labels):
         area = stats[i, cv2.CC_STAT_AREA]
         if area < 4:  # шум
@@ -262,8 +322,10 @@ def foreign_object_features(img_u8, mask):
         component_intensity = img_u8[labels == i].mean()
         gap = (component_intensity - bg_mean) / bg_std
         max_gap = max(max_gap, gap)
+        kept.append(i)
+        gaps[i] = float(gap)
 
-    return {
+    out = {
         'metal_area_px': int(total_area),
         'metal_area_mm2': float(total_area * px_area_mm2),
         'metal_outside_bone_px': int(total_area),
@@ -271,6 +333,9 @@ def foreign_object_features(img_u8, mask):
         'has_metal': total_area * px_area_mm2 > 3.0,
         'metal_max_intensity_gap': float(max_gap),
     }
+    # 2.5: положение плотных участков относительно кости (ключи с префиксом metal_ -> колонки metal_metal_*)
+    out.update({f'metal_{k}': v for k, v in _position_features(labels, kept, gaps, mask, px_area_mm2).items()})
+    return out
 
 
 def spine_positioning_features(img_u8, mask):

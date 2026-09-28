@@ -25,6 +25,14 @@ REGION_OF = {
     # C1: признаки моделей контура A без собственной нормы
     "femur_solidity": "hip", "shaft_width_mm": "hip", "merge_height_mm": "hip", "medial_neck_extent_mm": "hip",
     "bone_width_ratio": "spine", "metal_metal_max_intensity_gap": None,
+    "metal_metal_band70_area_mm2": "spine",
+}
+# 2.5: справочные нормы карточки для измерений, которых нет в config.yaml: measurement_norms. Держим здесь, а не в
+# config.yaml, чтобы продуктовые изменения 2.5 не меняли config_hash модели. Только подпись и справочный
+# диапазон нормальных кадров; порогом не являются.
+DISPLAY_NORMS = {
+    "metal_metal_band70_area_mm2": {"label": "Площадь посторонних объектов в зоне измерения", "unit": "мм²",
+                                    "zone_note": "верхние 70 % протяжённости кости", "ref": True},
 }
 
 
@@ -47,7 +55,9 @@ def main() -> None:
     root = Path(a.root)
     cfg = yaml.safe_load(open(a.config or root / "config.yaml", encoding="utf-8"))
     actions = cfg.get("actions") or {}
-    norms = cfg.get("measurement_norms") or {}
+    norms = dict(cfg.get("measurement_norms") or {})
+    for k, v in DISPLAY_NORMS.items():
+        norms.setdefault(k, v)
     feats_path = Path(a.features or root / "data" / "geometry_features.csv")
     g = pd.read_csv(feats_path) if feats_path.exists() else pd.DataFrame()
     normal = g[g.get("quality_class", pd.Series(dtype=float)) == 0] if len(g) else g

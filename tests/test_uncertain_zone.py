@@ -166,8 +166,8 @@ def test_current_point_reproduces_delivery_numbers():
             rec = (calib.get("criteria") or {}).get(crit) or {}
             if rec.get("uncertain_rate_oof") is not None and abs(float(rec.get("margin", c["margin"])) - c["margin"]) < 1e-9:
                 assert abs(c["current"]["share_uncertain"] - float(rec["uncertain_rate_oof"])) < 1e-6, crit
-    # известные числа сборки 2.4.0 (docs/CALIBRATION.md, таблица 3), если запасы те же
-    exp = {"spine": 24, "hip": 31}
+    # известные числа сборки 2.5.0 (docs/CALIBRATION.md, таблица 3; в 2.4.0 позвоночник 24), если запасы те же
+    exp = {"spine": 23, "hip": 31}  # 2.5.0: sp_art на признаках положения предметов (было 24)
     m = res["inputs"]["margins"]
     if abs(m.get("sp_pos", -1)) < 1e-12 and abs(m.get("hip_roi", 0) - 0.025835867) < 1e-9:
         for region, n in exp.items():

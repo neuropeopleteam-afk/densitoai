@@ -1,0 +1,1000 @@
+{
+ "rules": {
+  "hip_wide_field_mm": 51.0,
+  "art_zone": "metal_metal_band70_area_mm2 == 0",
+  "version": "2.5-ae1"
+ },
+ "n_files": 499,
+ "n_files_oof": 495,
+ "oof": {
+  "flagged_images": 167,
+  "retake_241": 134,
+  "retake_to_check": 27,
+  "retake_25": 107,
+  "by_area": {
+   "spine": {
+    "retake_241": 65,
+    "to_check": 0
+   },
+   "hip": {
+    "retake_241": 69,
+    "to_check": 27
+   }
+  },
+  "images_to_check_any_violation": {
+   "n": 27,
+   "with_any_label": 9
+  },
+  "images_kept_retake_any_violation": {
+   "n": 107,
+   "with_any_label": 69
+  },
+  "flag_status_table": {
+   "hip_pos:confirmed": {
+    "n_flags": 38,
+    "true_violation_of_criterion": 21,
+    "share_true": 0.553
+   },
+   "hip_pos:wide_field": {
+    "n_flags": 31,
+    "true_violation_of_criterion": 11,
+    "share_true": 0.355
+   },
+   "hip_roi:not_applicable": {
+    "n_flags": 8,
+    "true_violation_of_criterion": 4,
+    "share_true": 0.5
+   },
+   "sp_art:confirmed": {
+    "n_flags": 43,
+    "true_violation_of_criterion": 28,
+    "share_true": 0.651
+   },
+   "sp_axis:not_applicable": {
+    "n_flags": 21,
+    "true_violation_of_criterion": 8,
+    "share_true": 0.381
+   },
+   "sp_pos:not_applicable": {
+    "n_flags": 18,
+    "true_violation_of_criterion": 7,
+    "share_true": 0.389
+   }
+  },
+  "hip_threshold_sensitivity": {
+   "51.0": {
+    "hip_pos_flags": 69,
+    "wide": 31,
+    "wide_true_hip_pos": 11,
+    "narrow": 38,
+    "narrow_true_hip_pos": 21
+   },
+   "55.0": {
+    "hip_pos_flags": 69,
+    "wide": 28,
+    "wide_true_hip_pos": 8,
+    "narrow": 41,
+    "narrow_true_hip_pos": 24
+   }
+  }
+ },
+ "doctors40": {
+  "shows": [
+   {
+    "show": 1,
+    "area": "spine",
+    "flags": [
+     "sp_art"
+    ],
+    "labels": [
+     "sp_art"
+    ],
+    "uncertain": false,
+    "lateral_margin_mm": null,
+    "art_zone": {
+     "area_mm2": 671.0,
+     "zone_area_mm2": 449.8,
+     "outside_area_mm2": 221.1,
+     "zone_n": 2,
+     "zone_from": "верхние 70 % протяжённости кости"
+    },
+    "command_25": "retake",
+    "evidence": {
+     "sp_art": "confirmed"
+    },
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "ok",
+     "врач 3": "bad"
+    }
+   },
+   {
+    "show": 2,
+    "area": "spine",
+    "flags": [],
+    "labels": [],
+    "uncertain": false,
+    "lateral_margin_mm": null,
+    "art_zone": {
+     "area_mm2": 2174.8,
+     "zone_area_mm2": 0.0,
+     "outside_area_mm2": 2174.8,
+     "zone_n": 0,
+     "zone_from": "верхние 70 % протяжённости кости"
+    },
+    "command_25": null,
+    "evidence": {},
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "ok",
+     "врач 3": "ok"
+    }
+   },
+   {
+    "show": 3,
+    "area": "hip",
+    "flags": [],
+    "labels": [],
+    "uncertain": false,
+    "lateral_margin_mm": 36.6,
+    "art_zone": null,
+    "command_25": null,
+    "evidence": {},
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "ok",
+     "врач 3": "ok"
+    }
+   },
+   {
+    "show": 4,
+    "area": "hip",
+    "flags": [],
+    "labels": [],
+    "uncertain": false,
+    "lateral_margin_mm": 40.2,
+    "art_zone": null,
+    "command_25": null,
+    "evidence": {},
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "ok",
+     "врач 3": "ok"
+    }
+   },
+   {
+    "show": 5,
+    "area": "spine",
+    "flags": [
+     "sp_art"
+    ],
+    "labels": [],
+    "uncertain": false,
+    "lateral_margin_mm": null,
+    "art_zone": {
+     "area_mm2": 323.2,
+     "zone_area_mm2": 136.1,
+     "outside_area_mm2": 187.1,
+     "zone_n": 2,
+     "zone_from": "верхние 70 % протяжённости кости"
+    },
+    "command_25": "retake",
+    "evidence": {
+     "sp_art": "confirmed"
+    },
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "bad",
+     "врач 3": "bad"
+    }
+   },
+   {
+    "show": 6,
+    "area": "spine",
+    "flags": [],
+    "labels": [
+     "sp_pos"
+    ],
+    "uncertain": false,
+    "lateral_margin_mm": null,
+    "art_zone": {
+     "area_mm2": 226.8,
+     "zone_area_mm2": 0.0,
+     "outside_area_mm2": 226.8,
+     "zone_n": 0,
+     "zone_from": "верхние 70 % протяжённости кости"
+    },
+    "command_25": null,
+    "evidence": {},
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "bad",
+     "врач 3": "ok"
+    }
+   },
+   {
+    "show": 7,
+    "area": "spine",
+    "flags": [
+     "sp_pos"
+    ],
+    "labels": [
+     "sp_pos"
+    ],
+    "uncertain": false,
+    "lateral_margin_mm": null,
+    "art_zone": {
+     "area_mm2": 0.0,
+     "zone_area_mm2": 0.0,
+     "outside_area_mm2": 0.0,
+     "zone_n": 0,
+     "zone_from": "верхние 70 % протяжённости кости"
+    },
+    "command_25": "retake",
+    "evidence": {
+     "sp_pos": "not_applicable"
+    },
+    "doctors": {
+     "врач 1": "bad",
+     "врач 2": "bad",
+     "врач 3": "bad"
+    }
+   },
+   {
+    "show": 8,
+    "area": "hip",
+    "flags": [
+     "hip_pos"
+    ],
+    "labels": [],
+    "uncertain": false,
+    "lateral_margin_mm": 61.8,
+    "art_zone": null,
+    "command_25": "check",
+    "evidence": {
+     "hip_pos": "wide_field"
+    },
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "ok",
+     "врач 3": "ok"
+    }
+   },
+   {
+    "show": 9,
+    "area": "spine",
+    "flags": [
+     "sp_pos"
+    ],
+    "labels": [
+     "sp_pos"
+    ],
+    "uncertain": false,
+    "lateral_margin_mm": null,
+    "art_zone": {
+     "area_mm2": 0.0,
+     "zone_area_mm2": 0.0,
+     "outside_area_mm2": 0.0,
+     "zone_n": 0,
+     "zone_from": "верхние 70 % протяжённости кости"
+    },
+    "command_25": "retake",
+    "evidence": {
+     "sp_pos": "not_applicable"
+    },
+    "doctors": {
+     "врач 1": "bad",
+     "врач 2": "bad",
+     "врач 3": "bad"
+    }
+   },
+   {
+    "show": 10,
+    "area": "hip",
+    "flags": [],
+    "labels": [],
+    "uncertain": false,
+    "lateral_margin_mm": 71.4,
+    "art_zone": null,
+    "command_25": null,
+    "evidence": {},
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "ok",
+     "врач 3": "ok"
+    }
+   },
+   {
+    "show": 11,
+    "area": "hip",
+    "flags": [],
+    "labels": [],
+    "uncertain": false,
+    "lateral_margin_mm": 42.6,
+    "art_zone": null,
+    "command_25": null,
+    "evidence": {},
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "ok",
+     "врач 3": "ok"
+    }
+   },
+   {
+    "show": 12,
+    "area": "spine",
+    "flags": [],
+    "labels": [],
+    "uncertain": false,
+    "lateral_margin_mm": null,
+    "art_zone": {
+     "area_mm2": 165.1,
+     "zone_area_mm2": 0.0,
+     "outside_area_mm2": 165.1,
+     "zone_n": 0,
+     "zone_from": "верхние 70 % протяжённости кости"
+    },
+    "command_25": null,
+    "evidence": {},
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "ok",
+     "врач 3": "bad"
+    }
+   },
+   {
+    "show": 13,
+    "area": "hip",
+    "flags": [
+     "hip_pos"
+    ],
+    "labels": [
+     "hip_pos"
+    ],
+    "uncertain": false,
+    "lateral_margin_mm": 43.2,
+    "art_zone": null,
+    "command_25": "retake",
+    "evidence": {
+     "hip_pos": "confirmed"
+    },
+    "doctors": {
+     "врач 1": "unsure",
+     "врач 2": "ok",
+     "врач 3": "ok"
+    }
+   },
+   {
+    "show": 14,
+    "area": "hip",
+    "flags": [
+     "hip_pos"
+    ],
+    "labels": [],
+    "uncertain": false,
+    "lateral_margin_mm": 67.8,
+    "art_zone": null,
+    "command_25": "check",
+    "evidence": {
+     "hip_pos": "wide_field"
+    },
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "ok",
+     "врач 3": "ok"
+    }
+   },
+   {
+    "show": 15,
+    "area": "spine",
+    "flags": [
+     "sp_pos",
+     "sp_art"
+    ],
+    "labels": [
+     "sp_art"
+    ],
+    "uncertain": false,
+    "lateral_margin_mm": null,
+    "art_zone": {
+     "area_mm2": 111.5,
+     "zone_area_mm2": 26.5,
+     "outside_area_mm2": 85.1,
+     "zone_n": 1,
+     "zone_from": "верхние 70 % протяжённости кости"
+    },
+    "command_25": "retake",
+    "evidence": {
+     "sp_pos": "not_applicable",
+     "sp_art": "confirmed"
+    },
+    "doctors": {
+     "врач 1": "bad",
+     "врач 2": "bad",
+     "врач 3": "bad"
+    }
+   },
+   {
+    "show": 16,
+    "area": "spine",
+    "flags": [
+     "sp_axis"
+    ],
+    "labels": [
+     "sp_axis"
+    ],
+    "uncertain": false,
+    "lateral_margin_mm": null,
+    "art_zone": {
+     "area_mm2": 112.8,
+     "zone_area_mm2": 112.8,
+     "outside_area_mm2": 0.0,
+     "zone_n": 3,
+     "zone_from": "верхние 70 % протяжённости кости"
+    },
+    "command_25": "retake",
+    "evidence": {
+     "sp_axis": "not_applicable"
+    },
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "bad",
+     "врач 3": "bad"
+    }
+   },
+   {
+    "show": 17,
+    "area": "spine",
+    "flags": [],
+    "labels": [],
+    "uncertain": false,
+    "lateral_margin_mm": null,
+    "art_zone": {
+     "area_mm2": 1582.6,
+     "zone_area_mm2": 358.5,
+     "outside_area_mm2": 1224.1,
+     "zone_n": 1,
+     "zone_from": "верхние 70 % протяжённости кости"
+    },
+    "command_25": null,
+    "evidence": {},
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "bad",
+     "врач 3": "bad"
+    }
+   },
+   {
+    "show": 18,
+    "area": "hip",
+    "flags": [],
+    "labels": [
+     "hip_pos"
+    ],
+    "uncertain": false,
+    "lateral_margin_mm": 34.8,
+    "art_zone": null,
+    "command_25": null,
+    "evidence": {},
+    "doctors": {
+     "врач 1": "bad",
+     "врач 2": "ok",
+     "врач 3": "ok"
+    }
+   },
+   {
+    "show": 19,
+    "area": "spine",
+    "flags": [
+     "sp_pos"
+    ],
+    "labels": [
+     "sp_pos"
+    ],
+    "uncertain": false,
+    "lateral_margin_mm": null,
+    "art_zone": {
+     "area_mm2": 13.2,
+     "zone_area_mm2": 13.2,
+     "outside_area_mm2": 0.0,
+     "zone_n": 2,
+     "zone_from": "верхние 70 % протяжённости кости"
+    },
+    "command_25": "retake",
+    "evidence": {
+     "sp_pos": "not_applicable"
+    },
+    "doctors": {
+     "врач 1": "bad",
+     "врач 2": "bad",
+     "врач 3": "bad"
+    }
+   },
+   {
+    "show": 20,
+    "area": "spine",
+    "flags": [
+     "sp_axis"
+    ],
+    "labels": [
+     "sp_axis"
+    ],
+    "uncertain": false,
+    "lateral_margin_mm": null,
+    "art_zone": {
+     "area_mm2": 89.5,
+     "zone_area_mm2": 89.5,
+     "outside_area_mm2": 0.0,
+     "zone_n": 3,
+     "zone_from": "верхние 70 % протяжённости кости"
+    },
+    "command_25": "retake",
+    "evidence": {
+     "sp_axis": "not_applicable"
+    },
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "ok",
+     "врач 3": "bad"
+    }
+   },
+   {
+    "show": 21,
+    "area": "spine",
+    "flags": [],
+    "labels": [],
+    "uncertain": false,
+    "lateral_margin_mm": null,
+    "art_zone": {
+     "area_mm2": 0.0,
+     "zone_area_mm2": 0.0,
+     "outside_area_mm2": 0.0,
+     "zone_n": 0,
+     "zone_from": "верхние 70 % протяжённости кости"
+    },
+    "command_25": null,
+    "evidence": {},
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "ok",
+     "врач 3": "ok"
+    }
+   },
+   {
+    "show": 22,
+    "area": "hip",
+    "flags": [],
+    "labels": [
+     "hip_pos"
+    ],
+    "uncertain": false,
+    "lateral_margin_mm": 43.8,
+    "art_zone": null,
+    "command_25": null,
+    "evidence": {},
+    "doctors": {
+     "врач 1": "bad",
+     "врач 2": "ok",
+     "врач 3": "ok"
+    }
+   },
+   {
+    "show": 23,
+    "area": "spine",
+    "flags": [
+     "sp_art"
+    ],
+    "labels": [
+     "sp_axis"
+    ],
+    "uncertain": false,
+    "lateral_margin_mm": null,
+    "art_zone": {
+     "area_mm2": 382.4,
+     "zone_area_mm2": 6.9,
+     "outside_area_mm2": 375.5,
+     "zone_n": 1,
+     "zone_from": "верхние 70 % протяжённости кости"
+    },
+    "command_25": "retake",
+    "evidence": {
+     "sp_art": "confirmed"
+    },
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "ok",
+     "врач 3": "bad"
+    }
+   },
+   {
+    "show": 24,
+    "area": "spine",
+    "flags": [
+     "sp_axis"
+    ],
+    "labels": [
+     "sp_axis"
+    ],
+    "uncertain": false,
+    "lateral_margin_mm": null,
+    "art_zone": {
+     "area_mm2": 1661.3,
+     "zone_area_mm2": 0.0,
+     "outside_area_mm2": 1661.3,
+     "zone_n": 0,
+     "zone_from": "верхние 70 % протяжённости кости"
+    },
+    "command_25": "retake",
+    "evidence": {
+     "sp_axis": "not_applicable"
+    },
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "bad",
+     "врач 3": "ok"
+    }
+   },
+   {
+    "show": 25,
+    "area": "spine",
+    "flags": [],
+    "labels": [],
+    "uncertain": false,
+    "lateral_margin_mm": null,
+    "art_zone": {
+     "area_mm2": 529.8,
+     "zone_area_mm2": 0.0,
+     "outside_area_mm2": 529.8,
+     "zone_n": 0,
+     "zone_from": "верхние 70 % протяжённости кости"
+    },
+    "command_25": null,
+    "evidence": {},
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "ok",
+     "врач 3": "ok"
+    }
+   },
+   {
+    "show": 26,
+    "area": "spine",
+    "flags": [
+     "sp_axis"
+    ],
+    "labels": [],
+    "uncertain": false,
+    "lateral_margin_mm": null,
+    "art_zone": {
+     "area_mm2": 0.0,
+     "zone_area_mm2": 0.0,
+     "outside_area_mm2": 0.0,
+     "zone_n": 0,
+     "zone_from": "верхние 70 % протяжённости кости"
+    },
+    "command_25": "retake",
+    "evidence": {
+     "sp_axis": "not_applicable"
+    },
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "ok",
+     "врач 3": "bad"
+    }
+   },
+   {
+    "show": 27,
+    "area": "hip",
+    "flags": [
+     "hip_pos",
+     "hip_roi"
+    ],
+    "labels": [
+     "hip_roi"
+    ],
+    "uncertain": false,
+    "lateral_margin_mm": 72.6,
+    "art_zone": null,
+    "command_25": "retake",
+    "evidence": {
+     "hip_pos": "wide_field",
+     "hip_roi": "not_applicable"
+    },
+    "doctors": {
+     "врач 1": "bad",
+     "врач 2": "bad",
+     "врач 3": "bad"
+    }
+   },
+   {
+    "show": 28,
+    "area": "hip",
+    "flags": [
+     "hip_pos",
+     "hip_roi"
+    ],
+    "labels": [
+     "hip_roi"
+    ],
+    "uncertain": false,
+    "lateral_margin_mm": 59.4,
+    "art_zone": null,
+    "command_25": "retake",
+    "evidence": {
+     "hip_pos": "wide_field",
+     "hip_roi": "not_applicable"
+    },
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "bad",
+     "врач 3": "bad"
+    }
+   },
+   {
+    "show": 29,
+    "area": "spine",
+    "flags": [
+     "sp_art"
+    ],
+    "labels": [
+     "sp_art"
+    ],
+    "uncertain": false,
+    "lateral_margin_mm": null,
+    "art_zone": {
+     "area_mm2": 85.0,
+     "zone_area_mm2": 85.0,
+     "outside_area_mm2": 0.0,
+     "zone_n": 4,
+     "zone_from": "верхние 70 % протяжённости кости"
+    },
+    "command_25": "retake",
+    "evidence": {
+     "sp_art": "confirmed"
+    },
+    "doctors": {
+     "врач 1": "bad",
+     "врач 2": "bad",
+     "врач 3": "bad"
+    }
+   },
+   {
+    "show": 31,
+    "area": "hip",
+    "flags": [],
+    "labels": [],
+    "uncertain": false,
+    "lateral_margin_mm": 61.2,
+    "art_zone": null,
+    "command_25": null,
+    "evidence": {},
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "bad",
+     "врач 3": "ok"
+    }
+   },
+   {
+    "show": 32,
+    "area": "spine",
+    "flags": [
+     "sp_art"
+    ],
+    "labels": [],
+    "uncertain": false,
+    "lateral_margin_mm": null,
+    "art_zone": {
+     "area_mm2": 320.0,
+     "zone_area_mm2": 206.6,
+     "outside_area_mm2": 113.4,
+     "zone_n": 1,
+     "zone_from": "верхние 70 % протяжённости кости"
+    },
+    "command_25": "retake",
+    "evidence": {
+     "sp_art": "confirmed"
+    },
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "ok",
+     "врач 3": "ok"
+    }
+   },
+   {
+    "show": 33,
+    "area": "hip",
+    "flags": [
+     "hip_pos"
+    ],
+    "labels": [],
+    "uncertain": false,
+    "lateral_margin_mm": 57.0,
+    "art_zone": null,
+    "command_25": "check",
+    "evidence": {
+     "hip_pos": "wide_field"
+    },
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "bad",
+     "врач 3": "bad"
+    }
+   },
+   {
+    "show": 35,
+    "area": "hip",
+    "flags": [],
+    "labels": [
+     "hip_roi"
+    ],
+    "uncertain": false,
+    "lateral_margin_mm": 40.2,
+    "art_zone": null,
+    "command_25": null,
+    "evidence": {},
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "bad",
+     "врач 3": "ok"
+    }
+   },
+   {
+    "show": 36,
+    "area": "hip",
+    "flags": [],
+    "labels": [],
+    "uncertain": false,
+    "lateral_margin_mm": 66.0,
+    "art_zone": null,
+    "command_25": null,
+    "evidence": {},
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "ok",
+     "врач 3": "ok"
+    }
+   },
+   {
+    "show": 39,
+    "area": "spine",
+    "flags": [],
+    "labels": [],
+    "uncertain": false,
+    "lateral_margin_mm": null,
+    "art_zone": {
+     "area_mm2": 111.5,
+     "zone_area_mm2": 111.5,
+     "outside_area_mm2": 0.0,
+     "zone_n": 3,
+     "zone_from": "верхние 70 % протяжённости кости"
+    },
+    "command_25": null,
+    "evidence": {},
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "ok",
+     "врач 3": "ok"
+    }
+   },
+   {
+    "show": 40,
+    "area": "hip",
+    "flags": [],
+    "labels": [],
+    "uncertain": false,
+    "lateral_margin_mm": 30.0,
+    "art_zone": null,
+    "command_25": null,
+    "evidence": {},
+    "doctors": {
+     "врач 1": "bad",
+     "врач 2": "ok",
+     "врач 3": "ok"
+    }
+   },
+   {
+    "show": 41,
+    "area": "hip",
+    "flags": [],
+    "labels": [
+     "hip_pos"
+    ],
+    "uncertain": false,
+    "lateral_margin_mm": 38.4,
+    "art_zone": null,
+    "command_25": null,
+    "evidence": {},
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "ok",
+     "врач 3": "ok"
+    }
+   },
+   {
+    "show": 42,
+    "area": "hip",
+    "flags": [],
+    "labels": [
+     "hip_roi"
+    ],
+    "uncertain": false,
+    "lateral_margin_mm": 58.8,
+    "art_zone": null,
+    "command_25": null,
+    "evidence": {},
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "ok",
+     "врач 3": "ok"
+    }
+   },
+   {
+    "show": 43,
+    "area": "spine",
+    "flags": [
+     "sp_art"
+    ],
+    "labels": [
+     "sp_art"
+    ],
+    "uncertain": false,
+    "lateral_margin_mm": null,
+    "art_zone": {
+     "area_mm2": 303.7,
+     "zone_area_mm2": 126.6,
+     "outside_area_mm2": 177.0,
+     "zone_n": 5,
+     "zone_from": "верхние 70 % протяжённости кости"
+    },
+    "command_25": "retake",
+    "evidence": {
+     "sp_art": "confirmed"
+    },
+    "doctors": {
+     "врач 1": "bad",
+     "врач 2": "bad",
+     "врач 3": "bad"
+    }
+   },
+   {
+    "show": 44,
+    "area": "spine",
+    "flags": [],
+    "labels": [],
+    "uncertain": false,
+    "lateral_margin_mm": null,
+    "art_zone": {
+     "area_mm2": 63.0,
+     "zone_area_mm2": 0.0,
+     "outside_area_mm2": 63.0,
+     "zone_n": 0,
+     "zone_from": "верхние 70 % протяжённости кости"
+    },
+    "command_25": null,
+    "evidence": {},
+    "doctors": {
+     "врач 1": "ok",
+     "врач 2": "ok",
+     "врач 3": "bad"
+    }
+   }
+  ],
+  "service_class1": 20,
+  "to_check": [
+   8,
+   14,
+   33
+  ],
+  "to_check_fp": [
+   8,
+   14,
+   33
+  ],
+  "to_check_true": [],
+  "retake_kept_fp": [
+   5,
+   26,
+   32
+  ]
+ }
+}

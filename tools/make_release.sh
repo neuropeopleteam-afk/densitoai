@@ -9,7 +9,7 @@ set -eu
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
 cd "$ROOT"
-VERSION=${1:-${VERSION:-2.4.0}}
+VERSION=${1:-${VERSION:-2.5.0}}
 IMAGE=${IMAGE:-densitoai:$VERSION}
 DIST="$ROOT/dist"; mkdir -p "$DIST"
 NAME="densitoai-$VERSION"

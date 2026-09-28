@@ -79,7 +79,7 @@ from calibration_utils import risk_level  # noqa: E402  (К3: правило у�
 import preprocess  # noqa: E402  (инвариантная предобработка: маска тела, канонизация экспозиции)
 import markup_clean  # noqa: E402  (очистка впечатанной разметки денситометра, docs/MARKUP_STRESS.md)
 
-__version__ = "2.4.0"
+__version__ = "2.5.0"
 LOG = logging.getLogger("densito.inference")
 # pydicom шумит предупреждениями о нестандартных UID в анонимизированных файлах — не ошибка
 logging.getLogger("pydicom").setLevel(logging.ERROR)
@@ -97,7 +97,7 @@ IMPUTATION_MEDIAN_COLS = ["axis_angle_deg", "bone_area_ratio", "bone_width_ratio
                           "shaft_angle_deg"]
 
 DEFAULT_CONFIG: Dict[str, Any] = {
-    "version": "2.4.0",
+    "version": "2.5.0",
     "output": {
         "columns": ["path_to_study", "study_uid", "image_uid", "anatomical_region",
                     "quality_class", "violation_type", "quality_prob",
@@ -122,7 +122,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     # src/train_stacked.py (бедро: hip_pos / hip_roi); сверка — tests/test_feature_contract.py.
     "geometry_cols": {"sp_pos": ["center_offset_ratio", "bone_width_ratio"],
                       "sp_axis": ["axis_angle_deg"],
-                      "sp_art": ["metal_metal_area_mm2", "metal_metal_max_intensity_gap"],
+                      "sp_art": ["metal_metal_band70_area_log", "metal_metal_band70_max_gap"],
                       "rh_pos": HIP_POS_COLS, "rh_roi": HIP_ROI_COLS,
                       "lh_pos": HIP_POS_COLS, "lh_roi": HIP_ROI_COLS},
     # H2 (2.4.0): признаки контура A из канонического эмбеддинга кадра (src/sppos_head.py); только позвоночник
@@ -352,10 +352,20 @@ def is_dicom_candidate(path: Path) -> bool:
 
 def _fix_zip_name(zi: "zipfile.ZipInfo") -> str:
     """Имена в zip без флага UTF-8 Python декодирует как cp437; архивы с Windows с русскими
-    именами обычно в cp866 (иногда cp1251). Восстанавливаем читаемое имя."""
+    именами обычно в cp866 (иногда cp1251). Восстанавливаем читаемое имя.
+
+    Порядок (2.4.1, Б2):
+      1) флаг UTF-8 (бит 11) выставлен — имя уже правильное;
+      2) в архиве есть extra field 0x7075 (Info-ZIP Unicode Path): zipfile сам подставляет из него
+         имя в `filename`, и оно отличается от `orig_filename` — берём как есть, повторная
+         перекодировка превращала кириллицу в «???»;
+      3) иначе перекодируем исходные байты имени (`orig_filename` в cp437) в cp866/cp1251."""
     if zi.flag_bits & 0x800:
         return zi.filename
-    raw = zi.filename.encode("cp437", errors="replace")
+    orig = zi.orig_filename.split("\x00", 1)[0]   # zipfile так же обрезает имя по нулевому байту
+    if zi.filename != zi.orig_filename and zi.filename != orig.replace(os.sep, "/"):
+        return zi.filename
+    raw = orig.encode("cp437", errors="replace")
     try:
         return raw.decode("utf-8")
     except UnicodeDecodeError:
@@ -451,6 +461,19 @@ def safe_extract_zip(zip_path: Path, dest: Path) -> List[Tuple[Path, str]]:
     return out
 
 
+def _is_own_series_zip(z: Path) -> bool:
+    """Архив дополнительных серий, записанный DensitoAI (additional_series.zip с индексом series_index.csv)."""
+    try:
+        from series_zip import SERIES_ZIP_NAME, INDEX_NAME
+        if z.name != SERIES_ZIP_NAME:
+            return False
+        with zipfile.ZipFile(z) as zf:
+            with zf.open(INDEX_NAME) as f:
+                return f.readline().decode("utf-8", "replace").startswith("zip_path,kind,study_uid,")
+    except Exception:  # noqa: BLE001 — не наш архив или битый: обрабатывается как обычно
+        return False
+
+
 def _find_zips(root: Path) -> List[Path]:
     """Вложенные архивы в любом регистре расширения (.zip/.ZIP/.Zip), отсортированные."""
     return sorted(p for p in root.rglob("*") if p.is_file() and p.suffix.lower() == ".zip")
@@ -502,6 +525,11 @@ def discover_files(input_path: Path, tmp_holder: List[Path],
     # строкой Failure, а не исчезает молча)
     pending: List[Tuple[Path, str, int]] = []
     for z in _find_zips(root):
+        if _is_own_series_zip(z):
+            # 2.4.1: собственный архив дополнительных серий (выход прошлого запуска, если каталог результатов
+            # лежит внутри входной папки) — не исследование; иначе повторный запуск получил бы лишние строки
+            LOG.warning("Skipped own additional series archive (output of a previous run): %s", z)
+            continue
         try:
             z_rel = str(z.resolve().relative_to(root.resolve()))
         except ValueError:
@@ -1252,6 +1280,8 @@ class DensitoInference:
         self.sr_study_dir = Path(sr_study_dir) if sr_study_dir else None
         self._study_headers: Dict[str, Dict[str, Any]] = {}
         self.last_study_sr: Dict[str, str] = {}
+        # фактический файл на диске для каждой строки последнего run() (см. run, keep_temp)
+        self.last_row_files: List[str] = []
         # {study_uid: {"spine": bool, "hip": bool, "note": str|None}} — полнота исследования по областям
         # (идея 4); считается по строкам результата после каждого run(), независимо от режима SR
         self.last_study_completeness: Dict[str, Dict[str, Any]] = {}
@@ -1619,7 +1649,8 @@ class DensitoInference:
     def _emit_bonus_outputs(self, path: Path, info, region: str, feats: Dict[str, Any],
                             crit_results: Dict[str, Dict[str, Any]], quality_class: int,
                             violations: List[str], quality_prob: float, debug: Dict[str, Any]) -> None:
-        if not (self.visualize_dir or self.sr_dir or self.roi_autocorrect_dir or self.seg_dir):
+        # sc_dir в списке (2.4.1): без него --sc-dir без других бонус-флагов не писал Secondary Capture
+        if not (self.visualize_dir or self.sr_dir or self.roi_autocorrect_dir or self.seg_dir or self.sc_dir):
             return
         stem = self._bonus_stem(path)
         violation_type_str = self.cfg["output"]["violation_separator"].join(violations)
@@ -1785,6 +1816,8 @@ class DensitoInference:
                 "internal_region": dbg.get("internal_region") or "",
                 "criteria": _criteria_for_priority(self.cfg, dbg),
                 "roi_route": _roi_route_for_priority(self.cfg, dbg),
+                # 2.5: основание команды и второе мнение по оси (текст в SR; класс и флаги не меняются)
+                **_evidence_texts_for_sr(self.cfg, dbg, str(r.get("processing_status") or "")),
             })
         written: Dict[str, str] = {}
         for study_uid, items in groups.items():
@@ -1802,11 +1835,21 @@ class DensitoInference:
 
     # ---- пакет
     def run(self, input_path: Path, output_csv: Path, debug_csv: Optional[Path] = None,
-            xlsx: bool = False, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+            xlsx: bool = False, limit: Optional[int] = None,
+            keep_temp: Optional[List[Path]] = None) -> List[Dict[str, Any]]:
+        """Пакетная обработка. После вызова `self.last_row_files[i]` — фактический файл на диске, по
+        которому получена строка i (для файлов из zip — путь во временном каталоге распаковки).
+
+        keep_temp (2.4.1, Б6): если передан список, временные каталоги распаковки zip (`densito_in_*`)
+        не удаляются, а добавляются в этот список — вызывающий (API) читает по `last_row_files` теги,
+        кадры и заголовки и удаляет каталоги сам в finally. По умолчанию (None, пакетный режим CLI)
+        каталоги удаляются здесь же, как раньше."""
         tmp_dirs: List[Path] = []
         t_start = time.perf_counter()
         rows: List[Dict[str, Any]] = []
         debug_rows: List[Dict[str, Any]] = []
+        row_files: List[str] = []
+        self.last_row_files = row_files
         try:
             self._display_paths: Dict[Path, str] = {}
             root, files = discover_files(Path(input_path), tmp_dirs, self._display_paths)
@@ -1825,12 +1868,16 @@ class DensitoInference:
                 row, dbg = self.process_file(f, root)
                 rows.append(row)
                 debug_rows.append(dbg)
+                row_files.append(str(f))
                 extras_inputs.append(self._extras_input)
                 if i % 25 == 0 or i == len(files):
                     LOG.info("  %d/%d processed (%.1fs)", i, len(files), time.perf_counter() - t_start)
         finally:
-            for d in tmp_dirs:
-                shutil.rmtree(d, ignore_errors=True)
+            if keep_temp is not None:
+                keep_temp.extend(tmp_dirs)      # удалит вызывающий (API) после чтения файлов строк
+            else:
+                for d in tmp_dirs:
+                    shutil.rmtree(d, ignore_errors=True)
 
         write_results(rows, Path(output_csv), self.cfg, xlsx=xlsx)
         self.last_debug_rows = debug_rows  # для API: детали по критериям без повторного чтения CSV
@@ -2043,6 +2090,30 @@ def _criteria_for_priority(cfg: Dict[str, Any], dbg: Dict[str, Any]) -> List[Dic
             continue
         out.append({"code": c, "score": dbg.get(f"{c}_score"), "threshold": dbg.get(f"{c}_threshold"),
                     "flag": dbg.get(f"{c}_flag"), "uncertain": dbg.get(f"{c}_uncertain")})
+    # 2.5: основание команды по флагу (src/action_evidence.py) — только для действия на визит, класс не меняется
+    try:
+        import action_evidence as _ae
+        ev = _ae.criterion_evidence_map(_ae.evidence_from_debug(dbg, cfg))
+        for it in out:
+            if it["code"] in ev:
+                it["evidence_command"] = ev[it["code"]]["command"]
+    except Exception:  # noqa: BLE001
+        pass
+    return out
+
+
+def _evidence_texts_for_sr(cfg: Dict[str, Any], dbg: Dict[str, Any], status: str) -> Dict[str, str]:
+    """2.5: {action_evidence_text, axis_second_opinion_text} для SR по debug-словарю снимка; пусто при Failure."""
+    out = {"action_evidence_text": "", "axis_second_opinion_text": ""}
+    if status.lower() == "failure":
+        return out
+    try:
+        import action_evidence as _ae
+        out["action_evidence_text"] = _ae.sr_text(_ae.evidence_from_debug(dbg, cfg))
+        ax = _ae.axis_from_debug(dbg)
+        out["axis_second_opinion_text"] = (ax or {}).get("text", "")
+    except Exception:  # noqa: BLE001
+        pass
     return out
 
 
@@ -2238,6 +2309,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--seg-dir", default=None,
                     help="[BONUS] Каталог для экспорта сегментации структур: DICOM SEG (.dcm) + PNG-маска + JSON с контурами "
                          "на каждый Success-снимок (по умолчанию выключено, на results.csv не влияет)")
+    ap.add_argument("--series-zip", default=None, metavar="PATH",
+                    help="Архив дополнительных DICOM-серий (ТЗ п. 2.7): SR на исследование, наложение (SC), "
+                         "сегментация (SEG). По умолчанию <каталог CSV>/additional_series.zip; отключается "
+                         "переменной окружения DENSITO_SERIES_ZIP=0. На results.csv не влияет.")
     args = ap.parse_args(argv)
 
     output_csv = Path(args.output)
@@ -2261,18 +2336,37 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("\n".join(problems) if problems else "OK: output format valid")
         return 1 if problems else 0
 
+    # Архив дополнительных серий (2.4.1, ТЗ п. 2.7). Если каталоги серий не заданы явно, серии пишутся во
+    # временный каталог и попадают только в архив; заданные явно каталоги остаются как были и тоже входят в архив.
+    series_zip = series_zip_path(output_csv, args.series_zip)
+    series_stage: Optional[Path] = None
+    sr_study, sr_study_dir, sc_dir, seg_dir = args.sr_study, args.sr_study_dir, args.sc_dir, args.seg_dir
+    if series_zip is not None:
+        try:
+            series_stage = Path(tempfile.mkdtemp(prefix="densito_series_"))
+            if not (sr_study or sr_study_dir):
+                sr_study, sr_study_dir = True, str(series_stage / "sr")
+            sc_dir = sc_dir or str(series_stage / "sc")
+            seg_dir = seg_dir or str(series_stage / "seg")
+        except Exception as e:  # noqa: BLE001 — архив серий не должен мешать основной выгрузке
+            LOG.warning("series zip disabled: %s", e)
+            series_zip, series_stage = None, None
     try:
         engine = DensitoInference(cfg=cfg, models_dir=args.models_dir, use_embeddings=not args.no_embeddings,
                                    visualize_dir=args.visualize_dir, sr_dir=args.sr_dir,
                                    roi_autocorrect_dir=args.roi_autocorrect_dir,
-                                   sr_study=args.sr_study, sr_study_dir=args.sr_study_dir, extras=args.extras,
-                                   sr_per_image=args.sr_per_image, sc_dir=args.sc_dir,
-                                   seg_dir=args.seg_dir)
+                                   sr_study=sr_study, sr_study_dir=sr_study_dir, extras=args.extras,
+                                   sr_per_image=args.sr_per_image, sc_dir=sc_dir,
+                                   seg_dir=seg_dir)
         debug_csv = None
         if args.debug_csv:
             debug_csv = (output_csv.with_name(output_csv.stem + "_debug.csv") if args.debug_csv == "auto"
                          else Path(args.debug_csv))
         rows = engine.run(Path(args.input), output_csv, debug_csv=debug_csv, xlsx=args.xlsx, limit=args.limit)
+        if series_zip is not None:
+            res_zip = write_batch_series_zip(engine, rows, series_zip)
+            if debug_csv is not None and series_stage is not None:
+                relink_debug_series_paths(Path(debug_csv), series_stage, series_zip, (res_zip or {}).get("arc_by_src", {}))
         problems = validate_output_csv(output_csv, cfg)
         if problems:
             LOG.error("Output format problems: %s", problems[:10])
@@ -2295,6 +2389,65 @@ def main(argv: Optional[List[str]] = None) -> int:
         except Exception:  # noqa: BLE001
             pass
         return 2
+    finally:
+        if series_stage is not None:
+            shutil.rmtree(series_stage, ignore_errors=True)
+
+
+def series_zip_path(output_csv: Path, explicit: Optional[str] = None) -> Optional[Path]:
+    """Путь архива дополнительных серий: явный --series-zip, иначе <каталог CSV>/additional_series.zip;
+    None — архив выключен (DENSITO_SERIES_ZIP=0 и флаг не задан)."""
+    if explicit:
+        return Path(explicit)
+    if os.environ.get("DENSITO_SERIES_ZIP", "1").strip().lower() in ("0", "false", "no", "off"):
+        return None
+    from series_zip import SERIES_ZIP_NAME
+    return Path(output_csv).with_suffix(".csv").parent / SERIES_ZIP_NAME
+
+
+def relink_debug_series_paths(debug_csv: Path, stage: Path, zip_path: Path, arc_by_src: Dict[str, str]) -> None:
+    """Служебный results_debug.csv: пути во временный каталог серий (он удаляется после упаковки) заменить на путь
+    внутри additional_series.zip, а для файлов, которых в архиве нет (PNG/JSON сегментации), — очистить. Официальный
+    results.csv не затрагивается; ошибка только логируется."""
+    try:
+        if not Path(debug_csv).is_file():
+            return
+        prefix = str(Path(stage))
+        with open(debug_csv, newline="", encoding="utf-8") as f:
+            rd = csv.reader(f)
+            data = list(rd)
+        changed = 0
+        for row in data[1:]:
+            for j, v in enumerate(row):
+                if v.startswith(prefix):
+                    arc = arc_by_src.get(v, "")
+                    row[j] = f"{Path(zip_path).name}/{arc}" if arc else ""
+                    changed += 1
+        if changed:
+            tmp = Path(debug_csv).with_suffix(".csv.tmp")
+            with open(tmp, "w", newline="", encoding="utf-8") as f:
+                csv.writer(f, lineterminator="\n").writerows(data)
+            os.replace(tmp, debug_csv)
+    except Exception as e:  # noqa: BLE001
+        LOG.warning("debug csv series paths not relinked: %s", e)
+
+
+def write_batch_series_zip(engine: "DensitoInference", rows: List[Dict[str, Any]], zip_path: Path) -> Optional[Dict[str, Any]]:
+    """Упаковать дополнительные серии последнего run() в zip. Никогда не бросает исключение: results.csv уже
+    записан, ошибка упаковки только логируется (код возврата пакета не меняется)."""
+    try:
+        import series_zip as _sz
+        dbg = list(getattr(engine, "last_debug_rows", []) or [])
+        entries = _sz.plan_entries(rows, _sz.image_files_from_debug(dbg), getattr(engine, "last_study_sr", {}) or {},
+                                   [str((d or {}).get("internal_region") or "") for d in dbg])
+        res = _sz.write_series_zip(entries, Path(zip_path))
+        res["arc_by_src"] = {str(e["src"]): str(e["arc"]) for e in entries}
+        LOG.info("Additional series zip: %d DICOM (%s) -> %s", res["n_dicom"],
+                 ", ".join(f"{k}={v}" for k, v in sorted(res["by_kind"].items())), zip_path)
+        return res
+    except Exception as e:  # noqa: BLE001
+        LOG.warning("additional series zip not written (%s); results.csv is not affected", e)
+        return None
 
 
 if __name__ == "__main__":

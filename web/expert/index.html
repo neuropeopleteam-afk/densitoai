@@ -146,6 +146,7 @@ function render() {
   view.textContent = '';
   if (st.tab === 'sets') return renderSets();
   if (st.tab === 'rev') return renderReview();
+  if (st.tab === 'second') return renderSecond();
   return renderReport();
 }
 function renderUpload() {
@@ -242,7 +243,7 @@ function renderReview() {
     el('div', { class: 'frame' }, [el('img', { src: `${it.frame_url}?s=${encodeURIComponent(session())}`, alt: 'снимок', onclick: e => { const lb = document.getElementById('lb'); lb.querySelector('img').src = e.target.src; lb.classList.add('open'); } })]),
     el('div', { class: 'hint', style: 'margin-top:8px', text: 'Изображение без отметок сервиса. Клик — увеличить.' })]);
   const right = el('div', {});
-  if (own && fin) right.appendChild(el('div', { class: 'done-banner', text: 'Оценка завершена: ответы зафиксированы и больше не меняются. Решение сервиса — в отчёте.' }));
+  if (fin) right.appendChild(el('div', { class: 'done-banner' }, [el('div', { text: 'Оценка завершена: ответы зафиксированы и больше не меняются. Решение сервиса — в отчёте.' }), secondButton(s.id)]));
   else if (own && st.uploadNote) right.appendChild(el('div', { class: 'hint', style: 'margin-bottom:10px', text: st.uploadNote }));
   for (const c of it.criteria) {
     const box = el('div', { class: 'crit' }, [el('div', { class: 't', text: c.title })]);
@@ -273,7 +274,7 @@ function renderReview() {
     el('button', { class: 'btn', type: 'button', text: 'Сохранить и дальше', disabled: complete && !fin ? null : '', onclick: () => save(true) }),
   ]));
   const doneN = Object.keys(st.mine).length;
-  if (own && !fin && doneN >= s.n) {
+  if (!fin && doneN >= s.n) {
     right.appendChild(el('div', { class: 'nav' }, [el('button', { class: 'btn', type: 'button', text: 'Завершить и открыть результат', onclick: async () => {
       if (!confirm('После завершения ответы нельзя будет изменить. Завершить?')) return;
       try { await api(`/api/expert/sets/${s.id}/finish`, { method: 'POST' }); s.my_finished = true; st.tab = 'rep'; mark(); loadReport(s.id); }
@@ -345,6 +346,81 @@ function renderReport() {
     d.appendChild(tt);
   }
   view.appendChild(d);
+  if (r.second_round) view.appendChild(secondSummary(r));
+}
+// ---- 2.5: второй тур «врач + сервис». Только после «Завершить»; первый тур не меняется.
+function secondButton(id) {
+  return el('button', { class: 'btn ghost', type: 'button', style: 'margin-top:8px', text: 'Второй тур: решение сервиса там, где вы с ним разошлись', onclick: () => openSecond(id) });
+}
+async function openSecond(id) {
+  try { st.second = await api(`/api/expert/sets/${id}/second`); st.second.error = null; }
+  catch (e) { st.second = { error: e.message, set_id: id, items: [] }; }
+  st.sidx = 0; st.draft2 = {}; st.tab = 'second'; mark(); render();
+}
+const A_TXT = { ok: 'норма', violation: 'нарушение', unsure: 'не могу оценить' };
+function renderSecond() {
+  const q = st.second;
+  if (!q) { view.appendChild(el('div', { class: 'panel' }, [el('div', { class: 'empty', text: 'Второй тур открывается из отчёта после «Завершить».' })])); return; }
+  if (q.error) { view.appendChild(el('div', { class: 'panel' }, [el('h2', { text: 'Второй тур' }), el('div', { class: 'err', text: q.error })])); return; }
+  const head = el('div', { class: 'panel' }, [el('h2', { text: 'Второй тур: решение сервиса там, где вы с ним разошлись' }),
+    el('div', { class: 'hint', text: q.note }),
+    el('div', { class: 'hint', style: 'margin-top:6px', text: `Снимков: ${q.n_items}, спорных критериев: ${q.n_criteria}. Ответы первого тура сохранены без изменений и остаются основой отчёта о сервисе.` + (q.finished ? ' Второй тур завершён, ответы зафиксированы.' : '') })]);
+  view.appendChild(head);
+  if (!q.items.length) { head.appendChild(el('div', { class: 'empty', text: 'Расхождений с сервисом нет — второй тур не нужен.' })); return; }
+  const it = q.items[Math.min(st.sidx || 0, q.items.length - 1)];
+  const cur = Object.assign({}, it.second || {}, st.draft2);
+  const left = el('div', {}, [el('div', { class: 'counter', text: `снимок ${it.pos} · ${REG[it.region]} · ${(st.sidx || 0) + 1} из ${q.items.length} во втором туре` }),
+    el('div', { class: 'frame' }, [el('img', { src: `${it.frame_url}?s=${encodeURIComponent(session())}`, alt: 'снимок', onclick: e => { const lb = document.getElementById('lb'); lb.querySelector('img').src = e.target.src; lb.classList.add('open'); } })])]);
+  const right = el('div', {});
+  for (const c of it.criteria) {
+    const box = el('div', { class: 'crit' }, [el('div', { class: 't', text: c.title }),
+      el('div', { class: 'hint', style: 'margin-bottom:8px' }, [`Ваш ответ в первом туре: `, el('span', { class: 'pill ' + (c.first === 'violation' ? 'bad' : 'ok'), text: A_TXT[c.first] }), ` · сервис: `, el('span', { class: 'pill ' + (c.service === 'violation' ? 'bad' : 'ok'), text: A_TXT[c.service] })])]);
+    const opts = el('div', { class: 'opts' });
+    for (const [k, t] of [['ok', 'Норма'], ['violation', 'Нарушение'], ['unsure', 'Не могу оценить']]) {
+      opts.appendChild(el('button', { type: 'button', class: k + (cur[c.code] === k ? ' on' : ''), text: t + (k === c.first ? ' (оставить свой ответ)' : ''), disabled: q.finished ? '' : null, onclick: () => { st.draft2[c.code] = k; render(); } }));
+    }
+    box.appendChild(opts); right.appendChild(box);
+  }
+  const cm = el('textarea', { maxlength: '1000', placeholder: 'Комментарий ко второму туру (необязательно)', disabled: q.finished ? '' : null });
+  cm.value = st.draft2c !== undefined ? st.draft2c : (it.comment || '');
+  cm.addEventListener('input', () => { st.draft2c = cm.value; });
+  right.appendChild(cm);
+  const err = el('div', { class: 'err' });
+  const complete = it.criteria.every(c => cur[c.code]);
+  const go = d => { st.sidx = Math.max(0, Math.min(q.items.length - 1, (st.sidx || 0) + d)); st.draft2 = {}; st.draft2c = undefined; render(); };
+  right.appendChild(el('div', { class: 'nav' }, [
+    el('button', { class: 'btn ghost', type: 'button', text: 'Предыдущий', disabled: (st.sidx || 0) <= 0 ? '' : null, onclick: () => go(-1) }),
+    el('button', { class: 'btn', type: 'button', text: 'Сохранить и дальше', disabled: complete && !q.finished ? null : '', onclick: async () => {
+      err.textContent = '';
+      try { await api(`/api/expert/sets/${q.set_id}/second/answers`, { method: 'POST', body: JSON.stringify({ pos: it.pos, answers: cur, comment: cm.value }) }); it.second = cur; it.comment = cm.value; go(1); }
+      catch (e) { err.textContent = e.message; }
+    } }),
+    el('button', { class: 'btn ghost', type: 'button', text: 'Пропустить', disabled: q.finished ? '' : null, onclick: () => go(1) }),
+  ]));
+  if (!q.finished) right.appendChild(el('div', { class: 'nav' }, [el('button', { class: 'btn', type: 'button', text: 'Завершить второй тур', onclick: async () => {
+    if (!confirm('Пропущенные снимки останутся с ответом первого тура. Завершить второй тур?')) return;
+    try { await api(`/api/expert/sets/${q.set_id}/second/finish`, { method: 'POST' }); st.tab = 'rep'; mark(); loadReport(q.set_id); }
+    catch (e) { err.textContent = e.message; }
+  } })]));
+  right.appendChild(err);
+  right.appendChild(el('div', { class: 'nums' }, q.items.map((x, i) => el('button', { type: 'button', class: (x.second ? 'done' : '') + (i === (st.sidx || 0) ? ' cur' : ''), text: String(x.pos), title: x.second ? 'ответ второго тура сохранён' : 'не пересмотрен', onclick: () => { st.sidx = i; st.draft2 = {}; st.draft2c = undefined; render(); } }))));
+  view.appendChild(el('div', { class: 'panel' }, [el('div', { class: 'rev' }, [left, right])]));
+}
+function secondSummary(r) {
+  const q = r.second_round, dirs = q.directions || {};
+  const p = el('div', { class: 'panel' }, [el('h2', { text: 'Второй тур «врач + сервис»' }),
+    el('div', { class: 'hint', text: `Завершили первый тур: ${(q.reviewers_finished_first || []).join(', ') || '—'}; завершили второй тур: ${(q.reviewers_finished_second || []).join(', ') || '—'}` }),
+    el('div', { class: 'kpis' }, [
+      el('div', { class: 'kpi' }, [el('div', { class: 'v', text: String(q.disputed) }), el('div', { class: 'l', text: 'спорных критериев (ответ врача не совпал с сервисом)' })]),
+      el('div', { class: 'kpi' }, [el('div', { class: 'v', text: `${q.changed}` }), el('div', { class: 'l', text: `ответ изменён; пересмотрено ${q.reviewed}, пропущено ${q.skipped}` })]),
+      el('div', { class: 'kpi' }, [el('div', { class: 'v', text: pct(q.agreement_before.agreement) }), el('div', { class: 'l', text: `совпадение с сервисом до второго тура ${ci(q.agreement_before.agreement_ci)} · ${q.agreement_before.agree} из ${q.agreement_before.n}` })]),
+      el('div', { class: 'kpi' }, [el('div', { class: 'v', text: pct(q.agreement_after.agreement) }), el('div', { class: 'l', text: `совпадение с сервисом после второго тура ${ci(q.agreement_after.agreement_ci)} · ${q.agreement_after.agree} из ${q.agreement_after.n}` })]),
+    ]),
+    el('div', { class: 'hint', text: 'Направление изменений: ' + Object.entries(dirs).map(([k, v]) => `${k}: ${v}`).join('; ') + '.' }),
+    el('div', { class: 'hint', style: 'margin-top:6px', text: q.note }),
+  ]);
+  if (st.set && st.set.id === r.set.id && st.set.my_finished) p.appendChild(secondButton(r.set.id));
+  return p;
 }
 document.getElementById('lb').addEventListener('click', () => document.getElementById('lb').classList.remove('open'));
 { const h = location.hostname; if (h.startsWith('expert.')) document.getElementById('toJournal').href = 'https://' + h.slice(7) + '/#app/registry'; }

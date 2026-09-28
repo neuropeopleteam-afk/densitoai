@@ -557,6 +557,16 @@ body:not(.view-app) .topbar .topnav { display: flex; }
 .dc-route { margin-top: 12px; border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 10px; padding: 10px 14px; font-size: 14.5px; line-height: 1.5; }
 .dc-route .k { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; }
 .dc-route .note { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+/* 2.5: основание команды, роль критерия, второе мнение по оси */
+.dc-evidence { margin-top: 12px; border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 10px; padding: 10px 14px; font-size: 14.5px; line-height: 1.5; }
+.dc-evidence.check { border-left-color: var(--warning); }
+.dc-evidence .k { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; }
+.dc-evidence ul { margin: 6px 0 0 18px; padding: 0; }
+.dc-evidence .note { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+.role { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; vertical-align: 1px; text-transform: none; letter-spacing: 0; }
+.role.measured { background: var(--primary-soft); color: var(--primary); }
+.role.hint { background: var(--warning-soft); color: var(--warning); }
+.dc-hint.axis2 { background: var(--warning-soft); }
 .mtable .guide { font-size: 12px; color: var(--muted); }
 .wbadge .cnt { font-variant-numeric: tabular-nums; opacity: .8; }
 .vplate { padding: 10px 16px 12px 52px; background: var(--surface-2); border-bottom: 1px solid var(--border); font-size: 14px; line-height: 1.45; }
@@ -761,7 +771,7 @@ body.view-registry .app-head .sub { display: none; }
     <div class="numbers">
       <div class="n"><div class="v">0.889</div><div class="ci">F1 0.60 [0.29; 0.82]</div><div class="l">AUC стека, ось позвоночника</div></div>
       <div class="n"><div class="v">0.917</div><div class="ci">F1 0.51 [0.00; 0.91]</div><div class="l">AUC стека, область интереса бедра</div></div>
-      <div class="n"><div class="v">0.813 [0.69; 0.91]</div><div class="ci">F1 0.662 [0.49; 0.80]</div><div class="l">ROC-AUC, «есть нарушение», поясничный отдел позвоночника</div></div>
+      <div class="n"><div class="v">0.846 [0.73; 0.94]</div><div class="ci">F1 0.737 [0.57; 0.85]</div><div class="l">ROC-AUC, «есть нарушение», поясничный отдел позвоночника</div></div>
       <div class="n"><div class="v">0.760 [0.63; 0.86]</div><div class="ci">F1 0.516 [0.31; 0.68]</div><div class="l">ROC-AUC, «есть нарушение», проксимальный отдел бедра</div></div>
     </div>
     <p class="metrics-src">Оценки out-of-fold с группировкой по исследованию, 95 % ДИ — бутстрап по исследованиям. Полные таблицы — в <a href="docs.html">документах и проверке</a>.</p>
@@ -775,7 +785,7 @@ body.view-registry .app-head .sub { display: none; }
 
 <footer>
   <div class="wrap">
-    <div>DensitoAI · версия сервиса 2.4.0 · хэш конфигурации b17b7951447d</div>
+    <div>DensitoAI · версия сервиса 2.5.0 · хэш конфигурации cb4d9bc567e2</div>
     <div><a href="docs.html">Документы и проверка</a></div>
   </div>
 </footer>
@@ -947,6 +957,7 @@ const CARD_FALLBACK = {
     axis_angle_deg: { label: 'Угол оси позвоночника', unit: '°', guide_max: 5.0, source: 'ориентир требований: отклонение оси не более 5°' },
     center_offset_ratio: { label: 'Смещение центра позвоночника', unit: '% ширины кадра', mult: 100 },
     metal_metal_area_mm2: { label: 'Площадь плотных объектов', unit: 'мм²' },
+    metal_metal_band70_area_mm2: { label: 'Площадь посторонних объектов в зоне измерения', unit: 'мм²', zone_note: 'верхние 70 % протяжённости кости' },
     abs_shaft_angle_deg: { label: 'Угол диафиза бедра', unit: '°' },
     edge_distance_mm: { label: 'Расстояние от кости до края кадра', unit: 'мм', guide_min: 20.0, source: 'ориентир из разъяснений: не менее 2 см от края' },
     scan_length_mm: { label: 'Длина скана', unit: 'мм' },
@@ -1031,11 +1042,46 @@ function decision(r) {
   const margin = main ? main.margin : null;
   // К3: needs_review приходит из API details (зона «не уверен» по запасу до порога, запасы в models/calibration.pkl)
   const borderline = (d && d.needs_review === true) || (REVIEW_MARGIN !== null && margin !== null && margin < REVIEW_MARGIN);
-  const code = (doctor || borderline || !group) ? 'review' : 'retake';
+  let code = (doctor || borderline || !group) ? 'review' : 'retake';
+  // 2.5: команда только с доказательством (details.action_evidence): флаг и класс те же, но без измеримого
+  // основания «Переснять» заменяется на «Проверить» с основанием
+  const ev = (d.action_evidence && typeof d.action_evidence === 'object') ? d.action_evidence : null;
+  const evCheck = !!(ev && ev.command === 'check' && code === 'retake');
+  if (evCheck) code = 'review';
   // C1: для hip_roi текст берётся по коду причины из API (поле полное / неполное / данных мало); класс не меняется
   const route = (group === 'hip_roi' && d.hip_roi_reason && typeof d.hip_roi_reason === 'object') ? d.hip_roi_reason : null;
   const a = group ? ((route && acts[route.action_key]) || acts[group]) : null;
-  return { code, label: VERDICT[code], group: group || 'review', reason: a?.reason || acts.review?.reason || 'Оценка на границе допуска', hint: a?.hint || acts.review?.hint || '', crit: main, margin, doctor, borderline, route };
+  if (evCheck) return { code, label: VERDICT[code], group: group || 'review', reason: 'Основание для пересъёмки не измерено', hint: String(ev.text || ''), crit: main, margin, doctor, borderline, route, evidence: ev };
+  return { code, label: VERDICT[code], group: group || 'review', reason: a?.reason || acts.review?.reason || 'Оценка на границе допуска', hint: a?.hint || acts.review?.hint || '', crit: main, margin, doctor, borderline, route, evidence: ev };
+}
+// 2.5 (Р4-2): роль критерия — измерение (значение, единицы, ориентир) или подсказка (решает врач)
+const ROLE_TEXT = { measured: 'измерение', hint: 'подсказка, решает врач' };
+const ROLE_NOTE = { measured: 'Сервис измеряет: значение, единицы и ориентир — в таблице.', hint: 'Сервис подсказывает, где посмотреть; нарушение или нет — решает врач по снимку.' };
+const CRIT_ROLE = { sp_pos: 'measured', sp_axis: 'measured', rh_roi: 'measured', lh_roi: 'measured', sp_art: 'hint', rh_pos: 'hint', lh_pos: 'hint' };
+function critRole(c) { return (c && (c.role || CRIT_ROLE[c.code])) || null; }
+// 2.5: блок «Основание команды» — по каждому флагу критерия статус основания и измерение
+function evidenceBlock(r, dec) {
+  const d = r.details || {};
+  const ev = d.action_evidence;
+  if (!ev || !Array.isArray(ev.items) || !ev.items.length || dec.code === 'fail') return null;
+  const crits = Array.isArray(d.criteria) ? d.criteria : [];
+  const title = code => { const c = crits.find(x => String(x.code) === String(code)); return String((c && (c.title || c.code)) || code); };
+  const rows = ev.items.map(i => el('li', {}, [
+    el('b', { text: title(i.criterion) + ': ' }),
+    document.createTextNode(i.status === 'not_applicable' ? String(i.status_text || '') : (/^Проверить/.test(String(i.text || '')) ? String(i.text) : String(i.status_text || '') + (i.text ? ' — ' + String(i.text) : ''))),
+    i.role ? el('span', { class: 'role ' + i.role, text: ROLE_TEXT[i.role] || '' }) : null,
+  ]));
+  return el('div', { class: 'dc-evidence ' + (ev.command === 'check' ? 'check' : 'retake') }, [
+    el('div', { class: 'k', text: 'Основание команды: ' + (ev.command === 'check' ? '«Проверить» — измеримого основания для пересъёмки нет' : (ev.items.some(i => i.status === 'confirmed' || (i.status === 'not_applicable' && i.role === 'measured')) ? '«Переснять» — основание измерено' : '«Переснять» — как в версии 2.4.1')) }),
+    el('ul', {}, rows),
+    el('div', { class: 'note', text: 'Флаг критерия, класс и выгрузка (9 колонок) не меняются; меняется только команда лаборанту.' }),
+  ]);
+}
+// 2.5 (пункт 3): второе мнение по оси — контуры A и B разошлись по sp_axis
+function axisSecondOpinion(r) {
+  const a = (r.details || {}).axis_second_opinion;
+  if (!a || !a.flag) return null;
+  return el('div', { class: 'dc-hint axis2' }, [el('b', { text: 'Второе мнение по оси: ' }), document.createTextNode(String(a.text || 'контуры разошлись — посмотрите ось'))]);
 }
 // откуда ориентир — по полю source из config.yaml (требования или разъяснения); ориентир не является порогом системы
 function guideFrom(n) { const src = String((n && n.source) || ''); return (/разъяснен/.test(src) ? ' из разъяснений' : /требован/.test(src) ? ' из требований' : '') + ', не порог системы'; }
@@ -1052,7 +1098,7 @@ function normEval(key, v, hip, unitFallback, d) {
     const psx = Array.isArray(d.pixel_spacing_mm_default) ? Number(d.pixel_spacing_mm_default[1]) : 0.6;
     if (Number.isFinite(cols) && cols > 0) valueText = `${fmtNum(absv / 100 * cols * psx, 0)} мм · ${fmtNum(absv, 1)} % ширины ${v > 0 ? '(вправо по снимку)' : v < 0 ? '(влево по снимку)' : ''}`.trim();
   }
-  const out = { key, label: (n && n.label) ? n.label + (key === 'metal_metal_area_mm2' ? ' (справочно: решает модель по изображению, а не площадь)' : '') : null, valueText, normText: '—', guideText: '', status: 'ref', statusText: 'справочно', value: v };
+  const out = { key, label: (n && n.label) ? n.label + (key === 'metal_metal_area_mm2' ? ' по всему кадру (справочно)' : '') + (n.zone_note ? ` (${n.zone_note})` : '') : null, valueText, normText: '—', guideText: '', status: 'ref', statusText: 'справочно', value: v };
   if (!n) return out;
   // Если после округления измерение выглядит равным границе, а по сырому значению за ней —
   // показываем на один знак точнее, чтобы подпись и оценка не противоречили друг другу.
@@ -1269,13 +1315,19 @@ function decisionCard(r, opts) {
       subParts.length ? el('div', { class: 'sub', text: subParts.join(' · ') }) : null,
     ]),
   ]));
+  const evb = evidenceBlock(r, dec);
+  if (evb) card.appendChild(evb);
+  const ax2 = axisSecondOpinion(r);
+  if (ax2) card.appendChild(ax2);
   const badges = extrasBadges(r);
   if (dec.borderline && !badges.some(b => b.cls === 'doctor')) badges.unshift({ text: 'оценка на границе допуска — показать врачу', cls: 'doctor' });
   if (badges.length) card.appendChild(el('div', { class: 'badges' }, badges.map(b => el('span', { class: 'wbadge ' + (b.cls || '') }, [b.text, b.count > 1 ? el('span', { class: 'cnt', text: '×' + b.count }) : null]))));
   // C1/З3: сначала — измерения, по которым модель решает по главному критерию (признаки контура A)
   const frows = dec.crit ? modelFeatureRows(r, dec.crit) : [];
   if (frows.length) {
-    card.appendChild(el('h4', { text: `Измерения, по которым решает модель: ${String(dec.crit.title || dec.crit.code).toLowerCase()}` }));
+    const role = critRole(dec.crit);
+    card.appendChild(el('h4', {}, [document.createTextNode(`Измерения, по которым решает модель: ${String(dec.crit.title || dec.crit.code).toLowerCase()}`), role ? el('span', { class: 'role ' + role, text: ROLE_TEXT[role] }) : null]));
+    if (role) card.appendChild(el('div', { class: 'dc-note role-note', text: ROLE_NOTE[role] }));
     card.appendChild(mtable(frows));
   }
   const srcLine = dec.code !== 'ok' ? decisionSourceLine(dec.crit, frows) : null;
@@ -1335,7 +1387,7 @@ function techDetails(r, dec) {
   if (Array.isArray(d.criteria) && d.criteria.length) {
     body.appendChild(el('h4', { text: 'Критерии модели' }));
     const t = el('table', { class: 'crit' });
-    t.appendChild(el('thead', {}, [el('tr', {}, [el('th', { text: 'Критерий' }), el('th', { class: 'num', text: 'Скор' }), el('th', { class: 'num', text: 'Порог' }), el('th', { text: 'Решение' }), el('th', { text: 'Источник' })])]));
+    t.appendChild(el('thead', {}, [el('tr', {}, [el('th', { text: 'Критерий' }), el('th', { class: 'num', text: 'Скор' }), el('th', { class: 'num', text: 'Порог' }), el('th', { text: 'Решение' }), el('th', { text: 'Роль' }), el('th', { text: 'Источник' })])]));
     const tb = el('tbody');
     const METHOD = { stacked_rank_avg: 'геометрия + эмбеддинги', geom_only: 'геометрия', emb_only: 'эмбеддинги', fallback_rule: 'резервное правило' };
     d.criteria.forEach(c => {
@@ -1344,6 +1396,7 @@ function techDetails(r, dec) {
         el('td', {}, [el('div', { text: String(c.title || c.code || '—') }), el('div', { class: 'sub', text: String(c.violation || '') })]),
         el('td', { class: 'num', text: fmt(c.score) }), el('td', { class: 'num', text: fmt(c.threshold) }),
         el('td', { text: c.flag ? 'нарушение' : 'норма' }),
+        el('td', { text: ROLE_TEXT[critRole(c)] || '—' }),
         el('td', {}, [el('div', { text: METHOD[c.method] || String(c.method || '—') }), parts.length ? el('div', { class: 'sub', text: parts.join(' · ') }) : null]),
       ]));
     });
@@ -1551,6 +1604,9 @@ function renderResults(data) {
   if (csvUrl) dl.appendChild(el('a', { class: 'btn sm', href: csvUrl, target: '_blank', rel: 'noopener', text: 'Скачать CSV (официальный формат)' }));
   if (xlsxUrl) dl.appendChild(el('a', { class: 'btn sm ghost', href: xlsxUrl, target: '_blank', rel: 'noopener', text: 'Скачать XLSX (сводка по исследованиям)' }));
   if (dbgUrl) dl.appendChild(el('a', { class: 'btn sm ghost', href: dbgUrl, target: '_blank', rel: 'noopener', text: 'Технический CSV (признаки и скоры)' }));
+  // ТЗ п. 2.7: дополнительные DICOM-серии запроса (SR исследования, наложение SC, SEG) одним zip
+  const seriesUrl = safeApiUrl(data.additional_series_zip_url);
+  if (seriesUrl) dl.appendChild(el('a', { class: 'btn sm ghost', href: seriesUrl, target: '_blank', rel: 'noopener', text: 'Скачать дополнительные серии (zip)' }));
   if (!csvUrl && !xlsxUrl) dl.appendChild(el('span', { class: 'hint', text: data.demo ? 'В демо-примере файлы выгрузки не прикладываются: загрузите свои снимки, чтобы получить CSV и XLSX.' : 'Файлы выгрузки недоступны.' }));
   if (jobOk) dl.appendChild(el('span', { class: 'hint', style: 'align-self:center;margin-left:8px', text: 'Код запроса: ' + data.job_id }));
   card.appendChild(dl);
@@ -1645,7 +1701,7 @@ function visitPlate(uid, rs) {
   return box;
 }
 const PRIO_SIDE = { spine: 'Позвоночник', right_hip: 'Правое бедро', left_hip: 'Левое бедро' };
-const PRIO_TAIL = { 'RETAKE-CHECK': 'проверить снимок, при подтверждении переснять', 'RESCAN-DISCUSS': 'поле сканирования неполное, обсудить повторное сканирование', 'ANALYSIS-CHECK': 'поле полное, вопрос к области анализа: проверить анализ на аппарате, повторно не облучать', DOCTOR: 'измерений поля недостаточно, решение врача по снимку', REVIEW: 'нарушение по общей оценке снимка, проверить снимок' };
+const PRIO_TAIL = { 'RETAKE-CHECK': 'проверить снимок, при подтверждении переснять', 'EVIDENCE-CHECK': 'основание для пересъёмки не измерено, проверить снимок', 'RESCAN-DISCUSS': 'поле сканирования неполное, обсудить повторное сканирование', 'ANALYSIS-CHECK': 'поле полное, вопрос к области анализа: проверить анализ на аппарате, повторно не облучать', DOCTOR: 'измерений поля недостаточно, решение врача по снимку', REVIEW: 'нарушение по общей оценке снимка, проверить снимок' };
 const PRIO_CRIT = { sp_pos: 'укладка позвоночника', sp_axis: 'ось позвоночника', sp_art: 'посторонние предметы в поле', rh_pos: 'укладка бедра', lh_pos: 'укладка бедра', rh_roi: 'область интереса бедра', lh_roi: 'область интереса бедра' };
 const PRIO_ROUTE = { field_incomplete: 'RESCAN-DISCUSS', field_complete: 'ANALYSIS-CHECK', insufficient_data: 'DOCTOR' };
 function clientPriority(rs) {
@@ -1660,7 +1716,7 @@ function clientPriority(rs) {
       if (!c.flag) return; any = true;
       const sc = Number(c.score), th = Number(c.threshold);
       const rm = Number.isFinite(sc) && Number.isFinite(th) && th < 1 ? (sc - th) / (1 - th) : null;
-      const act = /_roi$/.test(String(c.code)) ? (PRIO_ROUTE[(d.hip_roi_reason || {}).code] || 'DOCTOR') : 'RETAKE-CHECK';
+      const act = /_roi$/.test(String(c.code)) ? (PRIO_ROUTE[(d.hip_roi_reason || {}).code] || 'DOCTOR') : ((c.evidence && c.evidence.command === 'check') ? 'EVIDENCE-CHECK' : 'RETAKE-CHECK');
       const k = reg + '|' + c.code, cur = cands.get(k);
       const e = { region: reg, criterion: String(c.code), title: PRIO_CRIT[c.code] || '', rm, uncertain: !!c.uncertain, act, n: 1, uid: String(r.image_uid || '') };
       if (!cur) cands.set(k, e); else { const better = (rm ?? -9) > (cur.rm ?? -9) || ((rm ?? -9) === (cur.rm ?? -9) && e.uid < cur.uid); cands.set(k, Object.assign(better ? e : cur, { n: cur.n + 1 })); }
@@ -2100,13 +2156,15 @@ function histRead() {
   try { const a = JSON.parse(lsGet(HIST_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; }
 }
 function histSave(list) { lsSet(HIST_KEY, JSON.stringify(list.slice(0, 20))); }
+// местные дата и время браузера «ГГГГ-ММ-ДДTчч:мм:сс» (toISOString отдаёт UTC и сдвигает время и дату на -3 ч для Москвы)
+function localIso(d) { d = d || new Date(); const p = x => String(x).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
 function rememberJob(data) {
   const jobId = String(data.job_id || '');
   if (!/^[0-9]{8}_[0-9]{6}_[0-9a-f]{6}$/.test(jobId)) return;
   const s = data.summary || {};
   const item = {
     job_id: jobId, token: String(data.job_token || ''),
-    created_at: new Date().toISOString().slice(0, 19),
+    created_at: localIso(),
     summary: { n_files: s.n_files, n_studies: s.n_studies, n_violations: s.n_violations, n_failures: s.n_failures, wall_time_s: s.wall_time_s },
     format_check: data.format_check, n_rows: Array.isArray(data.rows) ? data.rows.length : null,
   };
@@ -2284,7 +2342,7 @@ function regFilters() {
     el('label', {}, ['Результат', sel('result', Object.assign({ '': 'любой' }, REG_RESULT))]),
     el('label', {}, ['Статус', sel('status', Object.assign({ '': 'любой' }, REG_STATUS))]),
   ]);
-  const day = n => { const d = new Date(Date.now() - n * 864e5); return d.toISOString().slice(0, 10); };
+  const day = n => localIso(new Date(Date.now() - n * 864e5)).slice(0, 10);  // местная дата, как в журнале
   const quick = (label, apply, on) => el('button', { type: 'button', class: on ? 'on' : '', text: label, onclick: () => { apply(); renderRegistry(); regSearch(true); } });
   const q = el('div', { class: 'reg-quick' }, [
     quick('Сегодня', () => { f.date_from = day(0); f.date_to = day(0); }, f.date_from && f.date_from === f.date_to && f.date_from === day(0)),

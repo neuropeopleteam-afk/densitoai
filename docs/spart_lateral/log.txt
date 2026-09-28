@@ -1,0 +1,42 @@
+=== spine/sp_art: n=166, n_pos=35, групп=99, исследований с позитивом=17, emb='imagenet', правило порога 'prevalence_x1.4', повторов 20, приёмка ≥0.03 в ≥14
+  base: ['metal_metal_area_mm2', 'metal_metal_max_intensity_gap']
+  band70: ['metal_metal_band70_area_log', 'metal_metal_band70_max_gap']
+  lat40: ['lat40_area_log', 'lat40_max_gap']
+  lat20: ['lat20_area_log', 'lat20_max_gap']
+  lat10: ['lat10_area_log', 'lat10_max_gap']
+  lat5: ['lat5_area_log', 'lat5_max_gap']
+  повтор 0: base=0.792 band70=0.872 lat20=0.823 gate_lat=0.847 | выбор gate_lat: band70 band70 band70 lat40 band70
+  повтор 1: base=0.862 band70=0.892 lat20=0.812 gate_lat=0.873 | выбор gate_lat: band70 band70 band70 lat40 band70
+  повтор 2: base=0.818 band70=0.888 lat20=0.843 gate_lat=0.834 | выбор gate_lat: band70 band70 lat40 band70 band70
+  повтор 3: base=0.735 band70=0.854 lat20=0.825 gate_lat=0.839 | выбор gate_lat: band70 band70 lat40 band70 lat5
+  повтор 4: base=0.862 band70=0.894 lat20=0.874 gate_lat=0.825 | выбор gate_lat: band70 lat40 band70 lat5 band70
+  повтор 5: base=0.743 band70=0.865 lat20=0.795 gate_lat=0.798 | выбор gate_lat: lat40 band70 band70 band70 lat40
+  повтор 6: base=0.885 band70=0.923 lat20=0.862 gate_lat=0.820 | выбор gate_lat: band70 lat40 band70 lat5 lat5
+  повтор 7: base=0.785 band70=0.838 lat20=0.761 gate_lat=0.780 | выбор gate_lat: lat40 band70 band70 band70 band70
+  повтор 8: base=0.859 band70=0.898 lat20=0.837 gate_lat=0.849 | выбор gate_lat: band70 band70 lat5 lat40 band70
+  повтор 9: base=0.826 band70=0.880 lat20=0.808 gate_lat=0.856 | выбор gate_lat: band70 band70 lat40 band70 band70
+  повтор 10: base=0.753 band70=0.895 lat20=0.794 gate_lat=0.864 | выбор gate_lat: band70 band70 lat40 band70 band70
+  повтор 11: base=0.806 band70=0.865 lat20=0.743 gate_lat=0.826 | выбор gate_lat: band70 band70 lat40 band70 band70
+  повтор 12: base=0.879 band70=0.913 lat20=0.837 gate_lat=0.853 | выбор gate_lat: band70 band70 lat40 band70 band70
+  повтор 13: base=0.812 band70=0.879 lat20=0.812 gate_lat=0.819 | выбор gate_lat: band70 band70 band70 lat40 band70
+  повтор 14: base=0.855 band70=0.893 lat20=0.858 gate_lat=0.836 | выбор gate_lat: band70 band70 band70 lat40 band70
+  повтор 15: base=0.818 band70=0.888 lat20=0.811 gate_lat=0.858 | выбор gate_lat: lat40 band70 band70 band70 band70
+  повтор 16: base=0.832 band70=0.893 lat20=0.821 gate_lat=0.837 | выбор gate_lat: band70 band70 lat40 band70 band70
+  повтор 17: base=0.825 band70=0.889 lat20=0.828 gate_lat=0.868 | выбор gate_lat: band70 band70 band70 lat40 band70
+  повтор 18: base=0.786 band70=0.900 lat20=0.811 gate_lat=0.833 | выбор gate_lat: band70 band70 lat40 band70 band70
+  повтор 19: base=0.815 band70=0.855 lat20=0.757 gate_lat=0.807 | выбор gate_lat: band70 band70 band70 lat40 band70
+  base      : стек AUC 0.817 ± 0.043 | A 0.605 | ΔAUC +0.000 ± 0.000 (мин +0.000), в плюсе 0/20, ≥0.03 0/20 | ΔF1(+) +0.000 | Δmacro-F1 +0.000 | ДИ95 [+0.000; +0.000]
+      против band70: ΔAUC -0.0662 (мин -0.1411), не хуже 0/20 | Δmacro-F1 -0.0755 (не хуже 0/20) | ΔF1(+) -0.1081 | ложных тревог 28.5, верных 23.1
+  band70    : стек AUC 0.884 ± 0.021 | A 0.797 | ΔAUC +0.066 ± 0.033 (мин +0.031), в плюсе 20/20, ≥0.03 20/20 | ΔF1(+) +0.108 | Δmacro-F1 +0.076 | ДИ95 [-0.037; +0.164] | ПРАВИЛО ПРОЙДЕНО
+      против band70: ΔAUC +0.0000 (мин +0.0000), не хуже 20/20 | Δmacro-F1 +0.0000 (не хуже 20/20) | ΔF1(+) +0.0000 | ложных тревог 22.1, верных 26.9 | НЕ ХУЖЕ band70
+  lat40     : стек AUC 0.880 ± 0.021 | A 0.623 | ΔAUC +0.063 ± 0.037 (мин -0.007), в плюсе 19/20, ≥0.03 18/20 | ΔF1(+) -0.016 | Δmacro-F1 +0.003 | ДИ95 [-0.044; +0.183] | ПРАВИЛО ПРОЙДЕНО
+      против band70: ΔAUC -0.0037 (мин -0.0444), не хуже 11/20 | Δmacro-F1 -0.0723 (не хуже 0/20) | ΔF1(+) -0.1243 | ложных тревог 20.8, верных 19.4
+  lat20     : стек AUC 0.816 ± 0.034 | A 0.483 | ΔAUC -0.002 ± 0.039 (мин -0.063), в плюсе 10/20, ≥0.03 4/20 | ΔF1(+) -0.013 | Δmacro-F1 -0.004 | ДИ95 [-0.143; +0.107]
+      против band70: ΔAUC -0.0682 (мин -0.1220), не хуже 0/20 | Δmacro-F1 -0.0791 (не хуже 2/20) | ΔF1(+) -0.1209 | ложных тревог 26.4, верных 21.9
+  lat10     : стек AUC 0.831 ± 0.039 | A 0.492 | ΔAUC +0.014 ± 0.042 (мин -0.061), в плюсе 11/20, ≥0.03 6/20 | ΔF1(+) +0.023 | Δmacro-F1 +0.020 | ДИ95 [-0.075; +0.129]
+      против band70: ΔAUC -0.0522 (мин -0.1140), не хуже 1/20 | Δmacro-F1 -0.0559 (не хуже 6/20) | ΔF1(+) -0.0851 | ложных тревог 25.1, верных 23.4
+  lat5      : стек AUC 0.803 ± 0.048 | A 0.474 | ΔAUC -0.014 ± 0.046 (мин -0.110), в плюсе 9/20, ≥0.03 2/20 | ΔF1(+) -0.049 | Δmacro-F1 -0.051 | ДИ95 [-0.088; +0.094]
+      против band70: ΔAUC -0.0804 (мин -0.1872), не хуже 0/20 | Δmacro-F1 -0.1270 (не хуже 0/20) | ΔF1(+) -0.1570 | ложных тревог 39.9, верных 24.2
+  gate_lat  : стек AUC 0.836 ± 0.024 | A 0.714 | ΔAUC +0.018 ± 0.044 (мин -0.065), в плюсе 13/20, ≥0.03 8/20 | ΔF1(+) -0.078 | Δmacro-F1 -0.036 | ДИ95 [-0.111; +0.174] | выбор {'band70': 74, 'lat40': 21, 'lat5': 5}
+      против band70: ΔAUC -0.0477 (мин -0.1031), не хуже 0/20 | Δmacro-F1 -0.1115 (не хуже 0/20) | ΔF1(+) -0.1858 | ложных тревог 22.8, верных 17.0
+готово за 32 с

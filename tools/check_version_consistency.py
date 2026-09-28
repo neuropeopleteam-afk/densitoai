@@ -45,9 +45,10 @@ VERSION_PLACES = [
     ("models/MODEL_CARD.md", [r'version\):\s*\*\*(?P<v>[\d.]+)\*\*']),
     ("web/index.html", [r'версия сервиса (?P<v>[\d.]+)']),
     ("web/docs.html", [r'версия сервиса (?P<v>[\d.]+)']),
-    ("web/review/index.html", [r'"service_version":"(?P<v>[\d.]+)"']),
-    ("tools/review/kit_light_manifest.json", [r'"service_version": "(?P<v>[\d.]+)"']),
 ]
+# web/review/index.html и tools/review/kit_light_manifest.json хранят версию, на которой три врача проходили
+# слепую проверку 40 кадров (2.4.0). Это факт проверки, а не текущая версия: в 2.4.1 модель, веса и пороги
+# те же, вердикты на этих кадрах совпадают. Поэтому эти два места в сверку с config.yaml не входят.
 
 # Где обязан стоять эталонный config_hash (12 знаков).
 HASH_PLACES = [

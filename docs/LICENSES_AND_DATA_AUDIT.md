@@ -58,6 +58,11 @@
 Если включать JPEG Lossless/JPEG-LS, то `pylibjpeg-libjpeg` подпадает под GPL; для JPEG 2000 достаточно
 `pylibjpeg` + `pylibjpeg-openjpeg` (оба MIT). Решение — за владельцем продукта.
 
+Веб-ресурсы в образе (добавлено в 2.4.1): swagger-ui (`swagger-ui-bundle.js`, `swagger-ui.css`) лежит в
+`web/assets/swagger/`, чтобы Swagger `/docs` открывался без интернета (FastAPI по умолчанию берёт эти файлы
+с внешнего CDN). Лицензия swagger-ui — Apache 2.0 (https://github.com/swagger-api/swagger-ui), пермиссивная, копилефта нет;
+точная версия — в заголовке файлов.
+
 ## 2. Внешние наборы данных и где они использованы
 
 В репозитории и в образе внешних изображений нет (см. п. 3). Внешние наборы использовались только

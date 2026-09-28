@@ -1,0 +1,163 @@
+{
+ "rule": "пара = врач «нарушение» ИЛИ флаг сервиса по измеряемому критерию (sp_pos, sp_axis, hip_roi)",
+ "measured": [
+  "sp_pos",
+  "sp_axis",
+  "hip_roi"
+ ],
+ "hints": [
+  "sp_art",
+  "hip_pos"
+ ],
+ "service_flags_from": "OOF models/oof_stacked_*.csv",
+ "n_frames": 40,
+ "service_alone": {
+  "tp": 14,
+  "fp": 6,
+  "fn": 6,
+  "tn": 14,
+  "n": 40,
+  "sens": 0.7,
+  "spec": 0.7,
+  "youden": 0.4,
+  "acc": 0.7
+ },
+ "doctors": {
+  "врач 1": {
+   "doctor_alone": {
+    "tp": 9,
+    "fp": 1,
+    "fn": 10,
+    "tn": 19,
+    "n": 39,
+    "sens": 0.474,
+    "spec": 0.95,
+    "youden": 0.424,
+    "acc": 0.718
+   },
+   "naive_or": {
+    "tp": 15,
+    "fp": 7,
+    "fn": 4,
+    "tn": 13,
+    "n": 39,
+    "sens": 0.789,
+    "spec": 0.65,
+    "youden": 0.439,
+    "acc": 0.718
+   },
+   "measure_judge": {
+    "tp": 13,
+    "fp": 2,
+    "fn": 6,
+    "tn": 18,
+    "n": 39,
+    "sens": 0.684,
+    "spec": 0.9,
+    "youden": 0.584,
+    "acc": 0.795
+   },
+   "mcnemar_pair_vs_doctor": {
+    "fixed_shows": [
+     16,
+     20,
+     24,
+     28
+    ],
+    "new_errors_shows": [
+     26
+    ],
+    "p_exact_two_sided": 0.375
+   },
+   "n_unsure": 1
+  },
+  "врач 2": {
+   "doctor_alone": {
+    "tp": 12,
+    "fp": 4,
+    "fn": 8,
+    "tn": 16,
+    "n": 40,
+    "sens": 0.6,
+    "spec": 0.8,
+    "youden": 0.4,
+    "acc": 0.7
+   },
+   "naive_or": {
+    "tp": 16,
+    "fp": 8,
+    "fn": 4,
+    "tn": 12,
+    "n": 40,
+    "sens": 0.8,
+    "spec": 0.6,
+    "youden": 0.4,
+    "acc": 0.7
+   },
+   "measure_judge": {
+    "tp": 13,
+    "fp": 5,
+    "fn": 7,
+    "tn": 15,
+    "n": 40,
+    "sens": 0.65,
+    "spec": 0.75,
+    "youden": 0.4,
+    "acc": 0.7
+   },
+   "mcnemar_pair_vs_doctor": {
+    "fixed_shows": [
+     20
+    ],
+    "new_errors_shows": [
+     26
+    ],
+    "p_exact_two_sided": 1.0
+   },
+   "n_unsure": 0
+  },
+  "врач 3": {
+   "doctor_alone": {
+    "tp": 12,
+    "fp": 6,
+    "fn": 8,
+    "tn": 14,
+    "n": 40,
+    "sens": 0.6,
+    "spec": 0.7,
+    "youden": 0.3,
+    "acc": 0.65
+   },
+   "naive_or": {
+    "tp": 14,
+    "fp": 9,
+    "fn": 6,
+    "tn": 11,
+    "n": 40,
+    "sens": 0.7,
+    "spec": 0.55,
+    "youden": 0.25,
+    "acc": 0.625
+   },
+   "measure_judge": {
+    "tp": 13,
+    "fp": 6,
+    "fn": 7,
+    "tn": 14,
+    "n": 40,
+    "sens": 0.65,
+    "spec": 0.7,
+    "youden": 0.35,
+    "acc": 0.675
+   },
+   "mcnemar_pair_vs_doctor": {
+    "fixed_shows": [
+     24
+    ],
+    "new_errors_shows": [],
+    "p_exact_two_sided": 1.0
+   },
+   "n_unsure": 0
+  }
+ }
+}

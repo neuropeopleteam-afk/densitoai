@@ -332,6 +332,9 @@ _CRIT_TITLES = {
 # В SR и в API значение кода — "PA-" + короткий код (_PRIORITY_VALUE), CodeValue (SH) не длиннее 16 символов.
 _PRIORITY_ACTIONS = {
     "RETAKE-CHECK": ("Проверить снимок, при подтверждении переснять", "проверить снимок, при подтверждении переснять"),
+    # 2.5 (src/action_evidence.py): флаг есть, но измеримого основания для пересъёмки нет
+    "EVIDENCE-CHECK": ("Проверить снимок: основание для пересъёмки не измерено",
+                       "основание для пересъёмки не измерено, проверить снимок"),
     "RESCAN-DISCUSS": ("Поле неполное: обсудить повторное сканирование",
                        "поле сканирования неполное, обсудить повторное сканирование"),
     "ANALYSIS-CHECK": ("Поле полное: проверить анализ на аппарате",
@@ -341,7 +344,7 @@ _PRIORITY_ACTIONS = {
     "FILES": ("Проверить необработанные файлы", "проверить необработанные файлы"),
     "NONE": ("Действий по качеству не требуется", "нарушений не выявлено, действий по качеству не требуется"),
 }
-_PRIORITY_VALUE = {"RETAKE-CHECK": "PA-RETAKE", "RESCAN-DISCUSS": "PA-RESCAN", "ANALYSIS-CHECK": "PA-ANALYSIS",
+_PRIORITY_VALUE = {"RETAKE-CHECK": "PA-RETAKE", "EVIDENCE-CHECK": "PA-EVIDENCE", "RESCAN-DISCUSS": "PA-RESCAN", "ANALYSIS-CHECK": "PA-ANALYSIS",
                    "DOCTOR": "PA-DOCTOR", "REVIEW": "PA-REVIEW", "FILES": "PA-FILES", "NONE": "PA-NONE"}
 _ROI_ROUTE_ACTION = {"field_incomplete": "RESCAN-DISCUSS", "field_complete": "ANALYSIS-CHECK",
                      "insufficient_data": "DOCTOR"}
@@ -374,7 +377,8 @@ def study_priority_action(items: list) -> Dict[str, Any]:
     """Одно главное действие по исследованию + остальные замечания.
 
     items — как в build_study_sr, плюс необязательные поля: internal_region, criteria
-    ([{code, score, threshold, flag, uncertain}]) и roi_route (код hip_roi: field_incomplete /
+    ([{code, score, threshold, flag, uncertain, evidence_command}]; evidence_command == "check" — 2.5, у флага нет
+    измеримого основания, действие EVIDENCE-CHECK вместо RETAKE-CHECK) и roi_route (код hip_roi: field_incomplete /
     field_complete / insufficient_data). Без criteria снимок с классом 1 даёт замечание «общая оценка».
     Возвращает {status, action_code, action_meaning, text, image_uid, region, criterion,
     relative_margin, uncertain, n_images, others: [...], n_others, rule}. Детерминирован: при равных
@@ -401,6 +405,8 @@ def study_priority_action(items: list) -> Dict[str, Any]:
             rm = relative_margin(c.get("score"), c.get("threshold"))
             if code.endswith("_roi"):
                 act = _ROI_ROUTE_ACTION.get(str(it.get("roi_route") or ""), "DOCTOR")
+            elif str(c.get("evidence_command") or "") == "check":
+                act = "EVIDENCE-CHECK"   # 2.5: команда только с доказательством
             else:
                 act = "RETAKE-CHECK"
             key = (reg, code)
@@ -600,6 +606,13 @@ def build_study_sr(study_uid: str, items: list, model_version: str, config_hash:
             _text_item("CONTAINS", "VIOL-LIST", "Типы нарушений (violation_type)", "; ".join(viols) if viols else "нет"),
             _text_item("CONTAINS", "STATUS", "Статус обработки (processing_status)", status),
         ]
+        # 2.5: основание команды и второе мнение по оси (объяснение; класс и флаги не меняются)
+        if it.get("action_evidence_text"):
+            children.append(_text_item("CONTAINS", "ACTION-EVIDENCE", "Основание команды лаборанту",
+                                       str(it["action_evidence_text"])))
+        if it.get("axis_second_opinion_text"):
+            children.append(_text_item("CONTAINS", "AXIS-2ND-OPINION", "Второе мнение по оси позвоночника",
+                                       str(it["axis_second_opinion_text"])))
         qp = it.get("quality_prob")
         if qp is not None:
             try:

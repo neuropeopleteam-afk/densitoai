@@ -25,7 +25,7 @@ GET  /api/results/{job}/summary      — сводка по партии для �
                                        области, типу нарушения, аппарату (хэш), дате; без персональных данных.
 GET  /api/jobs, /api/jobs/{job}      — история запросов и карточка запроса.
 GET  /api/results/{name}             — совместимость: results_*.csv/.xlsx из /api/batch.
-GET  /docs                           — Swagger UI (генерируется FastAPI).
+GET  /docs                           — Swagger UI; скрипты и стили — локальные (web/assets/swagger/), без CDN.
 
 Запуск
 ------
@@ -58,6 +58,7 @@ from inference import (  # noqa: E402
     unique_path, failure_quality_prob,
 )
 from region_support import check_file as _region_check  # noqa: E402
+import action_evidence as AE  # noqa: E402  (2.5: команда с основанием, роли критериев, второе мнение по оси)
 
 # Сводка по партии (идея «в»): библиотека лежит в tools/department_summary.py (тот же код, что и CLI),
 # в образ tools/ копируется целиком. Без неё сервис работает, маршруты сводки отвечают 503.
@@ -73,6 +74,7 @@ except Exception as _e:  # noqa: BLE001
 try:
     from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile
     from fastapi.responses import FileResponse, JSONResponse
+    from fastapi.openapi.docs import get_swagger_ui_html
     from starlette.concurrency import run_in_threadpool
     from pydantic import BaseModel
 except ImportError as e:  # pragma: no cover
@@ -103,6 +105,10 @@ app = FastAPI(
     description="Пакетная оценка качества DXA-снимков (поясничный отдел, проксимальный отдел бедра). "
                 "Полностью локальный сервис, формат ответа — по ТЗ ЛЦТ 2026.",
     version=PIPELINE_VERSION,
+    # Б5 (2.4.1): встроенная страница FastAPI грузит Swagger UI с cdn.jsdelivr.net и без интернета пуста.
+    # Своя /docs ниже берёт swagger-ui-dist из web/assets/swagger/; /openapi.json работает как раньше.
+    docs_url=None,
+    redoc_url=None,
 )
 _ENGINE: Optional[DensitoInference] = None
 _STARTED = time.time()
@@ -251,17 +257,18 @@ def _collect_bonus(job_dir: Path, debug_rows: List[Dict[str, Any]]) -> None:
                 pass
 
 
-def _region_support(row: Dict[str, Any], dbg: Dict[str, Any], tmp: Path) -> tuple:
+def _region_support(row: Dict[str, Any], dbg: Dict[str, Any], tmp: Path, src_file: Optional[str] = None) -> tuple:
     """Поддерживается ли область исследования. Пакетный путь (DensitoInference.process_file) уже
     проверил файл до классификации и записал итог в debug (region_supported / region_support_reason):
     отказ оттуда берётся как есть. Здесь — повторная проверка по заголовку для строк без этого итога
     (например, Failure до чтения пикселей). Любая ошибка проверки трактуется как «поддерживается» —
-    отказ выдумывать нельзя."""
+    отказ выдумывать нельзя. src_file — фактический файл строки (DensitoInference.last_row_files; для zip — файл
+    во временном каталоге распаковки), проверяется первым."""
     if isinstance(dbg, dict) and str(dbg.get("region_supported", "")) in ("0", "False"):
         return False, str(dbg.get("region_support_reason") or "")
     try:
         rel = str(row.get("path_to_study") or "")
-        cand = [Path(tmp) / rel, Path(rel)]
+        cand = ([Path(src_file)] if src_file else []) + [Path(tmp) / rel, Path(rel)]
         src = next((c for c in cand if c.exists()), None)
         rr = int((dbg or {}).get("rows") or 0)
         cc = int((dbg or {}).get("cols") or 0)
@@ -345,6 +352,8 @@ MEASUREMENTS = {
         ("feat_top_margin_ratio", "Отступ сверху", "% высоты", 100.0, 1),
         ("feat_bottom_margin_ratio", "Отступ снизу", "% высоты", 100.0, 1),
         ("feat_metal_metal_area_mm2", "Площадь плотных включений", "мм²", 1.0, 0),
+        # 2.5: та же площадь, но только в зоне измерения (верхние 70 % протяжённости кости) — по ней решает sp_art
+        ("feat_metal_metal_band70_area_mm2", "Площадь посторонних объектов в зоне измерения", "мм²", 1.0, 0),
         ("feat_metal_metal_max_intensity_gap", "Контраст включений к кости", "сигм", 1.0, 2),
     ],
     "hip": [
@@ -394,7 +403,13 @@ MODEL_FEATURE_TITLES = {
     "synth_pos_logit": ("Признак укладки по изображению (перенос из контура B)", "", 1.0, 2),
     "metal_metal_area_mm2": ("Площадь плотных включений", "мм²", 1.0, 0),
     "metal_metal_max_intensity_gap": ("Контраст включений к кости", "сигм", 1.0, 2),
+    # 2.5.0: признаки контура A sp_art — плотные участки в верхних 70 % протяжённости кости (зона измерения)
+    "metal_metal_band70_area_log": ("Площадь посторонних объектов в зоне измерения (верхние 70 % протяжённости кости)",
+                                    "мм²", 1.0, 0),
+    "metal_metal_band70_max_gap": ("Контраст объектов в зоне измерения к фону", "сигм", 1.0, 2),
 }
+# 2.5: признак модели хранится в логарифме площади, в карточке показывается площадь в мм² (обратное преобразование)
+MODEL_FEATURE_DISPLAY = {"metal_metal_band70_area_log": ("metal_metal_band70_area_mm2", "expm1")}
 DECISION_SOURCE_TEXT = {
     "geom_and_image": "решение по измерениям и по изображению",
     "geom": "решение по измерениям (контур A)",
@@ -416,8 +431,13 @@ def _model_features(dbg: Dict[str, Any], crit: str) -> Dict[str, Any]:
     for k, v in (obj.get("values") or {}).items():
         title, unit, mult, nd = MODEL_FEATURE_TITLES.get(k, (k, "", 1.0, 3))
         vv = _num(v)
-        items.append({"key": k, "title": title, "unit": unit,
-                      "value": None if vv is None else round(vv * mult, nd), "raw": vv})
+        key, shown = k, vv
+        if k in MODEL_FEATURE_DISPLAY and vv is not None:
+            import math
+            key = MODEL_FEATURE_DISPLAY[k][0]
+            shown = math.expm1(vv)
+        items.append({"key": key, "title": title, "unit": unit,
+                      "value": None if shown is None else round(shown * mult, nd), "raw": vv})
     return {"variant": obj.get("variant"), "items": items}
 
 
@@ -480,6 +500,10 @@ def _details(row: Dict[str, Any], dbg: Dict[str, Any], cfg: Dict[str, Any]) -> D
             "decision_source": _decision_source(dbg, c, bool(flag) if flag not in (None, "") else False),
         })
         crits[-1]["decision_source_text"] = DECISION_SOURCE_TEXT.get(crits[-1]["decision_source"] or "")
+        # 2.5 (Р4-2): роль критерия в карточке — измерение или подсказка (решает врач)
+        role = AE.role_of(c)
+        crits[-1]["role"] = role
+        crits[-1]["role_text"] = AE.ROLE_TEXT.get(role or "")
         try:
             rel = (score - thr) / (1.0 - thr) if (score is not None and thr is not None and thr < 1.0) else None
         except ZeroDivisionError:
@@ -502,6 +526,15 @@ def _details(row: Dict[str, Any], dbg: Dict[str, Any], cfg: Dict[str, Any]) -> D
         action, action_code = "Проверить снимок; при подтверждении — переснять", "review"
     else:
         action, action_code = "Принять", "accept"
+    # 2.5: команда только с доказательством (src/action_evidence.py). Флаги, класс и выгрузка не меняются.
+    evidence = None if is_fail else AE.evidence_from_debug(dbg, cfg)
+    ev_map = AE.criterion_evidence_map(evidence)
+    for cr in crits:
+        e = ev_map.get(cr["code"])
+        cr["evidence"] = None if e is None else {k: e[k] for k in ("status", "status_text", "command", "text", "basis")}
+    if evidence and evidence["command"] == "check" and action_code == "review":
+        action, action_code = evidence["text"], "review_evidence"
+    axis = None if is_fail else AE.axis_from_debug(dbg)
     return {
         "internal_region": region,
         "region_source": dbg.get("region_source"),
@@ -523,6 +556,8 @@ def _details(row: Dict[str, Any], dbg: Dict[str, Any], cfg: Dict[str, Any]) -> D
         "lateral_margin_mm": (lambda v: None if v is None else round(v, 1))(_num(dbg.get("feat_lateral_margin_mm"))),
         "action": action,
         "action_code": action_code,
+        "action_evidence": evidence,
+        "axis_second_opinion": axis,
         "risk_level": risk,
         "needs_review": needs_review,
         "uncertain_criteria": [c for c in str(dbg.get("uncertain_criteria") or "").split(";") if c],
@@ -641,15 +676,46 @@ def _safe_upload_rel(filename: Optional[str]) -> str:
     return "/".join(parts[-8:])    # разумный предел глубины
 
 
-def _run_job(job: str, tmp: Path, job_dir: Path, xlsx: bool):
-    """Синхронная часть: инференс под глобальной блокировкой + сбор бонус-файлов в папку запроса."""
+def _run_job(job: str, tmp: Path, job_dir: Path, xlsx: bool, keep_temp: Optional[List[Path]] = None,
+             row_files_out: Optional[List[str]] = None):
+    """Синхронная часть: инференс под глобальной блокировкой + сбор бонус-файлов в папку запроса.
+    keep_temp (2.4.1, Б6): каталоги распаковки zip не удаляются движком, а добавляются в этот список —
+    их удаляет analyze в finally, после чтения тегов, кадров и заголовков. row_files_out (если передан)
+    заполняется фактическими файлами строк: row_files_out[i] — файл строки i (читается под той же блокировкой,
+    движок общий). Возвращаемый кортеж прежний (eng, out_csv, rows, debug_rows) — его использует tools/web."""
     eng = engine()
     out_csv = job_dir / "results.csv"
     with _RUN_LOCK:
-        rows = eng.run(tmp, out_csv, debug_csv=job_dir / "results_debug.csv", xlsx=xlsx)
+        rows = eng.run(tmp, out_csv, debug_csv=job_dir / "results_debug.csv", xlsx=xlsx, keep_temp=keep_temp)
         debug_rows = list(getattr(eng, "last_debug_rows", []) or [])
+        if row_files_out is not None:
+            row_files_out.extend(list(getattr(eng, "last_row_files", []) or []))
         _collect_bonus(job_dir, debug_rows)
     return eng, out_csv, rows, debug_rows
+
+
+SERIES_ZIP_ENABLED = os.environ.get("DENSITO_SERIES_ZIP", "1").strip().lower() not in ("0", "false", "no", "off")
+
+
+def _write_job_series_zip(job_dir: Path, rows: List[Dict[str, Any]], debug_rows: List[Dict[str, Any]],
+                          study_sr_paths: Dict[str, str], supported: List[bool]) -> Optional[Path]:
+    """additional_series.zip в папке запроса (ТЗ п. 2.7): SR исследования, наложение (SC), SEG — те же файлы,
+    что отдаются по отдельным ссылкам. Снимки вне поддерживаемой области не включаются (как и в ответе).
+    Ошибка упаковки не влияет на ответ: ссылка будет null."""
+    if not SERIES_ZIP_ENABLED:
+        return None
+    try:
+        import series_zip as _sz
+        bdir = job_dir / "bonus"
+        files = [{"sc": str(bdir / f"{bonus_row_prefix(i)}_overlay.dcm"), "seg": str(bdir / f"{bonus_row_prefix(i)}_seg.dcm"),
+                  "sr_image": str(bdir / f"{bonus_row_prefix(i)}_sr.dcm")} for i in range(len(rows))]
+        regions = [str((d or {}).get("internal_region") or "") if isinstance(d, dict) else "" for d in debug_rows]
+        entries = _sz.plan_entries(rows, files, study_sr_paths, regions, include_rows=supported)
+        res = _sz.write_series_zip(entries, job_dir / _sz.SERIES_ZIP_NAME)
+        return Path(res["path"])
+    except Exception as e:  # noqa: BLE001
+        LOG.warning("additional_series.zip не записан: %s", e)
+        return None
 
 
 @app.post("/api/analyze")
@@ -658,6 +724,13 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
     формата, CSV-текстом и (если включены в движке) бонус-визуализациями (overlay PNG,
     ссылка на DICOM SR, ROI-диагностика) для каждой строки. Все файлы запроса сохраняются
     в отдельной папке OUTPUT_DIR/jobs/{job_id}/ и доступны по /api/results/{job_id}/{name}."""
+    return await _analyze(files, xlsx)
+
+
+async def _analyze(files: List[UploadFile], xlsx: bool = False, before_index=None) -> Dict[str, Any]:
+    """Тело /api/analyze. before_index(job_id) (2.4.1, P2) вызывается ДО записи строк в журнал: загрузка
+    слепой проверки помечается скрытой раньше, чем её решения могут появиться в журнале. Если before_index
+    бросает исключение, строки в журнал не пишутся вовсе."""
     if not files:
         raise HTTPException(400, "Файлы не переданы. Загрузите один или несколько .dcm или zip-архив исследования.")
     if len(files) > MAX_FILES_PER_REQUEST:
@@ -668,6 +741,7 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
     job_dir = JOBS_DIR / job
     job_dir.mkdir(parents=True, exist_ok=True)
     t_wall = time.perf_counter()
+    unpack_dirs: List[Path] = []   # каталоги распаковки zip (densito_in_*): удаляются в finally
     try:
         total = 0
         limit = int(MAX_UPLOAD_MB * 1024 * 1024)
@@ -693,8 +767,10 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
                     dst.write(chunk)
             if n_file == 0:
                 raise HTTPException(400, f"Файл «{rel}» пустой.")
-        eng, out_csv, rows, debug_rows = await run_in_threadpool(_run_job, job, tmp, job_dir, xlsx)
-        _write_device_tags(rows, tmp, job_dir)  # сводка по партии: только аппарат и дата, пока входные файлы ещё есть
+        row_files: List[str] = []
+        eng, out_csv, rows, debug_rows = await run_in_threadpool(_run_job, job, tmp, job_dir, xlsx, unpack_dirs, row_files)
+        # row_files[i] — фактический файл строки i (для zip — во временном каталоге распаковки, он ещё на диске)
+        _write_device_tags(rows, tmp, job_dir, row_files)  # сводка по партии: только аппарат и дата
         problems = validate_output_csv(out_csv, eng.cfg)
         study_sr = _study_sr_urls(eng, job)
         study_completeness = _study_completeness(eng, rows)
@@ -703,18 +779,18 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
         n_unsupported = 0
         # теги для журнала и для поиска в кабинете (ФИО — только маской «Иванова М. П.», дата исследования)
         try:
-            reg_tags = registry_read_tags(rows, tmp)
+            reg_tags = registry_read_tags(rows, tmp, row_files)
         except Exception as e:  # noqa: BLE001
             LOG.warning("registry tags failed: %s", e)
             reg_tags = {}
         try:  # чистые кадры для слепой экспертной проверки (src/expert_review.py)
-            expert_save_frames(rows, tmp, job_dir)
+            expert_save_frames(rows, tmp, job_dir, row_files)
         except Exception as e:  # noqa: BLE001
             LOG.warning("expert frames failed: %s", e)
         supported: List[bool] = []
         for i, r in enumerate(rows):
             dbg = debug_rows[i] if i < len(debug_rows) else {}
-            reg_ok, reg_reason = _region_support(r, dbg, tmp)
+            reg_ok, reg_reason = _region_support(r, dbg, tmp, row_files[i] if i < len(row_files) else None)
             supported.append(bool(reg_ok))
             if not reg_ok:
                 n_unsupported += 1
@@ -767,6 +843,8 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
                 rb["study_priority"] = sp
         xlsx_path = out_csv.with_suffix(".xlsx")
         has_xlsx = bool(xlsx and xlsx_path.exists())
+        series_zip = _write_job_series_zip(job_dir, rows, debug_rows, dict(getattr(eng, "last_study_sr", {}) or {}),
+                                           supported)
         if n_unsupported:
             # отчёт этого запроса приводим в соответствие с карточкой; пакетный путь не затронут
             write_results(rows, out_csv, eng.cfg, xlsx=has_xlsx)
@@ -805,13 +883,15 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
             # сводка по партии (для заведующего/старшего лаборанта): JSON и Markdown, без персональных данных
             "department_summary_url": f"/api/results/{job}/summary",
             "department_summary_md_url": f"/api/results/{job}/summary.md",
+            # ТЗ п. 2.7: zip с дополнительными DICOM-сериями (SR исследования, наложение SC, SEG)
+            "additional_series_zip_url": f"/api/results/{job}/{series_zip.name}" if series_zip else None,
             "rows": rows_out,
             "csv": _rows_to_csv_text(rows, eng.cfg),
         }
         # краткая карточка запроса для истории (без base64-картинок и без кода доступа)
         try:
             card = {k: v for k, v in resp.items() if k not in ("rows", "csv", "job_token")}
-            card["created_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+            card["created_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")  # местное время (в образе TZ=MSK-3)
             card["rows"] = [{k: v for k, v in r.items() if not str(k).endswith("_base64")} for r in rows_out]
             (job_dir / "summary.json").write_text(json.dumps(card, ensure_ascii=False, indent=1), encoding="utf-8")
         except Exception as e:  # noqa: BLE001
@@ -819,6 +899,8 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
         # журнал исследований отделения (src/registry.py): теги DICOM для поиска читаем, пока загрузка ещё на диске.
         # Ошибка журнала не влияет на ответ и на CSV по ТЗ.
         try:
+            if before_index is not None:
+                before_index(job)   # P2: скрытие фиксируется до появления строк в журнале; ошибка -> не индексируем
             REGISTRY.index_rows(job, rows_out, reg_tags, card.get("created_at"))
         except Exception as e:  # noqa: BLE001
             LOG.warning("registry index failed: %s", e)
@@ -835,6 +917,8 @@ async def analyze(files: List[UploadFile] = File(...), xlsx: bool = False):
         raise HTTPException(500, f"Внутренняя ошибка обработки ({type(e).__name__}). Повторите попытку; если ошибка повторяется — сообщите администратору, код запроса {job}.")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+        for d in unpack_dirs:     # Б6: каталоги распаковки zip удаляются при любом исходе запроса
+            shutil.rmtree(d, ignore_errors=True)
 
 
 @app.post("/api/batch")
@@ -859,15 +943,24 @@ def batch(req: BatchRequest):
     try:
         eng = engine()
         t0 = time.perf_counter()
+        series_zip = None
         with _RUN_LOCK:
             rows = eng.run(src, out_csv, debug_csv=out_csv.with_name(out_csv.stem + "_debug.csv"),
                            xlsx=req.xlsx, limit=req.limit)
+            # ТЗ п. 2.7: архив дополнительных серий рядом с CSV (<имя CSV>_additional_series.zip); отключение —
+            # DENSITO_SERIES_ZIP=0; ошибка упаковки не влияет на CSV и ответ
+            if os.environ.get("DENSITO_SERIES_ZIP", "1").strip().lower() not in ("0", "false", "no", "off"):
+                from inference import write_batch_series_zip
+                zp = out_csv.with_name(out_csv.stem + "_additional_series.zip")
+                if write_batch_series_zip(eng, rows, zp):
+                    series_zip = str(zp)
         problems = validate_output_csv(out_csv, eng.cfg)
         return {
             "summary": {**_summary(rows, eng.cfg), "wall_time_s": round(time.perf_counter() - t0, 3)},
             "format_check": "OK" if not problems else problems,
             "output_csv": str(out_csv),
             "output_xlsx": str(out_csv.with_suffix(".xlsx")) if req.xlsx else None,
+            "additional_series_zip": series_zip,
             "study_sr": dict(getattr(eng, "last_study_sr", {}) or {}),
             "study_completeness": dict(getattr(eng, "last_study_completeness", {}) or {}),
         }
@@ -1290,12 +1383,15 @@ DEPT_SUMMARY_STEM = "department_summary"
 _SUMMARY_LOCK = threading.Lock()
 
 
-def _write_device_tags(rows: List[Dict[str, Any]], tmp: Path, job_dir: Path) -> None:
-    """device_tags.csv в каталоге задачи. Ошибки не влияют на ответ /api/analyze."""
+def _write_device_tags(rows: List[Dict[str, Any]], tmp: Path, job_dir: Path,
+                       row_files: Optional[List[str]] = None) -> None:
+    """device_tags.csv в каталоге задачи. Ошибки не влияют на ответ /api/analyze.
+    row_files[i] — фактический файл строки i (для zip — во временном каталоге распаковки)."""
     if department_summary is None or not rows:
         return
     try:
-        tags = department_summary.read_device_tags_dicom(rows, Path(tmp), salt=os.environ.get("DENSITO_HASH_SALT", ""))
+        tags = department_summary.read_device_tags_dicom(rows, Path(tmp), salt=os.environ.get("DENSITO_HASH_SALT", ""),
+                                                         files=row_files)
         if tags:
             department_summary.write_device_tags_csv(tags, Path(job_dir) / DEVICE_TAGS_FILE)
     except Exception as e:  # noqa: BLE001
@@ -1380,6 +1476,17 @@ def get_department_summary_csv(job: str, t: Optional[str] = None, x_job_token: O
     text = department_summary.to_csv_text(build_department_summary(job_dir, top_n=top_n, min_n=mn))
     return Response(content=("\ufeff" + text).encode("utf-8"), media_type="text/csv; charset=utf-8",
                     headers={"Content-Disposition": f'attachment; filename="{job}_summary.csv"'})
+
+
+@app.get("/api/results/{job}/additional_series.zip")
+def download_additional_series(job: str, t: Optional[str] = None, x_job_token: Optional[str] = Header(None)):
+    """ТЗ п. 2.7: zip-архив с дополнительными DICOM-сериями запроса — SR исследования, наложение результата
+    (Secondary Capture), сегментация (DICOM SEG); индекс series_index.csv внутри. Имена внутри архива —
+    по номеру исследования и снимка, без ФИО и исходных имён файлов. Доступ — как у остальных файлов
+    запроса: ?t=<job_token> или заголовок X-Job-Token (без кода — 403, неизвестный запрос — 404)."""
+    _check_job_access(job, x_job_token or t)
+    p = _safe_job_file(job, "additional_series.zip")
+    return FileResponse(str(p), filename=f"{job}_additional_series.zip", media_type="application/zip")
 
 
 @app.get("/api/results/{job}/{name}")
@@ -1500,12 +1607,16 @@ async def expert_upload(files: List[UploadFile] = File(...), title: str = Form("
         user = REGISTRY.check_session(x_registry_session)
     except PermissionError as e:
         raise HTTPException(401, str(e))
-    res = await analyze(files=files, xlsx=False)
+    # P2 (2.4.1): загрузка помечается скрытой ДО записи в журнал (EXPERT.hold_job фиксируется отдельной транзакцией
+    # раньше, чем строки появятся в images). Скрытие снимает только завершение оценки загрузившим; если набор
+    # создать не удалось, загрузка остаётся скрытой навсегда — решения сервиса по ней в журнале не появятся.
+    uploader = (user.get("name") or user.get("login") or "").strip()
+    res = await _analyze(files, xlsx=False, before_index=lambda job: EXPERT.hold_job(job, uploader))
     try:
         s = EXPERT.create_set_from_job(user, res["job_id"], title, n_files=len(files),
                                        versions={"model_version": res.get("model_version"), "config_hash": res.get("config_hash")})
     except ValueError as e:
-        raise HTTPException(400, str(e))
+        raise HTTPException(400, str(e) + " Загрузка сохранена скрытой: решения сервиса по ней в журнале не показываются.")
     p = s["params"]
     return {"set_id": s["id"], "title": s["title"], "n": s["n"], "n_files": len(files), "n_rows": p.get("n_rows"),
             "skipped": p.get("skipped"), "set_hash": p.get("set_hash"), "model_version": p.get("model_version"),
@@ -1550,6 +1661,38 @@ def web_index():
     if not p.is_file():
         raise HTTPException(404, "web UI not bundled in this image")
     return FileResponse(str(p), media_type="text/html; charset=utf-8")
+
+
+@app.get("/index.html", include_in_schema=False)
+def web_index_html():
+    """Тот же кабинет по явному имени файла: на него ссылается web/docs.html (Б1)."""
+    return web_index()
+
+
+@app.get("/docs.html", include_in_schema=False)
+def web_docs_html():
+    """Страница документации для пользователя (web/docs.html); на неё ссылается кабинет (Б1)."""
+    p = WEB_DIR / "docs.html"
+    if not p.is_file():
+        raise HTTPException(404, "docs page not bundled in this image")
+    return FileResponse(str(p), media_type="text/html; charset=utf-8")
+
+
+SWAGGER_ASSETS = "/assets/swagger"
+
+
+@app.get("/docs", include_in_schema=False)
+def swagger_docs():
+    """Swagger UI без внешних ресурсов (Б5): swagger-ui-dist 5.33.0 из web/assets/swagger/ (Apache 2.0).
+    validatorUrl выключен: иначе Swagger UI обращается к validator.swagger.io."""
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url or "/openapi.json",
+        title=f"{app.title} — Swagger UI",
+        swagger_js_url=f"{SWAGGER_ASSETS}/swagger-ui-bundle.js",
+        swagger_css_url=f"{SWAGGER_ASSETS}/swagger-ui.css",
+        swagger_favicon_url=f"{SWAGGER_ASSETS}/favicon-32x32.png",
+        swagger_ui_parameters={"validatorUrl": None},
+    )
 
 
 @app.get("/assets/{path:path}", include_in_schema=False)

@@ -104,6 +104,14 @@ def main() -> int:
           "Мария" not in str(reg.search("")) and "19580312" not in str(reg.search("")))
     check("«Anonymized» показано как «обезличено»",
           next(s for s in reg.search("")["studies"] if s["study_uid"] == "1.2.5")["patient"] == "обезличено")
+    def _broken():
+        raise RuntimeError("expert db locked")
+    reg.hidden_jobs = _broken  # 2.4.1: сбой списка скрытых загрузок не раскрывает решения (fail-closed)
+    s_err = reg.search("иванова")["studies"][0]
+    check("сбой списка скрытых загрузок: решение в поиске скрыто", s_err["verdict"] == "hidden", s_err.get("verdict"))
+    check("сбой списка скрытых загрузок: фильтр по нарушению ничего не раскрывает", reg.search(violation="укладка")["total"] == 0)
+    reg.hidden_jobs = None
+    check("после сбоя журнал снова показывает решения", reg.search("иванова")["studies"][0]["verdict"] != "hidden")
     check("повторная индексация той же задачи не дублирует строки",
           reg.index_rows("20260915_100000_aaaaaa", rows("1.2.3", [("a.dcm", "1", "Некорректная укладка", "0.93", "spine"),
                                                                    ("b.dcm", "0", "", "0.2", "hip")]), tags) == 2

@@ -196,7 +196,7 @@
 <text x="624" y="391" font-size="9">доля ошибок критерия в зоне</text>
 <text x="812" y="40" font-size="12">sp_art: Присутствуют посторонние предметы</text>
 <text x="812" y="55" font-size="10" fill="#444">n=166, положительных 35 (17 исследований)</text>
-<text x="812" y="68" font-size="10" fill="#444">текущий запас 0.01205</text>
+<text x="812" y="68" font-size="10" fill="#444">текущий запас 0.006469</text>
 <rect x="812" y="84" width="260" height="260" fill="none" stroke="#333"/>
 <line x1="864.0" y1="84" x2="864.0" y2="344" stroke="#eee"/>
 <line x1="812" y1="292.0" x2="1072" y2="292.0" stroke="#eee"/>
@@ -217,76 +217,76 @@
 <text x="808" y="347.0" text-anchor="end" font-size="9">0.0</text>
 <text x="808" y="87.0" text-anchor="end" font-size="9">1.0</text>
 <line x1="864.0" y1="84" x2="864.0" y2="344" stroke="#999" stroke-dasharray="4 3"/>
-<polyline points="818.3,173.1 823.0,165.2 832.4,167.9 840.2,162.0 844.9,149.0 851.2,141.8 855.9,141.8 866.8,141.8 871.5,127.3 877.8,127.3 882.5,127.3 890.3,127.3 907.5,153.3 915.4,153.3 920.1,158.3 932.6,107.6 945.1,107.6 953.0,107.6 954.5,107.6 957.7,107.6 967.1,116.5 971.8,116.5 974.9,116.5 979.6,116.5 982.7,116.5 993.7,116.5 996.8,127.3 1000.0,127.3 1004.7,127.3 1012.5,136.0 1017.2,136.0" fill="none" stroke="#2a9d4b" stroke-width="1.6"/>
-<circle cx="818.3" cy="173.1" r="2" fill="#2a9d4b"/>
-<circle cx="823.0" cy="165.2" r="2" fill="#2a9d4b"/>
-<circle cx="832.4" cy="167.9" r="2" fill="#2a9d4b"/>
-<circle cx="840.2" cy="162.0" r="2" fill="#2a9d4b"/>
-<circle cx="844.9" cy="149.0" r="2" fill="#2a9d4b"/>
-<circle cx="851.2" cy="141.8" r="2" fill="#2a9d4b"/>
-<circle cx="855.9" cy="141.8" r="2" fill="#2a9d4b"/>
-<circle cx="866.8" cy="141.8" r="2" fill="#2a9d4b"/>
-<circle cx="871.5" cy="127.3" r="2" fill="#2a9d4b"/>
-<circle cx="877.8" cy="127.3" r="2" fill="#2a9d4b"/>
-<circle cx="882.5" cy="127.3" r="2" fill="#2a9d4b"/>
-<circle cx="890.3" cy="127.3" r="2" fill="#2a9d4b"/>
-<circle cx="907.5" cy="153.3" r="2" fill="#2a9d4b"/>
-<circle cx="915.4" cy="153.3" r="2" fill="#2a9d4b"/>
-<circle cx="920.1" cy="158.3" r="2" fill="#2a9d4b"/>
-<circle cx="932.6" cy="107.6" r="2" fill="#2a9d4b"/>
-<circle cx="945.1" cy="107.6" r="2" fill="#2a9d4b"/>
-<circle cx="953.0" cy="107.6" r="2" fill="#2a9d4b"/>
-<circle cx="954.5" cy="107.6" r="2" fill="#2a9d4b"/>
-<circle cx="957.7" cy="107.6" r="2" fill="#2a9d4b"/>
-<circle cx="967.1" cy="116.5" r="2" fill="#2a9d4b"/>
-<circle cx="971.8" cy="116.5" r="2" fill="#2a9d4b"/>
-<circle cx="974.9" cy="116.5" r="2" fill="#2a9d4b"/>
-<circle cx="979.6" cy="116.5" r="2" fill="#2a9d4b"/>
-<circle cx="982.7" cy="116.5" r="2" fill="#2a9d4b"/>
-<circle cx="993.7" cy="116.5" r="2" fill="#2a9d4b"/>
-<circle cx="996.8" cy="127.3" r="2" fill="#2a9d4b"/>
-<circle cx="1000.0" cy="127.3" r="2" fill="#2a9d4b"/>
-<circle cx="1004.7" cy="127.3" r="2" fill="#2a9d4b"/>
-<circle cx="1012.5" cy="136.0" r="2" fill="#2a9d4b"/>
-<circle cx="1017.2" cy="136.0" r="2" fill="#2a9d4b"/>
-<text x="855.2" y="137.8" font-size="8" fill="#2a9d4b">δ=0.05</text>
-<text x="886.5" y="123.3" font-size="8" fill="#2a9d4b">δ=0.10</text>
-<text x="971.1" y="112.5" font-size="8" fill="#2a9d4b">δ=0.20</text>
-<text x="1021.2" y="132.0" font-size="8" fill="#2a9d4b">δ=0.30</text>
-<polyline points="818.3,318.0 823.0,305.0 832.4,292.0 840.2,266.0 844.9,253.0 851.2,240.0 855.9,227.0 866.8,220.5 871.5,207.5 877.8,207.5 882.5,207.5 890.3,201.0 907.5,201.0 915.4,188.0 920.1,188.0 932.6,155.5 945.1,155.5 953.0,155.5 954.5,149.0 957.7,136.0 967.1,136.0 971.8,129.5 974.9,129.5 979.6,123.0 982.7,110.0 993.7,103.5 996.8,103.5 1000.0,103.5 1004.7,103.5 1012.5,97.0 1017.2,97.0" fill="none" stroke="#555" stroke-width="1.6" stroke-dasharray="5 3"/>
-<circle cx="818.3" cy="318.0" r="2" fill="#555"/>
-<circle cx="823.0" cy="305.0" r="2" fill="#555"/>
-<circle cx="832.4" cy="292.0" r="2" fill="#555"/>
-<circle cx="840.2" cy="266.0" r="2" fill="#555"/>
-<circle cx="844.9" cy="253.0" r="2" fill="#555"/>
-<circle cx="851.2" cy="240.0" r="2" fill="#555"/>
-<circle cx="855.9" cy="227.0" r="2" fill="#555"/>
-<circle cx="866.8" cy="220.5" r="2" fill="#555"/>
-<circle cx="871.5" cy="207.5" r="2" fill="#555"/>
-<circle cx="877.8" cy="207.5" r="2" fill="#555"/>
-<circle cx="882.5" cy="207.5" r="2" fill="#555"/>
-<circle cx="890.3" cy="201.0" r="2" fill="#555"/>
-<circle cx="907.5" cy="201.0" r="2" fill="#555"/>
-<circle cx="915.4" cy="188.0" r="2" fill="#555"/>
-<circle cx="920.1" cy="188.0" r="2" fill="#555"/>
-<circle cx="932.6" cy="155.5" r="2" fill="#555"/>
-<circle cx="945.1" cy="155.5" r="2" fill="#555"/>
-<circle cx="953.0" cy="155.5" r="2" fill="#555"/>
-<circle cx="954.5" cy="149.0" r="2" fill="#555"/>
-<circle cx="957.7" cy="136.0" r="2" fill="#555"/>
-<circle cx="967.1" cy="136.0" r="2" fill="#555"/>
-<circle cx="971.8" cy="129.5" r="2" fill="#555"/>
-<circle cx="974.9" cy="129.5" r="2" fill="#555"/>
-<circle cx="979.6" cy="123.0" r="2" fill="#555"/>
-<circle cx="982.7" cy="110.0" r="2" fill="#555"/>
-<circle cx="993.7" cy="103.5" r="2" fill="#555"/>
-<circle cx="996.8" cy="103.5" r="2" fill="#555"/>
-<circle cx="1000.0" cy="103.5" r="2" fill="#555"/>
-<circle cx="1004.7" cy="103.5" r="2" fill="#555"/>
-<circle cx="1012.5" cy="97.0" r="2" fill="#555"/>
-<circle cx="1017.2" cy="97.0" r="2" fill="#555"/>
-<rect x="819.5" y="162.9" width="10" height="10" fill="none" stroke="#111" stroke-width="1.8"/>
-<text x="832.5" y="179.9" font-size="9" fill="#111">текущее правило</text>
+<polyline points="812.0,136.0 827.7,116.5 833.9,116.5 833.9,116.5 837.1,116.5 840.2,116.5 849.6,118.7 855.9,118.7 855.9,118.7 857.4,119.9 860.6,119.9 870.0,119.9 871.5,119.9 876.2,119.9 876.2,119.9 880.9,119.9 888.7,111.9 891.9,111.9 923.2,84.0 923.2,84.0 929.5,84.0 935.7,84.0 949.8,84.0 953.0,84.0 962.4,84.0 963.9,84.0 970.2,84.0 973.3,84.0 976.5,84.0 985.9,84.0 993.7,84.0" fill="none" stroke="#2a9d4b" stroke-width="1.6"/>
+<circle cx="812.0" cy="136.0" r="2" fill="#2a9d4b"/>
+<circle cx="827.7" cy="116.5" r="2" fill="#2a9d4b"/>
+<circle cx="833.9" cy="116.5" r="2" fill="#2a9d4b"/>
+<circle cx="833.9" cy="116.5" r="2" fill="#2a9d4b"/>
+<circle cx="837.1" cy="116.5" r="2" fill="#2a9d4b"/>
+<circle cx="840.2" cy="116.5" r="2" fill="#2a9d4b"/>
+<circle cx="849.6" cy="118.7" r="2" fill="#2a9d4b"/>
+<circle cx="855.9" cy="118.7" r="2" fill="#2a9d4b"/>
+<circle cx="855.9" cy="118.7" r="2" fill="#2a9d4b"/>
+<circle cx="857.4" cy="119.9" r="2" fill="#2a9d4b"/>
+<circle cx="860.6" cy="119.9" r="2" fill="#2a9d4b"/>
+<circle cx="870.0" cy="119.9" r="2" fill="#2a9d4b"/>
+<circle cx="871.5" cy="119.9" r="2" fill="#2a9d4b"/>
+<circle cx="876.2" cy="119.9" r="2" fill="#2a9d4b"/>
+<circle cx="876.2" cy="119.9" r="2" fill="#2a9d4b"/>
+<circle cx="880.9" cy="119.9" r="2" fill="#2a9d4b"/>
+<circle cx="888.7" cy="111.9" r="2" fill="#2a9d4b"/>
+<circle cx="891.9" cy="111.9" r="2" fill="#2a9d4b"/>
+<circle cx="923.2" cy="84.0" r="2" fill="#2a9d4b"/>
+<circle cx="923.2" cy="84.0" r="2" fill="#2a9d4b"/>
+<circle cx="929.5" cy="84.0" r="2" fill="#2a9d4b"/>
+<circle cx="935.7" cy="84.0" r="2" fill="#2a9d4b"/>
+<circle cx="949.8" cy="84.0" r="2" fill="#2a9d4b"/>
+<circle cx="953.0" cy="84.0" r="2" fill="#2a9d4b"/>
+<circle cx="962.4" cy="84.0" r="2" fill="#2a9d4b"/>
+<circle cx="963.9" cy="84.0" r="2" fill="#2a9d4b"/>
+<circle cx="970.2" cy="84.0" r="2" fill="#2a9d4b"/>
+<circle cx="973.3" cy="84.0" r="2" fill="#2a9d4b"/>
+<circle cx="976.5" cy="84.0" r="2" fill="#2a9d4b"/>
+<circle cx="985.9" cy="84.0" r="2" fill="#2a9d4b"/>
+<circle cx="993.7" cy="84.0" r="2" fill="#2a9d4b"/>
+<text x="844.2" y="112.5" font-size="8" fill="#2a9d4b">δ=0.05</text>
+<text x="864.6" y="115.9" font-size="8" fill="#2a9d4b">δ=0.10</text>
+<text x="933.5" y="80.0" font-size="8" fill="#2a9d4b">δ=0.20</text>
+<text x="997.7" y="80.0" font-size="8" fill="#2a9d4b">δ=0.30</text>
+<polyline points="812.0,344.0 827.7,288.3 833.9,288.3 833.9,288.3 837.1,279.0 840.2,279.0 849.6,260.4 855.9,251.1 855.9,251.1 857.4,251.1 860.6,251.1 870.0,223.3 871.5,214.0 876.2,214.0 876.2,214.0 880.9,214.0 888.7,195.4 891.9,195.4 923.2,158.3 923.2,158.3 929.5,149.0 935.7,149.0 949.8,149.0 953.0,149.0 962.4,121.1 963.9,121.1 970.2,121.1 973.3,121.1 976.5,121.1 985.9,111.9 993.7,93.3" fill="none" stroke="#555" stroke-width="1.6" stroke-dasharray="5 3"/>
+<circle cx="812.0" cy="344.0" r="2" fill="#555"/>
+<circle cx="827.7" cy="288.3" r="2" fill="#555"/>
+<circle cx="833.9" cy="288.3" r="2" fill="#555"/>
+<circle cx="833.9" cy="288.3" r="2" fill="#555"/>
+<circle cx="837.1" cy="279.0" r="2" fill="#555"/>
+<circle cx="840.2" cy="279.0" r="2" fill="#555"/>
+<circle cx="849.6" cy="260.4" r="2" fill="#555"/>
+<circle cx="855.9" cy="251.1" r="2" fill="#555"/>
+<circle cx="855.9" cy="251.1" r="2" fill="#555"/>
+<circle cx="857.4" cy="251.1" r="2" fill="#555"/>
+<circle cx="860.6" cy="251.1" r="2" fill="#555"/>
+<circle cx="870.0" cy="223.3" r="2" fill="#555"/>
+<circle cx="871.5" cy="214.0" r="2" fill="#555"/>
+<circle cx="876.2" cy="214.0" r="2" fill="#555"/>
+<circle cx="876.2" cy="214.0" r="2" fill="#555"/>
+<circle cx="880.9" cy="214.0" r="2" fill="#555"/>
+<circle cx="888.7" cy="195.4" r="2" fill="#555"/>
+<circle cx="891.9" cy="195.4" r="2" fill="#555"/>
+<circle cx="923.2" cy="158.3" r="2" fill="#555"/>
+<circle cx="923.2" cy="158.3" r="2" fill="#555"/>
+<circle cx="929.5" cy="149.0" r="2" fill="#555"/>
+<circle cx="935.7" cy="149.0" r="2" fill="#555"/>
+<circle cx="949.8" cy="149.0" r="2" fill="#555"/>
+<circle cx="953.0" cy="149.0" r="2" fill="#555"/>
+<circle cx="962.4" cy="121.1" r="2" fill="#555"/>
+<circle cx="963.9" cy="121.1" r="2" fill="#555"/>
+<circle cx="970.2" cy="121.1" r="2" fill="#555"/>
+<circle cx="973.3" cy="121.1" r="2" fill="#555"/>
+<circle cx="976.5" cy="121.1" r="2" fill="#555"/>
+<circle cx="985.9" cy="111.9" r="2" fill="#555"/>
+<circle cx="993.7" cy="93.3" r="2" fill="#555"/>
+<rect x="818.0" y="111.5" width="10" height="10" fill="none" stroke="#111" stroke-width="1.8"/>
+<text x="831.0" y="128.5" font-size="9" fill="#111">текущее правило</text>
 <text x="942.0" y="370" text-anchor="middle" font-size="10">доля строк в зоне «не уверен» (1 − покрытие)</text>
 <text transform="translate(768,214.0) rotate(-90)" text-anchor="middle" font-size="10">полнота среди уверенных строк</text>
 <line x1="812" y1="388" x2="828" y2="388" stroke="#2a9d4b" stroke-width="2"/>

@@ -16,7 +16,7 @@
   "groups_equal_studies": true,
   "binary": {
    "n_pos": 60,
-   "production_oof_auc": 0.8127358490566038,
+   "production_oof_auc": 0.8459119496855345,
    "controls": {
     "C1_metadata": {
      "auc_mean": 0.5899606918238994,
@@ -327,7 +327,7 @@
   },
   "sp_art": {
    "n_pos": 35,
-   "production_oof_auc": 0.8236641221374046,
+   "production_oof_auc": 0.8991275899672846,
    "controls": {
     "C1_metadata": {
      "auc_mean": 0.7017448200654307,
@@ -363,14 +363,14 @@
         "n_studies": 74,
         "n_pos": 34,
         "prevalence": 0.2677165354330709,
-        "production_auc_in_stratum": 0.795224541429475
+        "production_auc_in_stratum": 0.8787160025300442
        },
        "1.0": {
         "n": 39,
         "n_studies": 25,
         "n_pos": 1,
         "prevalence": 0.02564102564102564,
-        "production_auc_in_stratum": 0.894736842105263
+        "production_auc_in_stratum": 0.9473684210526316
        }
       }
      }
@@ -448,18 +448,18 @@
     "emb_source": "imagenet",
     "emb_variant": "baseline",
     "geom_cols": [
-     "metal_metal_area_mm2",
-     "metal_metal_max_intensity_gap"
+     "metal_metal_band70_area_log",
+     "metal_metal_band70_max_gap"
     ],
     "missing_cols": []
    },
    "simplified_stack": {
-    "real_auc_mean": 0.8498727735368957,
-    "perm_between_groups_mean": 0.48635215685497946,
-    "perm_between_groups_p95": 0.6177880049337034,
-    "perm_between_groups_max": 0.7217021276595745,
-    "perm_within_study_mean": 0.8468702290076336,
-    "perm_within_study_p95": 0.8755616139585606,
+    "real_auc_mean": 0.8862958924027625,
+    "perm_between_groups_mean": 0.4779215761536434,
+    "perm_between_groups_p95": 0.5920815272454959,
+    "perm_between_groups_max": 0.7140425531914893,
+    "perm_within_study_mean": 0.8868702290076337,
+    "perm_within_study_p95": 0.9358669574700109,
     "labels_vary_within_study": 0
    }
   }

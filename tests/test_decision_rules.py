@@ -46,7 +46,7 @@ def test_one_ulp_tolerance():
 def test_production_oof_tie_blocks():
     """На сохранённых OOF правило (а) воспроизводит строгий «>» (числа находки 1 совета)."""
     exp = {'spine_sp_pos': (0.8614457831325302, 18, 8), 'spine_sp_axis': (0.7771084337349398, 26, 23),
-           'spine_sp_art': (0.6024096385542168, 51, 47), 'hip_hip_pos': (0.6580547112462006, 83, 78),
+           'spine_sp_art': (0.6239385251850776, 49, 49), 'hip_hip_pos': (0.6580547112462006, 83, 78),
            'hip_hip_roi': (0.9179331306990881, 19, 15)}
     for k, (thr, n0, n1) in exp.items():
         p = ROOT / 'models' / f'oof_stacked_{k}.csv'

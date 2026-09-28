@@ -7,35 +7,35 @@
  "files": {
   "n_rows": 495,
   "point": {
-   "bin_f1/spine": 0.6617647058823529,
-   "bin_auc/spine": 0.8127358490566038,
+   "bin_f1/spine": 0.7368421052631579,
+   "bin_auc/spine": 0.8459119496855345,
    "bin_f1/hip": 0.5161290322580645,
    "bin_auc/hip": 0.7600898917629793,
-   "bin_f1/pooled": 0.577639751552795,
-   "bin_auc/pooled": 0.7811301212214209,
+   "bin_f1/pooled": 0.6081504702194357,
+   "bin_auc/pooled": 0.7960334509743747,
    "f1/sp_pos": 0.5,
    "f1/sp_axis": 0.6046511627906976,
-   "f1/sp_art": 0.5348837209302325,
+   "f1/sp_art": 0.6666666666666666,
    "f1/hip_pos": 0.43209876543209874,
    "f1/hip_roi": 0.5142857142857142,
-   "macro/spine": 0.5465116279069767,
+   "macro/spine": 0.5904392764857881,
    "macro/hip": 0.47319223985890646,
-   "macro/regions_mean": 0.5098519338829416,
-   "macro/5_criteria": 0.5171838726877487,
+   "macro/regions_mean": 0.5318157581723473,
+   "macro/5_criteria": 0.5435404618350355,
    "f1_dict/Некорректная укладка (обе области)": 0.4421052631578947,
-   "macro/4_dictionary_rows": 0.5239814652911348,
-   "visit/sensitivity": 0.7291666666666666,
-   "visit/specificity": 0.5
+   "macro/4_dictionary_rows": 0.5569272017252433,
+   "visit/sensitivity": 0.7916666666666666,
+   "visit/specificity": 0.6153846153846154
   },
   "ci95": {
    "bin_f1/spine": [
-    0.49056603773584906,
-    0.7906976744186046
+    0.5683614697120158,
+    0.8535070685101755
    ],
    "bin_f1/spine#share_skipped": 0.0,
    "bin_auc/spine": [
-    0.6990615975989624,
-    0.9068558785503298
+    0.7179097393267652,
+    0.9394361504808938
    ],
    "bin_auc/spine#share_skipped": 0.0,
    "bin_f1/hip": [
@@ -49,13 +49,13 @@
    ],
    "bin_auc/hip#share_skipped": 0.0,
    "bin_f1/pooled": [
-    0.4535266418835192,
-    0.6869324114248591
+    0.48776253387533874,
+    0.7128294573643411
    ],
    "bin_f1/pooled#share_skipped": 0.0,
    "bin_auc/pooled": [
-    0.6894996391635116,
-    0.8641456799788294
+    0.701768694914017,
+    0.8797528733752842
    ],
    "bin_auc/pooled#share_skipped": 0.0,
    "f1/sp_pos": [
@@ -69,8 +69,8 @@
    ],
    "f1/sp_axis#share_skipped": 0.0,
    "f1/sp_art": [
-    0.23727698483496878,
-    0.7419437978051213
+    0.39283963585434173,
+    0.8372314507198227
    ],
    "f1/sp_art#share_skipped": 0.0,
    "f1/hip_pos": [
@@ -84,8 +84,8 @@
    ],
    "f1/hip_roi#share_skipped": 0.0020000000000000018,
    "macro/spine": [
-    0.39047207655478966,
-    0.7032321528222528
+    0.4387434738851772,
+    0.7541057358035286
    ],
    "macro/spine#share_skipped": 0.0,
    "macro/hip": [
@@ -94,13 +94,13 @@
    ],
    "macro/hip#share_skipped": 0.0,
    "macro/regions_mean": [
-    0.3546125931226082,
-    0.6312831622772229
+    0.37857907897830784,
+    0.6550346478850453
    ],
    "macro/regions_mean#share_skipped": 0.0,
    "macro/5_criteria": [
-    0.37408783647025307,
-    0.6356233659117677
+    0.40227488719387616,
+    0.665500193113875
    ],
    "macro/5_criteria#share_skipped": 0.0,
    "f1_dict/Некорректная укладка (обе области)": [
@@ -109,18 +109,18 @@
    ],
    "f1_dict/Некорректная укладка (обе области)#share_skipped": 0.0,
    "macro/4_dictionary_rows": [
-    0.3586244298189396,
-    0.6343863310225502
+    0.398167487833931,
+    0.6650232346821838
    ],
    "macro/4_dictionary_rows#share_skipped": 0.0,
    "visit/sensitivity": [
-    0.6,
-    0.851063829787234
+    0.6666666666666666,
+    0.9038461538461539
    ],
    "visit/sensitivity#share_skipped": 0.0,
    "visit/specificity": [
-    0.36,
-    0.6444444444444445
+    0.4821263227513228,
+    0.7543859649122807
    ],
    "visit/specificity#share_skipped": 0.0
   },
@@ -128,16 +128,16 @@
    "spine": {
     "n": 166,
     "n_pos": 60,
-    "n_flag": 76,
-    "tp": 45,
-    "fp": 31,
-    "fn": 15,
-    "tn": 75,
-    "sensitivity": 0.75,
-    "specificity": 0.7075471698113207,
-    "precision": 0.5921052631578947,
-    "f1": 0.6617647058823529,
-    "roc_auc": 0.8127358490566038
+    "n_flag": 73,
+    "tp": 49,
+    "fp": 24,
+    "fn": 11,
+    "tn": 82,
+    "sensitivity": 0.8166666666666667,
+    "specificity": 0.7735849056603774,
+    "precision": 0.6712328767123288,
+    "f1": 0.7368421052631579,
+    "roc_auc": 0.8459119496855345
    },
    "hip": {
     "n": 329,
@@ -156,16 +156,16 @@
    "pooled": {
     "n": 495,
     "n_pos": 152,
-    "n_flag": 170,
-    "tp": 93,
-    "fp": 77,
-    "fn": 59,
-    "tn": 266,
-    "sensitivity": 0.6118421052631579,
-    "specificity": 0.7755102040816326,
-    "precision": 0.5470588235294118,
-    "f1": 0.577639751552795,
-    "roc_auc": 0.7811301212214209
+    "n_flag": 167,
+    "tp": 97,
+    "fp": 70,
+    "fn": 55,
+    "tn": 273,
+    "sensitivity": 0.6381578947368421,
+    "specificity": 0.7959183673469388,
+    "precision": 0.5808383233532934,
+    "f1": 0.6081504702194357,
+    "roc_auc": 0.7960334509743747
    }
   },
   "by_type": {
@@ -204,15 +204,15 @@
     "region": "Поясничный отдел позвоночника",
     "n": 166,
     "n_pos": 35,
-    "n_flag": 51,
-    "tp": 23,
-    "fp": 28,
-    "fn": 12,
-    "tn": 103,
-    "sensitivity": 0.6571428571428571,
-    "specificity": 0.7862595419847328,
-    "precision": 0.45098039215686275,
-    "f1": 0.5348837209302325
+    "n_flag": 49,
+    "tp": 28,
+    "fp": 21,
+    "fn": 7,
+    "tn": 110,
+    "sensitivity": 0.8,
+    "specificity": 0.8396946564885496,
+    "precision": 0.5714285714285714,
+    "f1": 0.6666666666666666
    },
    "hip_pos": {
     "violation_type": "Некорректная укладка",
@@ -248,23 +248,23 @@
   "visit": {
    "n": 100,
    "n_pos": 48,
-   "n_flag": 61,
-   "tp": 35,
-   "fp": 26,
-   "fn": 13,
-   "tn": 26,
-   "sensitivity": 0.7291666666666666,
-   "specificity": 0.5,
-   "precision": 0.5737704918032787,
-   "f1": 0.6422018348623854
+   "n_flag": 58,
+   "tp": 38,
+   "fp": 20,
+   "fn": 10,
+   "tn": 32,
+   "sensitivity": 0.7916666666666666,
+   "specificity": 0.6153846153846154,
+   "precision": 0.6551724137931034,
+   "f1": 0.7169811320754716
   },
   "multi_type_rows": {
    "spine": {
     "rows": 166,
     "true_rows_ge2_types": 2,
-    "pred_rows_ge2_types": 19,
+    "pred_rows_ge2_types": 20,
     "true_positive_rows": 60,
-    "pred_flagged_rows": 76
+    "pred_flagged_rows": 73
    },
    "hip": {
     "rows": 329,
@@ -278,35 +278,35 @@
  "unique_frames": {
   "n_rows": 249,
   "point": {
-   "bin_f1/spine": 0.6052631578947368,
-   "bin_auc/spine": 0.8040796963946868,
+   "bin_f1/spine": 0.704225352112676,
+   "bin_auc/spine": 0.8553130929791272,
    "bin_f1/hip": 0.4883720930232558,
    "bin_auc/hip": 0.7453569031103155,
-   "bin_f1/pooled": 0.5432098765432098,
-   "bin_auc/pooled": 0.7674984306340239,
+   "bin_f1/pooled": 0.5859872611464968,
+   "bin_auc/pooled": 0.7935499058380414,
    "f1/sp_pos": 0.7692307692307693,
    "f1/sp_axis": 0.56,
-   "f1/sp_art": 0.425531914893617,
+   "f1/sp_art": 0.6046511627906976,
    "f1/hip_pos": 0.41025641025641024,
    "f1/hip_roi": 0.5714285714285714,
-   "macro/spine": 0.5849208947081287,
+   "macro/spine": 0.6446273106738223,
    "macro/hip": 0.4908424908424908,
-   "macro/regions_mean": 0.5378816927753097,
-   "macro/5_criteria": 0.5472895331618736,
+   "macro/regions_mean": 0.5677349007581566,
+   "macro/5_criteria": 0.5831133827412897,
    "f1_dict/Некорректная укладка (обе области)": 0.46153846153846156,
-   "macro/4_dictionary_rows": 0.5046247369651625,
-   "visit/sensitivity": 0.7291666666666666,
-   "visit/specificity": 0.5
+   "macro/4_dictionary_rows": 0.5494045489394327,
+   "visit/sensitivity": 0.7916666666666666,
+   "visit/specificity": 0.6153846153846154
   },
   "ci95": {
    "bin_f1/spine": [
-    0.4657037919396466,
-    0.7250068681318681
+    0.5660377358490566,
+    0.8116168478260869
    ],
    "bin_f1/spine#share_skipped": 0.0,
    "bin_auc/spine": [
-    0.702541695655535,
-    0.8908221798615618
+    0.7660738110768501,
+    0.9310854299903952
    ],
    "bin_auc/spine#share_skipped": 0.0,
    "bin_f1/hip": [
@@ -320,13 +320,13 @@
    ],
    "bin_auc/hip#share_skipped": 0.0,
    "bin_f1/pooled": [
-    0.43135212418300656,
-    0.6395348837209303
+    0.4827334507928518,
+    0.6800329670329669
    ],
    "bin_f1/pooled#share_skipped": 0.0,
    "bin_auc/pooled": [
-    0.6892613511883695,
-    0.8429764561778288
+    0.7211085168918729,
+    0.8656661770203358
    ],
    "bin_auc/pooled#share_skipped": 0.0,
    "f1/sp_pos": [
@@ -340,8 +340,8 @@
    ],
    "f1/sp_axis#share_skipped": 0.0,
    "f1/sp_art": [
-    0.22857142857142856,
-    0.5925925925925926
+    0.4,
+    0.7619480519480517
    ],
    "f1/sp_art#share_skipped": 0.0,
    "f1/hip_pos": [
@@ -355,8 +355,8 @@
    ],
    "f1/hip_roi#share_skipped": 0.0020000000000000018,
    "macro/spine": [
-    0.4202811841942277,
-    0.7007108640557671
+    0.47863121706896117,
+    0.7591036790378896
    ],
    "macro/spine#share_skipped": 0.0,
    "macro/hip": [
@@ -365,13 +365,13 @@
    ],
    "macro/hip#share_skipped": 0.0,
    "macro/regions_mean": [
-    0.37090655998863364,
-    0.6352120407134907
+    0.40018707399385534,
+    0.6691693190530399
    ],
    "macro/regions_mean#share_skipped": 0.0,
    "macro/5_criteria": [
-    0.391774086241998,
-    0.6414136108989049
+    0.43192188799139425,
+    0.6782342571221882
    ],
    "macro/5_criteria#share_skipped": 0.0,
    "f1_dict/Некорректная укладка (обе области)": [
@@ -380,18 +380,18 @@
    ],
    "f1_dict/Некорректная укладка (обе области)#share_skipped": 0.0,
    "macro/4_dictionary_rows": [
-    0.3358255981848185,
-    0.6077802666452186
+    0.3814531742333467,
+    0.6530745477211543
    ],
    "macro/4_dictionary_rows#share_skipped": 0.0,
    "visit/sensitivity": [
-    0.6,
-    0.851063829787234
+    0.6666666666666666,
+    0.9038461538461539
    ],
    "visit/sensitivity#share_skipped": 0.0,
    "visit/specificity": [
-    0.36,
-    0.6444444444444445
+    0.4821263227513228,
+    0.7543859649122807
    ],
    "visit/specificity#share_skipped": 0.0
   },
@@ -399,16 +399,16 @@
    "spine": {
     "n": 99,
     "n_pos": 31,
-    "n_flag": 45,
-    "tp": 23,
-    "fp": 22,
-    "fn": 8,
-    "tn": 46,
-    "sensitivity": 0.7419354838709677,
-    "specificity": 0.6764705882352942,
-    "precision": 0.5111111111111111,
-    "f1": 0.6052631578947368,
-    "roc_auc": 0.8040796963946868
+    "n_flag": 40,
+    "tp": 25,
+    "fp": 15,
+    "fn": 6,
+    "tn": 53,
+    "sensitivity": 0.8064516129032258,
+    "specificity": 0.7794117647058824,
+    "precision": 0.625,
+    "f1": 0.704225352112676,
+    "roc_auc": 0.8553130929791272
    },
    "hip": {
     "n": 150,
@@ -427,16 +427,16 @@
    "pooled": {
     "n": 249,
     "n_pos": 72,
-    "n_flag": 90,
-    "tp": 44,
-    "fp": 46,
-    "fn": 28,
-    "tn": 131,
-    "sensitivity": 0.6111111111111112,
-    "specificity": 0.7401129943502824,
-    "precision": 0.4888888888888889,
-    "f1": 0.5432098765432098,
-    "roc_auc": 0.7674984306340239
+    "n_flag": 85,
+    "tp": 46,
+    "fp": 39,
+    "fn": 26,
+    "tn": 138,
+    "sensitivity": 0.6388888888888888,
+    "specificity": 0.7796610169491526,
+    "precision": 0.5411764705882353,
+    "f1": 0.5859872611464968,
+    "roc_auc": 0.7935499058380414
    }
   },
   "by_type": {
@@ -475,15 +475,15 @@
     "region": "Поясничный отдел позвоночника",
     "n": 99,
     "n_pos": 17,
-    "n_flag": 30,
-    "tp": 10,
-    "fp": 20,
-    "fn": 7,
-    "tn": 62,
-    "sensitivity": 0.5882352941176471,
-    "specificity": 0.7560975609756098,
-    "precision": 0.3333333333333333,
-    "f1": 0.425531914893617
+    "n_flag": 26,
+    "tp": 13,
+    "fp": 13,
+    "fn": 4,
+    "tn": 69,
+    "sensitivity": 0.7647058823529411,
+    "specificity": 0.8414634146341463,
+    "precision": 0.5,
+    "f1": 0.6046511627906976
    },
    "hip_pos": {
     "violation_type": "Некорректная укладка",
@@ -519,23 +519,23 @@
   "visit": {
    "n": 100,
    "n_pos": 48,
-   "n_flag": 61,
-   "tp": 35,
-   "fp": 26,
-   "fn": 13,
-   "tn": 26,
-   "sensitivity": 0.7291666666666666,
-   "specificity": 0.5,
-   "precision": 0.5737704918032787,
-   "f1": 0.6422018348623854
+   "n_flag": 58,
+   "tp": 38,
+   "fp": 20,
+   "fn": 10,
+   "tn": 32,
+   "sensitivity": 0.7916666666666666,
+   "specificity": 0.6153846153846154,
+   "precision": 0.6551724137931034,
+   "f1": 0.7169811320754716
   },
   "multi_type_rows": {
    "spine": {
     "rows": 99,
     "true_rows_ge2_types": 2,
-    "pred_rows_ge2_types": 7,
+    "pred_rows_ge2_types": 8,
     "true_positive_rows": 31,
-    "pred_flagged_rows": 45
+    "pred_flagged_rows": 40
    },
    "hip": {
     "rows": 150,
@@ -566,12 +566,12 @@
    "positives_total": 17
   },
   "sp_art": {
-   "threshold": 0.6024096385542168,
-   "rows_on_threshold": 4,
+   "threshold": 0.6239385251850776,
+   "rows_on_threshold": 0,
    "rows_on_threshold_positive": 0,
-   "unique_frames_on_threshold": 2,
-   "studies_on_threshold": 2,
-   "flags_total": 51,
+   "unique_frames_on_threshold": 0,
+   "studies_on_threshold": 0,
+   "flags_total": 49,
    "positives_total": 35
   },
   "hip_pos": {
@@ -600,18 +600,18 @@
   "items": [
    {
     "what": "bin_f1/spine",
-    "reference": 0.6617647058823529,
-    "recomputed": 0.6617647058823529
+    "reference": 0.7368421052631579,
+    "recomputed": 0.7368421052631579
    },
    {
     "what": "bin_auc/spine",
-    "reference": 0.8127358490566038,
-    "recomputed": 0.8127358490566038
+    "reference": 0.8459119496855345,
+    "recomputed": 0.8459119496855345
    },
    {
     "what": "macro/spine",
-    "reference": 0.5465116279069767,
-    "recomputed": 0.5465116279069767
+    "reference": 0.5904392764857881,
+    "recomputed": 0.5904392764857881
    },
    {
     "what": "f1/sp_pos",
@@ -625,8 +625,8 @@
    },
    {
     "what": "f1/sp_art",
-    "reference": 0.5348837209302325,
-    "recomputed": 0.5348837209302325
+    "reference": 0.6666666666666666,
+    "recomputed": 0.6666666666666666
    },
    {
     "what": "n/spine",

@@ -20,6 +20,15 @@
 открывается отчёт, а в журнале — вердикты сервиса и оценки эксперта. В набор входят все загруженные снимки
 поддерживаемой области без отбора по решению сервиса; ошибки чтения и чужие аппараты перечисляются отдельно и в
 знаменатель не входят.
+
+Второй тур «врач + сервис» (2.5). После «Завершить» ответы первого тура зафиксированы. Эксперт может открыть второй
+тур: ему показывается решение сервиса только по тем критериям, где его определённый ответ («норма» или
+«нарушение») разошёлся с сервисом; он оставляет свой ответ или меняет его. Ответы второго тура хранятся отдельно
+(expert_second), первый тур не переписывается. Доступ — по тем же правилам слепоты: второй тур открыт только
+эксперту, завершившему свой первый тур, и только когда отчёт по набору разрешён (report_allowed, P3). Отчёт
+показывает, сколько ответов изменено и в какую сторону, и совпадение с сервисом до и после второго тура; основные
+метрики сервиса считаются только по первому, слепому туру. Второй тур не слепой, поэтому совпадение после него —
+не проверка сервиса, а описание того, как врач пользуется подсказкой.
 """
 import csv
 import hashlib
@@ -59,6 +68,16 @@ CREATE TABLE IF NOT EXISTS expert_answers (
 CREATE TABLE IF NOT EXISTS expert_finish (
   set_id INTEGER, reviewer TEXT, at TEXT, PRIMARY KEY (set_id, reviewer)
 );
+CREATE TABLE IF NOT EXISTS expert_second (
+  id INTEGER PRIMARY KEY, set_id INTEGER, pos INTEGER, reviewer TEXT, answers TEXT, comment TEXT, at TEXT,
+  UNIQUE (set_id, pos, reviewer)
+);
+CREATE TABLE IF NOT EXISTS expert_second_finish (
+  set_id INTEGER, reviewer TEXT, at TEXT, PRIMARY KEY (set_id, reviewer)
+);
+CREATE TABLE IF NOT EXISTS expert_hold (
+  job_id TEXT PRIMARY KEY, at TEXT, by TEXT
+);
 """
 
 
@@ -90,8 +109,10 @@ def kappa(tp: int, fp: int, fn: int, tn: int) -> Optional[float]:
     return None if pe >= 1 else round((po - pe) / (1 - pe), 3)
 
 
-def save_frames(rows: List[Dict[str, Any]], tmp: Path, job_dir: Path) -> int:
-    """Сохранить чистый кадр (без отметок сервиса) каждой строки для слепой экспертной оценки."""
+def save_frames(rows: List[Dict[str, Any]], tmp: Path, job_dir: Path, files: Optional[List[Any]] = None) -> int:
+    """Сохранить чистый кадр (без отметок сервиса) каждой строки для слепой экспертной оценки.
+    `files[i]` — фактический файл строки i (DensitoInference.last_row_files; для zip — файл во временном
+    каталоге распаковки); без него файл ищется по path_to_study относительно каталога загрузки."""
     import cv2
     import pydicom
     import inference
@@ -100,8 +121,9 @@ def save_frames(rows: List[Dict[str, Any]], tmp: Path, job_dir: Path) -> int:
     n = 0
     for i, r in enumerate(rows):
         rel = str(r.get("path_to_study") or "")
-        cands = [Path(tmp) / rel] + ([Path(tmp) / Path(*Path(rel).parts[1:])] if len(Path(rel).parts) > 1 else [])
-        src = next((c for c in cands if rel and c.is_file()), None)
+        real = [Path(files[i])] if files and i < len(files) and files[i] else []
+        cands = ([Path(tmp) / rel] + ([Path(tmp) / Path(*Path(rel).parts[1:])] if len(Path(rel).parts) > 1 else [])) if rel else []
+        src = next((c for c in real + cands if c.is_file()), None)
         if src is None:
             continue
         try:
@@ -205,7 +227,8 @@ class ExpertReview:
             seen.add(k); hashes[h] = 1; pick.append(r)
         if not pick:
             raise ValueError(f"нет снимков для оценки: из {len(rows)} строк ошибок чтения {skipped['failure']}, "
-                             f"вне поддерживаемой области или с чужого аппарата {skipped['unsupported']}")
+                             f"вне поддерживаемой области или с чужого аппарата {skipped['unsupported']}, "
+                             f"повторов {skipped['duplicate']}, без сохранённого кадра {skipped['no_frame']}")
         if len(pick) > MAX_SET:
             raise ValueError(f"в одной проверке не больше {MAX_SET} снимков, загружено {len(pick)}")
         seed = seed if seed is not None else int(time.time())
@@ -249,25 +272,44 @@ class ExpertReview:
         self.reg.audit(user.get("login", "?"), "expert_finish", str(sid), reviewer)
         return {"ok": True, "set_id": sid, "reviewer": reviewer}
 
-    def report_allowed(self, sid: int, requester: str) -> bool:
-        """Отчёт своей слепой проверки открывается после завершения оценки загрузившим (или самим запрашивающим)."""
+    def report_allowed(self, sid: int, requester: str = "") -> bool:
+        """Можно ли отдавать решения сервиса по набору (отчёт, answers.csv, get_set(blind=False)).
+
+        Режим own_upload (2.4.1, P3): только после того, как оценку завершил именно загрузивший (создатель
+        набора). Кто запрашивает — не важно: второй участник, пройдя набор раньше создателя, ответы модели
+        не видит. `requester` оставлен для совместимости вызовов и на решение не влияет. Для выборки из
+        журнала (create_set) решения сервиса и так видны в журнале — отчёт открыт."""
         with self.reg._conn() as c:
             p = self._params(c, sid)
             if p.get("mode") != OWN:
                 return True
-            q = "SELECT 1 FROM expert_finish WHERE set_id=? AND reviewer IN (?, ?)"
-            return bool(c.execute(q, (sid, p["_creator"], requester or p["_creator"])).fetchone())
+            return bool(c.execute("SELECT 1 FROM expert_finish WHERE set_id=? AND reviewer=?",
+                                  (sid, p["_creator"])).fetchone())
+
+    def hold_job(self, job_id: str, by: str = "") -> None:
+        """Скрыть решения загрузки в журнале ДО её индексации (2.4.1, P2). Запись фиксируется (commit) до того,
+        как строки загрузки появятся в таблице images, поэтому любой читатель журнала, увидевший снимки, видит и
+        скрытие. Снимается только завершением своей слепой проверки загрузившим (см. hidden_jobs); если набор
+        создать не удалось (нет ФИО, нет кадров), загрузка так и остаётся скрытой."""
+        with self._lock, self.reg._conn() as c:
+            c.execute("INSERT OR IGNORE INTO expert_hold(job_id, at, by) VALUES(?,?,?)", (job_id, _now(), by[:60]))
 
     def hidden_jobs(self) -> set:
-        """Загрузки, решения по которым скрыты: своя слепая проверка ещё не завершена загрузившим."""
-        out = set()
+        """Загрузки, решения по которым скрыты: своя слепая проверка ещё не завершена загрузившим, или загрузка
+        помечена скрытой при приёме (hold_job), а завершённого своего набора по ней нет."""
+        out, released = set(), set()
         with self.reg._conn() as c:
             for s in c.execute("SELECT id, created_by, params FROM expert_sets WHERE params LIKE ?", (f'%"{OWN}"%',)):
                 p = json.loads(s["params"] or "{}")
                 if p.get("mode") != OWN:
                     continue
-                if not c.execute("SELECT 1 FROM expert_finish WHERE set_id=? AND reviewer=?", (s["id"], s["created_by"])).fetchone():
+                if c.execute("SELECT 1 FROM expert_finish WHERE set_id=? AND reviewer=?", (s["id"], s["created_by"])).fetchone():
+                    released.add(p.get("job_id"))
+                else:
                     out.add(p.get("job_id"))
+            for r in c.execute("SELECT job_id FROM expert_hold"):
+                if r["job_id"] not in released:
+                    out.add(r["job_id"])
         return out
 
     def list_sets(self) -> List[Dict[str, Any]]:
@@ -334,6 +376,160 @@ class ExpertReview:
         with self.reg._conn() as c:
             return {r["pos"]: {"answers": json.loads(r["answers"]), "comment": r["comment"]} for r in c.execute(
                 "SELECT pos, answers, comment FROM expert_answers WHERE set_id=? AND reviewer=?", (sid, reviewer))}
+
+    # ---- второй тур «врач + сервис» (2.5)
+    @staticmethod
+    def _svc(it: Dict[str, Any]) -> Dict[str, str]:
+        viol = set(filter(None, (it.get("service_violations") or "").split(";")))
+        return {code: ("violation" if vname in viol else "ok") for code, _, vname in CRITERIA[it["region"]]}
+
+    def second_allowed(self, sid: int, reviewer: str) -> bool:
+        """Второй тур: эксперт завершил свой первый тур И отчёт по набору разрешён (P3 для своих снимков)."""
+        return bool(reviewer) and self.finished(sid, reviewer) and self.report_allowed(sid, reviewer)
+
+    def _disputed(self, sid: int, reviewer: str) -> Dict[int, Dict[str, Any]]:
+        """{pos: {item, first, codes, service}}: критерии, где определённый ответ первого тура не совпал с сервисом."""
+        s = self.get_set(sid, blind=False)
+        items = {it["pos"]: it for it in s["items"]}
+        first = self.my_answers(sid, reviewer)
+        out = {}
+        for pos, a in sorted(first.items()):
+            it = items.get(pos)
+            if not it:
+                continue
+            svc = self._svc(it)
+            codes = [c for c, _, _ in CRITERIA[it["region"]] if a["answers"].get(c) in ("ok", "violation")
+                     and a["answers"].get(c) != svc[c]]
+            if codes:
+                out[pos] = {"item": it, "first": a["answers"], "codes": codes, "service": svc}
+        return out
+
+    def second_answers(self, sid: int, reviewer: str) -> Dict[int, Dict[str, Any]]:
+        with self.reg._conn() as c:
+            return {r["pos"]: {"answers": json.loads(r["answers"]), "comment": r["comment"], "at": r["at"]} for r in c.execute(
+                "SELECT pos, answers, comment, at FROM expert_second WHERE set_id=? AND reviewer=?", (sid, reviewer))}
+
+    def second_finished(self, sid: int, reviewer: str) -> bool:
+        with self.reg._conn() as c:
+            return bool(c.execute("SELECT 1 FROM expert_second_finish WHERE set_id=? AND reviewer=?",
+                                  (sid, reviewer)).fetchone())
+
+    def second_round(self, sid: int, reviewer: str) -> Dict[str, Any]:
+        """Снимки второго тура: решение сервиса показывается только по спорным критериям."""
+        if not self.second_allowed(sid, reviewer):
+            raise PermissionError("второй тур открывается после «Завершить» первого тура и после того, как "
+                                  "загрузивший завершил свою оценку")
+        dis = self._disputed(sid, reviewer)
+        mine = self.second_answers(sid, reviewer)
+        titles = {k: t for reg in CRITERIA.values() for k, t, _ in reg}
+        items = []
+        for pos, d in dis.items():
+            it = d["item"]
+            items.append({"pos": pos, "region": it["region"], "frame_url": f"/api/expert/sets/{sid}/frame/{pos}.png",
+                          "criteria": [{"code": c, "title": titles[c], "first": d["first"][c], "service": d["service"][c]}
+                                       for c in d["codes"]],
+                          "second": (mine.get(pos) or {}).get("answers"), "comment": (mine.get(pos) or {}).get("comment")})
+        return {"set_id": sid, "reviewer": reviewer, "n_items": len(items),
+                "n_criteria": sum(len(x["criteria"]) for x in items), "items": items,
+                "finished": self.second_finished(sid, reviewer), "answers_legend": ANSWERS,
+                "note": "Показаны только снимки и критерии, где ваш ответ первого тура разошёлся с сервисом. Ответы "
+                        "первого тура зафиксированы; ответ второго тура хранится отдельно. Можно оставить свой ответ, "
+                        "изменить его или пропустить снимок."}
+
+    def second_answer(self, sid: int, pos: int, user: Dict[str, Any], answers: Dict[str, str],
+                      comment: str = "") -> Dict[str, Any]:
+        reviewer = (user.get("name") or user.get("login") or "").strip()[:60]
+        if not self.second_allowed(sid, reviewer):
+            raise PermissionError("второй тур недоступен: первый тур не завершён или отчёт по набору ещё закрыт")
+        if self.second_finished(sid, reviewer):
+            raise ValueError("второй тур завершён: ответы зафиксированы и не меняются")
+        dis = self._disputed(sid, reviewer)
+        if pos not in dis:
+            raise KeyError(pos)
+        allowed = set(dis[pos]["codes"])
+        clean = {k: v for k, v in (answers or {}).items() if k in allowed and v in ANSWERS}
+        if set(clean) != allowed:
+            raise ValueError("нужно ответить по всем спорным критериям снимка")
+        comment = (comment or "").replace("\x00", "").strip()[:1000]
+        with self._lock, self.reg._conn() as c:
+            c.execute("INSERT OR REPLACE INTO expert_second(set_id,pos,reviewer,answers,comment,at) VALUES(?,?,?,?,?,?)",
+                      (sid, pos, reviewer, json.dumps(clean, ensure_ascii=False), comment, _now()))
+        return {"ok": True, "pos": pos, "reviewer": reviewer}
+
+    def second_finish(self, sid: int, user: Dict[str, Any]) -> Dict[str, Any]:
+        """Завершить второй тур. Неотвеченные спорные снимки считаются пропущенными (остаётся ответ первого тура)."""
+        reviewer = (user.get("name") or user.get("login") or "").strip()[:60]
+        if not self.second_allowed(sid, reviewer):
+            raise PermissionError("второй тур недоступен: первый тур не завершён или отчёт по набору ещё закрыт")
+        with self._lock, self.reg._conn() as c:
+            c.execute("INSERT OR IGNORE INTO expert_second_finish(set_id,reviewer,at) VALUES(?,?,?)", (sid, reviewer, _now()))
+        self.reg.audit(user.get("login", "?"), "expert_second_finish", str(sid), reviewer)
+        return {"ok": True, "set_id": sid, "reviewer": reviewer}
+
+    def second_summary(self, sid: int, reviewer: str = "") -> Dict[str, Any]:
+        """Сводка второго тура: изменения и направления, совпадение с сервисом до и после (по критериям).
+        Учитываются только эксперты, завершившие первый тур."""
+        s = self.get_set(sid, blind=False)
+        items = {it["pos"]: it for it in s["items"]}
+        with self.reg._conn() as c:
+            q1 = "SELECT pos, reviewer, answers FROM expert_answers WHERE set_id=?" + (" AND reviewer=?" if reviewer else "")
+            first = [dict(r) for r in c.execute(q1, (sid, reviewer) if reviewer else (sid,))]
+            second = {(r["pos"], r["reviewer"]): json.loads(r["answers"]) for r in c.execute(
+                "SELECT pos, reviewer, answers FROM expert_second WHERE set_id=?", (sid,))}
+            fin2 = {r[0] for r in c.execute("SELECT reviewer FROM expert_second_finish WHERE set_id=?", (sid,))}
+        fin1 = {r for r in {a["reviewer"] for a in first} if self.finished(sid, r)}
+        dirs = {"нарушение → норма": 0, "норма → нарушение": 0, "нарушение → не могу оценить": 0,
+                "норма → не могу оценить": 0}
+        n_dis = n_rev = n_changed = n_to_service = 0
+        before = {"agree": 0, "n": 0}
+        after = {"agree": 0, "n": 0}
+        per_rev: Dict[str, Dict[str, int]] = {}
+        rows = []
+        for a in first:
+            it = items.get(a["pos"])
+            if not it or a["reviewer"] not in fin1:
+                continue
+            svc = self._svc(it)
+            ans1 = json.loads(a["answers"])
+            ans2 = second.get((a["pos"], a["reviewer"])) or {}
+            pr = per_rev.setdefault(a["reviewer"], {"disputed": 0, "reviewed": 0, "changed": 0})
+            for code, title, _ in CRITERIA[it["region"]]:
+                e1 = ans1.get(code)
+                if e1 not in ("ok", "violation"):
+                    continue
+                before["n"] += 1
+                before["agree"] += int(e1 == svc[code])
+                e2 = ans2.get(code, e1) if e1 != svc[code] else e1
+                if e2 in ("ok", "violation"):
+                    after["n"] += 1
+                    after["agree"] += int(e2 == svc[code])
+                if e1 == svc[code]:
+                    continue
+                n_dis += 1
+                pr["disputed"] += 1
+                if code in ans2:
+                    n_rev += 1
+                    pr["reviewed"] += 1
+                if e2 != e1:
+                    n_changed += 1
+                    pr["changed"] += 1
+                    dirs[f"{ANSWERS[e1]} → {ANSWERS[e2]}"] += 1
+                    n_to_service += int(e2 == svc[code])
+                rows.append({"pos": a["pos"], "reviewer": a["reviewer"], "criterion": title, "region": it["region"],
+                             "first": ANSWERS[e1], "service": ANSWERS[svc[code]],
+                             "second": ANSWERS.get(ans2[code]) if code in ans2 else "пропущен"})
+
+        def share(d):
+            return {"agree": d["agree"], "n": d["n"], "agreement": round(d["agree"] / d["n"], 3) if d["n"] else None,
+                    "agreement_ci": wilson(d["agree"], d["n"])}
+        return {"reviewers_finished_first": sorted(fin1), "reviewers_finished_second": sorted(fin1 & fin2),
+                "disputed": n_dis, "reviewed": n_rev, "skipped": n_dis - n_rev, "changed": n_changed,
+                "changed_to_service": n_to_service, "directions": dirs, "per_reviewer": per_rev,
+                "agreement_before": share(before), "agreement_after": share(after), "rows": rows[:300],
+                "note": "Второй тур не слепой: эксперт видел решение сервиса по спорным критериям. Совпадение после "
+                        "второго тура описывает, как эксперт использует подсказку сервиса, и не является проверкой "
+                        "сервиса; чувствительность, специфичность и каппа выше считаются только по первому туру. "
+                        "Единица счёта — критерий снимка с определённым ответом («норма» или «нарушение»)."}
 
     # ---- отчёт
     def report(self, sid: int, reviewer: str = "") -> Dict[str, Any]:
@@ -418,6 +614,7 @@ class ExpertReview:
                 "reviewers": sorted({a["reviewer"] for a in ans}), "n_answers": len(ans),
                 "inter_reader": pairs, "per_image": per_image,
                 "any_violation": stats(any_cell), "criteria": crit, "disagreements": disagreements[:300],
+                "second_round": self.second_summary(sid, reviewer),
                 "note": "Чувствительность и специфичность сервиса считаются относительно оценки врача; «не могу оценить» "
                         "в расчёт не входит. Интервалы — Уилсона 95 %. Модель по этим ответам не дообучается."}
 
@@ -426,16 +623,27 @@ class ExpertReview:
         items = {it["pos"]: it for it in s["items"]}
         with self.reg._conn() as c:
             ans = [dict(r) for r in c.execute("SELECT * FROM expert_answers WHERE set_id=? ORDER BY pos, reviewer", (sid,))]
+            second = {(r["pos"], r["reviewer"]): dict(r) for r in c.execute("SELECT * FROM expert_second WHERE set_id=?", (sid,))}
         buf = io.StringIO()
         w = csv.writer(buf, delimiter=";")
-        w.writerow(["set_id", "pos", "study_uid", "region", "reviewer", "criterion", "expert", "service", "comment", "at"])
+        # 2.5: колонки второго тура — в конце, первые 10 колонок прежние (первый тур)
+        w.writerow(["set_id", "pos", "study_uid", "region", "reviewer", "criterion", "expert", "service", "comment", "at",
+                    "round2_shown_service", "expert_round2", "comment_round2", "at_round2"])
         for a in ans:
             it = items.get(a["pos"]) or {}
             viol = set(filter(None, (it.get("service_violations") or "").split(";")))
+            s2 = second.get((a["pos"], a["reviewer"])) or {}
+            a2 = json.loads(s2["answers"]) if s2 else {}
+            fin = self.finished(sid, a["reviewer"])
             for code, title, vname in CRITERIA.get(it.get("region", "spine"), []):
                 e = json.loads(a["answers"]).get(code, "")
+                svc = "violation" if vname in viol else "ok"
+                shown = fin and e in ("ok", "violation") and e != svc
+                e2 = a2.get(code, "") if shown else ""
                 w.writerow([sid, a["pos"], it.get("study_uid", ""), it.get("region", ""), a["reviewer"], code,
-                            ANSWERS.get(e, e), "нарушение" if vname in viol else "норма", a["comment"], a["at"]])
+                            ANSWERS.get(e, e), "нарушение" if vname in viol else "норма", a["comment"], a["at"],
+                            "да" if shown else "нет", ANSWERS.get(e2, e2),
+                            s2.get("comment", "") if e2 else "", s2.get("at", "") if e2 else ""])
         return "\ufeff" + buf.getvalue()
 
     def for_study(self, study_uid: str) -> List[Dict[str, Any]]:
@@ -518,6 +726,41 @@ def mount(app, reg, er: ExpertReview) -> None:
             raise HTTPException(404, "снимок не найден в проверке")
         except (ValueError, TypeError) as e:
             raise HTTPException(400, str(e))
+
+    # ---- второй тур «врач + сервис» (2.5): только после своего «Завершить» и при открытом отчёте (P3)
+    @app.get("/api/expert/sets/{sid}/second")
+    def expert_second(sid: int, x_registry_session: Optional[str] = Header(None)):
+        u = need(x_registry_session)
+        me = (u.get("name") or u.get("login") or "").strip()[:60]
+        try:
+            return er.second_round(sid, me)
+        except KeyError:
+            raise HTTPException(404, "проверка не найдена")
+        except PermissionError as e:
+            raise HTTPException(403, str(e))
+
+    @app.post("/api/expert/sets/{sid}/second/answers")
+    async def expert_second_answer(sid: int, request: Request, x_registry_session: Optional[str] = Header(None)):
+        u = need(x_registry_session)
+        try:
+            b = await request.json()
+            return er.second_answer(sid, int(b.get("pos", 0)), u, b.get("answers") or {}, b.get("comment", ""))
+        except PermissionError as e:
+            raise HTTPException(403, str(e))
+        except KeyError:
+            raise HTTPException(404, "снимка нет во втором туре")
+        except (ValueError, TypeError) as e:
+            raise HTTPException(400, str(e))
+
+    @app.post("/api/expert/sets/{sid}/second/finish")
+    def expert_second_finish(sid: int, x_registry_session: Optional[str] = Header(None)):
+        u = need(x_registry_session)
+        try:
+            return er.second_finish(sid, u)
+        except PermissionError as e:
+            raise HTTPException(403, str(e))
+        except KeyError:
+            raise HTTPException(404, "проверка не найдена")
 
     @app.get("/api/expert/sets/{sid}/report")
     def expert_report(sid: int, reviewer: str = "", x_registry_session: Optional[str] = Header(None)):

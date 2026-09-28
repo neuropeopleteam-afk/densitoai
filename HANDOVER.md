@@ -226,7 +226,7 @@ e2c4ec7 первая публикация (v2.0.x)
    Актуальные по-критериальные цифры — `models/metrics_summary.json` (18:07) и раздел 6 ниже.
 2. ~~В документах местами упомянут **старый пароль сайта `Densito2026`**~~ — **закрыто 20.09.2026**: актуальный пароль `demo` / `Hakaton` проставлен в `README.md` и `docs/LETTER_TO_ORGANIZERS.md`; в `docs/EXPERT_TESTING_GUIDE.md` и `docs/RADIOLOGIST_TEST_BRIEF.md` старого пароля не осталось.
 
-3. ФИО/контакты команды — заглушки (презентация `docs/DensitoAI_LCT2026_presentation.pptx`,
+3. ФИО/контакты команды — заглушки (презентация — актуальная PDF для жюри https://densito.ru/lct/DensitoAI_LCT2026_prezentatsiya.pdf, 23 слайда; старая `docs/DensitoAI_LCT2026_presentation.pptx` удалена в 2.4.1;
    `docs/LETTER_TO_ORGANIZERS.md`).
 4. Старая landing-версия сайта нравилась владельцу больше — раздел 4.1.
 

@@ -1,6 +1,6 @@
-# Карточка модели DensitoAI v2.4.0
+# Карточка модели DensitoAI v2.5.0
 
-Сформировано автоматически `tools/make_model_card.py` 2026-09-25 из `models/metrics_summary.json`, `models/models_manifest.json`, `config.yaml`, `requirements.txt`. Ручные правки не вносить — перегенерировать.
+Сформировано автоматически `tools/make_model_card.py` 2026-09-27 из `models/metrics_summary.json`, `models/models_manifest.json`, `config.yaml`, `requirements.txt`. Ручные правки не вносить — перегенерировать.
 
 ## 1. Назначение
 
@@ -23,8 +23,8 @@
 
 - sp_pos (model_spine_sp_pos_geom.pkl): center_offset_ratio, bone_width_ratio, synth_pos_logit
 - sp_axis (model_spine_sp_axis_geom.pkl): axis_angle_deg
-- sp_art (model_spine_sp_art_geom.pkl): metal_metal_area_mm2, metal_metal_max_intensity_gap
-- any (model_spine_any_geom.pkl): axis_angle_deg, bone_width_ratio, center_offset_ratio, metal_metal_area_mm2, metal_metal_max_intensity_gap
+- sp_art (model_spine_sp_art_geom.pkl): metal_metal_band70_area_log, metal_metal_band70_max_gap
+- any (model_spine_any_geom.pkl): axis_angle_deg, bone_width_ratio, center_offset_ratio, metal_metal_band70_area_log, metal_metal_band70_max_gap
 - hip_pos (model_hip_pos_geom.pkl): femur_solidity, shaft_width_mm, abs_shaft_angle_deg, merge_height_mm, medial_neck_extent_mm
 - hip_roi (model_hip_roi_geom.pkl): scan_length_mm, shaft_len_below_troch_mm
 - any (model_right_hip_any_geom.pkl): abs_shaft_angle_deg, femur_solidity, medial_neck_extent_mm, merge_height_mm, scan_length_mm, shaft_len_below_troch_mm, shaft_width_mm
@@ -46,7 +46,7 @@ Out-of-fold (OOF) предсказания: повторный GroupKFold с г�
 |---|---|---|---|---|---|---|---|---|---|
 | sp_pos | Позвоночник: укладка (центр, симметрия) | 166 | 10 | 0.915 | 0.790 (densito) | 0.893 | 0.861 (prevalence) | 0.500 [0.12; 1.00] |  |
 | sp_axis | Позвоночник: ось позвоночника | 166 | 17 | 0.839 | 0.797 (densito_inv) | 0.889 | 0.777 (prevalence_x1.4) | 0.605 [0.29; 0.82] |  |
-| sp_art | Позвоночник: посторонние предметы | 166 | 35 | 0.560 | 0.897 (imagenet) | 0.823 | 0.602 (prevalence_x1.4) | 0.535 [0.24; 0.74] |  |
+| sp_art | Позвоночник: посторонние предметы | 166 | 35 | 0.804 | 0.897 (imagenet) | 0.899 | 0.624 (prevalence_x1.4) | 0.667 [0.39; 0.83] |  |
 | hip_pos | Бедро (обе стороны, общая модель): укладка | 329 | 79 | 0.710 | 0.635 (imagenet) | 0.725 | 0.658 (prevalence) | 0.432 [0.22; 0.60] |  |
 | hip_roi | Бедро (обе стороны, общая модель): область интереса | 329 | 16 | 0.902 | 0.877 (imagenet) | 0.917 | 0.918 (prevalence) | 0.514 [0.00; 0.91] |  |
 | rh_pos | Правое бедро: укладка | 161 | 39 | 0.802 | 0.517 (общая hip-модель) | 0.711 | 0.658 (prevalence_shared_hip_model) | 0.435 [0.18; 0.66] |  |
@@ -58,13 +58,18 @@ Out-of-fold (OOF) предсказания: повторный GroupKFold с г�
 
 Nested-оценка (порог и стекинг подобраны внутри внешних фолдов):
 
-Протокол: repeated GroupKFold 5 внешних фолдов × 10 повторов, 3 внутренних; группы — исследование + хэш пикселей; вес стэкинга и порог выбираются только на внутренних фолдах (`tools/nested_gate.py`, `docs/NESTED_GATE_REPORT.md`). AUC — среднее по 10 повторам для базового стэкинга 0.5/0.5 (он и используется); полные таблицы с ДИ — в отчёте.
+Протокол: repeated GroupKFold 5 внешних фолдов × 10 повторов, 3 внутренних; группы — исследование + хэш пикселей; вес стэкинга и порог выбираются только на внутренних фолдах (`tools/nested_gate.py`, `docs/NESTED_GATE_REPORT.md`). AUC — среднее по 10 повторам для базового стэкинга 0.5/0.5 (он и используется); для признаков контура A (sp_pos — протокол nested_sppos_head_H2, sp_art — nested_spart_zone_2_5) — 20 повторов, среднее для стэка с признаком; полные таблицы с ДИ — в отчёте.
 
 - sp_pos: nested AUC = 0.878; OOF AUC = 0.893, протокол nested_sppos_head_H2
 - sp_axis: nested AUC = 0.860; OOF AUC = 0.889, протокол emb_gate_K13
-- sp_art: nested AUC = 0.817; OOF AUC = 0.823, протокол nested_gate_K2
+- sp_art: nested AUC = 0.884; OOF AUC = 0.899, протокол nested_spart_zone_2_5
 - hip_pos: nested AUC = 0.709; OOF AUC = 0.725, протокол nested_gate_K2
 - hip_roi: nested AUC = 0.873; OOF AUC = 0.917, протокол nested_gate_K2
+
+Решения по гейту (признаки контура A, `models/nested_gate_decisions.json`):
+
+- sp_pos (2.4.0, `H2_synth_pos_logit`, протокол nested_sppos_head_H2): принят — действующее правило nested: dAUC >= 0.03 в >= 14/20 повторов и macro-F1 не хуже (пройдено 20/20). Оговорка: калиброванный гейт (идея 11) не принят: при 6 положительных исследованиях кластерный ДИ90 ΔAUC упирается в 0 ([-0.004; +0.218]), p_boot 0.12; sign-flip p 0.008; jackknife по группам без смен знака (минимум +0.033). Мощности на этой выборке нет — решение принято по действующему правилу с этой оговоркой (владелец, вариант А, 23.09.2026)
+- sp_art (2.5.0, `spart_zone_band70`, протокол nested_spart_zone_2_5): принят — решение владельца (27.09.2026) по действующему правилу nested, как голова укладки H2 в 2.4.0: dAUC >= 0.03 в >= 14/20 повторов без потери macro-F1 — пройдено 19/20 (фиксированная отсечка 70 % — 20/20), Δmacro-F1 +0.074. Оговорка: калиброванный гейт tools/paired_gate.py НЕ пройден: ДИ95 кластерного бутстрапа ΔAUC [−0.029; +0.176], p_boot 0.072, sign-flip p 0.092 (не проходит и без поправки Холма). Положительных исследований 17, поэтому это не нехватка мощности (в отличие от H2, где их было 6): прирост неоднороден по исследованиям. На 40 кадрах слепой проверки врачами эффекта нет: совпадение с разметкой 27 → 28 из 40, найдено с верной причиной 13 из 20 без изменений, ложных тревог 6 из 20 без изменений, с большинством врачей 31 → 30 из 40. Механизм: прежний признак в основном считал предметами крылья подвздошных костей внизу кадра. Признак включён в 2.5.0 решением владельца с этой оговоркой.
 
 ## 6. Пороги и правило решения
 
@@ -78,12 +83,13 @@ Nested-оценка (порог и стекинг подобраны внутр�
 - Мало позитивов: sp_pos n_pos = 10, rh_roi/lh_roi n_pos = 7/9 — ДИ широкие, метрики по этим критериям ориентировочные.
 - Один разметчик, один прибор (GE Lunar Prodigy), одна организация — переносимость на другие приборы не проверена на разметке.
 - Чувствительность к гамме/шуму (см. `docs/ROBUSTNESS_REPORT.md`): часть решений меняется при искажении яркостной кривой.
-- Слепая проверка тремя врачами (`docs/REVIEW_DOCTORS.md`): лишние тревоги на нормах — предмет вне зоны измерения L1–L4 или плотный участок кости как «посторонний предмет»; зона сканирования бедра больше обычной как «некорректная укладка». Тексты карточки предупреждают об этом и оставляют решение врачу; модель и пороги не менялись.
+- Слепая проверка тремя врачами (`docs/REVIEW_DOCTORS.md`, версия 2.4.0): лишние тревоги на нормах — предмет вне зоны измерения L1–L4 или плотный участок кости как «посторонний предмет»; зона сканирования бедра больше обычной как «некорректная укладка». Тексты карточки предупреждают об этом и оставляют решение врачу.
+- sp_art с 2.5.0 учитывает положение плотных участков (верхние 70 % вертикальной протяжённости маски кости), но в верхнюю полосу попадают и плотные участки анатомии у верхних углов кадра; на снимках с другим полем обзора (другой аппарат, иная длина скана) поведение не проверено. На 40 кадрах слепой проверки (OOF) эффекта нет — `docs/REVIEW_DOCTORS.md`, раздел «2.5.0».
 - Не медицинское изделие; результат — подсказка для контроля качества укладки, не диагноз.
 
 ## 8. Версия и хэши
 
-- Версия пайплайна (config.yaml → version): **2.4.0**; config_hash: **b17b7951447d** (тот же пишется в DICOM SR и ответ API).
+- Версия пайплайна (config.yaml → version): **2.5.0**; config_hash: **cb4d9bc567e2** (тот же пишется в DICOM SR и ответ API).
 - Ключевые библиотеки (requirements.txt): torch 2.14.0+cpu, torchvision 0.29.0+cpu, numpy 2.5.3, scipy 1.18.1, scikit-learn 1.9.1, pandas 3.0.5, pydicom 3.0.2, opencv-python-headless 5.0.0.93, scikit-image 0.26.0, PyYAML 6.0.3, fastapi 0.141.1.
 
 | Файл модели | Критерий | Признаки / источник | n_pos | sha256[:12] |
@@ -92,9 +98,9 @@ Nested-оценка (порог и стекинг подобраны внутр�
 | model_spine_sp_pos_emb_pca.pkl | sp_pos | densito | 10 | b905b160ae25 |
 | model_spine_sp_axis_geom.pkl | sp_axis | axis_angle_deg | 17 | 297e08c840f3 |
 | model_spine_sp_axis_emb_pca.pkl | sp_axis | densito_inv | 17 | 4996fdee1eb7 |
-| model_spine_sp_art_geom.pkl | sp_art | metal_metal_area_mm2, metal_metal_max_intensity_gap | 35 | 2d3037b0876a |
+| model_spine_sp_art_geom.pkl | sp_art | metal_metal_band70_area_log, metal_metal_band70_max_gap | 35 | b0f657106965 |
 | model_spine_sp_art_emb_pca.pkl | sp_art | imagenet | 35 | 54a78475d746 |
-| model_spine_any_geom.pkl | any | axis_angle_deg, bone_width_ratio, center_offset_ratio, metal_metal_area_mm2, metal_metal_max_intensity_gap | 60 | ef372ec24204 |
+| model_spine_any_geom.pkl | any | axis_angle_deg, bone_width_ratio, center_offset_ratio, metal_metal_band70_area_log, metal_metal_band70_max_gap | 60 | 0b0add5fa53f |
 | model_spine_any_emb_pca.pkl | any |  | 60 | 57a0103e1d68 |
 | model_hip_pos_geom.pkl | hip_pos | femur_solidity, shaft_width_mm, abs_shaft_angle_deg, merge_height_mm, medial_neck_extent_mm | 79 | 83b1dc39916f |
 | model_hip_pos_emb_pca.pkl | hip_pos | imagenet | 79 | 8538d1a7c9ea |

@@ -1,4 +1,4 @@
-# Проверка поставки DensitoAI 2.4.0 (инструкция для технической группы заказчика)
+# Проверка поставки DensitoAI 2.5.0 (инструкция для технической группы заказчика)
 
 > **Назначение и ограничения.** Программа не является медицинским изделием и не предназначена
 > для диагностики, профилактики, лечения или мониторинга заболеваний. Сервис оценивает
@@ -14,7 +14,7 @@
 
 Паспорт производительности (секунды на снимок, память, условия, как воспроизвести) — `docs/PERFORMANCE.md`; на боевом
 сервере в тихих условиях медиана 0,54 с на снимок, p95 1,76 с (499 файлов за 368 с одним процессом), под чужой нагрузкой
-медиана 1,84 с. В образе: `docker run --rm -v /path/Исследования:/data:ro <образ> python tools/perf_passport.py --measure 12 --data /data`
+медиана 1,84 с (прогон версии 2.3.2). В образе: `docker run --rm -v /path/Исследования:/data:ro <образ> python tools/perf_passport.py --measure 12 --data /data`
 (12 файлов, около 1–2 мин на 2 vCPU; выход — `docs/perf_passport.json`, `docs/PERFORMANCE.md`); числа тихого сервера
 подставляются из CSV регрессии (`--quiet-csv`, ручные числа — `--quiet-extra`). Тест `python tests/test_perf_passport.py` —
 секунды, долгий замер не запускает.
@@ -24,14 +24,14 @@
 1. Проверить контрольные суммы и загрузить образ.
 
         cd dist && sha256sum -c SHA256SUMS && cd ..
-        docker load -i dist/densitoai-2.4.0-image.tar.gz
+        docker load -i dist/densitoai-2.5.0-image.tar.gz
 
 2. Самопроверка образа без сети (фантомные DICOM внутри образа, два прогона, сравнение с эталоном, sha256 весов).
 
         mkdir -p outputs
         docker run --rm --network none --cpus=2 --memory=3g --user "$(id -u):$(id -g)" \
-          -v "$PWD/outputs:/data/output" densitoai:2.4.0 verify
-        # то же одной строкой: bash tools/offline_check.sh densitoai:2.4.0 ./outputs
+          -v "$PWD/outputs:/data/output" densitoai:2.5.0 verify
+        # то же одной строкой: bash tools/offline_check.sh densitoai:2.5.0 ./outputs
 
    Код возврата 0 — все проверки пройдены; 1 — есть расхождение. Отчёт: `outputs/verify/verification_report.html`
    (таблица проверок зелёным/красным, карта доказательств «что вы теперь знаете» с привязкой к пунктам ТЗ, блок «что отчёт не доказывает»,
@@ -40,7 +40,7 @@
 3. Пакетная обработка собственных DICOM (папка монтируется только на чтение; сеть не нужна).
 
         docker run --rm --network none --cpus=2 --memory=3g --user "$(id -u):$(id -g)" \
-          -v /path/to/dicoms:/data/input:ro -v "$PWD/outputs:/data/output" densitoai:2.4.0 batch
+          -v /path/to/dicoms:/data/input:ro -v "$PWD/outputs:/data/output" densitoai:2.5.0 batch
 
    Результат: `outputs/results.csv` (ровно 9 столбцов в порядке ТЗ: `path_to_study, study_uid, image_uid,
    anatomical_region, quality_class, violation_type, quality_prob, processing_status, time_of_processing`;
@@ -52,14 +52,14 @@
    кодом 0 только при точном совпадении предсказаний.
 
         docker run --rm --network none -v /path/to/dicoms:/data/input:ro -v "$PWD/outputs:/data/output" \
-          densitoai:2.4.0 verify --data /data/input
+          densitoai:2.5.0 verify --data /data/input
         docker run --rm --network none -v /path/to/dicoms:/data/input:ro -v "$PWD/outputs:/data/output" \
-          densitoai:2.4.0 verify --data /data/input --expected-sha <sha из предыдущего вывода>
+          densitoai:2.5.0 verify --data /data/input --expected-sha <sha из предыдущего вывода>
 
 5. Проверить, что веса модели в образе — те, что заявлены в поставке (`models/WEIGHTS_SHA256.txt`).
 
-        docker run --rm --network none densitoai:2.4.0 bash -c "cd /app && sha256sum -c models/WEIGHTS_SHA256.txt"
-        docker run --rm --network none densitoai:2.4.0 bash -c "cd /app && python tools/hash_weights.py --check"
+        docker run --rm --network none densitoai:2.5.0 bash -c "cd /app && sha256sum -c models/WEIGHTS_SHA256.txt"
+        docker run --rm --network none densitoai:2.5.0 bash -c "cd /app && python tools/hash_weights.py --check"
 
 ## Что именно проверяет `verify`
 
@@ -161,7 +161,7 @@ Baseline при декодере Pillow) проверяются стресс-н�
 
 ### Инвариантность к форме подачи данных и сверка с истиной фантомов
 
-`verify` (и `docker run --rm --network none densitoai:2.4.0 verify`) дополнительно доказывает четыре вещи.
+`verify` (и `docker run --rm --network none densitoai:2.5.0 verify`) дополнительно доказывает четыре вещи.
 
 1. **Независимость от имён файлов, порядка и упаковки (прогон-двойник).** `tools/transfer_check.py`
    делает четыре копии входа и прогоняет инференс на каждой: `rename` — случайные имена файлов и

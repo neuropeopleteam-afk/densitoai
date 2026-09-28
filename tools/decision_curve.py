@@ -14,7 +14,7 @@
 она совпадает с линией «по решению сервиса».
 95 % ДИ — бутстрэп по исследованиям (2000 повторов). Модели и пороги не меняются.
 quality_prob OOF воспроизводится ровно как в `src/eval_oof_metrics.py` (any-модель + max критериев,
-согласование с классом); контроль — ROC-AUC 0.813 / 0.760.
+согласование с классом); контроль — ROC-AUC 0.846 / 0.760 (2.5.0; в 2.4.0 — 0.813 / 0.760).
 
 Запуск: DENSITO_ROOT=$PWD ../venv/bin/python tools/decision_curve.py
 Выход: docs/decision_curve.json, docs/decision_curve.svg
