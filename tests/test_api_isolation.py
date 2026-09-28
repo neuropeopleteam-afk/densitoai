@@ -163,8 +163,10 @@ for asset in ("actions.json", "demo_result.json", "fonts/NotoSans-Regular.woff")
     check(r.status_code == 200 and len(r.content) > 0, f"статика /assets/{asset} отдаётся ({r.status_code})")
 # страница не должна тянуть ничего из интернета — иначе она не откроется у заказчика без сети
 html = client.get("/").text
-external = re.findall(r'(?:src|href)="(https?://[^"]+)"', html)
-check(not external, f"в кабинете нет внешних src/href (найдено: {external[:3]})")
+TEAM_LINKS = ("https://densito.ru/lct/", "https://densito.ru/review/", "https://github.com/neuropeopleteam-afk/densitoai")
+external = re.findall(r'src="(https?://[^"]+)"', html) + [
+    u for u in re.findall(r'href="(https?://[^"]+)"', html) if not u.startswith(TEAM_LINKS)]
+check(not external, f"в кабинете нет внешних src; внешние ссылки — только на стенд и GitHub команды (найдено: {external[:3]})")
 # в демо-данных не должно быть настоящих идентификаторов исследований заказчика
 demo = json.loads((Path(os.environ.get("DENSITO_WEB_DIR", ROOT / "web")) / "assets" / "demo_result.json").read_text(encoding="utf-8"))
 blob = json.dumps(demo, ensure_ascii=False)

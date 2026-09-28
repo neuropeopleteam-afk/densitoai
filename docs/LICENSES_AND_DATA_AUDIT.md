@@ -127,7 +127,7 @@ CC BY-NC) и EULA (BUU-LSPINE) — это **два** бэкбона: `backbone_d
 ## 4. Проверка ПДн в DICOM (`tools/pii_scan.py`)
 
 Запуск: `python tools/pii_scan.py tests data --md outputs/pii_report.md --strict` (19.09.2026, стенд).
-Проверено 21 DICOM (3 `tests/sample_test_zip`, 3 `data/sample_test_zip`, 15 `tests/phantoms`): с выявленными ПДн — 0,
+Проверено 21 DICOM (по 3 файла образца «Для теста» в двух каталогах — в публичный репозиторий не входят; 15 `tests/phantoms`): с выявленными ПДн — 0,
 приватных тегов — 0, у всех `PatientIdentityRemoved = YES`. В образце организаторов PatientName/PatientID = `Anonymized`,
 даты рождения/учреждение/врачи отсутствуют. Первая версия фантомов имела StudyID `PH01` — сканер пометил как
 неочищенный тег, StudyID заменён на `PHANTOM01..04` и фантомы перегенерированы. Полный протокол: `work/A/scratch/pii_report.md`.

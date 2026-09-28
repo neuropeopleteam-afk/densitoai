@@ -523,6 +523,7 @@ table.crit tr.flag td { background: var(--error-soft); }
 /* одна ссылка в шапке остаётся доступной на планшете и телефоне */
 body:not(.view-app) .topbar .topnav { display: flex; }
 @media (max-width: 560px) { body:not(.view-app) .topbar .topnav { display: none; } }
+@media (max-width: 400px) { .topbar .wrap { gap: 12px; } }
 /* остальные разделы в шапке — на широком экране; на планшете остаётся «Под капотом» */
 @media (max-width: 1099px) { .topnav .nav-more { display: none; } }
 
@@ -724,7 +725,7 @@ body.view-registry .app-head .sub { display: none; }
     <nav class="topnav" aria-label="Разделы">
       <a href="docs.html">Под капотом</a>
       <a class="nav-more" href="expert/">Экспертная проверка</a>
-      <a class="nav-more" href="review/">Слепая ревизия</a>
+      <a class="nav-more" href="https://densito.ru/review/">Слепая ревизия</a>
       <a class="nav-more" href="https://densito.ru/lct/">Для жюри</a>
       <a class="nav-more" href="https://github.com/neuropeopleteam-afk/densitoai">GitHub</a>
     </nav>
@@ -781,7 +782,7 @@ body.view-registry .app-head .sub { display: none; }
       <div class="n"><div class="v">0.846 [0.73; 0.94]</div><div class="ci">F1 0.737 [0.57; 0.85]</div><div class="l">ROC-AUC, «есть нарушение», поясничный отдел позвоночника</div></div>
       <div class="n"><div class="v">0.760 [0.63; 0.86]</div><div class="ci">F1 0.516 [0.31; 0.68]</div><div class="l">ROC-AUC, «есть нарушение», проксимальный отдел бедра</div></div>
     </div>
-    <p class="metrics-src">Оценки out-of-fold с группировкой по исследованию, 95 % ДИ — бутстрап по исследованиям. Полные таблицы — в <a href="docs.html">документах и проверке</a>.</p>
+    <p class="metrics-src">Оценки out-of-fold с группировкой по исследованию, 95 % ДИ — бутстрап по исследованиям. Полные таблицы — в разделе <a href="docs.html">«Под капотом»</a>.</p>
     <ul class="bounds">
       <li>Укладка позвоночника: 10 позитивов из 166, по этому критерию результат ненадёжен.</li>
       <li>Все 499 снимков — один GE Lunar Prodigy, один разметчик; перенос на другие денситометры не проверен.</li>
