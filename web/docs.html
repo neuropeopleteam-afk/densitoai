@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Документы и проверка — DensitoAI</title>
+<title>Под капотом — DensitoAI</title>
 <meta name="description" content="DensitoAI: как работает сервис, полные таблицы метрик OOF, метаморфический стенд устойчивости, команды проверки и состав контейнера.">
 <style>
 /* ---------- шрифты (локально, без CDN) ---------- */
@@ -512,6 +512,12 @@ table.crit tr.flag td { background: var(--error-soft); }
 body:not(.view-app) .topbar .topnav { display: flex; }
 @media (max-width: 560px) { body:not(.view-app) .topbar .topnav { display: none; } }
 
+
+/* кнопки переходов под заголовком «Под капотом» */
+.page-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
+@media (max-width: 560px) { .page-links .btn { flex: 1 1 100%; justify-content: center; } }
+/* на телефоне в шапке остаётся «Открыть кабинет»; «Назад на главную» есть над заголовком */
+@media (max-width: 560px) { .topbar .btn.ghost { display: none; } .topbar .wrap { gap: 14px; } }
 </style>
 </head>
 <body>
@@ -529,8 +535,15 @@ body:not(.view-app) .topbar .topnav { display: flex; }
   <div class="wrap">
     <div class="sec-head">
       <div class="eyebrow"><a href="index.html">Назад на главную</a></div>
-      <h1 style="font-size:clamp(34px,4.4vw,56px)">Документы и проверка</h1>
+      <h1 style="font-size:clamp(34px,4.4vw,56px)">Под капотом</h1>
       <p class="lead">Как устроен сервис, полные таблицы метрик, стенд устойчивости к искажениям и команды, которыми всё воспроизводится.</p>
+      <div class="page-links">
+        <a class="btn" href="index.html#app">Проверить снимки <span class="arrow">→</span></a>
+        <a class="btn ghost" href="expert/">Экспертная проверка</a>
+        <a class="btn ghost" href="review/">Слепая ревизия врачей</a>
+        <a class="btn ghost" href="https://densito.ru/lct/">Материалы ЛЦТ</a>
+        <a class="btn ghost" href="https://github.com/neuropeopleteam-afk/densitoai">Код на GitHub</a>
+      </div>
     </div>
   </div>
 </section>

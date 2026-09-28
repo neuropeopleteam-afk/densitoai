@@ -720,7 +720,7 @@ body.view-registry .app-head .sub { display: none; }
   <div class="wrap">
     <a class="brand" href="#top" data-nav="home"><span class="mark"><img src="assets/neuropeople_logo.png" alt="NEUROPEOPLE"></span>DensitoAI</a>
     <nav class="topnav" aria-label="Разделы">
-      <a href="docs.html">Документы и проверка</a>
+      <a href="docs.html">Под капотом</a>
     </nav>
     <span class="sp"></span>
     <a class="btn ghost sm topbar-back" href="#top">На главную</a>
@@ -786,7 +786,7 @@ body.view-registry .app-head .sub { display: none; }
 <footer>
   <div class="wrap">
     <div>DensitoAI · версия сервиса 2.5.0 · хэш конфигурации cb4d9bc567e2</div>
-    <div><a href="docs.html">Документы и проверка</a></div>
+    <div><a href="docs.html">Под капотом</a></div>
   </div>
 </footer>
 </main>
@@ -833,7 +833,7 @@ body.view-registry .app-head .sub { display: none; }
 
       <div class="panel" id="registryCard">
         <div class="panel-head">
-          <div><h2>Журнал исследований</h2><div class="hint">Все загруженные исследования отделения: поиск по ФИО, ID пациента, номеру направления или файлу, фильтры по дате и результату, статусы и комментарии врача и лаборанта. ФИО в списке сокращены; полные данные — по кнопке, каждый просмотр фиксируется.</div></div>
+          <div><h2>Журнал исследований</h2><div class="hint">Все исследования отделения. Поиск по ФИО, ID пациента, № направления или файлу. ФИО сокращены, полные данные — по кнопке, каждый просмотр записывается.</div></div>
           <div class="right" id="regUserBox"></div>
         </div>
         <div id="registryBody"><div class="reg-empty">Загрузка журнала…</div></div>
@@ -1455,7 +1455,7 @@ async function loadHealth() {
     const r = await fetch('/api/health', { cache: 'no-store' });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const j = await r.json();
-    if (j && j.status === 'ok') set('ok', `сервер работает · версия ${j.version || '—'} · моделей ${j.models_loaded ?? '—'}` + (j.fallback_rules_active ? ' · резервные правила' : ''));
+    if (j && j.status === 'ok') set('ok', `сервер работает · версия ${j.version || '—'}` + (j.fallback_rules_active ? ' · резервные правила' : ''));
     else set('fail', 'сервер отвечает с ошибкой' + (j && j.detail ? ': ' + String(j.detail).slice(0, 80) : ''));
   } catch (e) {
     set('fail', 'сервер недоступен: доступен только демо-пример');
@@ -1542,7 +1542,7 @@ analyzeBtn.addEventListener('click', () => {
 
 function setRunChip(data) {
   if (runChip) runChip.remove();
-  runChip = el('span', { class: 'chip', text: `модель ${data.model_version || '—'} · конфиг ${data.config_hash || '—'} · запрос ${data.request_id || data.job_id || '—'}` });
+  runChip = el('span', { class: 'chip', text: `запрос ${data.request_id || data.job_id || '—'} · настройки ${data.config_hash || '—'}`, title: `Версия модели ${data.model_version || '—'}. Настройки — отпечаток всех настроек и порогов (config_hash): по нему видно, какой версией получен результат. Запрос — номер, по которому результат можно открыть снова.` });
   chips.appendChild(runChip);
 }
 
@@ -2285,10 +2285,10 @@ async function regFetch(url, opts) {
 }
 function regOpenSession() { return 'open|' + (currentMode() === 'lab' ? 'lab' : 'doctor') + '|' + encodeURIComponent((lsGet('densito_reg_name') || '').slice(0, 60)); }
 function regWho() {
-  const name = el('input', { type: 'text', maxlength: '60', placeholder: currentMode() === 'lab' ? 'Лаборант' : 'Врач', value: lsGet('densito_reg_name') || '' });
+  const name = el('input', { type: 'text', maxlength: '60', placeholder: 'Например, Иванова А. А.', value: lsGet('densito_reg_name') || '' });
   name.addEventListener('change', () => { lsSet('densito_reg_name', name.value.trim()); reg.session = regOpenSession(); });
-  return el('div', { class: 'reg-who' }, [el('span', { text: 'Комментарии и статусы подписываются так:' }), name,
-    el('span', { text: '· роль — ' + (currentMode() === 'lab' ? 'лаборант' : 'врач') + ' (переключатель «Врач / Лаборант» вверху)' })]);
+  return el('div', { class: 'reg-who' }, [el('span', { text: 'Подпись под комментариями:' }), name,
+    el('span', { text: '· ' + (currentMode() === 'lab' ? 'лаборант' : 'врач') })]);
 }
 async function loadRegistry() {
   try { const st = await (await fetch('/api/registry/status')).json(); reg.enabled = !!st.enabled; reg.open = !!st.open; } catch (e) { reg.enabled = false; }
